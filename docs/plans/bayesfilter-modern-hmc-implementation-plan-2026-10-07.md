@@ -17,9 +17,11 @@ records the unchanged science contract; the
 preserves the original failed diagnostic and assesses all nine MAMS members in
 a new output directory. The refreshed twenty-cell inventory, repaired report,
 provenance and budget ledger are in `N5/method-reference-repair-01/`.
-The campaign now has **151019.616 seconds (41.95 aggregate worker-hours)**
-unallocated after the existing overhead reserve, the bounded D4R3 charge and
-the conservatively settled D4R4a cost preflight.
+Before D4R4b, the settled campaign balance was 151019.616 aggregate
+worker-seconds after the existing overhead reserve, bounded D4R3 charge and
+conservatively settled D4R4a cost preflight. After the first D4R4b rung and
+remaining reservations, **136075.474 seconds (37.80 aggregate worker-hours)**
+are unallocated; see the settlement below.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
 remain open. The next development step is **D4R, generic trajectory adaptation**,
@@ -77,14 +79,20 @@ now makes those first dependencies executable: a versioned reference-source
 audit and an all-model 256/64 diagnostic-window rung, with a conditional
 1024/256 rung preserving original target seed indices. It suballocates 3,600
 local-check seconds and two 7,200-second GPU allocations from the settled
-balance; 133,019.616 seconds remain provisionally unallocated while reserved.
+balance. The first rung has now settled at 4144.142 seconds, releasing
+3055.858 seconds; 136075.474 seconds remain unallocated with the full local
+reserve and second rung still reserved.
 The cost consumer gains explicit window/lag/seed-index arguments, with unchanged
 historical 64/16 defaults; it remains a caller of the shared MAMS proposer.
 The [execution record](bayesfilter-mams-d4r4b-execution-2026-10-12.md) records
-the completed 165.772-second CPU reference check and active GPU rung.
-PP-SGQF has usable source and slow-observable estimates with four priced
-proposals; PP-UKF now also has both estimates and four healthy prices. SIR
-is running and structural follows. This does not close posterior validation.
+the completed 165.772-second CPU reference check and audited all-model GPU
+rung. PP-SGQF, PP-UKF and SIR each have usable source and slow-observable
+estimates and four healthy prices. Structural has two healthy prices but
+neither estimate, triggering the planned structural-only 1024/256 rung.
+All fourteen prices pass the terminal source/seed/work audit. This does not
+close posterior validation. The older D4b method-fit consumer cannot consume
+the new proposal schema, epsilon domain or repair descendants; update its
+consumer contract and reference bridge before a fresh comparison.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model

@@ -1,8 +1,8 @@
 # D4R4b preconfirmation execution record
 
 Plan: [D4R4b preconfirmation](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md).
-Date: 12 October 2026. Status: reference compatibility complete; first
-discarded-window rung running. No
+Date: 12 October 2026. Status: reference compatibility and first
+discarded-window rung complete; conditional structural rung authorized. No
 posterior or tuning-membership authority follows from this cost diagnostic.
 
 ## Prelaunch review and source
@@ -172,3 +172,77 @@ result records the exact discrepancy, alternatives and all member outcomes.
 Known local usage is 792.834369 seconds inside the unchanged 3600-second
 reserve. SIR has now also completed with both estimates usable and four
 healthy short prices; structural is the final running target of the first rung.
+
+## First-rung terminal audit and conditional continuation
+
+The first rung completed with exit code zero in 4144.141505 supervisor seconds.
+The [terminal audit](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/window-256/terminal-audit.json)
+checked all 177 source hashes, the compiled operator, eight geometry inputs,
+durable price bundles, work accounting and 140 distinct seed pairs. All
+fourteen proposals received healthy 32-transition prices. No proposal is a
+verified tuning member from this evidence.
+
+| Target | Source length estimate | Slow-observable length estimate | Healthy prices | Planned disposition |
+| --- | --- | --- | ---: | --- |
+| PP-SGQF | Usable | Usable | 4/4 | Keep first-rung proposals |
+| PP-UKF | Usable | Usable | 4/4 | Keep first-rung proposals |
+| SIR | Usable | Usable | 4/4 | Keep first-rung proposals |
+| Structural UKF | Unavailable | Unavailable | 2/2 | Run the predeclared 1024/256 rung |
+
+The continuation audit passes: the structural outcome is the precise
+information-insufficiency trigger declared before the run. No reference,
+numerical-source or artifact veto occurred. Increasing this target's window
+does not use posterior convergence or acceptance to choose membership. Preserve
+both rungs, including the first rung's fallback proposals; a second unavailable
+estimate is a bounded diagnostic result, not a reason for an unplanned third
+rung or rejection of MAMS.
+
+Settle the first rung at 4144.141505 seconds, releasing 3055.858495 seconds of
+its 7200-second reserve. With the full 3600-second local reserve (known usage
+792.834369 seconds) and conditional 7200-second second rung still reserved,
+the unallocated campaign balance is **136075.474013 seconds**. Do not charge
+the local diagnostic costs again outside their reserve.
+
+A trusted NVIDIA capacity probe at 2026-10-12 01:09:40 UTC selected idle host
+GPU 1, UUID `GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c`, the same RTX 4080
+SUPER hardware class. The second rung uses the unchanged immutable
+`source-163d24b34` and original structural target index 3. Its actual manifest
+must verify TensorFlow memory growth and device/backend identity before any
+result is accepted. Run from that source with the fresh output below:
+
+```bash
+env CUDA_VISIBLE_DEVICES=1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEVEL=2 \
+  /home/ubuntu/anaconda3/envs/tfgpu/bin/python scripts/price_mams_adaptation_full_models.py \
+  --geometry-root /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5 \
+  --output /home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/window-1024 \
+  --targets NL-STR --target-indices 3 --seed 5600 \
+  --fixed-window-transitions 1024 --max-autocorrelation-lag 256 \
+  --plan docs/plans/bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md \
+  --max-wall-seconds 7200
+```
+
+The worker actually started at 2026-10-12 05:12:58 UTC (tool session `52617`).
+The manifest verifies host GPU 1, XLA and growth on every visible physical
+device before initialization; the structural seed is 35600 as specified by
+the preserved original index. The earlier probe timestamp is not the launch
+timestamp. Initial progress is in discarded adaptation.
+
+| Decision | Primary criterion | Veto diagnostic | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Complete first rung; continue structural only | Full proposal/cost inventory and terminal audit pass | No source, numerical-health or artifact veto | Local estimates may miss slow global exploration; structural estimates remain unavailable | Execute the declared longer rung, then price the qualification design | Tuning membership, posterior validity, method ranking or a universal window default |
+
+| Inference status | Finding |
+| --- | --- |
+| Hard veto screen | All fourteen short prices pass numerical health; this is a short-path screen only. |
+| Statistically supported ranking | None. |
+| Descriptive-only differences | Proposal counts, length availability and per-model costs. |
+| Default-readiness | Unchanged; all new method paths remain experimental. |
+| Next evidence needed | Structural rung, current consumer compatibility, adequately searched baselines and fresh posterior/reference evidence. |
+
+The confirmation-harness review found that the older D4b method-fit driver
+assumes the old proposal schema, epsilon domain `(.001,1)`, no repairs, strict
+historical reference loaders and exactly the original candidate count. It is
+not suitable for these adaptive proposals, some of which have epsilon above
+one and may create repair descendants. Repair the consumer under the shared
+public authorities and the audited reference bridge before launching a new
+full-model comparison. Do not silently reuse or weaken the older driver.
