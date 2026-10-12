@@ -424,3 +424,22 @@ the affordable paired design and MCSE/stopping calibration scope.
 `settlement-01.json` records 2659.466401 known local seconds of the held 3600,
 including a conservative ten-second rendering/inspection charge, and
 129565.832731 unallocated worker-seconds after this new GPU reservation.
+
+The repair is committed as `e68cdf1c4`; its isolated source archive passed
+55 selected regressions in 78.392807 seconds (the four expensive full-target
+preparations were already in the 59-test suite). The corrected GPU run began
+at 08:45:34 UTC on host GPU 0, using the existing trusted shared-device
+admission with over 27 GiB free at the probe. Its manifest verifies memory
+growth and XLA; both attainability stages pass. Device 0 and 1 were busy, so
+no idle-device performance inference is allowed. Tool session: 31349.
+
+In parallel, repeat the existing four-target CPU reference-compatibility audit
+against this exact committed source in `reference-consumer-03/`, under the
+unchanged B0 contract. This is needed for dependent posterior work, not for
+tuning membership. Use the same audit driver and original reference archives,
+hide GPUs, preserve exact commands and cap this local diagnostic at 420
+seconds within the existing reserve. The previous check cost 169.225259
+seconds; the larger allowance accommodates CPU load and is not an accuracy
+threshold. Known local use before this check is 2737.859207 seconds. Any
+changed integrand/quantity/source finding stops the affected posterior
+comparison, while the independent qualification-only deployment can continue.

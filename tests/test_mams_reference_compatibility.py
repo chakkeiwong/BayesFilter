@@ -99,6 +99,34 @@ def source_fixture(tmp_path):
     return reference, current, relative
 
 
+def test_reviewed_statistics_extension_preserves_target_source_and_rejects_further_changes(tmp_path):
+    import ast
+    root = Path(__file__).resolve().parents[1]
+    relative = Path("bayesfilter/inference/hmc_acceptance_statistics.py")
+    source = (root / relative).read_text()
+    old_source = source.split("\n\ndef replicated_qualification_attainability", 1)[0]
+    before, after = ast.parse(old_source), ast.parse(source)
+    additions = [node for node in after.body if isinstance(node, ast.FunctionDef)
+                 and node.name == "replicated_qualification_attainability"]
+    assert len(additions) == 1 and not additions[0].decorator_list
+    after.body = [node for node in after.body if node not in additions]
+    assert ast.dump(before) == ast.dump(after)
+    reference, current = tmp_path / "reference", tmp_path / "current"
+    for directory, text in ((reference / "source", old_source), (current, source)):
+        path = directory / relative
+        path.parent.mkdir(parents=True)
+        path.write_text(text)
+    expected_old, expected_new, _ = audit.REVIEWED_PAIRS[str(relative)]
+    assert audit.digest(reference / "source" / relative) == expected_old
+    assert audit.digest(current / relative) == expected_new
+    save(reference / "design.json", dict(source_closure={str(root / relative): expected_old}, inputs={}))
+    report = audit.audit_sources(reference, current, tmp_path)
+    assert len(report["reviewed_differences"]) == 1
+    (current / relative).write_text(source + "\n_UNREVIEWED = True\n")
+    with pytest.raises(ValueError, match="unreviewed source difference"):
+        audit.audit_sources(reference, current, tmp_path)
+
+
 @pytest.mark.parametrize("mutation", ["current", "archive", "missing"])
 def test_no_unreviewed_source_exclusion(tmp_path, mutation):
     reference, current, relative = source_fixture(tmp_path)

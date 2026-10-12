@@ -26,11 +26,15 @@ REFERENCES = {
     "NL-SIR": "sir-reference-02/reference",
     "NL-STR": "structural-influence-reference-01/reference",
 }
-SOURCE_NOTE = "docs/plans/bayesfilter-mams-reference-source-audit-2026-10-12.md"
+SOURCE_NOTE = "docs/plans/bayesfilter-mams-reference-source-addendum-2026-10-12.md"
 PLAN = "docs/plans/bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md"
 # These exact diffs were inspected against the archived PP/SIR/structural
 # references. Any new difference needs its own dependency/mathematical audit.
 REVIEWED_PAIRS = {
+    "bayesfilter/inference/hmc_acceptance_statistics.py": (
+        "c0a4499ff35d244e0eb6e1b08f5476c692a070ce4d013cf7a1403e4c7cf81dcd",
+        "81bd3bb8fcc14d932a494d1d90cf01688f2f3618d6c5bf660821c2030c67eb69",
+        "adds only a target-independent preflight function; existing executable AST unchanged"),
     "bayesfilter/inference/__init__.py": (
         "e5345996987a055188c10718e274ed490356cf05302b1395f20eccd5a0c96020",
         "1408b983565723153e48cf344c5571aad06a09ce23dff81729414adf58122b14", "lazy exports only"),
