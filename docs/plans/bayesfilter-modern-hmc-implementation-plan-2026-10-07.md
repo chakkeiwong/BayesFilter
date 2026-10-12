@@ -19,12 +19,15 @@ a new output directory. The refreshed twenty-cell inventory, repaired report,
 provenance and budget ledger are in `N5/method-reference-repair-01/`.
 Before D4R4b, the settled campaign balance was 151019.616 aggregate
 worker-seconds after the existing overhead reserve, bounded D4R3 charge and
-conservatively settled D4R4a cost preflight. After the first D4R4b rung and
-remaining reservations, **136075.474 seconds (37.80 aggregate worker-hours)**
-are unallocated; see the settlement below.
+conservatively settled D4R4a cost preflight. After settling both D4R4b GPU
+rungs and the first full-model consumer deployment, **135145.833 seconds
+(37.54 aggregate worker-hours)** were unallocated, with the local 3600-second
+reserve still held. Both GPU runs are terminal. A corrected deployment now
+reserves 5580 seconds, leaving **129565.833 seconds (35.99 worker-hours)**
+unallocated; see `preconfirmation-01/settlement-01.json` and the consumer plan.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
-remain open. The next development step is **D4R, generic trajectory adaptation**,
+remain open. The current development and validation phase is **D4R, generic trajectory adaptation**,
 defined in the [reviewed repair subplan](bayesfilter-generic-trajectory-adaptation-repair-2026-10-11.md).
 The completed MAMS cohort verified a frozen nine-point grid with pilots,
 refinement and repair disabled; it did not execute section 6.3's MAMS length
@@ -80,8 +83,11 @@ audit and an all-model 256/64 diagnostic-window rung, with a conditional
 1024/256 rung preserving original target seed indices. It suballocates 3,600
 local-check seconds and two 7,200-second GPU allocations from the settled
 balance. The first rung has now settled at 4144.142 seconds, releasing
-3055.858 seconds; 136075.474 seconds remain unallocated with the full local
-reserve and second rung still reserved.
+3055.858 seconds. The structural second rung settled at 7200.435 seconds,
+including its measured supervisor overrun. It retained sixteen audited pilot
+calls and usable estimates at its first duration, but did not finish the
+second duration or finalize a proposal cohort. No structural price or
+confirmation is fabricated from these partial results.
 The cost consumer gains explicit window/lag/seed-index arguments, with unchanged
 historical 64/16 defaults; it remains a caller of the shared MAMS proposer.
 The [execution record](bayesfilter-mams-d4r4b-execution-2026-10-12.md) records
@@ -100,15 +106,32 @@ coordinate routes, epsilon above one, an actual duration-preserving repair
 child, fixed HMC, budget stops and state-space integrations. The new explicit
 full-model driver is now implemented with eighteen additional regressions,
 including all four full-data preparations, repair-descendant inventories,
-posterior peer continuation and supervisor interruption. Deployment from a
-committed snapshot, refreshed reference compatibility and the complete priced
-baseline/replication design remain; these consumer checks do not close D4R4
-confirmation. The structural longer-window GPU run continues within its
-7200-second allocation. A second workload began sharing GPU 1 after launch;
-long intervals between completed windows are not treated as a deadlock solely
-on elapsed time. Known local diagnostic usage is 1537.897999 of the reserved
-3600 seconds, including an interrupted working-tree CLI attempt that must be
-repeated from immutable source.
+posterior peer continuation and supervisor interruption. All four references
+passed a fresh compatibility audit against committed `935e9d719`. The GPU/XLA
+deployment from that immutable source completed eight healthy trials in
+929.207 seconds but retained no member: its reduced trial budget made passing
+the statistical rule mathematically impossible. This is a planning failure,
+not a R-hat rejection or evidence against MAMS. The consumer subplan now
+requires a model-independent attainability preflight using the actual
+measurement and verification statistics before full-target preparation.
+The complete priced baseline/replication design and feasible fresh
+verification/export remain; these consumer checks do not close D4R4
+confirmation. The structural run's stale running manifest was explicitly
+reconciled in a read-only audit, and future supervisor finalization is repaired.
+Ten reporting regressions and a rendered two-chapter guide build pass. Known
+local diagnostic use before the attainability repair is 2313.645604 of the
+reserved 3600 seconds. Failed source-invalid and timed-out CPU attempts remain
+charged and preserved. The guide's exact antithetic AR(1) calculation explains
+why lugsail need not be conservative; it changes no numerical default.
+The attainability repair is implemented and all 59 focused regressions pass.
+The archived deployment's eight trials and 8192 work units pass the read-only
+source/seed/trace audit. A fresh sixteen-trial-per-stage GPU check is allocated
+5580 seconds, derived from the measured eight-trial cost with explicit load
+contingency. Its question is public verification and export/reload, not mixing
+or a method ranking. Known local diagnostic use is now 2659.466401 seconds.
+The plan requires a fresh priced comparison design and stopped-chain/MCSE
+calibration after settling that deployment; neither is silently replaced by
+this short engineering fixture.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model

@@ -55,6 +55,19 @@ def finalize_prices(output, targets, *, status, error=None):
     return aggregate
 
 
+def finalize_price_manifest(output, *, elapsed_seconds):
+    """Parent finalization covers workers killed before their finally block."""
+    manifest_path = output / "manifest.json"
+    result_path = output / "result.json"
+    if not result_path.exists():
+        return
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    manifest.update(status=json.loads(result_path.read_text())["status"],
+        supervisor_elapsed_seconds=elapsed_seconds,
+        supervisor_finished_utc=datetime.now(timezone.utc).isoformat())
+    write_json(manifest_path, manifest)
+
+
 def geometry_directory(root: Path, target: str) -> Path:
     if target not in TARGETS:
         raise ValueError("unsupported full-model target")
@@ -316,6 +329,7 @@ def supervise(args):
     args.output.mkdir(parents=True, exist_ok=True)
     if code and not (args.output / "result.json").exists():
         finalize_prices(args.output, args.targets, status="worker_failed")
+    finalize_price_manifest(args.output, elapsed_seconds=time.monotonic()-started)
     write_json(args.output / "supervisor.json", dict(command=command, exit_code=code,
         max_wall_seconds=args.max_wall_seconds, cooperative_grace_seconds=grace,
         elapsed_seconds=time.monotonic()-started))

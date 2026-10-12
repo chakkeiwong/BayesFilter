@@ -1698,6 +1698,37 @@ As $\phi$ approaches one, modest batches badly underrepresent the slow
 dependence. Lugsail changes the leading bias; it does not manufacture the
 missing long-time information.
 
+The sign qualification matters for antithetic chains. For a stationary
+unit-variance AR(1) process, $\gamma_k=\rho^{|k|}$ with $|\rho|<1$, define the
+variance of a normalized block sum by
+\begin{align}
+ V_b&=\frac1b\Var\left(\sum_{t=1}^b X_t\right)
+     =1+2\sum_{k=1}^{b-1}\left(1-\frac{k}{b}\right)\rho^k\\
+    &=\frac{1+\rho}{1-\rho}
+       -\frac{2\rho(1-\rho^b)}{b(1-\rho)^2}.
+ \label{eq:bf-modern-ar1-finite-block}
+\end{align}
+The first equality counts the $b-k$ pairs separated by lag $k$; the second
+uses the finite geometric sum and its derivative. For $a=\lfloor n/b\rfloor$
+complete batches, the implemented estimator centers their means on the mean
+of those $ab$ observations. Expanding the centered sum of squares gives
+\[
+ \E\widehat\sigma_b^2
+ =\frac{b}{a-1}\left\{a\Var(\bar X_b)
+                      -a\Var(\bar X_{ab})\right\}
+ =\frac{a}{a-1}\left(V_b-\frac{V_{ab}}{a}\right).
+\]
+This is an exact finite-sample expectation under the stated stationary AR(1)
+law. With $n=2048$, $b=45$, $b/r=15$, $c=1/2$ and $\rho=-0.9$, the true
+long-run variance is $0.052632$, whereas the expectations of ordinary and
+lugsail batch means are $0.064057$ and $0.035102$, respectively. Each batch
+size uses its own complete-batch count. For $\rho=0.9$, the corresponding
+values are $19$, $14.946816$ and $20.492873$. Thus lugsail is not universally
+conservative: reversing the leading bias can increase underestimation for
+negative dependence. These exact calculations motivate antithetic calibration;
+they do not establish interval coverage for HMC or explain a particular
+posterior reference alarm.
+
 Subtracting covariance estimates can produce a negative scalar estimate or
 negative eigenvalues in finite samples. Such an estimate cannot be inserted
 into a square root or treated as zero Monte Carlo uncertainty. Numerical

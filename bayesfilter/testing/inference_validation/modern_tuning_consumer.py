@@ -9,6 +9,25 @@ import json
 from pathlib import Path
 
 
+def frozen_search_evidence_preflight(execution, search):
+    """Check qualification budgets without evaluating or preparing a target."""
+    from bayesfilter.inference.hmc_acceptance_statistics import replicated_qualification_attainability
+    if search.replicated_acceptance_policy != execution.acceptance_policy:
+        raise ValueError("search and binding qualification policies differ")
+    policy = search.replicated_acceptance_policy
+    if policy is None or policy.max_candidates < search.max_candidates:
+        raise ValueError("replicated error allowance cannot cover the candidate cap")
+    return replicated_qualification_attainability(policy=policy,
+        evidence_rungs=search.evidence_rungs, jit_compile=execution.use_xla)
+
+
+def require_attainable_qualification(report):
+    if report["proven_impossible"]:
+        stages = ", ".join(stage for stage, row in report["stages"].items()
+                           if row["proven_impossible"])
+        raise ValueError("qualification impossible within scheduled repetitions: " + stages)
+
+
 def validate_frozen_search(binding, search):
     """Validate an explicit cohort before creating output or running a target."""
     from bayesfilter.inference.hmc_candidate_set_execution import HMCCandidateExecutionBinding
@@ -31,6 +50,7 @@ def validate_frozen_search(binding, search):
     if (search.replicated_acceptance_policy is None
             or search.replicated_acceptance_policy.max_candidates < search.max_candidates):
         raise ValueError("replicated error allowance cannot cover the candidate cap")
+    require_attainable_qualification(frozen_search_evidence_preflight(binding.config, search))
     binding.validate()
     return pairs
 

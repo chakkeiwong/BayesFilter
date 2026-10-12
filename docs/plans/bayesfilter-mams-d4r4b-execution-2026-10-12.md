@@ -2,8 +2,21 @@
 
 Plan: [D4R4b preconfirmation](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md).
 Date: 12 October 2026. Status: reference compatibility and first
-discarded-window rung complete; conditional structural rung authorized. No
+discarded-window rung complete; structural rung terminal with partial evidence. No
 posterior or tuning-membership authority follows from this cost diagnostic.
+
+Current checkpoint: the 1024/256 structural rung exhausted 7200.434712
+supervisor seconds. Its sixteen complete pilot calls and 384 tensor receipts
+pass the read-only `window-1024/terminal-audit.json` audit. First-duration source
+IACTs are 19.4152 and 20.3532, with all thirteen observables usable. The second
+duration remains incomplete; no proposal cohort or short price was finalized.
+The stale archived running manifest is reconciled explicitly against the
+terminal supervisor/result, without rewriting the old files. Heavy GPU
+contention was observed and is an explanatory cost diagnostic, not a candidate
+or implementation veto. The [consumer repair and settlement](bayesfilter-modern-hmc-adaptive-consumer-repair-2026-10-12.md#terminal-review-and-attainable-evidence-repair)
+records the source-bound deployment checks, remaining budget, terminal decision
+tables and next executable repair. Earlier running-status entries below are
+dated history. No worker from these two window rungs remains active.
 
 ## Prelaunch review and source
 

@@ -99,13 +99,71 @@ def audit_bundle(directory: Path, member: dict, design: dict) -> dict:
                 input_start_sha256=inputs["start_sha256"])
 
 
+def terminal_status(manifest, result, supervisor):
+    """Reconcile the archived supervisor's known hard-deadline reporting gap."""
+    if manifest["status"] == result["status"]:
+        return None
+    if (manifest["status"] in ("running", "starting")
+            and result["status"] == "supervisor_budget_exhausted"
+            and supervisor["exit_code"] != 0
+            and supervisor["elapsed_seconds"] >= supervisor["max_wall_seconds"]):
+        return dict(worker_manifest_status=manifest["status"],
+            terminal_status=result["status"],
+            reason="archived_supervisor_did_not_finalize_killed_worker_manifest",
+            original_artifacts_unchanged=True)
+    raise ValueError("manifest/result status mismatch")
+
+
+def audit_pilot_bundles(directory, pilot, dimension):
+    """Check completed pilot bytes, native work and identities without TF."""
+    rows = []
+    identity_path = directory / "pilot/windows/identity.json"
+    identity = read(identity_path)
+    if identity != dict(purpose_digest=pilot["purpose_digest"], role="discarded_mams_pilot_only"):
+        raise ValueError("pilot checkpoint purpose mismatch")
+    for attempt in pilot["attempts"]:
+        if attempt["status"] != "completed":
+            continue
+        key = f'{attempt["stage"]}-{attempt["duration_index"]}-{attempt["call_index"]}'
+        path = directory / "pilot/windows/committed" / key / "bundle.json"
+        if not path.is_file() or digest(path) != path.with_name("bundle.sha256").read_text():
+            raise ValueError("missing or corrupt pilot bundle: " + str(path))
+        bundle = read(path)
+        call = read(Path(bundle["metadata"]["attempt"]) / "call-start.json")
+        inputs = call["inputs"]
+        candidate = inputs["candidate"]
+        count = attempt["transitions_per_chain"]
+        if (bundle["schema"] != "bayesfilter.durable_tensor_checkpoint.v1"
+                or bundle["identity_hash"] != payload_digest(identity)
+                or bundle["inputs_hash"] != payload_digest(inputs)
+                or inputs["seed"] != attempt["seed"] or inputs["transitions"] != count
+                or candidate["epsilon"] != attempt["epsilon"]
+                or candidate["leapfrog_steps"] != attempt["max_steps"]):
+            raise ValueError("pilot checkpoint input mismatch")
+        mapping = bundle["tree"]["mapping"]
+        samples = mapping["samples"]["tensor"]
+        metadata = decode_metadata(mapping["metadata"])
+        if (samples["shape"] != [count, 4, dimension] or samples["dtype"] != "float64"
+                or metadata["transition_spec"] != candidate["transition_spec"]
+                or metadata["use_xla"] is not True or "GPU" not in metadata["samples_device"]
+                or metadata["value_score_row_evaluations"] + metadata["target_status_row_evaluations"]
+                    != attempt["actual_gradient_work"]
+                or attempt["actual_gradient_work"] > attempt["reserved_gradient_work"]):
+            raise ValueError("pilot native metadata or work mismatch")
+        rows.append(dict(key=key, bundle_sha256=digest(path),
+            tensor_receipts=check_tensor_tree(bundle["tree"], path.parent),
+            actual_gradient_work=attempt["actual_gradient_work"],
+            native_seconds=metadata["sample_chain_call_s"],
+            input_start_sha256=inputs["initial_state_sha256"]))
+    return rows
+
+
 def audit_attempt(root: Path, *, expected_gpu: str = "1") -> dict:
     if expected_gpu not in ("0", "1"):
         raise ValueError("expected GPU must be an explicitly selected host GPU 0 or 1")
     manifest, result, supervisor = (read(root / name) for name in
                                     ("manifest.json", "result.json", "supervisor.json"))
-    if manifest["status"] != result["status"]:
-        raise ValueError("manifest/result status mismatch")
+    reconciliation = terminal_status(manifest, result, supervisor)
     if manifest["status"] == "completed" and supervisor["exit_code"] != 0:
         raise ValueError("completed run has failed process exit")
     # Report any deadline overrun exactly. Process reap/I/O can complete after
@@ -153,6 +211,7 @@ def audit_attempt(root: Path, *, expected_gpu: str = "1") -> dict:
                              proposal_count=0, priced_count=0))
             continue
         pilot = read(pilot_file)
+        pilot_bundles = audit_pilot_bundles(directory, pilot, design["parameter_dim"])
         attempts = pilot["attempts"]
         completed = [a for a in attempts if a["status"] == "completed"]
         if (sum(a["actual_gradient_work"] for a in completed) > pilot["actual_gradient_work"]
@@ -207,12 +266,14 @@ def audit_attempt(root: Path, *, expected_gpu: str = "1") -> dict:
                          omitted_count=len(pilot.get("omitted_candidates", [])),
                          pilot_actual_work=pilot["actual_gradient_work"],
                          pilot_reserved_work=pilot["reserved_gradient_work"],
+                         completed_pilot_bundles=pilot_bundles,
                          candidate_prices=priced))
     return dict(attempt=str(root.resolve()), source_commit=manifest["git_commit"],
                 cuda_visible_devices=manifest["cuda_visible_devices"],
                 status=result["status"], supervisor_exit_code=supervisor["exit_code"],
                 supervisor_elapsed_seconds=supervisor["elapsed_seconds"],
                 deadline_overrun_seconds=deadline_overrun,
+                terminal_status_reconciliation=reconciliation,
                 source_file_hashes_checked=source_count,
                 geometry_input_hashes_checked=geometry_count,
                 compiled_operator_hashes_checked=operator_count,

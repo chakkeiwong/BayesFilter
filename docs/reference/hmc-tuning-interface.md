@@ -194,6 +194,12 @@ For the four full-data nonlinear research targets,
 design and uses that same caller. The design declares execution, qualification,
 repair and optional posterior settings. The method label must match the
 actual transition; it does not establish that adaptation was performed.
+Before target preparation, an attainability preflight tests the most favorable
+bounded scores using the actual statistical implementation, scheduled rungs,
+full candidate allowance and both measurement/verification allocations. It
+rejects proven-impossible trial budgets. Passing establishes neither statistical
+power nor joint two-sided attainability. This consumer guard does not change
+the public tuners' qualification law.
 Posterior assessment visits every verified identity, including descendants,
 and uses a separately audited finite-filter reference. Reference agreement
 uses the declared precision settings and never changes tuning membership.

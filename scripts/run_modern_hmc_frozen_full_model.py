@@ -132,7 +132,8 @@ def worker(args):
     from bayesfilter.inference import HMCCandidateExecutionConfig, HMCControllerConfig
     from bayesfilter.testing.inference_validation.modern_full_model_consumer import (
         full_model_binding, assess_full_model_members)
-    from bayesfilter.testing.inference_validation.modern_tuning_consumer import run_frozen_trajectory_search
+    from bayesfilter.testing.inference_validation.modern_tuning_consumer import (
+        run_frozen_trajectory_search, frozen_search_evidence_preflight, require_attainable_qualification)
     from scripts.audit_mams_reference_compatibility import load_compatible_reference
     from scripts.validate_mams_adaptation import source_revision
     design = read(args.design)
@@ -163,6 +164,10 @@ def worker(args):
         max_wall_seconds=args.max_wall_seconds, method_ranking=None, release_qualified=False)
     write_json(args.output/"manifest.json",manifest)
     try:
+        preflight = frozen_search_evidence_preflight(execution, search)
+        write_json(args.output/"qualification-preflight.json", preflight)
+        manifest["qualification_preflight"] = preflight
+        require_attainable_qualification(preflight)
         binding, fixture, metadata = full_model_binding(target=design["target"],
             geometry_directory=design["geometry_directory"], method=design["method"], seed=design["seed"],
             execution=execution, epsilon_domain=tuple(design["epsilon_domain"]),

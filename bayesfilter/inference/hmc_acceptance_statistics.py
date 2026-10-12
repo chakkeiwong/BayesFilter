@@ -266,3 +266,49 @@ def replicated_acceptance_statistics(scores: Any, *, policy: HMCReplicatedAccept
             "supported_material_change_by_start": _list(changed),
             "one_sided_alpha": da, "admission_effect": "none"}
     return result
+
+
+def replicated_qualification_attainability(*, policy: HMCReplicatedAcceptancePolicy,
+        evidence_rungs: tuple[int, ...], jit_compile: bool = True) -> dict[str, Any]:
+    """Reject impossible evidence designs using optimistic score bounds.
+
+    Every lower endpoint is nondecreasing in each score in [0,1], for both
+    supported interval methods and their intersection over scheduled looks.
+    All-one scores therefore bound the largest attainable lower endpoint;
+    all-zero scores bound the smallest attainable upper endpoint. We call the
+    actual statistic so its error spending and numerical margins are included.
+
+    These are necessary conditions only for a two-sided rule: its two extrema
+    are different datasets. Passing this check never establishes statistical
+    power or numerical/trajectory health and grants no tuning authority.
+    """
+    from .hmc_acceptance_protocol import replicated_evidence_preflight
+    design = replicated_evidence_preflight(policy, evidence_rungs=evidence_rungs,
+        candidate_cap=policy.max_candidates, leapfrog_steps=(1,))
+    count = design["replication_targets"][-1]
+    stages = {}
+    for stage in ("measurement", "verification"):
+        optimistic_lower = replicated_acceptance_statistics(
+            tf.ones([count, policy.chain_count], tf.float64), policy=policy,
+            stage=stage, evidence_rungs=evidence_rungs, jit_compile=jit_compile)
+        max_lower = min(a for a, _ in optimistic_lower["start_intervals"])
+        min_upper = None
+        if policy.qualification_mode == "two_sided":
+            optimistic_upper = replicated_acceptance_statistics(
+                tf.zeros([count, policy.chain_count], tf.float64), policy=policy,
+                stage=stage, evidence_rungs=evidence_rungs, jit_compile=jit_compile)
+            min_upper = max(b for _, b in optimistic_upper["start_intervals"])
+        impossible = (max_lower < policy.qualification_region[0]
+            or min_upper is not None and min_upper > policy.qualification_region[1])
+        stages[stage] = dict(proven_impossible=impossible,
+            maximum_start_lower_endpoint=max_lower, minimum_start_upper_endpoint=min_upper,
+            one_sided_alpha=optimistic_lower["one_sided_alpha"])
+    return dict(schema="bayesfilter.hmc_qualification_attainability.v1",
+        policy_id=policy.identity, qualification_mode=policy.qualification_mode,
+        qualification_region=policy.qualification_region, method=policy.method,
+        planned_candidate_cap=policy.max_candidates, evidence_rungs=evidence_rungs,
+        replication_targets=design["replication_targets"], stages=stages,
+        proven_impossible=any(row["proven_impossible"] for row in stages.values()),
+        scope="optimistic_endpoint_bounds_only", statistical_power="not_established",
+        two_sided_joint_attainability="not_checked" if min_upper is not None else "not_applicable",
+        tuning_artifact_authority=False)

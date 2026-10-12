@@ -3,8 +3,12 @@
 Date: 12 October 2026. This is the executable engineering dependency between
 the [window ladder](bayesfilter-mams-d4r4b-preconfirmation-2026-10-12.md) and
 the full-model comparison in the [master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
-The structural 1024/256 diagnostic may continue independently from its frozen
-source. No numerical sampler or tuning-admission default changes here.
+The structural 1024/256 diagnostic is terminal with audited partial evidence.
+The consumer and attainability repairs pass 59 focused tests; the corrected
+GPU deployment has a 5580-second allocation. The current budget is in
+`preconfirmation-01/settlement-01.json`; the final section records the next
+command and its limits. No numerical sampler or tuning-admission default
+changes here. Earlier execution entries below preserve their dated context.
 
 ## Question, baseline and scope
 
@@ -212,3 +216,211 @@ immutable-source CLI check and fresh reference compatibility audit. The final
 full comparison still needs its priced classical search and paired design;
 the new driver alone does not establish adequate tuning, posterior delivery,
 MCSE coverage, a method ranking or release readiness.
+
+The committed `935e9d719` deployment has now passed reference compatibility on
+all four full-data targets (169.225259 CPU seconds). Its first SIR CPU/XLA
+qualification smoke reached the 300-second cap after returning one 64-draw
+trial and starting a second. The returned call cost 119.482305 seconds including
+its first compilation. The terminal supervisor correctly preserved the
+candidate, partial evidence and incomplete qualification; this is not a
+sampler failure. Do not extrapolate this CPU check into a GPU timeout policy.
+Use the full-data PP-SGQF target for the next at-most-300-second CLI mechanics
+check from the same immutable source. The prior four-target preparation tests
+and existing public-route controls remain intact; a successful SGQF check
+will not be reported as a completed SIR qualification. All counts and the
+broad acceptance floor stay labeled mechanics fixtures. Local use before this
+retry is 2007.425158 seconds, leaving 1592.574842 in the existing reserve.
+
+The PP-SGQF CPU/XLA CLI attempt also exhausted its 300-second diagnostic
+allocation, during public-binding validation before any tuning checkpoint.
+Preserve it as an incomplete deployment check (300.150605 seconds), not a
+failed candidate. These CPU allocations were convenience smoke bounds and
+are demonstrably insufficient for the complete full-target consumer. Stop
+repeating those short CPU launches. The code path repeatedly validates the
+actual target at its fixed start bank; that validation is numerical work and
+cannot be mistaken for a dead worker merely because no sampling checkpoint
+has been written.
+
+Use one bounded GPU/XLA PP-SGQF qualification-only deployment check from
+`full-model-source-935e9d719`, with the exact eight-trial mechanics fixture,
+same data and local factor, a fresh seed and fresh output. Reserve 1800
+aggregate worker-seconds from the unallocated grant; this leaves 134275.474013
+seconds unallocated while the existing reserves remain held. The 1800-second
+cap is an engineering allocation hypothesis, not a predicted runtime or
+deadlock threshold. This tests whether the canonical GPU backend can complete
+the new CLI's preparation, public qualification and export/reload. It does not
+test posterior convergence or make the .1 fixture floor a scientific default.
+Use an idle permitted RTX 4080 SUPER if available; shared admission is allowed
+under the already-used trusted memory-growth/headroom policy, with contention
+recorded and no cross-device performance comparison. Do not interrupt another
+worker. Stop at allocation exhaustion or an implementation/source/numerical
+failure, preserving every candidate and partial trial. No automatic second
+1800-second attempt is allocated by this note.
+
+Skeptical retry audit: the full-data target and numerical checks are unchanged;
+CPU and GPU outcomes will retain distinct execution identities. A missing
+qualification or export remains incomplete. This launch answers deployment on
+the repository's required backend, unlike a third short CPU retry. It does not
+pretend to resolve the separate expensive-validation question; a shared
+validation/profiling repair remains a follow-up if measured GPU cost is also
+unacceptable. All four references are already compatible with this committed
+source, although this qualification-only check does not consume posterior
+reference outcomes. Known local usage is now 2307.575763 seconds.
+
+The structural rung is terminal at 7200.434712 supervisor seconds. Its archived
+supervisor finalized the result but left the worker manifest at `running`.
+Repair future price-supervisor finalization and let the read-only terminal
+auditor explicitly reconcile only this demonstrated deadline case (nonzero
+exit, exhausted recorded cap and matching terminal result), recording the old
+status rather than rewriting the old evidence. Audit completed pilot tensor
+bundles as well as price bundles before using the saved partial diagnostics.
+Deliberate status and checksum mutations must fail. This is a reporting and
+provenance repair; the immutable worker source and pilot data stay untouched.
+
+The parallel guide update documents the implemented full-member consumer in
+the existing tuning chapter and incorporates the checked finite-AR(1)
+antithetic counterexample in the existing modern-methods chapter. It creates
+no second guide. Build these two chapters with the repository preamble and
+bibliography and inspect the rendered edited pages. The exact AR(1) arithmetic
+is already recorded in the analytic-control result; no new MCSE policy or
+unverified literature claim is introduced. D4R5's final release-wide consistency
+audit remains open pending the comparison and calibration results.
+
+## Terminal review and attainable-evidence repair
+
+Both GPU workers are terminal. The structural allocation spent 7200.434712
+seconds. Sixteen complete pilot calls survive with 95160 actual and 196544
+reserved gradient-work units; the seventeenth call did not return. Both first-
+duration 1024-draw windows produced usable source IACT estimates (19.4152 and
+20.3532), and all thirteen observables had usable estimates. Heavy shared-device
+contention explains much of the second window's elapsed time. The run did not
+finalize a proposal cohort or prices. Its read-only terminal audit checked 177
+source hashes, two geometry inputs, the compiled operator and all 384 tensor
+receipts in the sixteen completed bundles. The archived running manifest is
+explicitly reconciled with the killed worker's terminal result, not rewritten.
+Ten mutation and supervisor tests pass for the reporting repair.
+
+The full-data PP-SGQF GPU deployment used immutable `935e9d719`, verified memory
+growth and XLA, and spent 929.206570 supervisor seconds. All eight independent
+measurement trials returned healthy evidence, with mean acceptance 0.99997038.
+The public controller correctly returned `inconclusive_at_cap`: simultaneous
+start intervals were [0,1]. It performed no verification and exported no member.
+R-hat is reporting-only and did not cause this disposition. Reducing the
+inherited sixteen-trial mechanics fixture to eight was a planning error: at
+measurement alpha .0025, even eight perfect trial scores cannot cross the
+implemented betting threshold. This is not evidence against MAMS or the target.
+
+Before another numerical launch, add a model-independent attainability check
+to the frozen-cohort research consumer and full-model driver. It must use the
+actual interval implementation, scheduled evidence rungs, full statistical
+candidate cap (including reserved repairs), and both measurement and fresh
+verification error allocations. Scores equal to one give an optimistic upper
+bound on every attainable lower confidence endpoint: the betting capital and
+Hoeffding lower endpoint are monotone in each score. Scores equal to zero give
+the corresponding optimistic upper-endpoint bound. Thus a failure even at the
+relevant extreme proves that this design cannot qualify any candidate. Passing
+this necessary check does not establish power, convergence, affordability or,
+for a two-sided rule, simultaneous attainability of both endpoints.
+
+The preflight records those limits and rejects proven-impossible designs before
+full-target preparation. It does not modify the public tuners or their
+qualification law; intentional inconclusive public-tuner tests remain valid.
+Use TensorFlow's existing statistic, including its rounding margins and
+Hoeffding allocation across looks, rather than a second approximate formula.
+Exercise the failed eight-trial design, an attainable sixteen-trial design,
+stricter verification allocation, unused repetition caps, larger candidate
+caps, both interval methods and two-sided limits. Include a consumer call-chain
+test proving that impossible designs stop before target preparation.
+
+Skeptical pre-execution audit: the previous deployment could never answer its
+export/replay question, despite correct execution. This revision repairs that
+specific flaw without lowering the floor or error standard. Extreme synthetic
+scores test mathematical attainability only; observed trial scores are not
+reused as verification. A two-sided necessary bound must not be labelled a
+proof of sufficient sample size. Scope, target, methods and total campaign
+budget are unchanged. Proceed with focused CPU diagnostics, GPUs hidden, under
+the existing local reserve; price and allocate any GPU retry explicitly after
+the check passes. Preserve all failed attempts and source identities.
+
+The two-chapter guide extract compiled to 81 pages in `guide-02`; the edited
+pages were rendered and inspected. `guide-01` records the failed build with a
+missing copied examples directory. Neither is a full-monograph release audit.
+Known local usage is 2313.645604 of 3600 seconds before this continuation's
+checks. Settling both GPU workers leaves 135145.832731 unallocated worker-
+seconds, with the local reserve still held and no active GPU reservation.
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Structural partial diagnostic retained | Completed windows audited; cohort incomplete | No invalid completed bundles | Contended cost and second-duration estimates | Use completed diagnostics in pricing; retain omitted rows | Full structural adaptation or posterior validity |
+| Deployment incomplete for export/replay | Qualification mathematically impossible at eight trials | Design cannot answer intended check | Cost of a feasible full execution | Add attainability preflight, then explicitly allocate a corrected check | MAMS failure or release readiness |
+| Reporting and guide repairs implemented | Ten reporting tests and chapter build pass | No new numerical default | Full comparison and calibration remain open | Commit scoped repairs and continue | Full-book or statistical qualification |
+
+| Inference status | Finding |
+| --- | --- |
+| Hard veto screen | Completed deployment evidence was healthy; the trial budget prevented qualification. |
+| Statistically supported ranking | None. |
+| Descriptive-only differences | Acceptance, window IACTs and elapsed times. |
+| Default-readiness | Not established. |
+| Next evidence needed | Feasible fresh public verification/export, priced paired classical/MAMS comparisons, MCSE/stopping calibration. |
+
+## Repair verification and corrected deployment allocation
+
+The focused suite passed all 59 tests in 328.318985 wall seconds, covering the
+new preflight, common consumer, four full-target preparations and terminal
+reporting. The preflight leaves intentional inconclusive public-tuner behavior
+intact and stops the full-model driver before target preparation. The archived
+GPU deployment passes a separate CPU read-only audit of 190 source/input
+hashes, checkpoint/evidence checksums, all eight independent seeds, native
+traces and 8192 charged work units. This byte/work audit does not reconstruct
+a GPU runtime or grant replay authority. Both the failed eight-trial and
+proposed sixteen-trial designs were checked against the actual statistic.
+The latter passes the necessary attainability bound in both stages.
+
+The existing guide chapters now explain the guard and its limits. `guide-03`
+compiled successfully in 4.968896 seconds and the edited page was rendered and
+inspected. The exact antithetic derivation remains intact. The full monograph
+and final release review remain separate unfinished work.
+
+Allocate **5580 GPU supervisor seconds** for one corrected full-data PP-SGQF
+deployment, `consumer-checks-01/gpu-deployment-02/`, from a fresh committed
+immutable source. This is the previous 929.206570-second wall cost multiplied
+by four (32 calls instead of eight), with an explicit 50% shared-load allowance,
+rounded up to minutes. Linear scaling overcounts fixed preparation/compilation
+but cannot bound future contention; the cap is a funded allocation, not a
+deadlock rule or runtime guarantee. No automatic further attempt is funded.
+
+The design restores the inherited sixteen-trial mechanics fixture at each
+stage. It keeps the same .05 family error allocations, .1 mechanics floor,
+64 transitions/trial, epsilon .15, maximum count one, full observation horizon,
+warm-start geometry and target. These are explicitly engineering fixture
+inputs, not a tuning recommendation or a method-comparison design. Fresh
+target/tuning seed blocks 61310/61510 replace 61300/61500; all measurement and
+verification streams are derived by the public controller. No old trial is
+reused or reclassified. Required outcome: complete public measurement, fresh
+verification and checked export/reload, with every disposition preserved.
+Failure is reported by layer; an infeasible or healthy-but-inconclusive
+candidate does not reject the research direction.
+
+Launch from the immutable archive with trusted GPU access and verified memory
+growth, using an idle permitted RTX 4080 SUPER if available or the previously
+reviewed shared-headroom admission otherwise. Preserve actual device and load.
+The executable command is `/home/ubuntu/anaconda3/envs/tfgpu/bin/python
+scripts/run_modern_hmc_frozen_full_model.py --design <absolute deployment-02/design.json>
+--output <absolute deployment-02/run> --max-wall-seconds 5580`, with
+`CUDA_VISIBLE_DEVICES` set to the admitted GPU and `TF_FORCE_GPU_ALLOW_GROWTH=true`.
+Record the exact resolved command and source commit in its manifest.
+
+Skeptical retry audit: pass after correcting the impossible trial count. This
+allocation answers deployment only; the fixture's high acceptance and short
+travel cannot answer the original long-chain mixing question. It must not be
+substituted for adequately searched classical controls or model/tail posterior
+comparisons. Stop on source drift, invalid numerical evidence or exhausted
+allocation; monitor progress and contention without killing a healthy worker
+early. Reference compatibility for a later posterior comparison must bind the
+new source. The old four-target compatibility result remains valid only for
+its archived source. The next master refresh must settle this run, then freeze
+the affordable paired design and MCSE/stopping calibration scope.
+
+`settlement-01.json` records 2659.466401 known local seconds of the held 3600,
+including a conservative ten-second rendering/inspection charge, and
+129565.832731 unallocated worker-seconds after this new GPU reservation.
