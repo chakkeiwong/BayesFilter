@@ -133,6 +133,13 @@ GPUs and are explicitly independent diagnostics. The committed source must
 contain the exact consumer and tests used by preflight; the earlier SIR
 working-tree/snapshot mismatch must not recur. Before launch record the final
 source commit, exact command and environment in the execution record.
+GPU 1 is preferred. If occupied, an idle GPU 0 of the same hardware class may
+execute this cost-only phase after a trusted readiness check; preserve the
+actual device identity and contention context. This does not authorize a
+cross-device speed ranking or change the aggregate allocation. The terminal
+auditor requires the explicit expected host GPU. On 12 October, GPU 1 was
+occupied by PID 1990789 from a separate NeuTra task; the trusted fallback probe
+passed for idle GPU 0 (the same RTX 4080 SUPER class) with memory growth.
 
 The implementable first-rung command is the existing cost consumer with new
 explicit arguments (after its focused checks and scoped commit):

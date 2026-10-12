@@ -99,7 +99,9 @@ def audit_bundle(directory: Path, member: dict, design: dict) -> dict:
                 input_start_sha256=inputs["start_sha256"])
 
 
-def audit_attempt(root: Path) -> dict:
+def audit_attempt(root: Path, *, expected_gpu: str = "1") -> dict:
+    if expected_gpu not in ("0", "1"):
+        raise ValueError("expected GPU must be an explicitly selected host GPU 0 or 1")
     manifest, result, supervisor = (read(root / name) for name in
                                     ("manifest.json", "result.json", "supervisor.json"))
     if manifest["status"] != result["status"]:
@@ -109,7 +111,7 @@ def audit_attempt(root: Path) -> dict:
     # Report any deadline overrun exactly. Process reap/I/O can complete after
     # a deadline; a new unproven grace number must not redefine the budget.
     deadline_overrun = max(0., supervisor["elapsed_seconds"] - supervisor["max_wall_seconds"])
-    if manifest["use_xla"] is not True or manifest["cuda_visible_devices"] != "1":
+    if manifest["use_xla"] is not True or manifest["cuda_visible_devices"] != expected_gpu:
         raise ValueError("unexpected backend or GPU")
     memory = manifest["memory_policy"]
     if (memory["tf_force_gpu_allow_growth"] != "true"
@@ -207,6 +209,7 @@ def audit_attempt(root: Path) -> dict:
                          pilot_reserved_work=pilot["reserved_gradient_work"],
                          candidate_prices=priced))
     return dict(attempt=str(root.resolve()), source_commit=manifest["git_commit"],
+                cuda_visible_devices=manifest["cuda_visible_devices"],
                 status=result["status"], supervisor_exit_code=supervisor["exit_code"],
                 supervisor_elapsed_seconds=supervisor["elapsed_seconds"],
                 deadline_overrun_seconds=deadline_overrun,
@@ -221,8 +224,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("attempt", type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--expected-gpu", choices=("0", "1"), default="1")
     args = parser.parse_args()
-    report = audit_attempt(args.attempt)
+    report = audit_attempt(args.attempt, expected_gpu=args.expected_gpu)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n")
     print(json.dumps({key: report[key] for key in
                       ("status", "source_commit", "supervisor_elapsed_seconds",
