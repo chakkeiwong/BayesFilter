@@ -181,6 +181,13 @@ measured window costs and the campaign supervisor for serious runs.
 `bayesfilter.testing.inference_validation.mams_adaptation_consumer` connects
 this proposer to the existing public tuners and exports every verified member.
 It is a research consumer, not a third tuning authority.
+It delegates qualification and export to the shared research consumer
+`modern_tuning_consumer.run_frozen_trajectory_search`. This caller also accepts
+explicit fixed/randomized HMC or SNAPER proposal cohorts with their own typed
+binding. Its inventory preserves every repair descendant and any uncreated
+primary pair after a budget stop; it never assumes the final count equals
+the proposal count. Epsilon uses the actual binding domain. Every verified
+root or child is exported and checked on reload.
 
 The analytic validation consumer also records original model quantities,
 moderate-tail probabilities and approximate lugsail reference intervals via

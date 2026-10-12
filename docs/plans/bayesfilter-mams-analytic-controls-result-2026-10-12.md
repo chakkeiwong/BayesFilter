@@ -170,3 +170,44 @@ local usage is 792.834369 seconds inside the unchanged 3600-second reserve.
 This supersedes the earlier cost snapshot above. The changed quantity wiring
 now has an actual public-pipeline reference/debug execution; GPU/XLA
 confirmation and statistical calibration remain open.
+
+## Exact antithetic batch-means diagnostic
+
+The unavailable antithetic MCSE has a concrete mathematical warning behind it:
+lugsail is not always conservative. For a stationary variance-one AR(1)
+process with autocovariance `gamma(k)=rho^|k|`, write
+
+```
+V_b = b Var(batch_mean)
+    = 1 + 2 sum_(k=1)^(b-1) (1-k/b) rho^k
+    = (1+rho)/(1-rho) - 2 rho (1-rho^b)/(b (1-rho)^2).
+```
+
+For `a=floor(n/b)` complete batches, centering by their common sample mean
+gives `E[BM_b] = a/(a-1) (V_b - V_(a*b)/a)`: expand the sum of squared
+batch means about that mean, take expectations, and use
+`Var(mean of a batches)=V_(a*b)/(a*b)`. This retains inter-batch dependence
+and the actual discarded remainder; independent batches are not assumed.
+Apply the formula separately at the two batch lengths. At `n=2048`, batch
+lengths 45 and 15, and lugsail coefficient one half:
+
+| rho | Exact long-run variance | Expected BM45 | Expected 2 BM45 minus BM15 |
+| --- | ---: | ---: | ---: |
+| 0 | 1 | 1 | 1 |
+| .9 | 19 | 14.9468164 | 20.4928731 |
+| -.9 | .05263158 | .06405705 | .03510238 |
+
+The [calculation](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/analytic-controls-01/antithetic-lugsail-expectation.json)
+was independently checked against finite autocovariance sums. The batch sizes
+are those used in the recorded calibration, not new defaults. For negative
+rho the lugsail combination can reverse an upward bias into a downward bias;
+finite-sample nonpositivity is a separate possible outcome. This exact
+stationary result does not diagnose the particular Student-t alarm or measure
+the false-alarm probability after posterior stopping.
+
+Keep MCSE policy calibration open. A proposed repair must compare batch-size
+sensitivity and a nonnegative spectral/batch alternative against exact AR(1)
+variance, then test transformed heavy tails and the actual stopping rule with
+fresh replications. A variance floor or choosing whichever estimator allows
+earliest stopping cannot establish coverage. No precision-policy default or
+tuning membership changes on the basis of this calculation.

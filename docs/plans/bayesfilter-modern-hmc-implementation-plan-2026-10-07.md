@@ -93,6 +93,13 @@ All fourteen prices pass the terminal source/seed/work audit. This does not
 close posterior validation. The older D4b method-fit consumer cannot consume
 the new proposal schema, epsilon domain or repair descendants; update its
 consumer contract and reference bridge before a fresh comparison.
+The [adaptive consumer repair](bayesfilter-modern-hmc-adaptive-consumer-repair-2026-10-12.md)
+now supplies a common frozen-cohort caller for the existing public tuners.
+The MAMS consumer uses it, and 24 focused CPU mechanics tests cover both
+coordinate routes, epsilon above one, an actual duration-preserving repair
+child, fixed HMC, budget stops and state-space integrations. A new full-model
+driver and the complete priced baseline/replication design still remain;
+these consumer checks do not close D4R4 confirmation.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
