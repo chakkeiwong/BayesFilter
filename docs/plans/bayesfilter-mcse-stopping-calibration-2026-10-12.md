@@ -1,5 +1,11 @@
 # Fixed-length and stopped-output MCSE diagnostic
 
+Status: completed, including the originally declared replication count. See
+the [audited result](bayesfilter-mcse-stopping-calibration-result-2026-10-12.md).
+Total calibration cost is 1940.794223 CPU-worker seconds across both attempts,
+inside the existing local reserve. The original allocations and their rationale
+below are preserved as the pre-run design.
+
 Date: 12 October 2026. This bounded CPU reference study runs while the reviewed
 GPU cohort prices execute. It uses at most 1800 seconds of the priced
 comparison's existing 3600-second local allocation, not an additional budget.
@@ -158,3 +164,32 @@ charge both attempts' elapsed time. If the continuation also exhausts its cap,
 preserve the remaining gap and qualify the pointwise uncertainty accordingly.
 This localized harness continuation changes neither the scientific comparison
 nor the total campaign budget, and requires no new campaign permission.
+
+### Persist the finite-covariance check as a regression
+
+The completed study checks the covariance formula independently, but that
+calculation alone does not exercise the TensorFlow batch estimator. Add a
+deterministic CPU/XLA reference test of the actual kernel. For covariance
+`C=L L'`, evaluate its quadratic variance formula on the columns of
+`sqrt(n)*L`. Their equally weighted second moment is exactly C, so the average
+kernel result must equal the covariance oracle without Monte Carlo error.
+The columns are quadrature points, not simulated independent chains, and the
+test must not interpret pooled convergence or precision on them.
+
+Cover rho=0,.9,-.9, both plain and lugsail formulas, and full/remainder batches
+at small n=12,14,23,36. These are convenience-sized deterministic fixtures;
+FP64 comparisons use absolute 2e-12/relative 2e-11 tolerance to accommodate
+Cholesky and reduction roundoff. Separately preserve the known n=10000
+antithetic expectation as a diagnostic regression, without constructing a
+10000-by-10000 covariance. Assert that nonpositive per-chain estimates cannot
+be rescued by a positive pooled estimate. The exact covariance oracle is the
+primary pass criterion; positivity guards are engineering invariants, not
+coverage evidence. Charge this short check to the held local reserve.
+
+Skeptical audit: no sampled trajectories, estimator choice, count extension or
+new scientific default is involved. The production formula is tested against
+an independently summed covariance; an algebraically restated implementation
+would not be an adequate oracle. Current and immutable-snapshot precision
+source bytes agree. A mismatch requires localization before interpreting the
+new test, while the preserved original study remains unchanged. This bounded
+regression plan passes review.

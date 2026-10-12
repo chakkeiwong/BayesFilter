@@ -46,8 +46,10 @@ The full twenty-cell/five-model inventory remains open. SGQF is first because
 it contains the original failure and has completed adapted proposals and an
 independent reference. An initial one-model result cannot establish generality.
 The structural longer-window adaptation is still incomplete. Do not invent its
-missing cohort. MCSE/stopping calibration and final guide/release review remain
-separate unfinished phases.
+missing cohort. The bounded stationary MCSE/stopping reference study is now
+complete, as recorded in its [result](bayesfilter-mcse-stopping-calibration-result-2026-10-12.md).
+Its findings leave estimator/stopping repair and final guide/release review
+open; they do not change this cohort's frozen posterior criteria.
 
 ## Frozen design and provenance of choices
 

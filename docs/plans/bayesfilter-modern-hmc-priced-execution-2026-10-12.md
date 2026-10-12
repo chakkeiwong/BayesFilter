@@ -77,3 +77,56 @@ inadequate geometry or an unreliable uncertainty estimator. The parallel MCSE
 diagnostic addresses the latter under known stationary controls, without
 changing the current posterior rule. No comparative or release claim follows
 from the engineering checks or short prices.
+
+## Completed MCSE study and continued execution
+
+The CPU study is now terminal. The first allocation completed 717 records;
+the checked continuation completed the remaining 51 under the original seeds,
+preserving every completed result unchanged. All six conditions have the
+planned 128 replications. Total calibration cost is 1940.794223 CPU-worker
+seconds. The continuation repair is committed as `9075f1a42` and passed 21
+focused tests in 0.74 seconds; combined with the earlier tests, 64 distinct
+focused regressions pass. The separate full-result audit passes all source
+hashes, identities, summaries, parent hashes and cumulative accounting.
+
+The [result note](bayesfilter-mcse-stopping-calibration-result-2026-10-12.md)
+records the checked finite-covariance derivation, unavailable estimates,
+operational stopping counts and pointwise interval uncertainty. The unmasked
+lugsail formula underestimates variance in the antithetic Gaussian example.
+Neither the even-batch variant nor the autocorrelation alternative is supported
+as a general replacement default. Stationary controls cannot test warm-up or
+global posterior exploration. The current MAMS posterior rule remains frozen.
+
+The GPU continuation was launched under trusted execution from committed
+`a049a50a6`. Its systemd unit is
+`bayesfilter-modern-priced-continuation-20261012-01.service`; its durable
+manifest is `continuation-01/manifest.json` under the output root above.
+It is waiting for the original price supervisor, with periodic status updates.
+At the 13:09 UTC inspection, fixed HMC had completed all eight roots and
+randomized HMC had seven complete roots plus the final root's first price.
+No observed price had a numerical-health veto. SNAPER and MAMS remain in the
+declared queue. This is continuing cost measurement, not a completed posterior
+run. The 7200-second GPU allocation and held local reserve are unchanged.
+
+Continuation self-audit: the result note agrees with the complete numerical
+summaries; the replication unit, covariance target and stopped-versus-fixed
+interpretation remain explicit. No diagnostic has become a tuning membership
+gate, no unavailable interval has been dropped, and no stochastic ordering has
+been promoted. Price/launch accounting remains separate from the completed
+CPU study. An incomplete price inventory requires a fresh bounded continuation;
+it cannot be filled by an estimate and reported as measured.
+
+The finite-covariance check is now a persistent regression against the actual
+TensorFlow kernel: 14 additional CPU/XLA tests pass, including negative-chain
+pooling and batch remainders. The immutable snapshot supplied the numerical
+code; its precision source agrees byte-for-byte with the current repository.
+The check cost 3.553224 seconds including startup. This brings the distinct
+focused-test total to 78 without repeating the completed stochastic study.
+`local-accounting-01.json` records measured local charges and keeps the full
+3600-second reserve held, including unmeasured short-command overhead; it does
+not release or spend that reserve a second time.
+
+By 13:15 UTC, both classical cohorts had completed: 16 roots and 32 prices.
+SNAPER preparation was active, followed by the four adapted MAMS roots.
+There was no numerical-health veto in the completed calls. The price supervisor
+and its dependent continuation service remained active.

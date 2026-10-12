@@ -164,13 +164,27 @@ price allocation and 3600-second local allowance are reserved from the settled
 including validation/export and per-trial overhead sensitivity. The complete
 twenty-cell comparison is not presumed affordable; unfunded cells and paired
 replications remain explicit. No new numerical default is introduced.
-The [MCSE/stopping diagnostic](bayesfilter-mcse-stopping-calibration-2026-10-12.md)
-also now has an executable four-estimator study of exact stationary Gaussian
-and Student-t reference chains under positive/negative dependence. It compares
-fixed endpoints with the actual retained assessment's first passing look,
-preserves nonstoppers and invalid variance estimates, and uses 1800 seconds
-within the same local reserve. This diagnoses estimator support; it does not
-change a default or certify warm-up or arbitrary sampler correctness.
+The [MCSE/stopping diagnostic](bayesfilter-mcse-stopping-calibration-result-2026-10-12.md)
+is complete: all 128 replications in each of six stationary Gaussian/Student-t
+conditions, with four estimators and fixed versus first-passing endpoints.
+The bounded first attempt completed 717 records; a checked continuation
+preserved every completed record and finished the remaining 51. Total cost
+is 1940.794223 CPU-worker seconds within the same 3600-second local reserve.
+The full audit passes all 768 records, 384 independent latent four-chain units,
+77 numerical source hashes and cumulative accounting. The exact Gaussian
+calculation confirms that the unmasked configured lugsail variance estimate
+can be downward biased under antithetic dependence (about 10.6% at rho=-.9,
+10000 draws). Two fixed-endpoint Student-t estimates were unavailable and
+remain counted. This closes the planned reference experiment, not estimator
+calibration in general: no replacement default, stopped-coverage guarantee,
+warm-up or sampler-correctness claim is supported. Further estimator work
+requires a specified repair, fresh fixed-count replication and downstream HMC
+checks; it must not revise the frozen MAMS posterior criteria after seeing
+results.
+Fourteen additional deterministic CPU/XLA regressions now compare the actual
+batch estimator with exact covariance quadrature, preserve the antithetic
+counterexample and test the negative-chain pooling guard. They pass against
+the immutable source, bringing this phase to 78 distinct focused regressions.
 The terminal-pricing continuation is now implemented and has passed 53 focused
 receipt, budget, launch-boundary and MCSE-accounting tests. It checks the full
 design when reusing prices after the narrow fixed-HMC repair correction and
@@ -182,8 +196,12 @@ scenario fits. It uses the unchanged immutable consumer, fresh qualification
 and posterior/reference checks. Otherwise it records an under-budgeted outcome.
 This is the previously declared scoped feasibility branch; broader methods,
 models, paired replications, statistical confirmation and release remain open.
+The continuation is active as
+`bayesfilter-modern-priced-continuation-20261012-01.service`, with its manifest
+in `priced-comparison-01/continuation-01`. It waits for the original GPU price
+supervisor to settle and writes the allocation before any dependent launch.
 The [priced execution record](bayesfilter-modern-hmc-priced-execution-2026-10-12.md)
-tracks the two active diagnostics and the continuation service.
+tracks the completed MCSE study, running prices and continuation service.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
@@ -196,9 +214,10 @@ A fresh CPU graph public-pipeline diagnostic has also finished: all six
 Student-t/exact-funnel/partial-funnel members verified, exported/reloaded and
 passed the short posterior checks, while one Student-t member raised a
 separate second-moment reference alarm. Every tuning member remains retained.
-The remaining D4R3 work is statistical calibration of MCSE/stopping and
-GPU/XLA confirmation, not another implementation of the corrected map or tail
-checks. Historical feasibility rows are not reinterpreted.
+The remaining D4R3 work is the estimator/stopping repair motivated by the
+completed reference study and GPU/XLA confirmation, not another implementation
+of the corrected map or tail checks. Historical feasibility rows are not
+reinterpreted.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic
