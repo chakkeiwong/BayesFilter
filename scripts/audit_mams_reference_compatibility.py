@@ -77,6 +77,18 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def check_compiled_operator(source, provenance):
+    """Accept the two recorded snapshot shapes, always checking actual bytes."""
+    relative = "bayesfilter/ops/_symmetric_sylvester_ops.so"
+    recorded = provenance.get("compiled_operator_sha256")
+    expected = recorded.get(relative) if isinstance(recorded, dict) else recorded
+    if (not isinstance(expected, str) or len(expected) != 64
+            or any(c not in "0123456789abcdef" for c in expected)
+            or digest(Path(source) / relative) != expected):
+        raise ValueError("current native operator differs from committed snapshot record")
+    return {relative: expected}
+
+
 def write(path, value):
     path = Path(path)
     temporary = path.with_suffix(".tmp")
@@ -351,10 +363,13 @@ def main():
         p.resolve() for p in (args.current_source, args.repository, args.geometry_root, args.output))
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "-1":
         raise ValueError("independent reference check must hide GPUs before import")
+    provenance = read(args.current_source / ".validation-source.json")
+    operator_hashes = check_compiled_operator(args.current_source, provenance)
     args.output.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
     manifest = dict(command=[sys.executable, *sys.argv], plan=PLAN,
-        current_source=str(args.current_source.resolve()), **read(args.current_source / ".validation-source.json"),
+        current_source=str(args.current_source.resolve()), **provenance,
+        checked_compiled_operator_sha256=operator_hashes,
         diagnostic_driver_sha256=digest(__file__), source_audit_note_sha256=digest(args.repository / SOURCE_NOTE),
         environment=sys.executable, started_utc=datetime.now(timezone.utc).isoformat(),
         gpu_intentionally_hidden=True, role="independent_reference_compatibility_only", status="running",
@@ -386,7 +401,7 @@ def main():
                 repository_root=args.current_source)
             sources["current_source_sha256"].update({str(Path(p).relative_to(args.current_source)): digest(p) for p in paths})
             operator = Path("bayesfilter/ops/_symmetric_sylvester_ops.so")
-            if digest(args.current_source / operator) != manifest["compiled_operator_sha256"][str(operator)]:
+            if digest(args.current_source / operator) != operator_hashes[str(operator)]:
                 raise ValueError("current native operator differs from committed snapshot record")
             sources["current_source_sha256"].update({str(p): digest(args.current_source / p) for p in (
                 operator, Path("bayesfilter/ops/symmetric_sylvester_op.cc"))})

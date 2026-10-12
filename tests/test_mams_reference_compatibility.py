@@ -11,6 +11,22 @@ def save(path, value):
     path.write_text(json.dumps(value))
 
 
+def test_snapshot_operator_shapes_check_bytes_before_preparing_any_target(tmp_path):
+    relative = "bayesfilter/ops/_symmetric_sylvester_ops.so"
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"reference-only-operator-fixture")
+    expected = audit.digest(path)
+    for recorded in (expected, {relative: expected}):
+        assert audit.check_compiled_operator(tmp_path, dict(compiled_operator_sha256=recorded)) == {relative: expected}
+    for recorded in (None, 123, {}, "bad", "0"*64, {relative: "0"*64}):
+        with pytest.raises(ValueError, match="operator"):
+            audit.check_compiled_operator(tmp_path, dict(compiled_operator_sha256=recorded))
+    path.write_bytes(b"changed-binary")
+    with pytest.raises(ValueError, match="operator"):
+        audit.check_compiled_operator(tmp_path, dict(compiled_operator_sha256=expected))
+
+
 def reference_fixture(tmp_path, target="NL-SIR"):
     directory = tmp_path / "reference"
     directory.mkdir()

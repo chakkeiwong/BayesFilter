@@ -443,3 +443,16 @@ seconds; the larger allowance accommodates CPU load and is not an accuracy
 threshold. Known local use before this check is 2737.859207 seconds. Any
 changed integrand/quantity/source finding stops the affected posterior
 comparison, while the independent qualification-only deployment can continue.
+
+The committed reference addendum's 32 tests passed. Its new full audit then
+exposed a separate snapshot-serialization mistake: the archive builder recorded
+the compiled-operator digest as a string, where the earlier reference reader
+expected a path-to-digest mapping. All four preparations returned, but the
+reader failed at that metadata access before reference parity; charge
+148.333803 seconds to the local reserve. The GPU execution independently
+records the binary's actual checksum in `source_and_input_sha256`, so this
+does not invalidate or interrupt its numerical work. Preserve its frozen
+snapshot and original metadata bytes. Repair the diagnostic reader to validate
+both explicit digest shapes before target preparation, with malformed/changed
+binary regressions, then retry in `reference-consumer-05` within the remaining
+local reserve. This changes no numerical comparator or tolerance.
