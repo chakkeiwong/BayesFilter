@@ -49,17 +49,25 @@ def allocate(report, balance):
     maximum = scenarios[4.]["maximum_count_scenario_seconds"]
     if not (math.isfinite(minimum) and math.isfinite(maximum) and 0 < minimum <= maximum):
         raise ValueError("invalid cost scenarios")
-    funded = minimum <= ceiling
+    # Both scenarios include conservative cold-call and reserved-repair costs.
+    # They forecast completion cost; they are not a veto on a bounded attempt.
+    # The immutable child preserves every unfinished identity at its wall cap.
+    funded = ceiling > 0
     limit = min(ceiling, maximum) if funded else 0.
-    return dict(status="allocated" if funded else "under_budgeted",
-        scope="single_target_single_seed_complete_adapted_mams_cohort",
+    return dict(status="allocated" if funded else "budget_exhausted",
+        scope="single_target_single_seed_bounded_mams_feasibility",
+        planned_root_count=mams["root_count"],
+        complete_frozen_cohort_preserved=True, full_completion_guaranteed=False,
         posterior_design=mams["design_file"], posterior_design_sha256=mams["design_sha256"],
         available_ceiling_seconds=ceiling, child_max_wall_seconds=limit,
         unfunded_methods=list(METHODS[:-1]), future_replicates_funded=False,
         all_member_minimum_path_seconds=minimum,
         all_member_load_four_maximum_count_seconds=maximum,
+        minimum_count_scenario_fits=minimum <= ceiling,
+        cost_forecast_is_continuation_veto=False,
         resource_censoring_possible=True, method_ranking=None,
-        budget_interpretation="cost_scenarios_fit" if funded and maximum <= ceiling else "bounded_feasibility",
+        budget_interpretation=("budget_exhausted" if not funded else
+            "cost_scenarios_fit" if maximum <= ceiling else "bounded_feasibility"),
         local_reservation_still_held_seconds=reservations["local_checks"],
         pricing_reservation_release_deferred=True,
         unallocated_after_child_reservation_seconds=ceiling-limit)
@@ -112,7 +120,7 @@ def main():
         allocation = allocate(report, balance)
         write(output / "allocation.json", allocation)
         if allocation["status"] != "allocated":
-            manifest.update(status="under_budgeted", allocation=allocation)
+            manifest.update(status=allocation["status"], allocation=allocation)
             return 0
         manifest.update(status="waiting_for_capacity", allocation=allocation)
         write(output / "manifest.json", manifest)

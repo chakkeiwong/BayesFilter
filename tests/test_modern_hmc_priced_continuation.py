@@ -52,12 +52,28 @@ def test_shorter_full_count_scenario_releases_unused_child_allocation():
     assert result["resource_censoring_possible"] is True
 
 
-def test_insufficient_minimum_envelope_does_not_launch_or_reduce_members():
+def test_conservative_forecast_does_not_veto_bounded_work_or_reduce_members():
     prices = report()
     prices["rows"][-1]["scenarios"][0]["minimum_path_seconds"] = 800.
     result = continuation.allocate(prices, balance())
-    assert result["status"] == "under_budgeted"
+    assert result["status"] == "allocated"
+    assert result["child_max_wall_seconds"] == 700.
+    assert result["minimum_count_scenario_fits"] is False
+    assert result["cost_forecast_is_continuation_veto"] is False
+    assert result["planned_root_count"] == 4
+    assert result["complete_frozen_cohort_preserved"] is True
+    assert result["full_completion_guaranteed"] is False
+    assert result["budget_interpretation"] == "bounded_feasibility"
+
+
+def test_actual_exhausted_budget_prevents_launch():
+    prices = report()
+    prices["actual_price_worker_seconds"] = 850.
+    result = continuation.allocate(prices, balance())
+    assert result["status"] == "budget_exhausted"
     assert result["child_max_wall_seconds"] == 0.
+    assert result["unallocated_after_child_reservation_seconds"] == 0.
+    assert result["budget_interpretation"] == "budget_exhausted"
 
 
 @pytest.mark.parametrize("mutation", ["unsettled", "omitted_method", "omitted_mams_root", "missing_load",
@@ -76,7 +92,9 @@ def test_invalid_accounting_or_inventory_stops_dependent_launch(mutation):
 
 
 @pytest.mark.parametrize("child_status,exit_code", [("completed", 0), ("resource_stopped", 1)])
-def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(tmp_path, monkeypatch, child_status, exit_code):
+@pytest.mark.parametrize("minimum_forecast", [100., 800.])
+def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(
+        tmp_path, monkeypatch, child_status, exit_code, minimum_forecast):
     campaign = tmp_path / "campaign"
     (campaign / "prices-01").mkdir(parents=True)
     source = tmp_path / "immutable-source"
@@ -90,6 +108,7 @@ def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(tmp_pa
     audit.write_text(json.dumps(dict(status="passed", gpu_supervisor_seconds=60.,
         native_work=dict(native_call_audit=[dict(native_seconds=40.)]))))
     prices = report()
+    prices["rows"][-1]["scenarios"][0]["minimum_path_seconds"] = minimum_forecast
     prices["rows"][-1].update(design_file=str(design), design_sha256=continuation.digest(design))
     monkeypatch.setattr(continuation, "build_report", lambda *a, **kw: deepcopy(prices))
     monkeypatch.setenv("TF_FORCE_GPU_ALLOW_GROWTH", "true")
@@ -116,4 +135,7 @@ def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(tmp_pa
     assert manifest["status"] == child_status
     assert manifest["child_exit_code"] == exit_code
     assert manifest["child_worker_seconds"] >= 0.
-    assert json.loads((output / "allocation.json").read_text())["scope"].endswith("complete_adapted_mams_cohort")
+    allocation = json.loads((output / "allocation.json").read_text())
+    assert allocation["scope"].endswith("bounded_mams_feasibility")
+    assert allocation["complete_frozen_cohort_preserved"] is True
+    assert allocation["minimum_count_scenario_fits"] is (minimum_forecast <= 700.)

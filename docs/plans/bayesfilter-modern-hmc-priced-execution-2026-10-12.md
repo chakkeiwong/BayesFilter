@@ -40,9 +40,11 @@ cost is 860.163968 seconds across 32 trials, used as the explicitly conservative
 
 The continuation's allocation rule is recorded before launch in the plan.
 It waits for settled, audited prices, preserves all four adapted MAMS roots
-and four reserved repairs, and checks the minimum scenario against the existing
-123019.624951-second unallocated balance, less any pricing overrun. It does not
-spend held reserves again. It writes the actual allocation before launching the
+and four reserved repairs, and reports the minimum-count scenario against the
+existing 123019.624951-second unallocated balance, less any pricing overrun.
+That conservative forecast is not a continuation veto; the actual remaining
+budget bounds a feasibility attempt with unfinished outcomes preserved. It
+does not spend held reserves again. It writes the actual allocation before launching the
 snapshot's `run_modern_hmc_frozen_full_model.py`. A capacity shortage triggers
 bounded resource waiting; a missing price, source inconsistency or unexpected
 probe failure stops dependent work. Scientific failures remain candidate or
@@ -130,3 +132,24 @@ By 13:15 UTC, both classical cohorts had completed: 16 roots and 32 prices.
 SNAPER preparation was active, followed by the four adapted MAMS roots.
 There was no numerical-health veto in the completed calls. The price supervisor
 and its dependent continuation service remained active.
+
+## Continuation rule repaired before dependent launch
+
+At 13:48 UTC, review found that the first service could refuse to attempt the
+next phase solely because a conservative all-member forecast exceeded the
+balance. Its formula includes uncreated reserved repairs and repeated cold
+costs. It is not a lower bound on actual work. The plan now distinguishes that
+forecast from actual allocation exhaustion: the unchanged full MAMS cohort
+can be attempted within the remaining budget, with partial outcomes retained.
+It still cannot establish full coverage, comparative ranking or release from
+an unfinished cohort.
+
+The waiting `continuation-01` service was stopped with no child launched and
+zero child-worker cost; its separate settlement preserves the original
+manifest. The GPU price worker continues. The replacement writes to the fresh
+`continuation-02` output. Thirty-three focused tests pass in 0.616564 seconds
+including startup, covering oversized forecasts, exact budget exhaustion,
+overruns, all-member preservation and resource-stopped child outcomes. The
+actual remaining ceiling is unchanged at 123019.624951 seconds before any
+price overrun. No source, seed, model, statistical gate or posterior check
+was changed. This is a planning-policy repair within the existing campaign.

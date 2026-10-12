@@ -190,16 +190,24 @@ receipt, budget, launch-boundary and MCSE-accounting tests. It checks the full
 design when reusing prices after the narrow fixed-HMC repair correction and
 preserves all roots, native receipts and statistical denominators. The completed
 fixed-HMC cost scenarios already exceed the remaining balance for the full
-comparison. After all prices finish, the continuation writes a measured-cost
-allocation for the complete adapted MAMS cohort only if its declared minimum
-scenario fits. It uses the unchanged immutable consumer, fresh qualification
-and posterior/reference checks. Otherwise it records an under-budgeted outcome.
+comparison. After all prices finish, the continuation writes a bounded
+allocation for the unchanged adapted MAMS cohort from the actual remaining
+budget. The conservative minimum-count scenario remains a cost diagnostic;
+it cannot veto a useful partial attempt. The consumer preserves every planned,
+unfinished and delivered identity, with fresh qualification and unchanged
+posterior/reference checks. Actual budget exhaustion prevents launch. A
+forecast larger than the balance makes incomplete coverage an explicit risk,
+not a claim that no execution is possible.
 This is the previously declared scoped feasibility branch; broader methods,
 models, paired replications, statistical confirmation and release remain open.
-The continuation is active as
-`bayesfilter-modern-priced-continuation-20261012-01.service`, with its manifest
-in `priced-comparison-01/continuation-01`. It waits for the original GPU price
-supervisor to settle and writes the allocation before any dependent launch.
+The original waiting continuation service was stopped before any child launch
+to repair that planning veto; `continuation-01/settlement.json` records zero
+child cost. The replacement uses the fresh `continuation-02` directory and
+`bayesfilter-modern-priced-continuation-20261012-02.service`. It waits for the
+original GPU price supervisor to settle and writes the allocation before any
+dependent launch. Thirty-three focused budget/report tests pass, including
+launch under an oversized conservative forecast, actual exhaustion and partial
+child outcomes. The price worker is unaffected by this repair.
 The [priced execution record](bayesfilter-modern-hmc-priced-execution-2026-10-12.md)
 tracks the completed MCSE study, running prices and continuation service.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)

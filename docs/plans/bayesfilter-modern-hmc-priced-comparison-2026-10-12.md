@@ -237,10 +237,14 @@ launching the existing immutable full-model consumer. Its rule is fixed now:
 keep the full four-method price denominator; reserve the existing local and
 pricing allowances; subtract any pricing overrun from the 123019.624951
 unallocated seconds; and consider **all four adapted MAMS roots and their four
-reserved repair children**. If their load-one minimum-path scenario does not
-fit that ceiling, record an under-budgeted outcome and do not pretend a full
-delivery study is funded. Otherwise allocate at most that ceiling, or the
-load-four maximum-count scenario when smaller. Unless the latter fits, label
+reserved repair children**. The load-one minimum-count scenario is a
+conservative forecast, not a lower bound on the cost of a useful attempt.
+Allocate at most the actual remaining ceiling, or the load-four maximum-count
+scenario when smaller. If even the minimum-count scenario exceeds the ceiling,
+record that fact and label the launch bounded feasibility with potentially
+incomplete qualification and posterior coverage. It does not promise a full
+delivery study. An exhausted actual allocation prevents launch; a forecast
+alone does not. Unless the load-four scenario fits, label
 the launch bounded feasibility, with resource censoring possible. Qualification
 and posterior criteria, streams, source, reference and design stay unchanged.
 The three classical/SNAPER cells, later models and paired replications remain
@@ -265,3 +269,41 @@ does not promise paired confirmation from a single target/seed. The ordinary
 snapshot consumer still performs every membership, export, posterior and
 reference check. Focused decision/accounting tests are required before enabling
 this continuation. All launches remain within the already authorized campaign.
+
+## Continuation-policy repair, 12 October
+
+The first implementation used `minimum_path_seconds > available_ceiling` as
+a continuation veto. That was wrong for the declared bounded feasibility
+question: the scenario prices every reserved repair and repeats cold-call
+costs conservatively. It is neither a measured lower bound nor evidence that
+the next planned trial cannot run. The user has reaffirmed continuation.
+Retain the scenario as a planning diagnostic, preserve the exact same four
+roots and reserved descendants, and allow the existing consumer to attempt
+them within the actual remaining wall allocation. Report every unattempted,
+unfinished, verified and delivered identity separately. Partial coverage cannot
+support comparative robustness, a full-cohort completion claim or release.
+
+The scientific question, baseline, statistical rules, immutable source,
+target/data, seed, device class and overall budget remain as above. This repair
+changes the planning veto, not the sampler or its qualification rules. A zero
+remaining allocation, invalid source/price/design or missing required numerical
+evidence still prevents dependent execution. A negative forecast margin does
+not consume or cancel the actual remaining budget. The consumer's existing
+supervisor bounds wall time and preserves partial records and checkpoints.
+
+Before implementation, review of `finalize_interruption` and the consumer's
+`resource_stopped` path confirms that it preserves the declared primary cohort
+alongside observed candidates and posterior outcomes. Add regressions for a
+forecast that exceeds a positive budget, actual budget exhaustion, supervisor
+overruns and incomplete child outcomes. Keep the held reserves separate and
+retain all cost sensitivity values. Restart only the waiting orchestration
+service in a fresh `continuation-02` directory; the live GPU price worker is
+unaffected. Its former service must be inactive and have launched no child
+before enabling the replacement, preventing duplicate spending.
+
+Skeptical audit: this does not relabel an incomplete study as a complete one,
+choose cheaper candidates or change a success threshold after seeing results.
+The four roots were frozen before pricing. The engineering pass criterion is
+bounded launch with complete planned denominators; posterior criteria remain
+unchanged. Scientific invalidity remains a veto. Bounded partial evidence
+answers feasibility only. The repaired continuation passes this audit.
