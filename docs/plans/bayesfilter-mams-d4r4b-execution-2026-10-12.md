@@ -161,3 +161,14 @@ four healthy short prices. The all-model first rung is still active on SIR;
 structural remains in order. A trusted automatic capacity check at
 2026-10-12 00:51:33 UTC reported `no_idle_policy_permitted_gpu`. That is current
 contention, not a hardware or method failure. No extra GPU job was launched.
+
+The ensuing 900-second CPU reference/debug pipeline allocation completed in
+93.538730 supervisor seconds. All six Student-t/exact-funnel/partial-funnel
+members verified, exported/reloaded and passed their short posterior checks;
+one Student-t member's second-moment reference screen raised an alarm.
+It remains a verified tuning member. This is scoped wiring and reference
+diagnostic evidence, not broad calibration or GPU qualification. The analytic
+result records the exact discrepancy, alternatives and all member outcomes.
+Known local usage is 792.834369 seconds inside the unchanged 3600-second
+reserve. SIR has now also completed with both estimates usable and four
+healthy short prices; structural is the final running target of the first rung.

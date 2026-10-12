@@ -123,3 +123,50 @@ unavailability. A fresh stopped-chain study with adequate uncertainty could
 overturn any optimistic interpretation. These limitations concern diagnostic
 evidence; they do not invalidate the corrected model maps or abandon the
 planned MAMS tuning repair.
+
+## Fresh public-pipeline diagnostic
+
+The continuation specified in the plan also finished. From immutable commit
+`031f0dfef315825697678fa658b40a1ffff68000`, the actual public tuner,
+export/reload and posterior controller ran on Student-t(5), the exact funnel
+and the partial funnel with root seed 5800. This explicitly CPU-only graph
+reference/debug run used the unchanged short feasibility allocations and
+completed in 93.538730 supervisor seconds, including its 92.322754-second
+worker. The [terminal audit](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/analytic-pipeline-01/terminal-audit.json)
+checks 174 source hashes, all three targets, all six created/verified members,
+export/reload inventories and declared binary quantity identities.
+
+| Target | Verified and retained in candidate set | Short posterior diagnostics passed | Approximate reference screen without alarm |
+| --- | ---: | ---: | ---: |
+| Student-t(5) | 2 / 2 | 2 / 2 | 1 / 2 |
+| Exactly whitened funnel | 2 / 2 | 2 / 2 | 2 / 2 |
+| Partially whitened funnel | 2 / 2 | 2 / 2 | 2 / 2 |
+
+The first Student-t member estimated `E[q0^2]=1.334773` against `5/3`.
+Its lugsail MCSE was `.104065`; the approximate quantity-family-adjusted
+interval was `[1.060222,1.609324]`, which excludes the exact expectation.
+The member remains verified for tuning, while
+`posterior_reference_screen_passed=false`. This demonstrates why a local
+posterior diagnostic pass must remain distinct from reference agreement.
+A single alarm after sequential stopping does not establish a biased sampler
+or an implementation error. Heavy-tail finite-sample variability, incomplete
+exploration and imperfect MCSE/stopping calibration remain alternatives.
+Do not retune against that failed heldout reference or delete its outcome.
+
+| Decision | Primary criterion | Veto diagnostic | Main uncertainty | Next justified action | Not concluded |
+| --- | --- | --- | --- | --- | --- |
+| Accept new public-pipeline wiring | Six of six verified policies exported/reloaded and assessed with the declared quantities | One Student-t reference alarm vetoes that member's reference-agreement claim; it is not a tuning or research-continuation veto | Short, one-seed CPU diagnostics and uncalibrated stopped intervals | Retain all outcomes; finish GPU pricing and the predeclared MCSE/stopping and full-model confirmation work | GPU qualification, sampler bias, broad posterior validity or ranking |
+
+Inference status remains: no statistically supported ranking; the six rows
+are descriptive feasibility evidence, and MAMS stays experimental. Default
+readiness is unchanged. The next statistical evidence must address stopped
+outputs and antithetic/heavy-tail quantities without selecting only successful
+members. The strongest alternative explanation for the alarm is an ordinary
+finite-sample or stopping-related coverage failure; fresh predeclared
+replications can distinguish persistent error from that explanation.
+
+Known local-control usage is now 168.792222 seconds, and known total D4R4b
+local usage is 792.834369 seconds inside the unchanged 3600-second reserve.
+This supersedes the earlier cost snapshot above. The changed quantity wiring
+now has an actual public-pipeline reference/debug execution; GPU/XLA
+confirmation and statistical calibration remain open.

@@ -9,8 +9,10 @@ preserves the bounded audit, result and continuation requirements.
 The [analytic-control result](bayesfilter-mams-analytic-controls-result-2026-10-12.md)
 records the repaired common funnel model, original-coordinate/tail quantities,
 oscillation controls and completed reference calibration. Engineering checks
-pass; antithetic lugsail availability, calibration uncertainty and fresh
-public-pipeline posterior assessments remain open.
+pass, and six fresh public-pipeline members completed a CPU reference/debug
+assessment with the new quantities. One Student-t second-moment reference
+alarm remains recorded separately from tuning membership. Antithetic lugsail
+availability, calibration uncertainty and GPU confirmation remain open.
 This is the D4R repair subplan of the
 [modern-method master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md).
 It answers the owner's request for a repair that generalizes beyond

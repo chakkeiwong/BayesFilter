@@ -93,9 +93,13 @@ scales in the exact/partial fixtures. Forty-two distinct regressions and a
 [result](bayesfilter-mams-analytic-controls-result-2026-10-12.md). No negative
 control falsely passed, but strong antithetic chains often lacked usable
 lugsail MCSE; 32 replications per condition cannot establish nominal coverage.
-The remaining D4R3 work is fresh public-pipeline quantity assessment and
-calibration of MCSE/stopping, not another implementation of the corrected
-map or tail checks. Historical feasibility rows are not reinterpreted.
+A fresh CPU graph public-pipeline diagnostic has also finished: all six
+Student-t/exact-funnel/partial-funnel members verified, exported/reloaded and
+passed the short posterior checks, while one Student-t member raised a
+separate second-moment reference alarm. Every tuning member remains retained.
+The remaining D4R3 work is statistical calibration of MCSE/stopping and
+GPU/XLA confirmation, not another implementation of the corrected map or tail
+checks. Historical feasibility rows are not reinterpreted.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic
