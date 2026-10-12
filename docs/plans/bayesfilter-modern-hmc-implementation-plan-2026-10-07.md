@@ -152,6 +152,17 @@ The next deliverable is an affordable, explicitly priced paired comparison
 with adequate classical searches and model/tail posterior checks, plus the
 remaining MCSE/stopping calibration. This successful deployment does not close
 the original MAMS mixing/precision question or establish a release.
+The [priced continuation](bayesfilter-modern-hmc-priced-comparison-2026-10-12.md)
+now makes that next step executable. It freezes eight classical fixed, eight
+randomized, six SNAPER and four actually adapted MAMS proposals on full SGQF,
+reserves one duration-preserving repair per family, and schedules 32/64/128
+independent trials in each fresh qualification stage. All four deterministic
+attainability preflights pass; this is not a power result. A 7200-second GPU
+price allocation and 3600-second local allowance are reserved from the settled
+37.17 hours. Remaining allocations must follow current all-member prices,
+including validation/export and per-trial overhead sensitivity. The complete
+twenty-cell comparison is not presumed affordable; unfunded cells and paired
+replications remain explicit. No new numerical default is introduced.
 The [analytic-control subplan](bayesfilter-mams-analytic-controls-2026-10-12.md)
 has been executed within the existing local allowance. Its audit found and
 repaired an incorrect inherited partial-funnel model map and different model
