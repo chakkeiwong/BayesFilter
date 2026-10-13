@@ -93,14 +93,15 @@ def test_invalid_accounting_or_inventory_stops_dependent_launch(mutation):
 
 @pytest.mark.parametrize("child_status,exit_code", [("completed", 0), ("resource_stopped", 1)])
 @pytest.mark.parametrize("minimum_forecast", [100., 800.])
+@pytest.mark.parametrize("method", ["mams", "fixed_hmc"])
 def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(
-        tmp_path, monkeypatch, child_status, exit_code, minimum_forecast):
+        tmp_path, monkeypatch, child_status, exit_code, minimum_forecast, method):
     campaign = tmp_path / "campaign"
     (campaign / "prices-01").mkdir(parents=True)
     source = tmp_path / "immutable-source"
     source.mkdir()
-    design = campaign / "mams.json"
-    design.write_text('{"method": "mams"}')
+    design = campaign / f"{method}.json"
+    design.write_text(json.dumps(dict(method=method)))
     (campaign / "prices-01/result.json").write_text(json.dumps(dict(status="completed",
         supervisor_elapsed_seconds=80., source_root=str(source), numerical_source=dict(git_commit="frozen"))))
     (campaign / "allocation-01.json").write_text(json.dumps(balance()))
@@ -108,8 +109,9 @@ def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(
     audit.write_text(json.dumps(dict(status="passed", gpu_supervisor_seconds=60.,
         native_work=dict(native_call_audit=[dict(native_seconds=40.)]))))
     prices = report()
-    prices["rows"][-1]["scenarios"][0]["minimum_path_seconds"] = minimum_forecast
-    prices["rows"][-1].update(design_file=str(design), design_sha256=continuation.digest(design))
+    row = next(row for row in prices["rows"] if row["method"] == method)
+    row["scenarios"][0]["minimum_path_seconds"] = minimum_forecast
+    row.update(design_file=str(design), design_sha256=continuation.digest(design))
     monkeypatch.setattr(continuation, "build_report", lambda *a, **kw: deepcopy(prices))
     monkeypatch.setenv("TF_FORCE_GPU_ALLOW_GROWTH", "true")
     monkeypatch.setitem(sys.modules, "scripts.price_modern_hmc_method_proposals",
@@ -127,8 +129,12 @@ def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(
         return SimpleNamespace(returncode=exit_code)
     monkeypatch.setattr(continuation.subprocess, "run", fake_run)
     output = tmp_path / "continuation"
-    monkeypatch.setattr(sys, "argv", ["continue", "--campaign", str(campaign), "--output", str(output),
-                                      "--deployment-audit", str(audit)])
+    argv = ["continue", "--campaign", str(campaign), "--output", str(output),
+            "--deployment-audit", str(audit), "--method", method]
+    if method != "mams":
+        argv += ["--completed-mams", str(campaign / "prior")]
+        monkeypatch.setattr(continuation, "settle_completed_mams", lambda *a, **kw: balance())
+    monkeypatch.setattr(sys, "argv", argv)
     assert continuation.main() == exit_code
     assert len(launched) == 1
     manifest = json.loads((output / "manifest.json").read_text())
@@ -136,6 +142,76 @@ def test_continuation_uses_snapshot_child_and_preserves_terminal_outcomes(
     assert manifest["child_exit_code"] == exit_code
     assert manifest["child_worker_seconds"] >= 0.
     allocation = json.loads((output / "allocation.json").read_text())
-    assert allocation["scope"].endswith("bounded_mams_feasibility")
+    assert allocation["scope"].endswith(f"bounded_{method}_feasibility")
     assert allocation["complete_frozen_cohort_preserved"] is True
     assert allocation["minimum_count_scenario_fits"] is (minimum_forecast <= 700.)
+    assert manifest["price_status"] == "completed"
+    assert Path(manifest["child_result"]).parent.name == f"{method}-run"
+
+
+def completed_campaign(tmp_path):
+    campaign = tmp_path / "campaign"
+    prior = campaign / "continuation-02"
+    (prior / "mams-run/posterior").mkdir(parents=True)
+    (campaign / "prices-01").mkdir()
+    def write(path, value):
+        path.write_text(json.dumps(value))
+    write(campaign / "allocation-01.json", balance())
+    write(campaign / "prices-01/result.json", dict(status="completed", supervisor_elapsed_seconds=80.))
+    prices = report()
+    prices["prices_sha256"] = continuation.digest(campaign / "prices-01/result.json")
+    write(prior / "price-audit.json", prices)
+    write(prior / "allocation.json", continuation.allocate(prices, balance()))
+    write(prior / "manifest.json", dict(status="completed", child_exit_code=0, child_worker_seconds=300.))
+    write(prior / "mams-run/manifest.json", dict(status="completed"))
+    write(prior / "mams-run/result.json", dict(status="completed", method="mams", completion_status="complete"))
+    write(prior / "mams-run/posterior/result.json", dict(status="completed"))
+    files = [prior / name for name in ("manifest.json", "mams-run/manifest.json",
+             "mams-run/result.json", "mams-run/posterior/result.json")]
+    write(prior / "mams-terminal-audit-01.json", dict(status="passed", child_worker_seconds=300.,
+        source_sha256={str(path.relative_to(campaign)): continuation.digest(path) for path in files}))
+    return campaign, prior
+
+
+def test_terminal_settlement_charges_actual_work_and_holds_both_cpu_reserves(tmp_path):
+    campaign, prior = completed_campaign(tmp_path)
+    settled = continuation.settle_completed_mams(campaign, prior, cpu_reservation_seconds=100.)
+    assert settled["unallocated_worker_seconds"] == 320.  # 1000 - 300 - 80 - 200 - 100
+    allocated = continuation.allocate(report(), settled, method="fixed_hmc")
+    assert allocated["child_max_wall_seconds"] == 320.
+    assert allocated["planned_root_count"] == 8
+    assert allocated["unfunded_methods"] == ["randomized_hmc", "snaper"]
+    assert allocated["pricing_reservation_release_deferred"] is False
+
+
+@pytest.mark.parametrize("mutation", ["running", "changed_price", "changed_charge", "omitted_audit_file",
+                                     "inconsistent_allocation", "negative_cpu", "nan_cpu", "overspend"])
+def test_invalid_or_unsettled_charge_cannot_fund_a_comparator(tmp_path, mutation):
+    campaign, prior = completed_campaign(tmp_path)
+    cpu = 100.
+    if mutation in {"negative_cpu", "nan_cpu", "overspend"}:
+        cpu = {"negative_cpu": -1., "nan_cpu": float("nan"), "overspend": 1000.}[mutation]
+    else:
+        path = prior / {"running": "manifest.json", "changed_charge": "manifest.json",
+            "omitted_audit_file": "mams-terminal-audit-01.json", "inconsistent_allocation": "allocation.json",
+            "changed_price": "../prices-01/result.json"}[mutation]
+        data = json.loads(path.read_text())
+        if mutation == "running": data["status"] = "running"
+        elif mutation == "changed_charge": data["child_worker_seconds"] = 1.
+        elif mutation == "changed_price": data["supervisor_elapsed_seconds"] = 1.
+        elif mutation == "omitted_audit_file": data["source_sha256"].pop(next(iter(data["source_sha256"])))
+        elif mutation == "inconsistent_allocation": data["child_max_wall_seconds"] = 9999.
+        path.write_text(json.dumps(data))
+    with pytest.raises(ValueError):
+        continuation.settle_completed_mams(campaign, prior, cpu_reservation_seconds=cpu)
+
+
+@pytest.mark.parametrize("method", ["fixed_hmc", "randomized_hmc"])
+def test_comparator_allocation_preserves_eight_roots_even_when_forecast_exceeds_balance(method):
+    prices = report()
+    row = next(row for row in prices["rows"] if row["method"] == method)
+    row["scenarios"][0]["minimum_path_seconds"] = 900.
+    assert continuation.allocate(prices, balance(), method=method)["planned_root_count"] == 8
+    row["root_count"] = 7
+    with pytest.raises(ValueError, match="complete method cohort"):
+        continuation.allocate(prices, balance(), method=method)

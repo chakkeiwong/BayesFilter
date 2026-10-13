@@ -6,6 +6,14 @@ and the [MCSE reference study](bayesfilter-mcse-stopping-calibration-2026-10-12.
 Numerical source remains the committed `full-model-source-e68cdf1c4` snapshot.
 No numerical tuning, transition, posterior or reference default changes here.
 
+Terminal update, 13 October: the bounded SGQF MAMS child completed at 09:09
+China time. All four verified candidates passed the declared posterior and
+independent-reference checks. The service exited cleanly, after charging
+40,403.448742 child-worker seconds. The [terminal result](bayesfilter-modern-hmc-priced-mams-terminal-2026-10-13.md)
+and machine audit record the exact denominators, limits and remaining phases.
+The following live-status observations are historical; there is no active
+MAMS worker in this phase.
+
 Current checkpoint, 14:09 UTC: pricing and its audit are complete; the MAMS
 consumer is running fresh qualification on GPU 1. The active service is
 `bayesfilter-modern-priced-continuation-20261012-02.service`, with artifacts in

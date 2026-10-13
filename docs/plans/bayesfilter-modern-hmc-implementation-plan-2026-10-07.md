@@ -7,7 +7,24 @@ for engineering validation. They are experimental; the implementation is not
 a posterior, efficiency or release result. Current tests, repairs and remaining
 phases are recorded in the [active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
 
-**Active phase, refreshed 12 October:** D2f, D3, E3, D4a and the first D4b1
+**Current status, 13 October:** The bounded full SGQF MAMS continuation finished;
+four of four verified candidates passed all declared posterior and finite-target
+reference screens. The [terminal note](bayesfilter-modern-hmc-priced-mams-terminal-2026-10-13.md)
+records the result and cost. N5 broader matched-model confirmation, estimator
+calibration, and N8 consumer/documentation/release checks remain open. N6 LAPS
+has its own conditional development scope; N7 alternatives are triggered only
+by a specified residual failure. No broad comparison or release is established.
+
+The [October 13 continuation](bayesfilter-modern-hmc-comparator-precision-continuation-2026-10-13.md)
+settles the MAMS cost and releases unused pricing allowance. It reserves 3,600
+CPU-worker seconds for a fresh optional MCSE safeguard evaluation and allocates
+79,364.235006 seconds to the complete eight-root fixed-HMC baseline under the
+unchanged SGQF design and immutable numerical source. Forty-eight focused
+settlement/report/launch tests pass. Other methods/models and independent
+replications remain unfunded in this allocation. The precision experiment
+cannot retroactively change the completed MAMS result or active comparator rules.
+
+**Earlier progress through 12 October:** D2f, D3, E3, D4a and the first D4b1
 full SGQF cohort are terminal. All 15 frozen SGQF proposals completed fresh
 tuning verification. SNAPER delivered 6/6 posterior and separate finite-target
 reference screens; MAMS delivered 5/9, with one inconclusive warm-up and three
@@ -237,6 +254,19 @@ The remaining D4R3 work is the estimator/stopping repair motivated by the
 completed reference study and GPU/XLA confirmation, not another implementation
 of the corrected map or tail checks. Historical feasibility rows are not
 reinterpreted.
+
+The bounded full SGQF MAMS continuation is now terminal. Pricing, launch,
+qualification, export/reload and posterior assessment completed in
+`N5/generic-adaptation/priced-comparison-01/continuation-02/mams-run/`. All four
+frozen MAMS candidates were retained and verified; each passed warm-up,
+retained-sample precision, independent finite-target agreement and numerical
+health checks. The run used 2,000 warm-up transitions per chain and between
+3,000 and 10,000 retained transitions per chain. The terminal audit checked 197
+source/input hashes and 288 qualification calls. It charged 40,403.448742
+worker-seconds and left 82,616.176209 seconds of that child allocation unused.
+No candidate was nominated, no method ranking was computed, and release remains
+false. This closes the scoped SGQF MAMS feasibility phase; it does not close the
+master program.
 Historical status snapshots below are dated records, not active instructions.
 
 **Owner scope correction, 10 October:** NUTS is excluded, including diagnostic
