@@ -10,8 +10,8 @@ phases are recorded in the [active execution record](bayesfilter-modern-hmc-exec
 **Current status, 13 October:** The bounded full SGQF MAMS continuation finished;
 four of four verified candidates passed all declared posterior and finite-target
 reference screens. The [terminal note](bayesfilter-modern-hmc-priced-mams-terminal-2026-10-13.md)
-records the result and cost. N5 broader matched-model confirmation, estimator
-calibration, and N8 consumer/documentation/release checks remain open. N6 LAPS
+records the result and cost. N5 broader matched-model confirmation, broader
+estimator/stopping validation, and N8 consumer/documentation/release checks remain open. N6 LAPS
 has its own conditional development scope; N7 alternatives are triggered only
 by a specified residual failure. No broad comparison or release is established.
 
@@ -23,6 +23,20 @@ unchanged SGQF design and immutable numerical source. Forty-eight focused
 settlement/report/launch tests pass. Other methods/models and independent
 replications remain unfunded in this allocation. The precision experiment
 cannot retroactively change the completed MAMS result or active comparator rules.
+
+The fixed-HMC service started at 13:18 China time and has begun recording
+native qualification receipts. The optional `lugsail_max_batch_means` policy
+is implemented with both component estimates and activation diagnostics; 78
+focused CPU/XLA checks and nine GPU parity cases pass. Reassessment of all four saved MAMS members
+reproduces the original precision values and preserves their first passing
+looks (6000, 10000, 6000, 3000). The fresh 128-replication, six-condition
+calibration is complete, with all 768 records audited. The
+[terminal precision result](bayesfilter-mcse-safeguard-result-2026-10-13.md)
+records both favorable antithetic variance behavior and unresolved coverage.
+There is no supported paired coverage ranking or default promotion. Actual
+CPU-study cost is 2019.235247 seconds, releasing 1580.764753 seconds to hold
+until the next terminal refresh. The fixed-HMC ceiling and held local reserve
+remain unchanged. The book chapter and API guide document the optional policy.
 
 **Earlier progress through 12 October:** D2f, D3, E3, D4a and the first D4b1
 full SGQF cohort are terminal. All 15 frozen SGQF proposals completed fresh
@@ -40,10 +54,13 @@ conservatively settled D4R4a cost preflight. After settling both D4R4b GPU
 rungs and the first full-model consumer deployment, **135145.833 seconds
 (37.54 aggregate worker-hours)** were unallocated, with the local 3600-second
 reserve still held. Both GPU runs are terminal. A corrected deployment now
-has also completed in 1859.353110 seconds. Final settlement releases unused
-reserves and leaves **133819.625 seconds (37.17 worker-hours)** unallocated;
+has also completed in 1859.353110 seconds. That historical settlement released
+unused reserves and left **133819.625 seconds (37.17 worker-hours)** unallocated;
 see `preconfirmation-01/settlement-03.json` and the consumer plan. No worker
-from this phase remains active.
+from that deployment phase remains active. The October 13 continuation above
+has since assigned that balance to terminal pricing/MAMS charges, the held
+local-check and precision-study reserves, and the active fixed-HMC ceiling.
+It is not an additional unallocated balance and cannot fund another campaign.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation
 remain open. The current development and validation phase is **D4R, generic trajectory adaptation**,

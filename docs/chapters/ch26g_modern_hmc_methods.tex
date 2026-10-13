@@ -1747,6 +1747,26 @@ pass its strong-dependence promotion study. That result does not remove the
 posterior MCSE estimator, and the existence of the estimator does not qualify
 the experimental acceptance policy.
 
+A local optional extension, \path{lugsail_max_batch_means}, takes the larger
+of the ordinary and lugsail estimates for each chain and quantity. Writing
+these two estimates as $B_j$ and $L_j$, it uses
+\[
+ S_j=\max(B_j,L_j),\qquad
+ \widehat{\operatorname{Var}}(\bar h)=\frac{1}{m^2 n}\sum_{j=1}^{m}S_j.
+\]
+Both components must be finite and $B_j$ must be positive. Under these
+conditions a finite nonpositive $L_j$ can be superseded by $B_j$; the report
+preserves both components and records every such substitution. The maximum
+is taken before pooling, so a downward correction in one chain cannot be
+hidden by a larger estimate in another. On common valid inputs the pooled
+estimate is at least as large as either pooled component. If both components
+converge in probability to the same long-run variance, continuity of the
+maximum gives consistency of $S_j$. These facts do not establish conservative
+finite-sample variance or interval coverage at a stopping time. The maximum
+can introduce upward bias and delay stopping. This is a BayesFilter extension
+under calibration, not the lugsail formula attributed to
+\citet{vats2021lugsail}, and it changes no default or tuning-admission rule.
+
 \subsection{Modern \texorpdfstring{$\widehat R$}{R-hat} and many short chains}
 
 For $m$ chains of $n$ draws, define chain means $\bar h_j$, sample

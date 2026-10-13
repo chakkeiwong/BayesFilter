@@ -18,6 +18,8 @@ import time
 
 PLAN = "docs/plans/bayesfilter-mcse-stopping-calibration-2026-10-12.md"
 METHODS = ("lugsail", "batch_means", "even_lugsail", "autocorrelation")
+REPAIR_METHODS = ("lugsail", "lugsail_max_batch_means", "batch_means", "autocorrelation")
+REPAIR_PLAN = "docs/plans/bayesfilter-modern-hmc-comparator-precision-continuation-2026-10-13.md"
 RHOS = (0., .9, -.9)
 NAMES = ("coordinate", "square", "abs_gt_2")
 LOOKS = tuple(range(1000, 10001, 1000))
@@ -37,22 +39,22 @@ def finite_mean_variance(n, rho, chains=4):
     return (1+2*math.fsum((1-k/n)*rho**k for k in range(1,n)))/(n*chains)
 
 
-def interval(count, total):
+def interval(count, total, alpha=.05):
     from scipy.stats import beta
-    if not 0 <= count <= total:
+    if not 0 <= count <= total or not 0. < alpha < 1.:
         raise ValueError("invalid binomial counts")
     if total == 0:
         return None
-    return [0. if count==0 else float(beta.ppf(.025,count,total-count+1)),
-            1. if count==total else float(beta.ppf(.975,count+1,total-count))]
+    return [0. if count==0 else float(beta.ppf(alpha/2,count,total-count+1)),
+            1. if count==total else float(beta.ppf(1-alpha/2,count+1,total-count))]
 
 
-def summarize(records, planned):
+def summarize(records, planned, methods=METHODS):
     """Preserve nonstoppers and invalid intervals in every denominator."""
     if len(records)>planned:
         raise ValueError("completed replications exceed planned denominator")
     result=dict(planned=planned, completed=len(records), unstarted=planned-len(records), methods={})
-    for method in METHODS:
+    for method in methods:
         rows=[r["methods"][method] for r in records]
         entry=dict(stopped=sum(r["stopped"] is not None for r in rows), endpoints={})
         for endpoint in ("fixed", "stopped"):
@@ -64,6 +66,7 @@ def summarize(records, planned):
                 metrics.append(dict(name=name, completed_replications=len(rows),
                     output_available=len(present), valid_intervals=len(valid),
                     missing_intervals=len(present)-len(valid), interval_misses=misses,
+                    valid_interval_frequency=interval(len(valid),len(rows)),
                     miss_rate_among_valid_interval=interval(misses,len(valid)),
                     empirical_mean_squared_error=(sum(r["error"][index]**2 for r in present)/len(present)
                         if present else None),
@@ -78,10 +81,87 @@ def summarize(records, planned):
     return result
 
 
+def paired_mean(values):
+    """Pointwise Monte Carlo uncertainty, not a simultaneous coverage claim."""
+    from scipy.stats import t
+    count = len(values)
+    mean = math.fsum(values)/count if count else None
+    halfwidth = None
+    if count > 1:
+        variance = math.fsum((v-mean)**2 for v in values)/(count-1)
+        halfwidth = float(t.ppf(.975, count-1))*math.sqrt(variance/count)
+    return dict(pairs=count, mean=mean,
+                approximate_95_percent_interval=None if halfwidth is None
+                else [mean-halfwidth, mean+halfwidth])
+
+
+def paired_event_difference(values):
+    """Conservative paired risk difference via two discordance probabilities.
+
+    Each marginal Clopper--Pearson interval has coverage at least 97.5%.
+    A union bound gives at least 95% for their simultaneous rectangle, so
+    subtracting its endpoints covers p(+1)-p(-1), including all-tied samples.
+    This is pointwise across independent replications, not across report cells.
+    """
+    if any(v not in (-1, 0, 1) for v in values):
+        raise ValueError("paired events require -1, 0 or 1 differences")
+    count = len(values)
+    plus, minus = values.count(1), values.count(-1)
+    positive = interval(plus, count, alpha=.025)
+    negative = interval(minus, count, alpha=.025)
+    return dict(pairs=count, maximum_only_miss=plus, original_only_miss=minus,
+        mean=(plus-minus)/count if count else None,
+        conservative_95_percent_interval=None if not count else
+        [positive[0]-negative[1], positive[1]-negative[0]],
+        uncertainty="Bonferroni Clopper-Pearson for paired discordance probabilities")
+
+
+def summarize_pairs(records, *, law=None):
+    """Compare common paths, keeping unmatched endpoints explicit."""
+    result = dict(completed=len(records), direction="maximum_minus_original",
+        uncertainty="continuous: paired Student-t; binary: exact discordance bounds; pointwise across cells",
+        endpoints={})
+    for endpoint in ("fixed", "stopped"):
+        pairs = [(r["methods"]["lugsail"][endpoint], r["methods"]["lugsail_max_batch_means"][endpoint])
+                 for r in records]
+        present = [(a,b) for a,b in pairs if a is not None and b is not None]
+        quantities = []
+        for index, name in enumerate(NAMES):
+            valid = [(a,b) for a,b in present if a["valid"][index] and b["valid"][index]]
+            quantities.append(dict(name=name, common_valid_pairs=len(valid),
+                interval_miss_change=paired_event_difference([int(b["interval_miss"][index])-int(a["interval_miss"][index])
+                                                  for a,b in valid]),
+                estimated_variance_change=paired_mean([b["mcse"][index]**2-a["mcse"][index]**2 for a,b in valid]),
+                original_only_valid=sum(a["valid"][index] and not b["valid"][index] for a,b in present),
+                maximum_only_valid=sum(b["valid"][index] and not a["valid"][index] for a,b in present)))
+        result["endpoints"][endpoint] = dict(common_outputs=len(present),
+            original_only_output=sum(a is not None and b is None for a,b in pairs),
+            maximum_only_output=sum(b is not None and a is None for a,b in pairs),
+            neither_output=sum(a is None and b is None for a,b in pairs),
+            draw_count_change=paired_mean([b["draws"]-a["draws"] for a,b in present]), quantities=quantities)
+    result["conditioning"] = "common valid outputs at each endpoint; not all planned paths"
+    if law == "student_t5":
+        # t(5) has finite fourth but not eighth moment. Mean precision for
+        # X^2 is meaningful, but a variance estimate quartic in X need not
+        # have finite variance across replications. Do not imply a t interval
+        # for that statistic is calibrated merely because scipy computed one.
+        for endpoint in result["endpoints"].values():
+            square = next(q for q in endpoint["quantities"] if q["name"] == "square")
+            delta = square["estimated_variance_change"]
+            delta["approximate_95_percent_interval"] = None
+            delta["uncertainty_status"] = "not_supported: t5 lacks eighth moment; quartic statistic variance not established"
+            delta["mean_role"] = "descriptive_only"
+    return result
+
+
 def carry_completed_replicates(report, previous):
     """Reuse every completed record only under the identical statistical design."""
     if previous["status"] != "budget_exhausted":
         raise ValueError("continuation requires a terminal budget-exhausted diagnostic")
+    if previous.get("profile", "historical") != report.get("profile", "historical"):
+        raise ValueError("continuation changed calibration profile")
+    if report.get("profile") == "batch_maximum_repair" and previous["driver_sha256"] != report["driver_sha256"]:
+        raise ValueError("continuation changed repair driver")
     for key in ("seed", "replications", "methods", "looks", "chains", "source_sha256", "source",
                 "versions", "stationary_initialization", "gpu_intentionally_hidden", "use_xla"):
         # JSON turns the original tuples into lists; compare their serialized form.
@@ -102,12 +182,12 @@ def carry_completed_replicates(report, previous):
         for replication, record in enumerate(records):
             if (record["replication"] != replication
                     or record["seed"] != [report["seed"], index//2, replication]
-                    or set(record["methods"]) != set(METHODS)
+                    or set(record["methods"]) != set(report["methods"])
                     or any(r["fixed"] is None or r["fixed"]["draws"] != LOOKS[-1]
                            for r in record["methods"].values())):
                 raise ValueError("completed records must be a unique complete prefix with original seeds")
         current["records"] = list(records)
-        current["summary"] = summarize(records, report["replications"])
+        current["summary"] = summarize(records, report["replications"], report["methods"])
         carried.append(len(records))
     report.update(carried_completed_records=carried, prior_elapsed_seconds=prior_seconds,
                   attempt_count=previous.get("attempt_count", 1)+1)
@@ -130,13 +210,16 @@ def assess(values, method, rhat, *, truth, gaussian_rho=None):
     mcse=[r["mcse"] for r in rows]
     z=1.959963984540054
     exact=None if gaussian_rho is None else finite_mean_variance(n,gaussian_rho)
-    return dict(draws=n, passed=assessment["passed"], failed_checks=assessment["failed_checks"],
+    report = dict(draws=n, passed=assessment["passed"], failed_checks=assessment["failed_checks"],
         estimate=[r["estimate"] for r in rows], error=error, mcse=mcse, valid=valid,
         interval_miss=[bool(abs(e)>z*s) if ok else None for e,s,ok in zip(error,mcse,valid)],
         fixed_length_gaussian_coordinate_variance=exact,
         coordinate_variance_ratio=(mcse[0]**2/exact if exact is not None and valid[0] else None),
         gaussian_comparator_role="fixed_length_only_not_conditional_stopped_variance",
         precision_policy=precision.payload())
+    if method == "lugsail_max_batch_means":
+        report["batch_metadata"] = assessment["precision"]["batch_metadata"]
+    return report
 
 
 def main():
@@ -148,7 +231,9 @@ def main():
     parser.add_argument("--max-wall-seconds",type=float,required=True)
     parser.add_argument("--resume-from",type=Path,
                         help="Preserve completed records from a terminal bounded attempt.")
+    parser.add_argument("--profile", choices=("historical", "batch_maximum_repair"), default="historical")
     args=parser.parse_args()
+    methods = REPAIR_METHODS if args.profile == "batch_maximum_repair" else METHODS
     if (os.environ.get("CUDA_VISIBLE_DEVICES")!="-1"
             or os.environ.get("TF_FORCE_GPU_ALLOW_GROWTH","").lower()!="true"):
         raise ValueError("hide GPUs and set memory growth before framework import")
@@ -170,13 +255,14 @@ def main():
         args.source_root/"bayesfilter/inference/hmc_convergence.py"],repository_root=args.source_root)
     hashes={name:hashlib.sha256(Path(name).read_bytes()).hexdigest() for name in paths}
     args.output.mkdir(parents=True,exist_ok=False)
-    report=dict(status="running",plan=PLAN,command=[sys.executable,*sys.argv],environment=sys.executable,
+    report=dict(status="running",plan=REPAIR_PLAN if args.profile == "batch_maximum_repair" else PLAN,
+        profile=args.profile,command=[sys.executable,*sys.argv],environment=sys.executable,
         started_utc=datetime.now(timezone.utc).isoformat(),source_sha256=hashes,
         source=json.loads((args.source_root/".validation-source.json").read_text()),
         driver_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         versions=dict(tensorflow=tf.__version__,tfp=tfp.__version__,numpy=np.__version__,scipy=scipy.__version__),
         gpu_intentionally_hidden=True,use_xla=True,seed=args.seed,replications=args.replications,
-        looks=LOOKS,methods=METHODS,chains=4,max_wall_seconds=args.max_wall_seconds,
+        looks=LOOKS,methods=methods,chains=4,max_wall_seconds=args.max_wall_seconds,
         numerical_data="exact synthetic stationary reference laws",
         stationary_initialization=True,warmup_evaluated=False,actual_hmc_transitions=False,
         prior_elapsed_seconds=0.,attempt_count=1,
@@ -213,11 +299,11 @@ def main():
                     truth=[0.,1. if law=="gaussian" else 5/3,
                         float(2*(stats.norm.sf(2) if law=="gaussian" else stats.t.sf(2,5)))]
                     record=dict(replication=replication,seed=seed,truth=truth,
-                        methods={method:dict(stopped=None,fixed=None) for method in METHODS})
+                        methods={method:dict(stopped=None,fixed=None) for method in methods})
                     for n in LOOKS:
                         if time.monotonic()-started>=args.max_wall_seconds:
                             break
-                        active=[m for m in METHODS if record["methods"][m]["stopped"] is None or n==LOOKS[-1]]
+                        active=[m for m in methods if record["methods"][m]["stopped"] is None or n==LOOKS[-1]]
                         if not active:
                             continue
                         rhat=rank_normalized_split_rhat_summary(values[:n],rhat_max=1.01)
@@ -230,7 +316,9 @@ def main():
                                 record["methods"][method]["fixed"]=assessment
                     if all(r["fixed"] is not None for r in record["methods"].values()):
                         cell["records"].append(record)
-                        cell["summary"]=summarize(cell["records"],args.replications)
+                        cell["summary"]=summarize(cell["records"],args.replications,methods)
+                        if args.profile == "batch_maximum_repair":
+                            cell["paired_summary"] = summarize_pairs(cell["records"], law=cell["law"])
                     else:
                         cell["interrupted_replicate"]=record
                     report["elapsed_seconds"]=time.monotonic()-started
@@ -248,7 +336,9 @@ def main():
         raise
     finally:
         for cell in report["cells"]:
-            cell["summary"]=summarize(cell["records"],args.replications)
+            cell["summary"]=summarize(cell["records"],args.replications,methods)
+            if args.profile == "batch_maximum_repair":
+                cell["paired_summary"] = summarize_pairs(cell["records"], law=cell["law"])
         report.update(elapsed_seconds=time.monotonic()-started,finished_utc=datetime.now(timezone.utc).isoformat())
         report["cumulative_elapsed_seconds"] = report["prior_elapsed_seconds"] + report["elapsed_seconds"]
         write(args.output/"result.json",report)

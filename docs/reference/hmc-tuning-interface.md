@@ -1023,17 +1023,29 @@ The actual controller must be tested separately from fixed-count intervals.
 The [M25 continuation](../plans/bayesfilter-hmc-gap-closure-continuation-2026-09-22.md)
 keeps readiness, interval coverage and precision delivery separate.
 
-The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
+The mean estimators are `autocorrelation`, `batch_means`, `lugsail`, and the
+explicit optional `HMCPrecisionPolicy(method="lugsail_max_batch_means", ...)`.
 Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
 estimator; it is not Stan's initial-monotone estimator. Batch means use complete
 batches within each independent chain. Lugsail combines estimates at batch
 sizes b and floor(b/r) as `(LRV_b - c*LRV_small)/(1-c)`. The pooled mean variance
 is `sum(chain_LRV)/(chains**2 * draws_per_chain)`. Lugsail r=3, c=0.5 and
 square-root batch size are literature baselines; the minimum 20 batches is an
-operational floor, not calibrated coverage. All are configurable. Negative,
-zero, nonfinite or underbatched estimates cannot grant precision; raw per-chain
+operational floor, not calibrated coverage. All are configurable. With the
+original lugsail policy, negative, zero, nonfinite or underbatched estimates
+cannot grant precision; raw per-chain
 LRV and excluded terminal counts are reported. Quantile ties yielding zero
 width are unavailable evidence, including unobserved rare events.
+
+The optional maximum uses `max(plain_batch_LRV, raw_lugsail_LRV)` separately
+for each chain and quantity, before pooling. It is a local extension, with
+unchanged defaults. Both components must be finite and the plain estimate
+positive; a finite nonpositive lugsail estimate may then be superseded. Reports
+preserve both raw estimates and a boolean activation mask. The maximum cannot
+be smaller than either valid component on the same draws, but can add upward
+bias and delay stopping. It does not guarantee conservative true variance or
+coverage under repeated looks. Use the explicit precision policy through the
+posterior API; the older validation-design method inventory remains unchanged.
 
 Quantile precision uses TFP positive-pairs indicator ESS with a pooled
 percentile that preserves equal interpolation endpoints exactly. The method

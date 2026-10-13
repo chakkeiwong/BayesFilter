@@ -1,0 +1,28 @@
+{
+  "schema": "bayesfilter.precision_repair_source.v1",
+  "created_utc": "2026-10-13T06:01:08.955848+00:00",
+  "git_commit": "a38dd4c066871d43e2dca78aaa4e52ddaf9929e2",
+  "branch": "preserve/shared-main-before-fab-20260926",
+  "source_assembly": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/priced-comparison-01/precision-repair-01/source",
+  "parent_snapshot": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-source-e68cdf1c4",
+  "parent_manifest": {
+    "git_commit": "e68cdf1c4c6b75c16f92b86a3363a1e24690d22c",
+    "git_tree": "2a5277fac286732c5d94a2bd626ea72f39a772ec",
+    "snapshot_kind": "committed_source_archive_subset",
+    "archive_paths": [
+      "bayesfilter",
+      "scripts",
+      "tests",
+      "docs/plans/bayesfilter-modern-hmc-adaptive-consumer-repair-2026-10-12.md"
+    ],
+    "compiled_operator_sha256": "2feb93135f2359e60aca446f52f8468b104199b4d398d4fe6057030df20f23d6"
+  },
+  "numerical_overlay": {
+    "bayesfilter/inference/hmc_precision.py": {
+      "parent_sha256": "e5cc6eb00c37b8d9b77611bfdbf4a2b07081d3d4611294621c2f63add25cd8f7",
+      "replacement_sha256": "d17eff6d5a37f6036469a96e09248045f96b6961bb6c7b548946e50a9c092270"
+    }
+  },
+  "reproduction": "Copy the parent snapshot, replace only the named precision module with the committed revision, then apply source/.validation-source.json from this phase; never edit the parent snapshot.",
+  "gpu_run_source_unchanged": true
+}
