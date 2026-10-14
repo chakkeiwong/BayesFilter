@@ -128,3 +128,34 @@ def test_fixed_rank_temporal_off_support_invalidates_score_without_nan_value() -
     assert np.isneginf(result.log_likelihood.numpy()[0])
     assert np.isnan(result.score.numpy()[0, 0])
     assert not bool(result.diagnostics["score_valid"][0])
+
+
+def test_combined_observation_callback_replaces_separate_calls():
+    """Combined observations preserve exact-row supports and total scores."""
+    from dataclasses import replace
+    model, derivatives = _fixed_branch_model()
+    branch = _fixed_branch()
+    observations = tf.constant([[[.1, .1], [.2, .2]]], tf.float64)
+    reference = tf_rectangular_srukf_value_and_score(
+        observations, model, derivatives, branch, jit_compile=False)
+
+    def combined(x):
+        return (model.observation_fn(x),
+                derivatives.observation_state_jacobian_fn(x),
+                derivatives.d_observation_fn(x))
+
+    def forbidden(*args):
+        raise AssertionError('separate observation callback invoked')
+
+    joint = replace(derivatives, observation_value_and_derivatives_fn=combined,
+                    observation_state_jacobian_fn=forbidden, d_observation_fn=forbidden)
+    actual = tf_rectangular_srukf_value_and_score(
+        observations, replace(model, observation_fn=forbidden), joint, branch,
+        jit_compile=True)
+    np.testing.assert_allclose(actual.log_likelihood, reference.log_likelihood,
+                               atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(actual.score, reference.score, atol=1e-9, rtol=1e-9)
+    np.testing.assert_allclose(actual.filtered_mean, reference.filtered_mean,
+                               atol=1e-10, rtol=1e-10)
+    np.testing.assert_allclose(actual.filtered_factor, reference.filtered_factor,
+                               atol=1e-10, rtol=1e-10)
