@@ -87,3 +87,39 @@ the synchronization evidence's `pre-migration` directory, outside active test
 discovery. This is a documented retirement of stale migration residue, not an
 algorithm repair, a relaxed scientific screen, or a discarded failing candidate.
 `tests/replication/test_repair_master.py` checks the active dispatcher.
+
+## Merged-tree validation and delivery
+
+Documentation was committed as `33fbbf2413683802e2b322bae03ac6b4a5e4518d`
+and implementation/evidence as `9a4d50c759a50003db068c9db2a34173fba6f3e6`.
+The campaign merge is `9a95fbb45eeaeea187cea11a99c65193dfaf8754`;
+merging remote main `fceae6aac378bc89e4eeb687819e9d436ebfe356` produced
+validated main `5f108dbfd3418d3cd9b9e3c30a226f125eb4998a`.
+The only conflict was `.gitignore`; both original rule sets are retained.
+
+The isolated main checkout was sparse: committed compact specifications and
+the DPF experiments import chain were absent from disk. Materializing only
+scoped committed files repaired the missing-file/import failures without
+changing their bytes or expanding to bulk raw outputs. An inherited
+`PYTHONPATH` also pointed at the shared checkout. Earlier hook passes therefore
+do not independently establish isolated-main coverage. Final checks bind
+`PYTHONPATH` to the actual checkout, intentionally hide GPUs, and clear inherited
+display variables. All 68 runnable replication tests, 11 subtests, 283 source
+checks, 14 source-audit self-tests, 12 full-score checks and three oracle-contract
+tests pass. Six source-continuation tests still require the absent C0 snapshot
+and were not exercised.
+
+Executable preservation checks confirm all eight numerical runtime hashes,
+1848 scoped file hashes and 117079 noncampaign incoming tree entries. The final
+receipt binds the three updated integration documents separately. Recorded
+test and commit-hook command wall time before the final receipt commit is
+736.81 seconds; local environment retries remain within the 1800-second budget.
+Both numerical/fixture repair retries are consumed; no further such repair is
+planned.
+
+Commit the compact integration receipt, refetch, push main normally, and
+fast-forward the LEDH branch. The terminal delivery receipt at
+`/tmp/bayesfilter-replication-sync-20261014/terminal-git-receipt.json` records
+the actual final commit, remote push, branch identities and final budget usage.
+The committed integration receipt describes pre-push validation and must not
+be interpreted as proof that delivery already occurred.
