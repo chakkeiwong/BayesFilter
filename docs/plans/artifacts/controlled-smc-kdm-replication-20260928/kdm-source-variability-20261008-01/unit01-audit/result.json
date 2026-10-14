@@ -1,0 +1,66 @@
+{
+  "schema": "kdm_author_terminal_audit_v1",
+  "verdict": "PASS",
+  "checks": 88516,
+  "failures": [],
+  "stages": [
+    {
+      "stage": "weights",
+      "epochs": 132,
+      "best_epoch": 85,
+      "best_validation_loss": 4.706101509094238,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 3,
+      "updates": 10428,
+      "wall_seconds": 588.2196818520315
+    },
+    {
+      "stage": "mdpf",
+      "epochs": 499,
+      "best_epoch": 453,
+      "best_validation_loss": 5.839348197937012,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 6,
+      "updates": 39421,
+      "wall_seconds": 18584.91253215191
+    },
+    {
+      "stage": "am_dpf",
+      "epochs": 268,
+      "best_epoch": 222,
+      "best_validation_loss": 5.481459236145019,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 8,
+      "updates": 21172,
+      "wall_seconds": 9172.397382685915
+    }
+  ],
+  "command": [
+    "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/recovery-20261008-01/author_terminal_audit.py",
+    "--run",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-audit/result.json"
+  ],
+  "run": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full",
+  "run_manifest_sha256": "496d7041fac171fa70a5117a967bf80f55260ab97f05446a563786c774586f25",
+  "audit_sha256": "0071e751492beff7770c6dc0a816a5d1baead399891e357ac76e4551b465fdcd",
+  "controller_source_sha256": "af9d19e7860611224cac771458a6fda6e57da3993fe11f6f471da01795094b55",
+  "controller_api_compatibility": [
+    "omit_removed_verbose_argument",
+    "is_better_to__is_better_author_worker_compatibility"
+  ],
+  "torch_version": "2.11.0+cu130",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "wall_seconds": 3.619864705018699,
+  "replication": "INCOMPLETE",
+  "not_concluded": "Numerical compatibility, trained-model noninferiority or full replication",
+  "completion_recovery": {
+    "validated": true,
+    "process_returncode_observed": false,
+    "result_sha256": "e7d623e619710c7e0524f3af86122172e3c230c8dca4576dfbf75204e301e8d0",
+    "basis": "recovered_complete_artifacts_exit_unobserved"
+  }
+}

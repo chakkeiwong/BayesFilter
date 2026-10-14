@@ -1,0 +1,568 @@
+{
+  "status": "FAIL",
+  "scope": "LORENZ_BATCH_VALIDATE",
+  "replication": "INCOMPLETE",
+  "device": "GPU",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "replicas": 4,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "checks": [
+    {
+      "name": "snapshot_MultivariateGaussianControlledSMC",
+      "passed": true
+    },
+    {
+      "name": "snapshot_systematic_ancestors",
+      "passed": true
+    },
+    {
+      "name": "independent_stop_boundaries",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "boundary_one_trace",
+      "passed": true
+    },
+    {
+      "name": "hash_normal.bin",
+      "passed": true
+    },
+    {
+      "name": "hash_uniform.bin",
+      "passed": true
+    },
+    {
+      "name": "old_scalar_valid",
+      "passed": true
+    },
+    {
+      "name": "old_scalar_count",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage0_x.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage0_x",
+      "passed": true,
+      "max_absolute_error": 2.6645352591003757e-15
+    },
+    {
+      "name": "hash_case0_stage0_ancestors.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage0_ancestors",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage0_log_incremental_weight.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage0_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 7.34871719032526e-10
+    },
+    {
+      "name": "hash_case0_stage0_logZ.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage0_logZ",
+      "passed": true,
+      "max_absolute_error": 1.3096723705530167e-09
+    },
+    {
+      "name": "hash_case0_stage0_ess.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage0_ess",
+      "passed": true,
+      "max_absolute_error": 3.218953992245588e-10
+    },
+    {
+      "name": "hash_case0_stage1_x.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage1_x",
+      "passed": true,
+      "max_absolute_error": 1.1185452564177467e-10
+    },
+    {
+      "name": "hash_case0_stage1_ancestors.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage1_ancestors",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage1_log_incremental_weight.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage1_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 7.228100002976134e-07
+    },
+    {
+      "name": "hash_case0_stage1_logZ.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage1_logZ",
+      "passed": true,
+      "max_absolute_error": 1.2691889423877e-06
+    },
+    {
+      "name": "hash_case0_stage1_ess.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage1_ess",
+      "passed": true,
+      "max_absolute_error": 1.1787915354943834e-07
+    },
+    {
+      "name": "hash_case0_stage2_x.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage2_x",
+      "passed": true,
+      "max_absolute_error": 9.008804813248616e-10
+    },
+    {
+      "name": "hash_case0_stage2_ancestors.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage2_ancestors",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage2_log_incremental_weight.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage2_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 1.6081321518868208e-06
+    },
+    {
+      "name": "hash_case0_stage2_logZ.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage2_logZ",
+      "passed": true,
+      "max_absolute_error": 4.4683911255560815e-06
+    },
+    {
+      "name": "hash_case0_stage2_ess.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage2_ess",
+      "passed": true,
+      "max_absolute_error": 1.2698066598204605e-07
+    },
+    {
+      "name": "hash_case0_stage3_x.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage3_x",
+      "passed": true,
+      "max_absolute_error": 3.5629543759796434e-10
+    },
+    {
+      "name": "hash_case0_stage3_ancestors.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage3_ancestors",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage3_log_incremental_weight.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage3_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 1.8228820408694446e-07
+    },
+    {
+      "name": "hash_case0_stage3_logZ.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage3_logZ",
+      "passed": true,
+      "max_absolute_error": 8.116803655866534e-07
+    },
+    {
+      "name": "hash_case0_stage3_ess.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage3_ess",
+      "passed": true,
+      "max_absolute_error": 1.486953919993539e-07
+    },
+    {
+      "name": "hash_case0_stage4_x.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage4_x",
+      "passed": true,
+      "max_absolute_error": 4.113198670552265e-11
+    },
+    {
+      "name": "hash_case0_stage4_ancestors.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage4_ancestors",
+      "passed": true,
+      "max_absolute_error": 0.0
+    },
+    {
+      "name": "hash_case0_stage4_log_incremental_weight.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage4_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 6.586560630239546e-09
+    },
+    {
+      "name": "hash_case0_stage4_logZ.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage4_logZ",
+      "passed": true,
+      "max_absolute_error": 1.3904355000704527e-08
+    },
+    {
+      "name": "hash_case0_stage4_ess.bin",
+      "passed": true
+    },
+    {
+      "name": "old_stage4_ess",
+      "passed": true,
+      "max_absolute_error": 2.024347054430109e-07
+    },
+    {
+      "name": "batch_valid_0",
+      "passed": false
+    }
+  ],
+  "cases": [],
+  "rows": [],
+  "heuristic_dominance_verdict": "NOT_ASSESSED_IMPLEMENTATION_AND_COST_ONLY",
+  "failure_diagnostics": {
+    "grid_index": 0,
+    "counts": [
+      3,
+      3,
+      3,
+      3
+    ],
+    "gram": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      [
+        0.010737995421064272,
+        0.008146376096299006,
+        0.012086899328062803,
+        0.004117649967045108
+      ],
+      [
+        0.01287512545947748,
+        0.012675934409709197,
+        0.012117027531933179,
+        0.01271552120908839
+      ],
+      [
+        0.010787480708943075,
+        0.012166693118384288,
+        0.01255701937298006,
+        0.012110534089708606
+      ],
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "rss": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.02623524253047963,
+        0.024612243097650352,
+        0.01930451688257815,
+        0.02120416477501564
+      ],
+      [
+        0.045864668275379536,
+        0.02647920058475518,
+        0.05076720319168981,
+        0.03518546691063277
+      ],
+      [
+        0.016973489425152987,
+        0.012697019851148643,
+        0.010373740111942977,
+        0.012359795109113763
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "scalar_rows": [
+      {
+        "row": 0,
+        "valid": false,
+        "iterations": 3,
+        "gram": [
+          1.0,
+          0.010737995421064237,
+          0.012875125459472449,
+          0.010787480708616739,
+          1.0
+        ],
+        "rss": [
+          0.0,
+          0.026235242530103065,
+          0.04586466827237069,
+          0.016973489197833407,
+          0.0
+        ]
+      },
+      {
+        "row": 1,
+        "valid": true,
+        "iterations": 4,
+        "gram": [
+          1.0,
+          0.008146376096299203,
+          0.012675934409710071,
+          0.012166693118374802,
+          0.01149210090528332
+        ],
+        "rss": [
+          0.0,
+          0.024612243097665857,
+          0.026479200583188194,
+          0.012697019851165288,
+          0.015654855079901258
+        ]
+      },
+      {
+        "row": 2,
+        "valid": true,
+        "iterations": 4,
+        "gram": [
+          1.0,
+          0.01208689932806283,
+          0.012117027531934119,
+          0.01255701937301442,
+          0.012935148195878586
+        ],
+        "rss": [
+          0.0,
+          0.0193045168826006,
+          0.05076720319009088,
+          0.010373740111373243,
+          0.016225202247123423
+        ]
+      },
+      {
+        "row": 3,
+        "valid": true,
+        "iterations": 4,
+        "gram": [
+          1.0,
+          0.0041176499670572625,
+          0.012715521209086398,
+          0.012110534089745406,
+          0.011927350115763126
+        ],
+        "rss": [
+          0.0,
+          0.021204164774938583,
+          0.03518546691074618,
+          0.01235979510960327,
+          0.015404978515329109
+        ]
+      }
+    ],
+    "matched_fits": [
+      {
+        "row": 0,
+        "stage": 1,
+        "valid": true,
+        "min_precision_margin": 0.010046784712195252,
+        "min_gram_ratio": 0.010737995421064234,
+        "max_rss": 0.026235242530180655
+      },
+      {
+        "row": 0,
+        "stage": 2,
+        "valid": true,
+        "min_precision_margin": 0.010747550472259676,
+        "min_gram_ratio": 0.012875125459477485,
+        "max_rss": 0.04586466827458429
+      },
+      {
+        "row": 0,
+        "stage": 3,
+        "valid": false,
+        "min_precision_margin": -0.1325091107326004,
+        "min_gram_ratio": 0.01078748070896998,
+        "max_rss": 0.016973489432413974
+      },
+      {
+        "row": 1,
+        "stage": 1,
+        "valid": true,
+        "min_precision_margin": 0.009949202042794312,
+        "min_gram_ratio": 0.008146376096299006,
+        "max_rss": 0.024612243097678007
+      },
+      {
+        "row": 1,
+        "stage": 2,
+        "valid": true,
+        "min_precision_margin": 0.009952049948365476,
+        "min_gram_ratio": 0.012675934409709192,
+        "max_rss": 0.02647920058447003
+      },
+      {
+        "row": 1,
+        "stage": 3,
+        "valid": true,
+        "min_precision_margin": 0.008659270688414477,
+        "min_gram_ratio": 0.012166693118384257,
+        "max_rss": 0.012697019851196287
+      },
+      {
+        "row": 2,
+        "stage": 1,
+        "valid": true,
+        "min_precision_margin": 0.009727832389183648,
+        "min_gram_ratio": 0.012086899328062794,
+        "max_rss": 0.019304516882580346
+      },
+      {
+        "row": 2,
+        "stage": 2,
+        "valid": true,
+        "min_precision_margin": 0.010352971975198898,
+        "min_gram_ratio": 0.012117027531933179,
+        "max_rss": 0.050767203192950444
+      },
+      {
+        "row": 2,
+        "stage": 3,
+        "valid": true,
+        "min_precision_margin": 0.00869352932998439,
+        "min_gram_ratio": 0.012557019372980068,
+        "max_rss": 0.010373740111938638
+      },
+      {
+        "row": 3,
+        "stage": 1,
+        "valid": true,
+        "min_precision_margin": 0.009589236889363794,
+        "min_gram_ratio": 0.004117649967057188,
+        "max_rss": 0.021204164774883034
+      },
+      {
+        "row": 3,
+        "stage": 2,
+        "valid": true,
+        "min_precision_margin": 0.009593150406812783,
+        "min_gram_ratio": 0.012715521209088405,
+        "max_rss": 0.035185466910672605
+      },
+      {
+        "row": 3,
+        "stage": 3,
+        "valid": true,
+        "min_precision_margin": 0.008535840140540329,
+        "min_gram_ratio": 0.012110534089708587,
+        "max_rss": 0.012359795109109284
+      }
+    ]
+  },
+  "error": "ValueError('batch_valid_0')",
+  "wall_seconds": 66.40723528701346,
+  "allocator": {
+    "current": 184532480,
+    "peak": 278887936
+  }
+}

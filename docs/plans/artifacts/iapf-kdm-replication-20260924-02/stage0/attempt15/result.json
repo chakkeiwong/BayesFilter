@@ -1,0 +1,188 @@
+{
+  "actual_interpreter_cuda_probe": "PASS",
+  "backend_role": "Independent author PyTorch/NumPy reference; eager, no XLA",
+  "check": "PASS",
+  "checkpoints_reloaded": 11,
+  "full_budget": "NOT_MEASURED",
+  "full_source_training_call_chain": "PASS_ON_SHORT_REFERENCE",
+  "gradient_estimator_correctness": "NOT_ESTABLISHED",
+  "learning_quality": "NOT_ESTABLISHED",
+  "mode": "trial_smoke",
+  "optimizer_gradient_checks": 1185,
+  "optimizer_steps": 1185,
+  "peak_allocated_bytes": 75618304,
+  "phases": {
+    "full_training": {
+      "changed_parameter_tensors": 31,
+      "changed_parameters": [
+        "particle_encoder_for_particles_model.encoder.0.weight",
+        "particle_encoder_for_particles_model.encoder.0.bias",
+        "particle_encoder_for_particles_model.encoder.2.weight",
+        "particle_encoder_for_particles_model.encoder.2.bias",
+        "particle_encoder_for_particles_model.encoder.4.weight",
+        "particle_encoder_for_particles_model.encoder.4.bias",
+        "particle_encoder_for_weights_model.encoder.0.weight",
+        "particle_encoder_for_weights_model.encoder.0.bias",
+        "particle_encoder_for_weights_model.encoder.2.weight",
+        "particle_encoder_for_weights_model.encoder.2.bias",
+        "particle_encoder_for_weights_model.encoder.4.weight",
+        "particle_encoder_for_weights_model.encoder.4.bias",
+        "proposal_model.proposal_model.0.weight",
+        "proposal_model.proposal_model.0.bias",
+        "proposal_model.proposal_model.2.weight",
+        "proposal_model.proposal_model.2.bias",
+        "proposal_model.proposal_model.4.weight",
+        "proposal_model.proposal_model.4.bias",
+        "observation_encoder.encoder.0.weight",
+        "observation_encoder.encoder.0.bias",
+        "observation_encoder.encoder.2.weight",
+        "observation_encoder.encoder.2.bias",
+        "observation_encoder.encoder.4.weight",
+        "observation_encoder.encoder.4.bias",
+        "weight_model.encoder.0.weight",
+        "weight_model.encoder.0.bias",
+        "weight_model.encoder.2.weight",
+        "weight_model.encoder.2.bias",
+        "weight_model.encoder.4.weight",
+        "weight_model.encoder.4.bias",
+        "weighted_bandwidth_predictor.log_bandwidths"
+      ],
+      "epoch_cap": 2,
+      "epochs": 2,
+      "epochs_completed": 2,
+      "frozen_parameter_invariance": "PASS",
+      "input_checkpoints": {
+        "observation_model": {
+          "path": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/pretraining/models/observation_encoder_best.pt",
+          "sha256": "660e25e2f8a479659e56d945a244e5b5ffe34c4e13d58201b480bff4b1fea49d"
+        },
+        "particle_encoder_for_weights_model": {
+          "path": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/pretraining/models/particle_encoder_for_weights_model_best.pt",
+          "sha256": "911b10fed4c1fcd549b1607a8973136429ae24e9cbbdc35668cf974715647876"
+        },
+        "resampling_weight_model": {
+          "path": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/pretraining/models/weight_model_best.pt",
+          "sha256": "7ac77b83d32282dbbb6b2eb0742c772ab54d19372546e9b3a4b9103c62a4092d"
+        },
+        "weight_model": {
+          "path": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/pretraining/models/weight_model_best.pt",
+          "sha256": "7ac77b83d32282dbbb6b2eb0742c772ab54d19372546e9b3a4b9103c62a4092d"
+        }
+      },
+      "loss_class": "KDE_NLL",
+      "loss_parameters": {
+        "kde_params": {
+          "dims": {
+            "0": {
+              "distribution_type": "Normal"
+            },
+            "1": {
+              "distribution_type": "Normal"
+            },
+            "2": {
+              "distribution_type": "Von_Mises"
+            }
+          }
+        },
+        "loss_type": "KDE_NLL"
+      },
+      "model_class": "KDEParticleFilter",
+      "optimizer_count": 6,
+      "resampler_file": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/author-src/models/kde_particle_filter/kde_particle_filter.py",
+      "resampler_line": 675,
+      "source_skipped_gradients": 0,
+      "status": "PASS",
+      "termination": "SOURCE_EPOCH_CAP",
+      "train_batches": 79,
+      "training_batch_size": 64,
+      "validation_batch_size": 256,
+      "validation_batches": 4,
+      "wall_seconds": 75.3793094339926
+    },
+    "pretraining": {
+      "changed_parameter_tensors": 18,
+      "changed_parameters": [
+        "particle_encoder_for_weights_model.encoder.0.weight",
+        "particle_encoder_for_weights_model.encoder.0.bias",
+        "particle_encoder_for_weights_model.encoder.2.weight",
+        "particle_encoder_for_weights_model.encoder.2.bias",
+        "particle_encoder_for_weights_model.encoder.4.weight",
+        "particle_encoder_for_weights_model.encoder.4.bias",
+        "observation_encoder.encoder.0.weight",
+        "observation_encoder.encoder.0.bias",
+        "observation_encoder.encoder.2.weight",
+        "observation_encoder.encoder.2.bias",
+        "observation_encoder.encoder.4.weight",
+        "observation_encoder.encoder.4.bias",
+        "weight_model.encoder.0.weight",
+        "weight_model.encoder.0.bias",
+        "weight_model.encoder.2.weight",
+        "weight_model.encoder.2.bias",
+        "weight_model.encoder.4.weight",
+        "weight_model.encoder.4.bias"
+      ],
+      "epoch_cap": 1,
+      "epochs": 1,
+      "epochs_completed": 1,
+      "frozen_parameter_invariance": "PASS",
+      "input_checkpoints": {},
+      "loss_class": "KDE_NLL",
+      "loss_parameters": {
+        "kde_params": {
+          "dims": {
+            "0": {
+              "distribution_type": "Normal"
+            },
+            "1": {
+              "distribution_type": "Normal"
+            },
+            "2": {
+              "distribution_type": "Von_Mises"
+            }
+          }
+        },
+        "loss_type": "KDE_NLL",
+        "manual_bandwidth": [
+          1.0,
+          1.0,
+          0.1
+        ]
+      },
+      "model_class": "KDEParticleFilter",
+      "optimizer_count": 3,
+      "resampler_file": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-02/stage0/attempt15/author-src/models/kde_particle_filter/kde_particle_filter.py",
+      "resampler_line": 675,
+      "source_skipped_gradients": 0,
+      "status": "PASS",
+      "termination": "SOURCE_EPOCH_CAP",
+      "train_batches": 79,
+      "training_batch_size": 64,
+      "validation_batch_size": 256,
+      "validation_batches": 4,
+      "wall_seconds": 6.636140150993015
+    }
+  },
+  "protocol": {
+    "complete_trial_eligible": false,
+    "data_seed": 925201,
+    "dataset_sizes": {
+      "training": 5000,
+      "validation": 1000
+    },
+    "epochs": {
+      "full_training": 2,
+      "pretraining": 1
+    },
+    "guarded": true,
+    "mode": "trial_smoke",
+    "source_caps": {
+      "full_training": 800,
+      "pretraining": 400
+    }
+  },
+  "scheduler_compatibility": "PASS",
+  "scientific_replication": "INCOMPLETE",
+  "source_arm": "mdpf",
+  "source_dataset_round_trip": "PASS",
+  "source_training_protocol_complete": false
+}

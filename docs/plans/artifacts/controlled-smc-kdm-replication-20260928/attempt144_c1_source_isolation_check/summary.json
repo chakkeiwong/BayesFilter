@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "scope": "SOURCE_PROCESS_ISOLATION_PARITY",
+  "replication": "INCOMPLETE",
+  "scientific_verdict": "Exact source consumer values and random states preserved in this bounded reference check; full source run and port remain incomplete",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "author_algorithm_modified": false,
+  "numerical_cases": 24,
+  "drivers": [
+    {
+      "driver": "lorenz_csmc",
+      "cases": 3,
+      "exact_case_outputs": true,
+      "exact_rng_states": true,
+      "checkpoint_arrays": [
+        "cSMC_LogNormConst",
+        "cSMC_ESS",
+        "cSMC_Iterations",
+        "source_rand_state",
+        "source_randn_state"
+      ],
+      "cumulative_peak_child_rss_kib": 190256
+    },
+    {
+      "driver": "lorenz_apf",
+      "cases": 3,
+      "exact_case_outputs": true,
+      "exact_rng_states": true,
+      "checkpoint_arrays": [
+        "APF_LogNormConst",
+        "APF_ESS",
+        "source_rand_state",
+        "source_randn_state"
+      ],
+      "cumulative_peak_child_rss_kib": 353448
+    },
+    {
+      "driver": "neuroscience_csmc",
+      "cases": 3,
+      "exact_case_outputs": true,
+      "exact_rng_states": true,
+      "checkpoint_arrays": [
+        "cSMC_LogNormConst",
+        "source_rand_state",
+        "source_randn_state"
+      ],
+      "cumulative_peak_child_rss_kib": 353448
+    },
+    {
+      "driver": "neuroscience_bpf",
+      "cases": 3,
+      "exact_case_outputs": true,
+      "exact_rng_states": true,
+      "checkpoint_arrays": [
+        "BPF_LogNormConst",
+        "source_rand_state",
+        "source_randn_state"
+      ],
+      "cumulative_peak_child_rss_kib": 2018228
+    }
+  ],
+  "wall_seconds": 364.40673830895685,
+  "memory_limit_bytes": 8589934592,
+  "source_lock_sha256": "f8534fddd2163877a4d6d8c6e2aa542b0c4f8afe9d30f0019bcc276e0917ff45",
+  "checks": [
+    {
+      "name": "all_four_source_consumers_and_RNG_states_exact",
+      "passed": true
+    }
+  ]
+}

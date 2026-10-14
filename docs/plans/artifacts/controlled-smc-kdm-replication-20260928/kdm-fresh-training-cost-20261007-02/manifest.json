@@ -1,0 +1,71 @@
+{
+  "schema": "kdm_fresh_training_cost_manifest_v1",
+  "resource": "gpu",
+  "mode": "tf",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-02/diagnostic",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_fresh_training_cost.py",
+    "--mode",
+    "tf",
+    "--reference",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-02"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-fresh-training-cost-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-fresh-training-cost-result-20261007.md",
+  "timeout_seconds": 1200,
+  "status": "COMPLETED",
+  "started_unix_seconds": 1791354325.3899279,
+  "seeds": {
+    "data": 202610071,
+    "constructors": [
+      202610072,
+      202610073,
+      202610074
+    ],
+    "tf_noise_base": 202610082
+  },
+  "data": "fresh source development train5000/validation1000",
+  "cpu_gpu_status": "trusted GPU/XLA",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "LD_LIBRARY_PATH": null,
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "hashes": {
+    "scripts/run_kdm_fresh_training_cost.py": "9eabe9afbb221844140931e8ed160797982478691453ca516dbdc9ca45f9281a",
+    "docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py": "02da46e1708b3ec884d6ab36ab417307ca5e52ad54dfe09e9cc21606f19cd049",
+    "docs/plans/controlled-smc-kdm-fresh-training-cost-20261007.md": "16ca796a004266b3f15df3d03a877b0d7a6b981f4e12e6c717aaf903413c74b0",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "a6b6f4531cdd8c420f7fa7a7c6a5aed351a16f178613b8cfd74ed5a9f359f6d6"
+  },
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json",
+  "reference_sha256": "862e93de14bad587a7e8650d6089a6e060235a3bf77e3686a683d4c4bbae8374",
+  "child_pid": 1145696,
+  "returncode": 0,
+  "wall_seconds": 205.23906311788596,
+  "result_sha256": "ad5dcea880a41e8ec12f04c3a8a98cecc7cfe4ddfbdaaf777509a951427764a6"
+}

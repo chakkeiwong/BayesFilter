@@ -1,0 +1,98 @@
+{
+  "schema": "kdm_training_bridge_guard_diagnostic_v1",
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "cap_exhaustion_rejected",
+      "passed": true
+    },
+    {
+      "name": "cap_exhaustion_state_unchanged",
+      "passed": true
+    },
+    {
+      "name": "guard_has_finite_loss",
+      "passed": true
+    },
+    {
+      "name": "guard_has_finite_gradients",
+      "passed": true
+    },
+    {
+      "name": "configured_limit_was_exercised",
+      "passed": true
+    },
+    {
+      "name": "fresh_instances_restore_complete",
+      "passed": true
+    },
+    {
+      "name": "fresh_instances_valid",
+      "passed": true
+    },
+    {
+      "name": "fresh_instances_resume_exact",
+      "passed": true
+    },
+    {
+      "name": "incomplete_checkpoint_rejected_atomically",
+      "passed": true
+    }
+  ],
+  "scope": "REJECTION_AND_FRESH_RESTORE_DIAGNOSTIC",
+  "replication": "INCOMPLETE",
+  "sampler_limit_exception": "1 only for deliberately failing diagnostic; runtime default remains128",
+  "checkpoint_sha256": "f3644cf436c2a7f44161d38db85ba7d2d4a1147f9d454540dac071c6f1694686",
+  "reference_sha256": "23c282783b014705c3d860ee945c6f126d733b51411a13ec87e8e59a394973c8",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "allocator": {
+    "current": 5404416,
+    "peak": 136315392
+  },
+  "tf32": false,
+  "jit_compile": true,
+  "seeds": [
+    [
+      731,
+      5
+    ],
+    [
+      731,
+      2
+    ]
+  ],
+  "wall_seconds": 63.277534040855244
+}

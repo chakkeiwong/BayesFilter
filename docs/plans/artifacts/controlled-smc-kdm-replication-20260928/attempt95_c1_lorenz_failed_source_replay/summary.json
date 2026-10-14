@@ -1,0 +1,89 @@
+{
+  "status": "PASS",
+  "scope": "LORENZ_FAILED_CLOUD_AUTHOR_REPLAY",
+  "replication": "INCOMPLETE",
+  "scientific_verdict": "AUTHOR_SOURCE_ALSO_FAILS_ON_FROZEN_TF_INPUTS",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "numpy_role": "INDEPENDENT_REFERENCE_ONLY",
+  "checks": [
+    {
+      "name": "unique_extraction_anchors",
+      "passed": true
+    },
+    {
+      "name": "only_observability_and_guard",
+      "passed": true
+    },
+    {
+      "name": "unchanged_author_source",
+      "passed": true
+    },
+    {
+      "name": "frozen_failed_scope",
+      "passed": true
+    },
+    {
+      "name": "all_healthy_native_fits_exact",
+      "passed": true
+    },
+    {
+      "name": "all_failed_cloud_replays_recorded",
+      "passed": true
+    }
+  ],
+  "healthy_native_fits_exact": 16,
+  "rows": [
+    {
+      "stage": 1,
+      "source_valid": true,
+      "failure_time": -1,
+      "source_minimum_eigenvalue": 109.603679527064,
+      "saved_tf_qr_minimum_eigenvalue": 109.60724452491927,
+      "evaluated_times": 101
+    },
+    {
+      "stage": 2,
+      "source_valid": true,
+      "failure_time": -1,
+      "source_minimum_eigenvalue": 117.24824191862466,
+      "saved_tf_qr_minimum_eigenvalue": 117.31544175000221,
+      "evaluated_times": 101
+    },
+    {
+      "stage": 3,
+      "source_valid": false,
+      "failure_time": 12,
+      "source_minimum_eigenvalue": -2077.6145107037687,
+      "saved_tf_qr_minimum_eigenvalue": -1730.1633936968644,
+      "evaluated_times": 89
+    }
+  ],
+  "source_sha256": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+  "generated_wrapper_sha256": "03bdcfc3ce8feca3953914c532a96ea5a003275f31aa650c6971c724183daac0",
+  "extracted_body_sha256": "80f06641f9237ee7baa0fb2d2a0330f7156608e0b878d8963bbdf62fc897da4a",
+  "x2fx_sha256": "0dc887c7b82769c151fa0e0cd306d979697aa3d86a83a694f8763e84c2b172fb",
+  "input_sha256": {
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt76_c2_lorenz_batch_validation/rejected_batch/A.tensor": "7f93d2bb802edc965ca291f972c3c61a52fa8425b617925b6db1cd0db66ec36f",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt76_c2_lorenz_batch_validation/rejected_batch/b.tensor": "2b250fbe1b7a5b638eb6540e22331d79e3abb7b080f3d86ae1926a1fd34dc429",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt76_c2_lorenz_batch_validation/rejected_batch/c.tensor": "e592af1ade5b28462df43014aa86f8d6ddedcfb7f4a7f39a384b7bb09683bd05",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt76_c2_lorenz_batch_validation/rejected_batch/x.tensor": "f1cbf93a969834c9251fb2ea274319551a175a7ddd467bf1a7c0399fe45fe014",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt76_c2_lorenz_batch_validation/rejected_batch/log_incremental_weight.tensor": "7a6b6b5f868b93bd7d046f22ff5c659167b436a75dea9d793bffaba9fcb0e252"
+  },
+  "command": [
+    "octave",
+    "--no-gui",
+    "--quiet",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt95_c1_lorenz_failed_source_replay/sources/reference_lorenz_failed_source_replay.m",
+    "/home/chakwong/BayesFilter",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt95_c1_lorenz_failed_source_replay",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt86_c1_lorenz_author_native"
+  ],
+  "octave_version": "6.4.0",
+  "algorithm_seconds": 5.438761204946786,
+  "nonclaims": [
+    "No MATLAB equivalence",
+    "No new filter efficacy or default-readiness evidence",
+    "Source summary reconstruction on fixed TF inputs, not original source random trajectory"
+  ]
+}

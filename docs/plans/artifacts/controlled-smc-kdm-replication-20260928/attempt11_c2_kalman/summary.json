@@ -1,0 +1,242 @@
+{
+  "status": "PASS",
+  "scope": "SCALAR_GAUSSIAN_EXACT_KALMAN_CONTROL",
+  "replication": "INCOMPLETE",
+  "ranking": "NOT_TESTED",
+  "checks": [
+    {
+      "name": "optimal_policy_coefficients",
+      "pass_check": true,
+      "maximum_absolute_error": 1.3766765505351941e-14
+    },
+    {
+      "name": "bootstrap_and_fit_valid",
+      "pass_check": true
+    },
+    {
+      "name": "no_precision_projection",
+      "pass_check": true
+    },
+    {
+      "name": "kalman_logZ_stream73",
+      "pass_check": true,
+      "maximum_absolute_error": 5.329070518200751e-15
+    },
+    {
+      "name": "unit_weights_stream73",
+      "pass_check": true,
+      "maximum_absolute_error": 3.197442310920451e-14
+    },
+    {
+      "name": "ess_stream73",
+      "pass_check": true,
+      "maximum_absolute_error": 1.4210854715202004e-14
+    },
+    {
+      "name": "valid_stream73",
+      "pass_check": true
+    },
+    {
+      "name": "kalman_logZ_stream75",
+      "pass_check": true,
+      "maximum_absolute_error": 3.552713678800501e-15
+    },
+    {
+      "name": "unit_weights_stream75",
+      "pass_check": true,
+      "maximum_absolute_error": 2.7533531010703882e-14
+    },
+    {
+      "name": "ess_stream75",
+      "pass_check": true,
+      "maximum_absolute_error": 1.4210854715202004e-14
+    },
+    {
+      "name": "valid_stream75",
+      "pass_check": true
+    },
+    {
+      "name": "one_trace_per_signature",
+      "pass_check": true
+    }
+  ],
+  "configuration": {
+    "observations": [
+      -0.7,
+      0.1,
+      1.4,
+      -0.4,
+      0.8,
+      1.1,
+      -0.3,
+      0.2
+    ],
+    "particles": 64,
+    "alpha": 0.8,
+    "process_variance": 0.35,
+    "observation_variance": 0.4,
+    "initial_mean": 0.2,
+    "initial_variance": 1.3,
+    "seed": 20260929,
+    "streams": [
+      71,
+      72,
+      73,
+      74,
+      75,
+      76
+    ]
+  },
+  "kalman_logZ": -10.501153258557636,
+  "optimal_policy": [
+    [
+      1.753870184125038,
+      1.2065853347030027,
+      9.75752525898442
+    ],
+    [
+      1.7538677166242918,
+      -1.513211090050269,
+      8.463623964094564
+    ],
+    [
+      1.753848583274853,
+      -3.5175597206418647,
+      8.561845533328741
+    ],
+    [
+      1.75370022838796,
+      -0.048894826139890935,
+      5.250780002646183
+    ],
+    [
+      1.752550393413403,
+      -2.919579442850518,
+      4.8595924281016
+    ],
+    [
+      1.7436666155497624,
+      -2.552484281551909,
+      3.713370700688471
+    ],
+    [
+      1.6766666666666667,
+      0.5366666666666665,
+      1.375057330913044
+    ],
+    [
+      1.25,
+      -0.5,
+      0.5107931672675952
+    ]
+  ],
+  "fitted_policy": [
+    [
+      1.753870184125038,
+      1.2065853347030067,
+      9.757525258984417
+    ],
+    [
+      1.7538677166242964,
+      -1.5132110900502607,
+      8.463623964094557
+    ],
+    [
+      1.7538485832748627,
+      -3.5175597206418696,
+      8.561845533328736
+    ],
+    [
+      1.753700228387973,
+      -0.0488948261399047,
+      5.250780002646189
+    ],
+    [
+      1.752550393413415,
+      -2.9195794428505195,
+      4.859592428101597
+    ],
+    [
+      1.743666615549762,
+      -2.5524842815519087,
+      3.713370700688474
+    ],
+    [
+      1.67666666666667,
+      0.5366666666666602,
+      1.3750573309130454
+    ],
+    [
+      1.2500000000000002,
+      -0.49999999999999994,
+      0.5107931672675949
+    ]
+  ],
+  "bootstrap_logZ": -10.14139186758056,
+  "evaluations": [
+    {
+      "stream": 73,
+      "logZ": -10.50115325855763,
+      "min_ess": 63.999999999999986
+    },
+    {
+      "stream": 75,
+      "logZ": -10.501153258557633,
+      "min_ess": 63.999999999999986
+    }
+  ],
+  "minimum_gram_eigenvalue_ratio": 0.03641115355211394,
+  "trace_counts": {
+    "forward": 1,
+    "fit": 1
+  },
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "numpy_runtime": false,
+  "pfor": false,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_allocator": {
+    "current": 30976,
+    "peak": 52224
+  },
+  "limitations": [
+    "constructed scalar Gaussian identity only",
+    "no posterior moment or stochastic performance claim"
+  ]
+}

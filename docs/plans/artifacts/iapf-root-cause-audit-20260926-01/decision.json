@@ -1,0 +1,46 @@
+{
+  "schema": "iapf_saved_fit_root_cause_audit_v1",
+  "status": "COMPLETE_DIAGNOSTIC_ONLY",
+  "claimed_target": "Paper Eq15 finite-cloud density least squares with free positive lambda and diagonal Gaussian",
+  "computed_quantity": "Same Eq15 in an independent CPU/R reference, with explicit diagnostic counterfactual targets",
+  "identity_verdict": "Profiled objective equals analytic elimination of lambda; no runtime default promoted",
+  "checks": {
+    "count": 48,
+    "passed": 48,
+    "analytic_tolerance": 1e-10,
+    "finite_difference_tolerance": 0.00001
+  },
+  "solver_screen": {
+    "actual_saved_LM": 0,
+    "no_floor_LM": 0,
+    "exact_diagonal_LM": 4,
+    "actual_BFGS": 0,
+    "actual_joint_LM": 0,
+    "cases_per_arm": 4
+  },
+  "primary_finding": "Vanishing density and lambda cause raw-loss descent without improved target shape",
+  "unresolved": [
+    "Original-author practical fitting choices",
+    "Other finite local basins",
+    "Separate causal roles of concentration and initialization",
+    "Full adaptive filter qualification"
+  ],
+  "heuristic_dominance": {
+    "status": "NOT_EVALUABLE_FOR_FULL_FILTER",
+    "reason": "Deterministic component audit; no qualified fitted filter"
+  },
+  "inference_status": {
+    "hard_veto": "No tested actual-target candidate passes stationarity in four cases",
+    "statistical_ranking": "NONE",
+    "default_readiness": "NOT_ESTABLISHED"
+  },
+  "research_budget": {
+    "additional_cpu_seconds": 67.438382,
+    "combined_cpu_seconds": 199.100153,
+    "remaining_cpu_seconds": 1600.899847,
+    "additional_gpu_seconds": 0,
+    "remaining_gpu_hours_conservative": 36.567
+  },
+  "attempt": "attempt01/manifest.json",
+  "next_action": "Recover or explicitly reconstruct finite local fitting choices before a fresh adaptive pilot"
+}

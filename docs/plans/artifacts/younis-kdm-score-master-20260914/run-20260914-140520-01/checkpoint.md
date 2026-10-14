@@ -1,3 +1,7 @@
+<!-- BEGIN_REPLICATION_FIRST_AUTHORITY_20260924 -->
+> **Authority update — 2026-09-24:** the [unified iAPF and MDPF/IWSG replication master](/home/chakwong/BayesFilter/docs/plans/iapf-kdm-replication-master-program-2026-09-24.md) now governs the next work. Use its [current checkpoint](/home/chakwong/BayesFilter/docs/plans/iapf-kdm-replication-checkpoint.md). Both scoped replications precede extensions and integration. The next stage is source/reference closure; the old precision-repair queue is deferred. Execution-state text below is preserved historical evidence, not a current launch instruction or live-process report.
+<!-- END_REPLICATION_FIRST_AUTHORITY_20260924 -->
+
 # Active iAPF checkpoint
 
 Question: how variable are fresh final likelihoods from complete adaptive R

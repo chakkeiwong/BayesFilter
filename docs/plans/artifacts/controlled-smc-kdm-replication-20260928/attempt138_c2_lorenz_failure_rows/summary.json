@@ -1,0 +1,244 @@
+{
+  "status": "PASS",
+  "scope": "FIRST_FAILURE_ROW_ATTRIBUTION_DIAGNOSTIC",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU",
+  "jit_compile": true,
+  "tf32": false,
+  "dtype": "float64",
+  "checks": [
+    {
+      "name": "trusted_gpu_visible",
+      "passed": true
+    },
+    {
+      "name": "healthy_forward_valid",
+      "passed": true
+    },
+    {
+      "name": "healthy_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_log_incremental_weight",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ess",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_precision_margin",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_no_failure",
+      "passed": true
+    },
+    {
+      "name": "invalid_gaussian_stops_before_resampling",
+      "passed": true
+    },
+    {
+      "name": "invalid_particle_stops_before_lookahead",
+      "passed": true
+    },
+    {
+      "name": "healthy_fit_valid",
+      "passed": true
+    },
+    {
+      "name": "healthy_fit_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_fit_b",
+      "passed": true,
+      "max_absolute": 8.881784197001252e-16
+    },
+    {
+      "name": "healthy_fit_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_fit_correction_log_integral",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "backward_stops_at_first_invalid_target",
+      "passed": true
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "actual_controller_success",
+      "passed": true
+    },
+    {
+      "name": "rejected_refit_not_counted",
+      "passed": true
+    },
+    {
+      "name": "consumer_failure_location",
+      "passed": true
+    },
+    {
+      "name": "last_valid_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "stable_trace_counts",
+      "passed": true
+    },
+    {
+      "name": "saved_failure_localized_before_resampling",
+      "passed": true
+    },
+    {
+      "name": "two_rows_healthy",
+      "passed": true
+    },
+    {
+      "name": "only_invalid_gaussian_row_flagged",
+      "passed": true,
+      "actual_codes": [
+        2,
+        0
+      ]
+    },
+    {
+      "name": "only_invalid_particle_row_flagged",
+      "passed": true,
+      "actual_codes": [
+        0,
+        3
+      ]
+    },
+    {
+      "name": "only_invalid_uniform_row_flagged",
+      "passed": true,
+      "actual_codes": [
+        0,
+        7
+      ]
+    },
+    {
+      "name": "later_stage_does_not_override_first",
+      "passed": true,
+      "actual_codes": [
+        2,
+        0
+      ]
+    },
+    {
+      "name": "two_rows_healthy_fit",
+      "passed": true
+    },
+    {
+      "name": "skipped_qr_not_a_rank_failure",
+      "passed": true,
+      "actual_rows": [
+        true,
+        false
+      ]
+    },
+    {
+      "name": "two_rows_stable_traces",
+      "passed": true
+    }
+  ],
+  "candidate_admitted": false,
+  "replication": "INCOMPLETE",
+  "guard_full_scope_parity": "FAILED_132_133_NOT_RETESTED",
+  "heuristic_dominance_verdict": "NOT_ASSESSED_CONTROL_FLOW_ONLY",
+  "wall_seconds": 23.50439717795234
+}

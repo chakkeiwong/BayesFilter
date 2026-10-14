@@ -1,0 +1,203 @@
+{
+  "status": "PASS",
+  "scope": "FIRST_FAILURE_CONSUMER_REGRESSION",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "checks": [
+    {
+      "name": "trusted_gpu_visible",
+      "passed": true
+    },
+    {
+      "name": "healthy_forward_valid",
+      "passed": true
+    },
+    {
+      "name": "healthy_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_log_incremental_weight",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ess",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_precision_margin",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_no_failure",
+      "passed": true
+    },
+    {
+      "name": "invalid_gaussian_stops_before_resampling",
+      "passed": true
+    },
+    {
+      "name": "invalid_particle_stops_before_lookahead",
+      "passed": true
+    },
+    {
+      "name": "healthy_fit_valid",
+      "passed": true
+    },
+    {
+      "name": "healthy_fit_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_fit_b",
+      "passed": true,
+      "max_absolute": 8.881784197001252e-16
+    },
+    {
+      "name": "healthy_fit_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_fit_correction_log_integral",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "backward_stops_at_first_invalid_target",
+      "passed": true
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "unexecuted_prefix_keeps_old_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "actual_controller_success",
+      "passed": true
+    },
+    {
+      "name": "rejected_refit_not_counted",
+      "passed": true
+    },
+    {
+      "name": "consumer_failure_location",
+      "passed": true
+    },
+    {
+      "name": "last_valid_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "last_valid_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "stable_trace_counts",
+      "passed": true
+    },
+    {
+      "name": "saved_failure_localized_before_resampling",
+      "passed": true
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "heuristic_dominance_verdict": "NOT_ASSESSED_CONTROL_FLOW_ONLY",
+  "devices": [
+    "/device:GPU:0",
+    "/device:GPU:1"
+  ],
+  "wall_seconds": 21.65499502501916,
+  "saved_failure": {
+    "time": 0,
+    "codes": [
+      4
+    ],
+    "mean_maxabs": 635.0103140690966,
+    "completed_steps": 0
+  }
+}

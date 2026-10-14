@@ -1,0 +1,298 @@
+"""GPU/XLA diagnostic of evolving MDPF states under common base variates.
+
+Author equations run in the existing CPU-only author environment. Only the
+categorical random mapping is changed for coupling; all TF hot kernels below
+have stable compiled signatures. This module is not an admitted runtime route.
+"""
+import os
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]="true"
+os.environ["BAYESFILTER_PRELOAD_CUSTOM_OP"]="0"
+os.environ["OMP_NUM_THREADS"]="1"
+os.environ["TF_NUM_INTEROP_THREADS"]="1"
+os.environ["TF_NUM_INTRAOP_THREADS"]="1"
+import argparse, copy, gzip, hashlib, json, math, subprocess, sys, tempfile, time, traceback
+from pathlib import Path
+from multiprocessing.connection import Listener
+ROOT=Path("/home/chakwong/BayesFilter")
+sys.path.insert(0,str(ROOT))
+BASE=ROOT/"docs/plans/artifacts/controlled-smc-kdm-replication-20260928"
+SEED=202610122
+def write(p,x):p.write_text(json.dumps(x,allow_nan=False)+"\n")
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def save(p,x):
+    with gzip.open(p,"wt",compresslevel=1) as f:json.dump(x,f,allow_nan=False)
+def main(out):
+    out.mkdir(exist_ok=False)
+    import tensorflow as tf
+    from bayesfilter.runtime.gpu_memory_policy import configure_tensorflow_gpu_memory_growth
+    memory=configure_tensorflow_gpu_memory_growth(tf,require_gpu=True)
+    tf.config.experimental.enable_tensor_float_32_execution(False)
+    tf.config.set_soft_device_placement(False)
+    from bayesfilter.replication.kdm_neural_replay_tf import BearingsNeuralReplay
+    from bayesfilter.replication.kdm_source_stages_tf import SourceFullTraining
+    from docs.benchmarks.diagnose_kdm_crossed_starts_tf import make_observed_coupled_sampler
+    def host(x):
+        if tf.is_tensor(x):return x.numpy().tolist()
+        if isinstance(x,dict):return {k:host(v) for k,v in x.items()}
+        if isinstance(x,(tuple,list)):return [host(v) for v in x]
+        return x
+    # Each key has a fixed identity independent of rejection-loop termination.
+    random_functions={}
+    for dtype in (tf.float32,tf.float64):
+        for kind,shape,uniform in (("proposal",[64,25,4],False),("normal",[25,64,25,2],False),
+             ("initial_normal",[25,64,1,2],False),("categorical",[64,25],True)):
+            def draw(seed,shape=shape,dtype=dtype,uniform=uniform):
+                fn=tf.random.stateless_uniform if uniform else tf.random.stateless_normal
+                return fn(shape,seed,dtype=dtype,alg="philox")
+            random_functions[(kind,dtype.name)]=tf.function(draw,input_signature=[tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+    for kind,shape in (("uniform",[3,25,64,25]),("initial_uniform",[3,25,64,1])):
+        def draw(seed,shape=shape):return tf.random.stateless_uniform(shape,seed,dtype=tf.float64,alg="philox")
+        random_functions[(kind,"float64")]=tf.function(draw,input_signature=[tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+    fold=tf.random.experimental.stateless_fold_in
+    key_functions={}
+    for kind in ("proposal","normal","initial_normal","categorical","uniform","initial_uniform","resampler"):
+        def make_key(root,t,iteration,kind=kind):
+            if kind.startswith("initial_"):
+                key=fold(root,0);return fold(key,0 if kind=="initial_normal" else iteration+1)
+            seq=fold(root,1)
+            if kind=="proposal":return fold(seq,1000+t)
+            key=fold(seq,t)
+            if kind=="resampler":return key
+            return fold(key,{"normal":1,"categorical":0}.get(kind,iteration+2))
+        key_functions[kind]=tf.function(make_key,input_signature=[tf.TensorSpec([2],tf.int64),
+            tf.TensorSpec([],tf.int32),tf.TensorSpec([],tf.int32)],jit_compile=True,autograph=False)
+    def base_key(kind,index,t=0,iteration=0):
+        return key_functions[kind](tf.constant([SEED,index],tf.int64),tf.constant(t,tf.int32),tf.constant(iteration,tf.int32))
+    def base(kind,dtype,index,t=0,iteration=0):
+        dtype="float64" if "uniform" in kind else dtype
+        return random_functions[(kind,dtype)](base_key(kind,index,t,iteration))
+    categorical_functions={}
+    for dtype in (tf.float32,tf.float64):
+        def categorical(w,seed,dtype=dtype):
+            u=tf.random.stateless_uniform([64,25],fold(seed,0),dtype=dtype,alg="philox")
+            cdf=tf.cumsum(w/tf.reduce_sum(w,axis=-1,keepdims=True),axis=-1)
+            return tf.minimum(tf.reduce_sum(tf.cast(u[...,None]>=cdf[:,None,:],tf.int32),axis=-1),24)
+        categorical_functions[dtype.name]=tf.function(categorical,input_signature=[tf.TensorSpec([64,25],dtype),
+            tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+    def coupled_sample(sampler):
+        def sample(p,w,bw,seed):
+            key=lambda tag:fold(seed,tag)
+            ancestors=categorical_functions[sampler.dtype.name](w,seed)
+            z=tf.random.stateless_normal(sampler.shape+[2],key(1),dtype=sampler.dtype,alg="philox")
+            normal=p[None,:,:,:2]+bw[None,:,None,:2]*z
+            def uniform(i):return tf.random.stateless_uniform([3]+sampler.shape,key(i+2),dtype=tf.float64,alg="philox")
+            return sampler._assemble(p,w,bw,ancestors,normal,uniform)
+        return sample
+    def difference(a,b,dtype,angle=False):
+        a=tf.cast(a,tf.float64) if tf.is_tensor(a) else tf.constant(a,tf.float64)
+        b=tf.cast(b,tf.float64) if tf.is_tensor(b) else tf.constant(b,tf.float64)
+        d=a-b
+        if angle:d=tf.atan2(tf.sin(d),tf.cos(d))
+        error=tf.abs(d);tol=2e-5 if dtype=="float32" else 2e-9
+        return dict(max_abs=float(tf.reduce_max(error)),rms=float(tf.sqrt(tf.reduce_mean(d*d))),
+                    max_scaled=float(tf.reduce_max(error/(tol*(1+tf.abs(b))))),
+                    finite=bool(tf.reduce_all(tf.math.is_finite(a))&tf.reduce_all(tf.math.is_finite(b))))
+    def group(actual,expected,dtype):
+        items={n:difference(actual[n],expected[n],dtype) for n in actual}
+        return dict(max_abs=max(v["max_abs"] for v in items.values()),
+            max_scaled=max(v["max_scaled"] for v in items.values()),
+            failed_arrays=[n for n,v in items.items() if v["max_scaled"]>1],arrays=items)
+    def tf_record(model,result,index):
+        names=model.names;o=result["outputs"]
+        # The real native sequence returns its live resampling draws and noises.
+        ancestors=[]
+        for t in range(2,17):
+            ancestors.append(host(tf.cast(o[9][t-1],tf.int32)) if len(o)==12 else host(categorical_functions[model.dtype.name](o[3][t-2],base_key("resampler",index,t))))
+        for t in range(1,17):
+            assert bool(tf.reduce_all(o[7][t-1]==base("proposal",model.dtype.name,index,t))),"Proposal base-input mismatch"
+        return dict(loss=float(result["loss"]),gradient_norm=float(result["gradient_norm"]),
+            gradients=dict(zip(names,host(result["raw_gradients"]))),
+            parameters=dict(zip(names,host(result["parameters_after"]))),
+            moments={n:dict(exp_avg=host(m),exp_avg_sq=host(v)) for n,m,v in zip(names,result["first_moments"],result["second_moments"])},
+            captured=dict(raw=host(o[5]),ancestors=ancestors,iterations=host(o[8][1:]),samples=host(o[6][1:]),
+                outputs=[dict(particles=host(o[0][j]),particle_weights=host(o[1][j]),bandwidths=host(o[2][j])) for j in range(16)]))
+    def compare(a,b,dtype):
+        ac,bc=a["captured"],b["captured"]
+        ancestry=[]
+        for t,(x,y) in enumerate(zip(ac["ancestors"],bc["ancestors"]),2):
+            ancestry.append(dict(time=t,disagreements=int(tf.reduce_sum(tf.cast(tf.not_equal(x,y),tf.int32)))))
+        times=[]
+        for t,(x,y,raw) in enumerate(zip(ac["outputs"],bc["outputs"],ac["raw"]),1):
+            p=tf.constant(x["particles"],tf.float64);q=tf.constant(y["particles"],tf.float64)
+            r=tf.sqrt(tf.reduce_sum(tf.square(tf.constant(raw,tf.float64)[...,-2:]),-1))
+            times.append(dict(time=t,position=difference(p[...,:2],q[...,:2],dtype),
+                angle=difference(p[...,2],q[...,2],dtype,True),minimum_angle_radius=float(tf.reduce_min(r)),
+                weights=difference(x["particle_weights"],y["particle_weights"],dtype)))
+        return dict(loss_difference=a["loss"]-b["loss"],gradient_norm_difference=a["gradient_norm"]-b["gradient_norm"],
+            parameters=group(a["parameters"],b["parameters"],dtype),gradients=group(a["gradients"],b["gradients"],dtype),
+            first_moments=group({n:v["exp_avg"] for n,v in a["moments"].items()},{n:v["exp_avg"] for n,v in b["moments"].items()},dtype),
+            second_moments=group({n:v["exp_avg_sq"] for n,v in a["moments"].items()},{n:v["exp_avg_sq"] for n,v in b["moments"].items()},dtype),
+            ancestors=ancestry,times=times,
+            max_sampling_iterations=max(ac["iterations"]+bc["iterations"]))
+    controls=[];records=[];provenance=[];started=time.monotonic()
+    temp=tempfile.TemporaryDirectory(prefix="kdm-coupled-",dir="/tmp")
+    socket=str(Path(temp.name)/"reference.sock");listener=Listener(socket,family="AF_UNIX")
+    log=(out/"author.log").open("w")
+    env=dict(os.environ,CUDA_VISIBLE_DEVICES="-1")
+    # Remove TF-specific library lookup from the independent author environment.
+    env["LD_LIBRARY_PATH"]="/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+    proc=subprocess.Popen(["/home/chakwong/anaconda3/envs/tf-gpu2/bin/python","-I","-B",
+        str(ROOT/"docs/benchmarks/reference_kdm_trained_gradient_replay.py"),"--socket",socket],
+        cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT)
+    listener._listener._socket.settimeout(60)
+    conn=None;cache={}
+    def receive():
+        assert conn.poll(120),"Author response timeout"
+        r=conn.recv()
+        if r["type"]=="error":raise RuntimeError(r["error"])
+        return r
+    def author_update(arm,index):
+        conn.send(dict(op="update",arm=arm,index=index))
+        while True:
+            r=receive()
+            if r["type"]!="random":return r
+            identity=(r["kind"],r["dtype"],r["index"],r["time"],r["iteration"])
+            if identity not in cache:
+                value=base(r["kind"],r["dtype"],r["index"],r["time"],r["iteration"])
+                # Serialization only; no NumPy numerical path.
+                cache[identity]=dict(type="random",bytes=value.numpy().tobytes(),dtype=value.dtype.name,shape=value.shape.as_list())
+            conn.send(cache[identity])
+    try:
+        conn=listener.accept();metadata=receive();assert metadata["type"]=="ready";write(out/"environment.json",dict(author=metadata,
+            tf=tf.__version__,gpu_devices=[d.name for d in tf.config.list_logical_devices("GPU")],
+            memory_growth=memory,tf32=False,jit_compile=True,seed=SEED))
+        for role in ("starting","best"):
+            conn.send(dict(op="setup",role=role));setup=receive();assert setup["type"]=="setup"
+            provenance.append({k:setup[k] for k in ("path","sha256")})
+            state=setup["state"];models={};stages={};sampler_checks={}
+            for dtype in (tf.float32,tf.float64):
+                fixture=dict(variant="mdpf",dtype=dtype.name,batch_size=64,parameters=state["parameters"],
+                    trainable_names=state["trainable_names"],frozen_names=[n for n in state["parameters"] if n not in state["trainable_names"]],
+                    learning_rates=state["rates"],constants=setup["constants"])
+                model=BearingsNeuralReplay(fixture);converted=copy.deepcopy(state);converted["dtype"]=dtype.name
+                model.load_state_dict(converted)
+                restored=model.state_dict()
+                for key in ("parameters","first_moments","second_moments","step","rates"):
+                    assert restored[key]==state[key],(role,dtype.name,key)
+                model.sampler._sample=coupled_sample(model.sampler)
+                stage=SourceFullTraining(model);models[dtype.name]=model;stages[dtype.name]=stage
+                sampler_checks[dtype.name]=tf.function(model.sampler._sample,input_signature=[
+                    tf.TensorSpec([64,25,3],dtype),tf.TensorSpec([64,25],dtype),tf.TensorSpec([64,3],dtype),
+                    tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+            # The original two-update trajectory remains uninstrumented for an exact control.
+            fixture32=dict(fixture,dtype="float32")
+            observed_model=BearingsNeuralReplay(fixture32,capture_sampling_diagnostics=True)
+            observed_model.sampler._sample=make_observed_coupled_sampler(tf,observed_model.sampler)
+            observed_stage=SourceFullTraining(observed_model)
+            for index in range(2):
+                cache.clear();arms={}
+                for arm in ("source32","perturb32","source64")+(("repeat32",) if index==0 else ()):
+                    arms[arm]=author_update(arm,index)
+                if index==0:
+                    a,b=arms["source32"],arms["repeat32"]
+                    fields=("loss","gradient_norm","gradients","parameters","moments","captured")
+                    assert all(a[k]==b[k] for k in fields),"Source repeat mismatch"
+                    controls.append(dict(name=role+"/source_repeat",pass_check=True))
+                    for dtype in (tf.float32,tf.float64):
+                        a=arms["source32" if dtype==tf.float32 else "source64"]
+                        for j,inputs in enumerate(a["captured"]["sampler_inputs"]):
+                            seed=base_key("resampler",0,j+2)
+                            result=sampler_checks[dtype.name](*[tf.constant(inputs[k],dtype) for k in ("p","w","bw")],seed)
+                            expected=tf.constant(a["captured"]["samples"][j],dtype)
+                            d=difference(result["samples"][...,:2],expected[...,:2],dtype.name)
+                            angle=difference(result["samples"][...,2],expected[...,2],dtype.name,True)
+                            agree=bool(result["valid"]) and int(result["iterations"])==a["captured"]["iterations"][j] and host(result["ancestors"])==a["captured"]["ancestors"][j]
+                            controls.append(dict(name=f"{role}/{dtype.name}/sampler/{j+2}",pass_check=agree and max(d["max_scaled"],angle["max_scaled"])<=1,
+                                position=d,angle=angle,iterations=int(result["iterations"])))
+                        inputs=a["captured"]["sampler_inputs"][0];seed=base_key("resampler",0,2)
+                        p0,w0,b0=[tf.constant(inputs[k],dtype) for k in ("p","w","bw")]
+                        original=sampler_checks[dtype.name](p0,w0,b0,seed)
+                        shift=tf.constant([.25,0.,0.],dtype)
+                        changed=sampler_checks[dtype.name](p0+shift,w0,b0,seed)
+                        delta=difference(changed["samples"],original["samples"]+shift,dtype.name)
+                        controls.append(dict(name=role+"/"+dtype.name+"/own_state_response",
+                            pass_check=bool(changed["valid"]) and delta["max_scaled"]<=1,
+                            difference=delta))
+                        def initial_control(truth,root):
+                            return stages[dtype.name].initial._sample(truth,fold(root,0))
+                        initial_check=tf.function(initial_control,input_signature=[tf.TensorSpec([64,3],dtype),tf.TensorSpec([2],tf.int64)],jit_compile=True,autograph=False)
+                        init=initial_check(tf.constant(a["data"]["states"],dtype)[:,0,:],tf.constant([SEED,0],tf.int64))
+                        d=difference(init["particles"],a["captured"]["initial"]["particles"],dtype.name)
+                        controls.append(dict(name=role+"/"+dtype.name+"/initial",pass_check=bool(init["valid"]) and d["max_scaled"]<=1,difference=d))
+                    write(out/"adapter-controls.json",controls)
+                    assert all(x["pass_check"] for x in controls),"Adapter controls failed"
+                for dtype in (tf.float32,tf.float64):
+                    a=arms["source32" if dtype==tf.float32 else "source64"]
+                    args=[tf.constant(a["data"][k],tf.bool if k=="ground_truth_mask" else dtype) for k in ("states","observations","ground_truth_mask")]
+                    result=stages[dtype.name].update(*args,tf.constant([SEED,index],tf.int64))
+                    assert bool(result["valid"]) and bool(result["committed"])
+                    assert "GPU:0" in result["loss"].device,result["loss"].device
+                    arms["tf32" if dtype==tf.float32 else "tf64"]=tf_record(models[dtype.name],result,index)
+                comparisons={}
+                for label,a,b,dtype in (("tf32_source32","tf32","source32","float32"),
+                    ("tf64_source64","tf64","source64","float64"),("perturb32_source32","perturb32","source32","float32")):
+                    comparisons[label]=compare(arms[a],arms[b],dtype)
+                # Verify the original trajectory before interpreting the same-state replay.
+                prior_path=BASE/"coupled-trajectory-20261012/attempt03/diagnostic"/f"{role}-update{index:02d}.json"
+                prior=json.loads(prior_path.read_text())
+                assert comparisons==prior["comparisons"],("Original trajectory changed",role,index)
+                assert {k:v["loss"] for k,v in arms.items()}==prior["losses"]
+                replay_info={}
+                if index==1:
+                    a=arms["source32"];model=models["float32"];stage=stages["float32"]
+                    evolving_after=model.state_dict()
+                    model.load_state_dict(a["before"])
+                    args32=[tf.constant(a["data"][k],tf.bool if k=="ground_truth_mask" else tf.float32)
+                        for k in ("states","observations","ground_truth_mask")]
+                    replay=stage.update(*args32,tf.constant([SEED,index],tf.int64))
+                    assert bool(replay["valid"]) and bool(replay["committed"])
+                    same=tf_record(model,replay,index)
+                    observed_model.load_state_dict(a["before"])
+                    observed=observed_stage.update(*args32,tf.constant([SEED,index],tf.int64))
+                    assert bool(observed["valid"]) and bool(observed["committed"])
+                    observed_record=tf_record(observed_model,observed,index)
+                    numerical_fields=("loss","gradient_norm","gradients","parameters","moments")
+                    capture_exact=all(same[k]==observed_record[k] for k in numerical_fields)
+                    assert capture_exact,("Capture changes numerical result",role)
+                    model.load_state_dict(evolving_after)
+                    raw=tf.constant(a["captured"]["raw"],tf.float32)
+                    radius=tf.sqrt(tf.reduce_sum(tf.square(raw[...,2:4]),axis=-1))
+                    replay_info=dict(same_source_state=compare(observed_record,a,"float32"),
+                        capture_numerical_exact=capture_exact,actual_ancestry=True,
+                        source_minimum_raw_angle_radius=float(tf.reduce_min(radius)),
+                        source_minimum_raw_angle_location=host(tf.unravel_index(tf.argmin(tf.reshape(radius,[-1]),output_type=tf.int32),tf.shape(radius))))
+                    save(out/(role+"-gradient1.json.gz"),dict(source=a,tf_evolving=arms["tf32"],
+                        tf_same_source_state=same,tf_observed_same_source_state=observed_record,
+                        actual_cdf=host(observed["outputs"][10]),actual_uniform=host(observed["outputs"][11])))
+                record=dict(role=role,update=index,comparisons=comparisons,
+                    losses={k:v["loss"] for k,v in arms.items()},perturbation=arms["perturb32"]["perturbation"],replay=replay_info)
+                records.append(record);write(out/f"{role}-update{index:02d}.json",record)
+                if index in (0,1):
+                    save(out/f"{role}-tensors{index:02d}.json.gz",{k:{f:v[f] for f in ("parameters","moments","captured")} for k,v in arms.items() if k!="repeat32"})
+                write(out/"progress.json",dict(role=role,completed_updates=index+1,wall_seconds=time.monotonic()-started))
+                print(json.dumps(dict(role=role,update=index,loss_delta=comparisons["tf32_source32"]["loss_difference"],
+                    ancestor_differences=sum(x["disagreements"] for x in comparisons["tf32_source32"]["ancestors"]))),flush=True)
+            for dtype in (tf.float32,tf.float64):
+                assert stages[dtype.name].update.experimental_get_tracing_count()==1
+                write(out/(role+"-"+dtype.name+"-final.json"),models[dtype.name].state_dict())
+        conn.send(dict(op="stop"));closed=receive();assert closed["type"]=="closed"
+        proc.wait(timeout=30);assert proc.returncode==0
+        write(out/"author-provenance.json",closed)
+        helper_traces={**{"random/"+str(k):f.experimental_get_tracing_count() for k,f in random_functions.items()},
+                       **{"key/"+k:f.experimental_get_tracing_count() for k,f in key_functions.items()},
+                       **{"categorical/"+k:f.experimental_get_tracing_count() for k,f in categorical_functions.items()}}
+        assert all(n<=1 for n in helper_traces.values()),"Repeated helper trace"
+        assert observed_stage.update.experimental_get_tracing_count()==1
+        write(out/"result.json",dict(status="COMPLETED",scope="DIAGNOSTIC_ONLY",replication="INCOMPLETE",
+            adapter_checks=len(controls),adapter_passes=sum(x["pass_check"] for x in controls),
+            updates=len(records),provenance=provenance,wall_seconds=time.monotonic()-started,
+            selected_replays=[r for r in records if r["replay"]],
+            observed_trace_count=observed_stage.update.experimental_get_tracing_count(),helper_traces=helper_traces,
+            training_trace_count_per_signature=1,allocator=tf.config.experimental.get_memory_info("GPU:0"),
+            common_realized_particles=False,coupling="common base variates, own evolving state"))
+    finally:
+        if proc.poll() is None:proc.terminate();proc.wait(timeout=15)
+        if conn:conn.close()
+        listener.close();log.close();temp.cleanup()
+if __name__=="__main__":
+    p=argparse.ArgumentParser();p.add_argument("--output",type=Path,required=True);main(p.parse_args().output)

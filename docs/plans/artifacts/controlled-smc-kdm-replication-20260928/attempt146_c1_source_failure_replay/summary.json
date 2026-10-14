@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "scope": "FROZEN_SOURCE_FAILURE_REPLAY",
+  "replication": "INCOMPLETE",
+  "scientific_verdict": "SOURCE_PRECISION_AND_COVARIANCE_INDEFINITE",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "source_attempt": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt145_c1_source_full",
+  "grid_index": 36,
+  "repetition": 38,
+  "seed": 202610131,
+  "source_failure_reproduced": true,
+  "reference_failure_is_replication_veto": false,
+  "author_method_repair_in_scope": false,
+  "next_step": "matched_source_to_tensorflow_consumer_comparison",
+  "arms": [
+    {
+      "arm": "unchanged",
+      "expected_failure_reproduced": true,
+      "returncode": 1,
+      "error": "Sigma must be positive semi-definite. Lowest eigenvalue -0.00458167"
+    },
+    {
+      "arm": "observed",
+      "expected_failure_reproduced": true,
+      "returncode": 1,
+      "error": "Sigma must be positive semi-definite. Lowest eigenvalue -0.00458167"
+    }
+  ],
+  "time_index": 19,
+  "precision": {
+    "symmetric_part_eigenvalues": [
+      -218.2608369504712,
+      1460.091644077971,
+      1584.6102630743287,
+      10862.244709335639,
+      11666.614278078168,
+      12438.234076318098,
+      12704.492615485893,
+      22472.383203906396
+    ],
+    "relative_asymmetry": 0.0,
+    "condition_number": 102.96113365039925,
+    "spectral_norm": 22472.3832039064
+  },
+  "covariance": {
+    "symmetric_part_eigenvalues": [
+      -0.00458167399141278,
+      4.4499063180186765e-05,
+      7.871231305853722e-05,
+      8.039726490627481e-05,
+      8.571467061176633e-05,
+      9.206200253807144e-05,
+      0.0006310700008088317,
+      0.0006848885164543828
+    ],
+    "relative_asymmetry": 8.46773190804069e-17,
+    "condition_number": 102.96113365039922,
+    "spectral_norm": 0.004581673991412782
+  },
+  "scaled_inverse_residual": 3.485751535367463e-17,
+  "eigenvalue_roundoff_screen": {
+    "formula": "64*float64_epsilon*spectral_norm; explanatory only",
+    "precision_margin": 3.193517728150596e-10,
+    "covariance_margin": 6.510950344438672e-17
+  },
+  "upstream_fit_root_cause": "NOT_CHECKED_IN_THIS_REPLAY",
+  "matlab_runtime_equivalence": "NOT_CHECKED",
+  "numerical_repair_selected": false,
+  "wall_seconds": 4.147455142927356,
+  "checks": [
+    {
+      "name": "exact_failing_source_consumer_reproduced_in_both_arms",
+      "passed": true
+    }
+  ]
+}

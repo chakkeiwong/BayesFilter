@@ -124,7 +124,9 @@ iapf_apf <- function(model,twists,N,kappa=.5,store_clouds=TRUE) {
       previous <- rep(0,N)
       ancestor <- seq_len(N)
     } else {
-      resampled[time] <- iapf_ess(weights) <= kappa*N
+      # Cauchy-Schwarz gives ESS <= N exactly: kappa=1 always resamples.
+      # Avoid backend-dependent branches when floating ESS rounds above N.
+      resampled[time] <- kappa==1 || iapf_ess(weights) <= kappa*N
       if (resampled[time]) {
         accumulated <- accumulated + iapf_logmean(weights)
         ancestor <- sample.int(N,N,replace=TRUE,prob=exp(weights-max(weights)))

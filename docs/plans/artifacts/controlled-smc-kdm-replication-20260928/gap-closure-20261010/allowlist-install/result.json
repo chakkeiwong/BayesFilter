@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "source": "/home/chakwong/BayesFilter/scripts/codex_rules/controlled-smc-kdm.rules",
+  "source_sha256": "3436a6f40f9456d4b481199bef83f24bb530b1b6c3c4cae28c2d914432c711ff",
+  "installed": "/home/chakwong/.codex/rules/bayesfilter-controlled-smc-kdm.rules",
+  "installed_sha256": "3436a6f40f9456d4b481199bef83f24bb530b1b6c3c4cae28c2d914432c711ff",
+  "backup": null,
+  "checks": [
+    [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter/docs/benchmarks/capture_lorenz_fit_trace.py",
+      "--output",
+      "/tmp/controlled-smc-c0-check"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter/docs/benchmarks/capture_lorenz_forward_reference.py",
+      "--output",
+      "/tmp/controlled-smc-c0-tape-check",
+      "--reference",
+      "/tmp/controlled-smc-reference-check"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter/docs/benchmarks/compare_lorenz_fitting_forward_tf.py",
+      "--root",
+      "/home/chakwong/BayesFilter",
+      "--output",
+      "/tmp/controlled-smc-c1-check",
+      "--reference",
+      "/tmp/controlled-smc-reference-check"
+    ]
+  ],
+  "scope": "three exact replication diagnostic script prefixes",
+  "no_broad_rule": true,
+  "manual_rule_reload": "required for a future Codex session; not assumed here"
+}

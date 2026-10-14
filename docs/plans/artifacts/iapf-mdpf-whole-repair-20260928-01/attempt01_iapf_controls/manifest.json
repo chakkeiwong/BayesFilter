@@ -1,0 +1,67 @@
+{
+  "schema": "replication_repair_attempt_v1",
+  "phase": "iapf_controls",
+  "status": "COMPLETE",
+  "resource": "cpu",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "backend": "independent R FP64 reference; not BayesFilter runtime",
+  "started_utc": "2026-09-27T19:37:40.796538+00:00",
+  "started_epoch": 1790537860.7965493,
+  "timeout_seconds": 300,
+  "command": [
+    "/usr/bin/Rscript",
+    "--vanilla",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls/sources/diagnose_iapf_finite_repair_reference.R",
+    "controls",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls/sources"
+  ],
+  "supervised_command": [
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "300s",
+    "/usr/bin/Rscript",
+    "--vanilla",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls/sources/diagnose_iapf_finite_repair_reference.R",
+    "controls",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls/sources"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "supervisor_pid": 377138,
+  "supervisor_identity": "38099814",
+  "plan": "docs/plans/iapf-mdpf-whole-repair-plan-20260928.md",
+  "specification": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/execution-spec.md",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt01_iapf_controls",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "source_sha256": {
+    "docs/benchmarks/diagnose_iapf_finite_repair_reference.R": "82a2a421ee1aca6a330dab137d98520f70e1a16ddfdfad51a20a91c5ed6800c1",
+    "docs/benchmarks/reference_iapf_paper.R": "979c84f9dbe906742a8101b94ab5391c3268b2b46c81a903b1d5529022916887",
+    "docs/benchmarks/reference_iapf_scale_aware_fit.R": "77a5015b5843c35d37e9d9e0a0a6b0c8cc193d6153aaedd80175e2ef328dc697"
+  },
+  "seeds": "See frozen specification, histories.csv and RDS streams",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1"
+  },
+  "pid": 377143,
+  "process_identity": "38099817",
+  "ended_utc": "2026-09-27T19:37:41.264661+00:00",
+  "returncode": 0,
+  "wall_seconds": 0.46545986901037395,
+  "charged_seconds": 0.4654607339762151,
+  "decision": {
+    "status": "PASS",
+    "controls": "20",
+    "conclusion": "CHECKED_CONTROLS_ONLY_REPLICATION_INCOMPLETE"
+  },
+  "output_sha256": {
+    "decision.csv": "69c4e9649404940e882b27035605835611873a4824d4a33215d20248c0c75cf3",
+    "controls.csv": "467bb7d09acc8b8fc3959586a4d29a6063a8ecc6410545054a076119a0361d69",
+    "command.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

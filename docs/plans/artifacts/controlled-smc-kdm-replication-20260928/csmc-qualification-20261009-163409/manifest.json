@@ -1,0 +1,51 @@
+{
+  "status": "FAILED",
+  "stage": "CSMC_DOWNSTREAM_CALIBRATION",
+  "resource": "mixed",
+  "started_unix_seconds": 1791477249.9135513,
+  "supervisor_pid": 3976788,
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py",
+    "pilot",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163409"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163409",
+  "plan": "docs/plans/controlled-smc-downstream-qualification-20261009.md",
+  "result_file": "docs/plans/controlled-smc-downstream-qualification-result-20261009.md",
+  "executions": [
+    {
+      "mode": "source",
+      "resource": "cpu",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py",
+        "source",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163409"
+      ],
+      "pid": 3976796,
+      "started_unix_seconds": 1791477249.9881475,
+      "timeout_seconds": 3600,
+      "status": "FAILED",
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "returncode": 1,
+      "wall_seconds": 5.460939232027158
+    }
+  ],
+  "charged_seconds": {
+    "cpu": 5.460939232027158,
+    "gpu": 0.0
+  },
+  "spec_sha256": "fa0f7e89fc8cf186d1973fb70da64181602141a91299496d5d9840394d42e8a6",
+  "error": "source worker failed; see /home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163409/source.log",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py\", line 397, in pilot\n    raise RuntimeError(mode+' worker failed; see '+str(output/(mode+'.log')))\nRuntimeError: source worker failed; see /home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163409/source.log\n",
+  "wall_seconds": 5.535866737365723,
+  "ended_unix_seconds": 1791477255.4494185
+}

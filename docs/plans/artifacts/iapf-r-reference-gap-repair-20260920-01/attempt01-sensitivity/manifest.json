@@ -1,0 +1,89 @@
+{
+  "schema": "independent_r_iapf_replication_v1",
+  "status": "failed",
+  "started_at": "2026-09-20T03:44:07.196173+00:00",
+  "command": [
+    "Rscript",
+    "--vanilla",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_iapf_r_fit_sensitivity.R",
+    "/home/chakwong/BayesFilter",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt01-sensitivity/results",
+    "5",
+    "1",
+    "1",
+    "61000000",
+    "sensitivity",
+    "relative_l2",
+    "2",
+    "first_full_window"
+  ],
+  "driver_command": [
+    "docs/benchmarks/run_iapf_r_replication.py",
+    "--campaign",
+    "repair",
+    "--fit-mode",
+    "relative_l2",
+    "--mode",
+    "sensitivity",
+    "--dimension",
+    "5",
+    "--data-seed",
+    "61000000",
+    "--timeout",
+    "180",
+    "--output",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt01-sensitivity"
+  ],
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "source_sha256": {
+    "docs/benchmarks/reference_iapf_paper.R": "fc41603f34e783f783f516ad33e21cd680ee9476dc9e3e8d4e924ecebb134381",
+    "docs/benchmarks/replicate_iapf_paper_linear.R": "75876132504d06a327fef925c711973486ca3d4f0613ace39cd299b38df17675",
+    "docs/benchmarks/run_iapf_r_replication.py": "e1693d28d8c81b7cbe0712f08925e38703a66c00091463964a71305ccc0a9868",
+    "tests/reference_iapf_paper.R": "10cb7c4cb5a46416ecd8df95026b74ac9d63e15e24e164a3ff1747d96b356e85",
+    "tests/highdim/test_iapf_r_paper_reference.py": "32e6d72a9911777877799f777cd290b946b30d23902edb00d756506fe71f0fb4",
+    "docs/plans/iapf-r-reference-gap-repair-2026-09-20.md": "bb864532ca1e66c7273f4efdde3955955062f61c82a82d564ea265ab24a1446f",
+    "tests/reference_iapf_relative_fit.R": "073ecf403a35d51ab2c02fef9b9e5d11e881ee4fd85378133d57e71a0a6cd144",
+    "docs/benchmarks/diagnose_iapf_r_fit_sensitivity.R": "9d446e0e1a80d464d4e894c4171afd4d51d5c669e02a66fa914aa1a138da2e55"
+  },
+  "paper_sha256": "41d751f9698c17550477563ed2bde3ca89ca9918d868ab496b44cb6f7304c975",
+  "environment": {
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "R": "R scripting front-end version 4.1.2 (2021-11-01)"
+  },
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "jit_compile": false,
+  "execution_exception": "owner_requested_independent_R_reference",
+  "data_version": "newly_simulated_section_5_2_linear_Gaussian_v1",
+  "data_seed": 61000000,
+  "method_seeds": "63000000+dimension; common seed across sensitivity settings",
+  "timeout_seconds": 180.0,
+  "prior_charged_worker_seconds": 0,
+  "plan_file": "docs/plans/iapf-r-reference-gap-repair-2026-09-20.md",
+  "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt01-sensitivity/results/sensitivity.csv",
+  "canonical": false,
+  "campaign": "repair",
+  "fit_mode": "relative_l2",
+  "floor_tail_power": 2,
+  "doubling_mode": "first_full_window",
+  "equation_15_objective": false,
+  "worker_budget_seconds": 1200,
+  "launch_budget": 10,
+  "dimension_ladder": [
+    5,
+    10
+  ],
+  "role": "calibration_only_no_setting_selection",
+  "sensitivity_settings": [
+    "floor2/first_full_window",
+    "floor1/first_full_window",
+    "floor3/first_full_window",
+    "floor2/after_k"
+  ],
+  "exit_code": 2,
+  "wall_seconds": 3.3677045999793336,
+  "observation_file_sha256": {
+    "observations-d10.csv": "7a93c1d2e993694f84483c372fcbc1e1f8e7c44a086c3abdba5c6282c5d66de8",
+    "observations-d5.csv": "0be6e86f346f2e2889aa5fc650fd573e3adf60673dc42729319d339b8afb7b2f"
+  }
+}
