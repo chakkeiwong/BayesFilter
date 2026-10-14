@@ -1,0 +1,29 @@
+{
+  "cpu_only": true,
+  "reason": "import/constructor/scheduler regression only; GPU intentionally hidden",
+  "checks": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "tests/test_replication_master.py"
+      ],
+      "returncode": 0,
+      "seconds": 1.3215927319979528,
+      "log": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review09/check1.log"
+    },
+    {
+      "command": [
+        "/home/chakwong/BayesFilter/.localresources/envs/mdpf-reference-20260924/bin/python",
+        "-I",
+        "-B",
+        "-c",
+        "\nimport sys,json,importlib.util\nfrom pathlib import Path\nimport torch,matplotlib.pyplot,scipy,numpy\nassert not torch.cuda.is_initialized()\nroot=Path.cwd()\nout=root/\"docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review09\"\npath=root/\"docs/benchmarks/diagnose_replication_training.py\"\nspec=importlib.util.spec_from_file_location(\"training_fixture\",path)\nmodule=importlib.util.module_from_spec(spec)\nspec.loader.exec_module(module)\nauthor=Path(\"/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023\")\nsrc=module.source_copy(author,out,torch)\nsys.path[:0]=[str(src),str(author/\"packages/kernel-density-estimator-bandwdidth-prediction/packages\")]\nfrom trainers.training_runner import setup_training\nfrom trainers.trainer_utils import CustomReduceLROnPlateau\nfrom models.model_creator import create_model\nmodule.check_scheduler_compatibility(torch,CustomReduceLROnPlateau,torch.device(\"cpu\"))\ncfg=module.restore_yaml_dimensions(json.loads((root/\"docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt09/resolved-configuration.json\").read_text()))\npre=next(iter(cfg[\"pretraining_entry\"][\"experiments\"][0].values()))\nfull=next(e[\"parameters\"] for e in cfg[\"experiments\"] if e[\"name\"]==\"full_dpf_full_training_fixed_bands_000\")\narch=dict(cfg[\"architecture\"]);arch.update(cfg[\"pretraining_entry\"][\"models\"])\nfor params,a in ((pre,arch),(full,cfg[\"architecture\"])):\n model=create_model(params[\"model_params\"],a)\n assert sum(p.numel() for p in model.parameters())>0\n assert all(k in params[\"training_params\"] for k in (\"epochs\",\"early_stopping_patience\",\"training_batch_size\",\"validation_batch_size\",\"optimizer_type\",\"lr_scheduler_params\"))\nassert not torch.cuda.is_initialized()\nprint(json.dumps({\"imports\":\"PASS\",\"source_model_construction\":\"PASS\",\"scheduler_cadence\":\"PASS\",\"cpu_only\":True,\"loaded_cpp\":[l.strip() for l in Path(\"/proc/self/maps\").read_text().splitlines() if \"libstdc++\" in l]}))\n"
+      ],
+      "returncode": 0,
+      "seconds": 4.835361375997309,
+      "log": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review09/check2.log"
+    }
+  ]
+}

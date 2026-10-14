@@ -1,0 +1,74 @@
+{
+  "schema": "kdm_circular_consumer_manifest_v1",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/diagnose_kdm_circular_tf.py",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-circular-20261006-01"
+  ],
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "branch": "surrogate-hmc",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "start_utc": "2026-10-06T10:35:51.448028+00:00",
+  "plan_file": "docs/plans/controlled-smc-kdm-circular-consumer-20261006.md",
+  "result_file": "docs/plans/controlled-smc-kdm-circular-consumer-result-20261006.md",
+  "source_hashes": {
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_circular_tf.py": "cd7fd8317f3b0eb3c0490ae6f7c15960420bd2e63bfb483113850075bcb21f19",
+    "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_circular.py": "73d9a438c65a4e04938377a1b92b6763ff2bef5453874b709032c9e188a6808a",
+    "/home/chakwong/BayesFilter/bayesfilter/replication/kdm_normal_von_mises_tf.py": "5ca822d03086d03fc98f872f2d865b0876a2e665a1337bdc9706df6f1fb5188e",
+    "/home/chakwong/BayesFilter/docs/plans/controlled-smc-kdm-circular-consumer-20261006.md": "d2e4d877bcc2275956eadbf935a33176ffa8ab832c2e121623b1c33d37caeb78"
+  },
+  "data_version": "constructed deterministic mechanics fixture, eight cases",
+  "seed_policy": "20261006+regime index; independent reset per dtype",
+  "cpu_gpu_status": "CPU-only author reference; TF GPU/XLA comparator",
+  "gpu_trust_basis": "escalated_local_gpu_access",
+  "attempt_timeout_seconds": 180,
+  "replication": "INCOMPLETE",
+  "reference_command": [
+    "/home/chakwong/BayesFilter/.localresources/envs/mdpf-reference-20260924/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-circular-20261006-01/sources/reference_kdm_circular.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-circular-20261006-01/author.json"
+  ],
+  "reference_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+  },
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_allocator": {
+    "current": 49152,
+    "peak": 274944
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "wall_seconds": 18.508889578981325,
+  "returncode": 1,
+  "output_artifacts": {
+    "outputs.json": "47fb7ce1b10f151b28ee1e07b6484cd5248a17928171a2ab404df99a369737f3",
+    "author.log": "81cd60f34ae601c1c43c9d0e93234a737c7db04e6f4c3b3f59a5573950808609",
+    "author.json": "acb283de84b9295782d8819664a5945edffdeec6f938055f9d37be0e09f72927",
+    "summary.json": "095c376019b94e302f1eedfeec53940b4cb41a1b44a1bbc57e3f024d595bf3af"
+  }
+}

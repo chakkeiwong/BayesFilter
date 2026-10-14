@@ -1,0 +1,880 @@
+{
+  "status": "bounded execution complete; second controller dataset awaits sufficient allocation",
+  "plan": "docs/plans/iapf-r-full-filter-fitting-comparison-2026-09-21.md",
+  "result": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/result.md",
+  "started_utc": "2026-09-20T19:11:53.882907+00:00",
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "source_hashes": {
+    "docs/plans/iapf-r-full-filter-fitting-comparison-2026-09-21.md": "e1f142e9277e547ca4b42562d0563cc1bd5e5c4a14b3542609da9f2fcb6bcc91",
+    "docs/benchmarks/compare_iapf_r_fitting.R": "13282dba5a02da6ffe1798f00a1dc225ef9a982c1e8de2e962307202cd125d68",
+    "docs/benchmarks/reference_iapf_paper.R": "c7152fea96d917bf90218bbbbc2bb31c01b0831b439625ff922454b01d748fd0",
+    "docs/benchmarks/reference_iapf_plausible_choices.R": "84a26e3ba0a5675782eece1753622991a428427f1e4c2bebd4f9acb8547ace45",
+    "docs/benchmarks/diagnose_iapf_r_validation_tails.R": "35f872e7e9d6ef94df0e828cb1e537dda69a20b34e9412a79dbbc616462f10a0",
+    "docs/benchmarks/run_iapf_r_replication.py": "f957d09f9bdd15f43ef55420727f202a5c2b2b8d557fc66d85ac0e89a3876339",
+    "docs/benchmarks/run_iapf_r_fitting_comparison.py": "18b7b329493c2cbd78d7a39e7769c5bce05de912180ee6475a90772e422934f9",
+    "tests/reference_iapf_replication_gaps.R": "0af2a7265e469c9fceb2201de5ce5edaaca313572716bd0797189e629010dbef"
+  },
+  "budget_seconds": 2400,
+  "mechanics_budget_seconds": 300,
+  "launch_limit": 16,
+  "max_workers": 2,
+  "attempts": [
+    {
+      "name": "attempt01-calibration-d5-qr",
+      "stage": "calibration",
+      "arm": "qr",
+      "dimension": 5,
+      "repeats": 4,
+      "first": 2101,
+      "data_seed": 89100005,
+      "fit_maxit": 200,
+      "timeout_seconds": 180,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt01-calibration-d5-qr/results",
+        "qr",
+        "5",
+        "4",
+        "2101",
+        "89100005",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:11:53.886448+00:00",
+      "exit_code": 0,
+      "worker_seconds": 7.825680240988731,
+      "completed_utc": "2026-09-20T19:12:01.712204+00:00",
+      "observations.csv_sha256": "66da2de1969452038292412c4309bf202a66bf3b003a0de6664f2c58507d9f7e",
+      "kalman.csv_sha256": "29af2f55a656ac76363d7453ff1e08889c9d21117f9c0c24105d63d5a7e3b7ab",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 2400,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt02-calibration-d20-qr",
+      "stage": "calibration",
+      "arm": "qr",
+      "dimension": 20,
+      "repeats": 4,
+      "first": 2201,
+      "data_seed": 89100020,
+      "fit_maxit": 200,
+      "timeout_seconds": 360,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt02-calibration-d20-qr/results",
+        "qr",
+        "20",
+        "4",
+        "2201",
+        "89100020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:11:53.886961+00:00",
+      "exit_code": 0,
+      "worker_seconds": 17.015406036982313,
+      "completed_utc": "2026-09-20T19:12:10.902437+00:00",
+      "observations.csv_sha256": "c9c6b0067ca049dfa5a8d3f79631223cdb6c00984d3cad20fb9d47fdeb76f6f7",
+      "kalman.csv_sha256": "12e323fcad0d5703bc1947ca94050357ef9b2354d9a7cad31a7f15ad8ef9a832",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 2400,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt03-calibration-d5-box0.5",
+      "stage": "calibration",
+      "arm": "box0.5",
+      "dimension": 5,
+      "repeats": 4,
+      "first": 2101,
+      "data_seed": 89100005,
+      "fit_maxit": 200,
+      "timeout_seconds": 180,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt03-calibration-d5-box0.5/results",
+        "box0.5",
+        "5",
+        "4",
+        "2101",
+        "89100005",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:12:10.913974+00:00",
+      "exit_code": 0,
+      "worker_seconds": 38.954761857981794,
+      "completed_utc": "2026-09-20T19:12:49.868772+00:00",
+      "observations.csv_sha256": "66da2de1969452038292412c4309bf202a66bf3b003a0de6664f2c58507d9f7e",
+      "kalman.csv_sha256": "29af2f55a656ac76363d7453ff1e08889c9d21117f9c0c24105d63d5a7e3b7ab",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 2400,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 106,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt04-calibration-d20-box0.5",
+      "stage": "calibration",
+      "arm": "box0.5",
+      "dimension": 20,
+      "repeats": 4,
+      "first": 2201,
+      "data_seed": 89100020,
+      "fit_maxit": 200,
+      "timeout_seconds": 360,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt04-calibration-d20-box0.5/results",
+        "box0.5",
+        "20",
+        "4",
+        "2201",
+        "89100020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:12:10.914334+00:00",
+      "exit_code": 0,
+      "worker_seconds": 146.83593545202166,
+      "completed_utc": "2026-09-20T19:14:37.750302+00:00",
+      "observations.csv_sha256": "c9c6b0067ca049dfa5a8d3f79631223cdb6c00984d3cad20fb9d47fdeb76f6f7",
+      "kalman.csv_sha256": "12e323fcad0d5703bc1947ca94050357ef9b2354d9a7cad31a7f15ad8ef9a832",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 3300,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 2961,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt05-calibration-d5-box1",
+      "stage": "calibration",
+      "arm": "box1",
+      "dimension": 5,
+      "repeats": 4,
+      "first": 2101,
+      "data_seed": 89100005,
+      "fit_maxit": 200,
+      "timeout_seconds": 180,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt05-calibration-d5-box1/results",
+        "box1",
+        "5",
+        "4",
+        "2101",
+        "89100005",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:14:37.764194+00:00",
+      "exit_code": 0,
+      "worker_seconds": 76.70522285200423,
+      "completed_utc": "2026-09-20T19:15:54.469452+00:00",
+      "observations.csv_sha256": "66da2de1969452038292412c4309bf202a66bf3b003a0de6664f2c58507d9f7e",
+      "kalman.csv_sha256": "29af2f55a656ac76363d7453ff1e08889c9d21117f9c0c24105d63d5a7e3b7ab",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 3900,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 111,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt06-calibration-d20-box1",
+      "stage": "calibration",
+      "arm": "box1",
+      "dimension": 20,
+      "repeats": 4,
+      "first": 2201,
+      "data_seed": 89100020,
+      "fit_maxit": 200,
+      "timeout_seconds": 360,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt06-calibration-d20-box1/results",
+        "box1",
+        "20",
+        "4",
+        "2201",
+        "89100020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:14:37.764449+00:00",
+      "exit_code": 0,
+      "worker_seconds": 107.238443320035,
+      "completed_utc": "2026-09-20T19:16:25.002911+00:00",
+      "observations.csv_sha256": "c9c6b0067ca049dfa5a8d3f79631223cdb6c00984d3cad20fb9d47fdeb76f6f7",
+      "kalman.csv_sha256": "12e323fcad0d5703bc1947ca94050357ef9b2354d9a7cad31a7f15ad8ef9a832",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 3200,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 2579,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt07-calibration-d5-box2",
+      "stage": "calibration",
+      "arm": "box2",
+      "dimension": 5,
+      "repeats": 4,
+      "first": 2101,
+      "data_seed": 89100005,
+      "fit_maxit": 200,
+      "timeout_seconds": 180,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt07-calibration-d5-box2/results",
+        "box2",
+        "5",
+        "4",
+        "2101",
+        "89100005",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:16:25.012697+00:00",
+      "exit_code": 0,
+      "worker_seconds": 42.147733107965905,
+      "completed_utc": "2026-09-20T19:17:07.160475+00:00",
+      "observations.csv_sha256": "66da2de1969452038292412c4309bf202a66bf3b003a0de6664f2c58507d9f7e",
+      "kalman.csv_sha256": "29af2f55a656ac76363d7453ff1e08889c9d21117f9c0c24105d63d5a7e3b7ab",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 2600,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": true,
+        "active_bound_fits": 95,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt08-calibration-d20-box2",
+      "stage": "calibration",
+      "arm": "box2",
+      "dimension": 20,
+      "repeats": 4,
+      "first": 2201,
+      "data_seed": 89100020,
+      "fit_maxit": 200,
+      "timeout_seconds": 360,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt08-calibration-d20-box2/results",
+        "box2",
+        "20",
+        "4",
+        "2201",
+        "89100020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:16:25.013077+00:00",
+      "exit_code": 0,
+      "worker_seconds": 156.35520249500405,
+      "completed_utc": "2026-09-20T19:19:01.368312+00:00",
+      "observations.csv_sha256": "c9c6b0067ca049dfa5a8d3f79631223cdb6c00984d3cad20fb9d47fdeb76f6f7",
+      "kalman.csv_sha256": "12e323fcad0d5703bc1947ca94050357ef9b2354d9a7cad31a7f15ad8ef9a832",
+      "inspection": {
+        "expected_rows": 4,
+        "observed_rows": 4,
+        "complete_rows": 4,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 4400,
+        "converged_fits": true,
+        "tail_rows": 400,
+        "tail_pass": false,
+        "active_bound_fits": 644,
+        "eligible": false
+      }
+    },
+    {
+      "name": "attempt09-validation-89200020-box1",
+      "stage": "validation",
+      "arm": "box1",
+      "dimension": 20,
+      "repeats": 16,
+      "first": 2301,
+      "data_seed": 89200020,
+      "fit_maxit": 200,
+      "timeout_seconds": 600,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt09-validation-89200020-box1/results",
+        "box1",
+        "20",
+        "16",
+        "2301",
+        "89200020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:19:01.383840+00:00",
+      "exit_code": 0,
+      "worker_seconds": 369.05074220499955,
+      "completed_utc": "2026-09-20T19:25:09.585729+00:00",
+      "observations.csv_sha256": "edaba085bacf350ee33e1a08988f3321aac7f0decd8b2941e5ba61bfc73115f6",
+      "kalman.csv_sha256": "e901a452cfb393ed3733e62d2ba6b2ecded5b92c90c9ac9c2e96bc8fe8494731",
+      "inspection": {
+        "expected_rows": 16,
+        "observed_rows": 16,
+        "complete_rows": 16,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 12100,
+        "converged_fits": true,
+        "tail_rows": 1600,
+        "tail_pass": true,
+        "active_bound_fits": 9520,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt10-validation-89200020-baselines",
+      "stage": "validation",
+      "arm": "baselines",
+      "dimension": 20,
+      "repeats": 16,
+      "first": 2301,
+      "data_seed": 89200020,
+      "fit_maxit": 200,
+      "timeout_seconds": 200,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt10-validation-89200020-baselines/results",
+        "baselines",
+        "20",
+        "16",
+        "2301",
+        "89200020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:19:01.384140+00:00",
+      "exit_code": 0,
+      "worker_seconds": 111.3961716130143,
+      "completed_utc": "2026-09-20T19:20:51.931447+00:00",
+      "observations.csv_sha256": "edaba085bacf350ee33e1a08988f3321aac7f0decd8b2941e5ba61bfc73115f6",
+      "kalman.csv_sha256": "e901a452cfb393ed3733e62d2ba6b2ecded5b92c90c9ac9c2e96bc8fe8494731",
+      "inspection": {
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "complete_rows": 64,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 9600,
+        "converged_fits": true,
+        "tail_rows": 1600,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt11-validation-89300020-box1",
+      "stage": "validation",
+      "arm": "box1",
+      "dimension": 20,
+      "repeats": 16,
+      "first": 2401,
+      "data_seed": 89300020,
+      "fit_maxit": 200,
+      "timeout_seconds": 600,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt11-validation-89300020-box1/results",
+        "box1",
+        "20",
+        "16",
+        "2401",
+        "89300020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:25:09.628821+00:00",
+      "exit_code": 0,
+      "worker_seconds": 560.0721586309955,
+      "completed_utc": "2026-09-20T19:34:27.721603+00:00",
+      "observations.csv_sha256": "3885ac992b05702f92737f67e87747972d194a081273219083bb2f097c31fc07",
+      "kalman.csv_sha256": "c07b0193101dd90a4f01c7fbbf40725da8b2bc82d11b3503ed47e526344e42ca",
+      "inspection": {
+        "expected_rows": 16,
+        "observed_rows": 16,
+        "complete_rows": 16,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 12500,
+        "converged_fits": true,
+        "tail_rows": 1600,
+        "tail_pass": true,
+        "active_bound_fits": 9869,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt12-validation-89300020-baselines",
+      "stage": "validation",
+      "arm": "baselines",
+      "dimension": 20,
+      "repeats": 16,
+      "first": 2401,
+      "data_seed": 89300020,
+      "fit_maxit": 200,
+      "timeout_seconds": 200,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt12-validation-89300020-baselines/results",
+        "baselines",
+        "20",
+        "16",
+        "2401",
+        "89300020",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:25:09.629081+00:00",
+      "exit_code": 0,
+      "worker_seconds": 141.66033344803145,
+      "completed_utc": "2026-09-20T19:27:31.289476+00:00",
+      "observations.csv_sha256": "3885ac992b05702f92737f67e87747972d194a081273219083bb2f097c31fc07",
+      "kalman.csv_sha256": "c07b0193101dd90a4f01c7fbbf40725da8b2bc82d11b3503ed47e526344e42ca",
+      "inspection": {
+        "expected_rows": 64,
+        "observed_rows": 64,
+        "complete_rows": 64,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 9600,
+        "converged_fits": true,
+        "tail_rows": 1600,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      }
+    },
+    {
+      "name": "attempt13-saved-guide-shapes",
+      "stage": "guide_diagnostic",
+      "timeout_seconds": 120,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/followthrough-source-snapshot/docs/benchmarks/diagnose_iapf_r_fitted_guides.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/followthrough-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt13-saved-guide-shapes/results",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01"
+      ],
+      "started_utc": "2026-09-20T19:36:21.070752+00:00",
+      "exit_code": 0,
+      "worker_seconds": 4.332923244975973,
+      "completed_utc": "2026-09-20T19:36:25.404266+00:00",
+      "coverage_rows": 64,
+      "shape_rows": 6400
+    },
+    {
+      "name": "attempt14-controller-89400080",
+      "stage": "controller",
+      "arm": "controller",
+      "dimension": 80,
+      "repeats": 8,
+      "first": 2501,
+      "data_seed": 89400080,
+      "fit_maxit": 200,
+      "timeout_seconds": 400,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/followthrough-source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/followthrough-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt14-controller-89400080/results",
+        "controller",
+        "80",
+        "8",
+        "2501",
+        "89400080",
+        "200"
+      ],
+      "started_utc": "2026-09-20T19:36:25.414944+00:00",
+      "exit_code": 124,
+      "failure_class": "bounded_worker_timeout",
+      "worker_seconds": 400.0324058950064,
+      "completed_utc": "2026-09-20T19:42:59.650210+00:00",
+      "observations.csv_sha256": "2d45eb69570dd6f6620f71b7a0262247b2bfaaccd6eba41746abd4ffe8d94cac",
+      "kalman.csv_sha256": "c5da5afa1d556c4996cc4cf5ecf179d8a98967a8ab7e5f6210dcefd6b713e184",
+      "inspection": {
+        "expected_rows": 40,
+        "observed_rows": 26,
+        "complete_rows": 26,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 7200,
+        "converged_fits": true,
+        "tail_rows": 1100,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": false
+      },
+      "used_in_derived": "derived-controller-89400080"
+    },
+    {
+      "name": "attempt15-controller-completion-89400080",
+      "stage": "controller_repair",
+      "arm": "controller",
+      "dimension": 80,
+      "repeats": 8,
+      "first": 2501,
+      "data_seed": 89400080,
+      "fit_maxit": 200,
+      "timeout_seconds": 219,
+      "completed_before": [
+        [
+          "2501",
+          "bpf"
+        ],
+        [
+          "2501",
+          "fully_adapted"
+        ],
+        [
+          "2501",
+          "qr"
+        ],
+        [
+          "2501",
+          "short_qr"
+        ],
+        [
+          "2501",
+          "sis"
+        ],
+        [
+          "2502",
+          "bpf"
+        ],
+        [
+          "2502",
+          "fully_adapted"
+        ],
+        [
+          "2502",
+          "qr"
+        ],
+        [
+          "2502",
+          "short_qr"
+        ],
+        [
+          "2502",
+          "sis"
+        ],
+        [
+          "2503",
+          "bpf"
+        ],
+        [
+          "2503",
+          "fully_adapted"
+        ],
+        [
+          "2503",
+          "qr"
+        ],
+        [
+          "2503",
+          "short_qr"
+        ],
+        [
+          "2503",
+          "sis"
+        ],
+        [
+          "2504",
+          "bpf"
+        ],
+        [
+          "2504",
+          "fully_adapted"
+        ],
+        [
+          "2504",
+          "qr"
+        ],
+        [
+          "2504",
+          "short_qr"
+        ],
+        [
+          "2504",
+          "sis"
+        ],
+        [
+          "2505",
+          "bpf"
+        ],
+        [
+          "2505",
+          "fully_adapted"
+        ],
+        [
+          "2505",
+          "qr"
+        ],
+        [
+          "2505",
+          "short_qr"
+        ],
+        [
+          "2505",
+          "sis"
+        ],
+        [
+          "2506",
+          "qr"
+        ]
+      ],
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/repair-source-snapshot/docs/benchmarks/compare_iapf_r_fitting.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/repair-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt15-controller-completion-89400080/results",
+        "controller",
+        "80",
+        "8",
+        "2501",
+        "89400080",
+        "200",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-full-filter-fitting-20260921-01/attempt15-controller-completion-89400080/completed-pairs.csv"
+      ],
+      "started_utc": "2026-09-20T19:48:39.689311+00:00",
+      "exit_code": 0,
+      "worker_seconds": 175.27953284501564,
+      "completed_utc": "2026-09-20T19:51:32.423240+00:00",
+      "inspection": {
+        "expected_rows": 14,
+        "observed_rows": 14,
+        "complete_rows": 14,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 3200,
+        "converged_fits": true,
+        "tail_rows": 500,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      },
+      "observations.csv_sha256": "2d45eb69570dd6f6620f71b7a0262247b2bfaaccd6eba41746abd4ffe8d94cac",
+      "kalman.csv_sha256": "c5da5afa1d556c4996cc4cf5ecf179d8a98967a8ab7e5f6210dcefd6b713e184",
+      "used_in_derived": "derived-controller-89400080"
+    }
+  ],
+  "worker_seconds": 2354.9026532450225,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "device": "independent CPU R; GPU intentionally hidden",
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "r_version": "R scripting front-end version 4.1.2 (2021-11-01)"
+  },
+  "remaining_seconds": 45.09734675497748,
+  "followthrough": {
+    "plan": "docs/plans/iapf-r-controller-window-comparison-2026-09-21.md",
+    "source_hashes": {
+      "docs/plans/iapf-r-full-filter-fitting-comparison-2026-09-21.md": "bb1e150985d86520d3248d10c100fabbe2fbf82bbe7584ccc668780593ab9b67",
+      "docs/plans/iapf-r-controller-window-comparison-2026-09-21.md": "46707bb7193e8b0059e05fc289c49671c72a9eb6457bf26e3e1095736d99a5b6",
+      "docs/benchmarks/diagnose_iapf_r_fitted_guides.R": "e2346f1af6a48131e0c24b745abd526564deac5934f8df8883223eb0865f31eb",
+      "docs/benchmarks/compare_iapf_r_fitting.R": "d0dc2322a53c84b774e05491eb07679d4374996be9d69be56191516720f8dd37",
+      "docs/benchmarks/reference_iapf_paper.R": "56b902827bd36868c6b8395109cf67a6c3111f7388eeb869713363c4a562a491",
+      "docs/benchmarks/reference_iapf_plausible_choices.R": "d33aa16a97d4b5fe477b078703a027f6883edb604a796055ac050f508761478a",
+      "docs/benchmarks/diagnose_iapf_r_validation_tails.R": "35f872e7e9d6ef94df0e828cb1e537dda69a20b34e9412a79dbbc616462f10a0",
+      "docs/benchmarks/run_iapf_r_replication.py": "f957d09f9bdd15f43ef55420727f202a5c2b2b8d557fc66d85ac0e89a3876339",
+      "docs/benchmarks/run_iapf_r_fitting_comparison.py": "e6fa6f0663e4a38dd060c78a4fac25d119d5f2afc1baf7001c4fecf01b7b0671",
+      "docs/benchmarks/continue_iapf_r_fitting_program.py": "8593a5937e3cf3029397769b652285b7315babf6e955a69003465b975a53628b",
+      "docs/benchmarks/summarize_iapf_r_fitting_comparison.py": "1cc45e3874454ebcef83330d4696070e3cb6ef135ed1110a5655909a9a18d86c",
+      "tests/reference_iapf_controller_window.R": "05f6a36efa59d3a29a8baea0ef66f92aeb519d932350ad4381d942fce51f03a9"
+    },
+    "transferred_remaining_seconds": 624.7422087399755,
+    "original_allocation_unchanged": true,
+    "numerical_default_unchanged": true,
+    "implementation_change": "optional stopping window, default k+1, shared controller"
+  },
+  "unlaunched": [
+    {
+      "name": "attempt15-controller-89500080",
+      "stage": "controller",
+      "arm": "controller",
+      "dimension": 80,
+      "repeats": 8,
+      "first": 2601,
+      "data_seed": 89500080,
+      "fit_maxit": 200,
+      "timeout_seconds": 400
+    }
+  ],
+  "controller_repair": {
+    "source_hashes": {
+      "docs/benchmarks/reference_iapf_paper.R": "56b902827bd36868c6b8395109cf67a6c3111f7388eeb869713363c4a562a491",
+      "docs/benchmarks/reference_iapf_plausible_choices.R": "d33aa16a97d4b5fe477b078703a027f6883edb604a796055ac050f508761478a",
+      "docs/benchmarks/diagnose_iapf_r_validation_tails.R": "35f872e7e9d6ef94df0e828cb1e537dda69a20b34e9412a79dbbc616462f10a0",
+      "docs/benchmarks/compare_iapf_r_fitting.R": "9ab578f6fbb46f4b98b7193adcb3d144e5b4649cef7d4a4b80e7e04f9a0ca0a9",
+      "docs/plans/iapf-r-full-filter-fitting-comparison-2026-09-21.md": "bb1e150985d86520d3248d10c100fabbe2fbf82bbe7584ccc668780593ab9b67",
+      "docs/plans/iapf-r-controller-window-comparison-2026-09-21.md": "a7383a1dedef5c96da621f1171c28ada0cce13461c1b3c7cd702993a61e32ab1",
+      "docs/benchmarks/run_iapf_r_replication.py": "f957d09f9bdd15f43ef55420727f202a5c2b2b8d557fc66d85ac0e89a3876339",
+      "docs/benchmarks/run_iapf_r_fitting_comparison.py": "f1125941fdfdb8aa203778b61c06f89c7a165c60d7daf5f0354c6cc45acb4728",
+      "docs/benchmarks/repair_iapf_r_controller_cell.py": "194af9fdf3181676f667d43184208e54ee7b1116e0a6e183e270cb602fedeb1f",
+      "docs/benchmarks/summarize_iapf_r_fitting_comparison.py": "c9473b410898baf3bd9dd4bad5ef92003cffdaff6ca6337025e760accbb709c1"
+    },
+    "completed_pairs_sha256": "515ee002a6ef3870cb190383abd7948db15011e3628233a34d1d6450c838dcf0",
+    "reason": "bounded_worker_timeout",
+    "original_allocation_unchanged": true
+  },
+  "derived_cells": [
+    {
+      "name": "derived-controller-89400080",
+      "stage": "controller",
+      "arm": "controller",
+      "dimension": 80,
+      "repeats": 8,
+      "first": 2501,
+      "data_seed": 89400080,
+      "fit_maxit": 200,
+      "exit_code": 0,
+      "parent_attempts": [
+        "attempt14-controller-89400080",
+        "attempt15-controller-completion-89400080"
+      ],
+      "derived_without_additional_worker": true,
+      "inspection": {
+        "expected_rows": 40,
+        "observed_rows": 40,
+        "complete_rows": 40,
+        "failed_rows": 0,
+        "records_ok": true,
+        "fit_rows": 10400,
+        "converged_fits": true,
+        "tail_rows": 1600,
+        "tail_pass": true,
+        "active_bound_fits": 0,
+        "eligible": true
+      }
+    }
+  ],
+  "completed_utc": "2026-09-20T19:57:22.892184+00:00",
+  "terminal_analysis": "terminal-analysis-v2/summary.json",
+  "reporting_source_sha256": "ed95d2ab4bd50966537a1b888895f8751462b6d0babbb3c7b24ac9422df8abd0",
+  "reporting_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/summarize_iapf_r_fitting_comparison.py",
+    "terminal-analysis-v2"
+  ],
+  "decision_summary": {
+    "constrained_box1": "reject current practical reference on both fresh d20 cells",
+    "qr_d20": "passes tested practical screens; different objective from paper Eq15",
+    "controller_d80": "neither arm passes full primary screen on first dataset",
+    "second_controller_dataset": "not launched; remaining budget insufficient",
+    "production_default_changed": false
+  },
+  "continuation_boundary": {
+    "type": "insufficient_remaining_compute",
+    "remaining_worker_seconds": 45.09734675497748,
+    "missing_dataset_seed": 89500080,
+    "missing_replicate_ids": [
+      2601,
+      2602,
+      2603,
+      2604,
+      2605,
+      2606,
+      2607,
+      2608
+    ],
+    "suggested_new_allocation_seconds": 700,
+    "new_allocation_spent": false
+  },
+  "repair_validation": "controller-repair-mechanics.json",
+  "terminal_review": "terminal-review.json"
+}

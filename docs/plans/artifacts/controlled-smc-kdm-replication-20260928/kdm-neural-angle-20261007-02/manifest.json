@@ -1,0 +1,202 @@
+{
+  "schema": "kdm_neural_angle_supervisor_v1",
+  "status": "COMPLETED",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_kdm_neural_precision.py",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02"
+  ],
+  "supervisor_pid": 1802520,
+  "start_utc": "2026-10-07T13:17:03.650287+00:00",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "branch": "surrogate-hmc",
+  "plan_file": "docs/plans/controlled-smc-kdm-neural-precision-20261007.md",
+  "result_file": "docs/plans/controlled-smc-kdm-neural-precision-result-20261007.md",
+  "source_hashes": {
+    "docs/benchmarks/run_kdm_neural_precision.py": "32b7ff3fafa5b450c54730e4ce01f306dbcebd1b3a3cc30ceb455d6a4533eaf5",
+    "docs/benchmarks/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "docs/benchmarks/diagnose_kdm_neural_precision_tf.py": "4c0716c35f97ee4ffc462b134cd3b985e30d7fdea0b0760ded91d3099f1a285e",
+    "docs/plans/controlled-smc-kdm-neural-precision-20261007.md": "7ef8355231352f5b37106b26ecf5b047a3fde8d155338974f3aebb8f3a3d260e",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd"
+  },
+  "cpu_gpu_status": "GPU-hidden one-thread author reference; trusted TF GPU/XLA",
+  "random_seeds": [
+    202610171
+  ],
+  "fixtures": [
+    [
+      "same_inputs",
+      202610171,
+      256
+    ]
+  ],
+  "data_version": "development replay; not untouched qualification",
+  "phase_budget_seconds": {
+    "cpu": 600.0,
+    "gpu": 900.0
+  },
+  "prior_charged_seconds": {
+    "cpu": 70.09989383094944,
+    "gpu": 153.05415677488782
+  },
+  "resource_wall_seconds": {
+    "cpu": 4.273304213071242,
+    "gpu": 41.84855061303824
+  },
+  "executions": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_neural_exact_replay.py",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/same_inputs.json",
+        "--replay",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-01/fresh_a.json",
+        "--batch-size",
+        "4",
+        "--updates",
+        "1",
+        "--seed",
+        "202610171",
+        "--data-offset",
+        "256"
+      ],
+      "resource": "cpu",
+      "timeout_seconds": 529.9001061690506,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib",
+        "OMP_NUM_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": null
+      },
+      "log": "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/same_inputs.log",
+      "status": "COMPLETED",
+      "pid": 1802523,
+      "returncode": 0,
+      "wall_seconds": 4.273304213071242
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_neural_precision_tf.py",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/gpu",
+        "--reference",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/reference.json"
+      ],
+      "resource": "gpu",
+      "timeout_seconds": 746.9458432251122,
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+        "LD_LIBRARY_PATH": null,
+        "OMP_NUM_THREADS": "1",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+      },
+      "log": "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/gpu.log",
+      "status": "COMPLETED",
+      "pid": 1802749,
+      "returncode": 0,
+      "wall_seconds": 41.84855061303824
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "reference_components": [
+    {
+      "fixture_id": "same_inputs",
+      "path": "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-neural-angle-20261007-02/same_inputs.json",
+      "sha256": "d0226a06b4592fd68e3a05ec498169ab26e31ef647dfbd6fa8b900512dfc47e7",
+      "seed": 202610171,
+      "data_offset": 256,
+      "batch_size": 4
+    }
+  ],
+  "reference_sha256": "db648789a2b668409a6b04a0ebd9faff83309384dc31cfa214605e99a756c4e7",
+  "checkpoint_sha256": "85cb07f3f46a2efe1b37b4469c1bafed57cf5440489cfadee9362865bddb3d1c",
+  "data_sha256": "2a5d8bd29ba316575ef3188fe9d05bfe8febde1332779970d8da575ecdbda97a",
+  "decision": {
+    "status": "PASS",
+    "scope": "EXACT_FLOAT32_INPUT_PRECISION_LOCALIZATION",
+    "replication": "INCOMPLETE",
+    "numerical_screen_passed": false,
+    "dtype_screen_passed": {
+      "float32": false,
+      "float64": true
+    },
+    "scientific_verdict": "EXACT_INPUT_FLOAT64_COMPATIBLE",
+    "comparison_verdict": "FAILED_DIAGNOSTIC_CHECKS"
+  },
+  "checks_total": 928,
+  "failed_checks": 16,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "physical_devices": [
+    {
+      "name": "/physical_device:GPU:0",
+      "details": {
+        "compute_capability": [
+          12,
+          0
+        ],
+        "device_name": "NVIDIA GeForce RTX 5080"
+      }
+    }
+  ],
+  "jit_compile": true,
+  "tf32": false,
+  "gpu_manifest_sha256": "91316dd06985cdfbdd0832cc857715e9030bd53f8f4892fdb1b35f506421dbfc",
+  "wall_seconds": 46.33117602416314,
+  "end_utc": "2026-10-07T13:17:52.796999+00:00",
+  "outputs": {
+    "same_inputs.json": "d0226a06b4592fd68e3a05ec498169ab26e31ef647dfbd6fa8b900512dfc47e7",
+    "gpu.log": "229e425abe98d972c1a5664d16e05d04801f31b92d07a6ce21604d6a52bd7e46",
+    "same_inputs.log": "4081d4f152bf4a6e6cb35692d81592a6c3b01efc864bf880d149ae2b27aa7717",
+    "reference.json": "db648789a2b668409a6b04a0ebd9faff83309384dc31cfa214605e99a756c4e7",
+    "sources/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "sources/diagnose_kdm_neural_precision_tf.py": "4c0716c35f97ee4ffc462b134cd3b985e30d7fdea0b0760ded91d3099f1a285e",
+    "sources/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "sources/controlled-smc-kdm-neural-precision-20261007.md": "7ef8355231352f5b37106b26ecf5b047a3fde8d155338974f3aebb8f3a3d260e",
+    "sources/run_kdm_neural_precision.py": "32b7ff3fafa5b450c54730e4ce01f306dbcebd1b3a3cc30ceb455d6a4533eaf5",
+    "sources/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "gpu/decision.json": "6fc29a017ecc9d9626a3dd647e3bb7019f6f0c6b1de073f1bdb5084875df5107",
+    "gpu/author.json": "db648789a2b668409a6b04a0ebd9faff83309384dc31cfa214605e99a756c4e7",
+    "gpu/comparison.json": "565491ecafd06c760e4505d73f44f7fe7b49fa58184537f66d35c8022bce76d2",
+    "gpu/precision_observations.json": "82179f88c7a9de58c84d3b01f422f21b12312ec6db12dc7cdc457ad0abf2944d",
+    "gpu/progress.json": "47289b98b7b88a180c882409f746bbe9b6f3efb2b6f835dc5f787c3b874061c9",
+    "gpu/sources/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "gpu/sources/diagnose_kdm_neural_precision_tf.py": "4c0716c35f97ee4ffc462b134cd3b985e30d7fdea0b0760ded91d3099f1a285e",
+    "gpu/sources/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "gpu/sources/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "gpu/sources/controlled-smc-kdm-neural-precision-20261007.md": "7ef8355231352f5b37106b26ecf5b047a3fde8d155338974f3aebb8f3a3d260e",
+    "gpu/sources/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6"
+  }
+}

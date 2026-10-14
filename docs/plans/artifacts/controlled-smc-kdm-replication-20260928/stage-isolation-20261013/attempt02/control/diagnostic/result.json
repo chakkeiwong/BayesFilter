@@ -1,0 +1,77 @@
+{
+  "status": "FAIL",
+  "mode": "control",
+  "replication": "INCOMPLETE",
+  "seed_base": 1100000000,
+  "reference_sha256": "e7d623e619710c7e0524f3af86122172e3c230c8dca4576dfbf75204e301e8d0",
+  "initialization": "isolated MDPF state; original global stage index and seed schedule",
+  "starting_state": {
+    "path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit01/training/diagnostic/mdpf-starting-state.json",
+    "sha256": "71b5b8809e6ce0bb2a1768d16fac8fd5382d0e19036e283feb0b38afc609e1d9"
+  },
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "tf32": false,
+  "devices": [
+    "/device:GPU:0",
+    "/device:GPU:1"
+  ],
+  "dtype": "float32",
+  "random_backend": "TF stateless Philox",
+  "datasets": {
+    "training": {
+      "path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/training.json",
+      "sha256": "3d45b37797f881e9da2b21973bfa2b6a440235b606a20492dc25f4f6c619a176",
+      "rows": 5000,
+      "source_sha256": "2830728fba9f468f5fba9f6d3f2295820f3559d6f4b4775ef80d076d89deb70a"
+    },
+    "validation": {
+      "path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/validation.json",
+      "sha256": "dd48b98edef1f42b0f6696266abaf4fa50ac9b586bbfe06ba47f2dcdf87c6f12",
+      "rows": 1000,
+      "source_sha256": "b57e3ec97bfe0f1754def1a84656a0fbff577b3213ab72ce366f18a30e877f31"
+    }
+  },
+  "selected_stages": [
+    "mdpf"
+  ],
+  "original_stage_index": 1,
+  "error": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_stage_isolation_tf.py\", line 57, in main\n    run_epochs(tf,reference,baseline,args,out,result,boolean,run,write,require_same_reference=False,\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_epoch_tf.py\", line 30, in run_epochs\n    raise ValueError(\"Runtime changed since verification: \"+name)\nValueError: Runtime changed since verification: bayesfilter/replication/kdm_source_stages_tf.py\n",
+  "checks_total": 0,
+  "checks_failed": 0,
+  "wall_seconds": 2.292828369187191
+}

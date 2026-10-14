@@ -1,0 +1,428 @@
+{
+  "status": "PASS",
+  "scope": "LORENZ_PRECISION_NONHARM_DIAGNOSTIC",
+  "replication": "INCOMPLETE",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "candidates": [
+    {
+      "policy": "nearest_covariance",
+      "floor": 0.01,
+      "folder": "covariance_floor_0.01",
+      "eligible": false,
+      "healthy_checks": [
+        {
+          "name": "valid_without_activation",
+          "passed": false
+        },
+        {
+          "name": "A",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 848.7805199533632
+        },
+        {
+          "name": "b",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 28.55520058935872
+        },
+        {
+          "name": "c",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 71.30430175299989
+        },
+        {
+          "name": "x",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 0.33293867897266194
+        },
+        {
+          "name": "ancestors",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 405.0
+        },
+        {
+          "name": "log_incremental_weight",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 36.45521844135874
+        },
+        {
+          "name": "logZ",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 28.463145720033936
+        },
+        {
+          "name": "ess",
+          "passed": false,
+          "bitwise_equal": false,
+          "max_error": 490.5112746053575
+        },
+        {
+          "name": "stopping",
+          "passed": true
+        }
+      ],
+      "healthy_valid": true,
+      "healthy_protections": 3.0,
+      "rejected_design_valid": true,
+      "iterations": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "safety": {
+        "minimum_qr_rcond": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.01656797263030825,
+            0.014511982211132866,
+            0.016568257657206084,
+            0.012716872664948479
+          ],
+          [
+            0.01685973660444556,
+            0.017185088639093706,
+            0.016791179372184044,
+            0.016985062892064834
+          ],
+          [
+            0.015676792564014348,
+            0.01634330322847635,
+            0.01637678996463152,
+            0.016435686866159392
+          ],
+          [
+            0.0027917719743925855,
+            0.015025885808009525,
+            0.01624000178838503,
+            0.016906473865736443
+          ]
+        ],
+        "protection_count": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            1.0
+          ],
+          [
+            2.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            6.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "minimum_fraction": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "minimum_raw_margin": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.010046784712195644,
+            0.00994920204277861,
+            0.009727832389177684,
+            0.009589236889154647
+          ],
+          [
+            0.010747550472256433,
+            0.009966671424472974,
+            0.010421305217952703,
+            0.009659413831182594
+          ],
+          [
+            -0.13250911073213004,
+            0.008644742979934363,
+            0.00871440874751059,
+            0.008540206695264608
+          ],
+          [
+            -0.2184429328445935,
+            0.008441355597040187,
+            0.008291385472103374,
+            0.008404331145778333
+          ]
+        ],
+        "maximum_relative_change": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0032105360703945846,
+            0.022873222752826113,
+            0.03656120923630717
+          ],
+          [
+            0.0,
+            0.0016646027435039835,
+            0.0,
+            0.02827066278433244
+          ],
+          [
+            5.907058419424293,
+            0.13024672730315304,
+            0.12285094184305095,
+            0.14002477237767222
+          ],
+          [
+            3.2351318332315904,
+            0.14886743771790342,
+            0.16472344120685414,
+            0.15361512251409032
+          ]
+        ],
+        "maximum_eigen_residual": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.9861253718815818e-15,
+            1.9913422994035684e-15,
+            1.906856903000032e-15,
+            1.871931083753098e-15
+          ],
+          [
+            1.8923329532871096e-15,
+            1.9918666288652646e-15,
+            1.97200199882579e-15,
+            1.9738225722261194e-15
+          ],
+          [
+            1.955389829062101e-15,
+            1.9285921129452474e-15,
+            1.969790450252658e-15,
+            1.925443349871831e-15
+          ],
+          [
+            1.9375189470933077e-15,
+            1.9256840364343126e-15,
+            1.9237958147715843e-15,
+            1.892979199227456e-15
+          ]
+        ],
+        "maximum_eigen_orthogonality": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.7763568394002505e-15
+          ],
+          [
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            2.220446049250313e-15
+          ],
+          [
+            1.6653345369377348e-15,
+            2.1094237467877974e-15,
+            2.4424906541753444e-15,
+            1.9984014443252818e-15
+          ],
+          [
+            1.7763568394002505e-15,
+            1.6653345369377348e-15,
+            1.887379141862766e-15,
+            2.220446049250313e-15
+          ]
+        ],
+        "maximum_eigen_rotations": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            51.0,
+            51.0,
+            51.0,
+            51.0
+          ],
+          [
+            55.0,
+            55.0,
+            55.0,
+            55.0
+          ],
+          [
+            53.0,
+            53.0,
+            53.0,
+            53.0
+          ],
+          [
+            54.0,
+            54.0,
+            54.0,
+            54.0
+          ]
+        ]
+      },
+      "minimum_forward_precision_margin": 0.009900990099009901,
+      "rejected_design_finite": true,
+      "trace_counts": {
+        "healthy_controller": 1,
+        "healthy_fit": 1,
+        "healthy_forward": 1,
+        "rejected_controller": 1,
+        "rejected_fit": 1,
+        "rejected_forward": 1
+      },
+      "verdict": "REJECTED_NONHARM_SCREEN",
+      "saved_history": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt117_c2_lorenz_bounded_condition_safety/covariance_floor_0.01",
+      "seconds": 34.06005534401629
+    }
+  ],
+  "checks": [
+    {
+      "name": "shared_kernel_snapshot",
+      "passed": true
+    },
+    {
+      "name": "hash_normal.bin",
+      "passed": true
+    },
+    {
+      "name": "hash_uniform.bin",
+      "passed": true
+    },
+    {
+      "name": "unprotected_healthy_valid",
+      "passed": true
+    },
+    {
+      "name": "nonempty_calibration_survivors",
+      "passed": true
+    },
+    {
+      "name": "all_predeclared_candidates_evaluated",
+      "passed": true
+    }
+  ],
+  "heuristic_dominance_verdict": "NOT_ASSESSED_SAFETY_ONLY",
+  "stable_integral": true,
+  "eigen_tolerance": 1.7763568394002505e-15,
+  "eigen_refinement": true,
+  "wall_seconds": 47.424912909045815,
+  "eligible_policies": [],
+  "next_validation_policy": null,
+  "interpretation": "Completed safety evaluation only. Candidate eligibility does not certify correctness, variance reduction, source-code replication, or default readiness.",
+  "allocator": {
+    "current": 104317184,
+    "peak": 307898112
+  }
+}

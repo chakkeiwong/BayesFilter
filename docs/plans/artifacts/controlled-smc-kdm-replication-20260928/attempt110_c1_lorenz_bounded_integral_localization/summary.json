@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "scope": "REJECTED_COVARIANCE_RECURSION_LOCALIZATION",
+  "replication": "INCOMPLETE",
+  "device": "CPU",
+  "gpu_intentionally_hidden": true,
+  "diagnostic_numpy_reference": true,
+  "rows": [
+    {
+      "stage": 3,
+      "first_backward_mismatch": null,
+      "first_projection": {
+        "time": 12,
+        "projected": true,
+        "raw_precision_margin": -0.13250911073341906,
+        "minimum_singular_ratio": 0.12041333772609548,
+        "max_scaled_error": 0.1681577982459413,
+        "coefficient_scaled_errors": [
+          0.1681577982459413,
+          0.011768166074290315,
+          0.0009707106479928632
+        ],
+        "correction_maxabs": 49711.801553090125,
+        "target_maxabs": 48439.42900932468,
+        "reference_A_maxabs": 635267.3276570047,
+        "gpu_A_maxabs": 635267.3276505029
+      },
+      "mismatched_times": 0,
+      "projection_count": 1,
+      "details": "stage3.json"
+    },
+    {
+      "stage": 4,
+      "first_backward_mismatch": {
+        "time": 12,
+        "projected": false,
+        "raw_precision_margin": 0.04575645956319483,
+        "minimum_singular_ratio": 0.0007467083084675977,
+        "max_scaled_error": 28.541256047471272,
+        "coefficient_scaled_errors": [
+          5.364825635653285,
+          28.541256047471272,
+          0.024331862159760628
+        ],
+        "correction_maxabs": 480624.89995662734,
+        "target_maxabs": 479501.1873387829,
+        "reference_A_maxabs": 5591.238142137316,
+        "gpu_A_maxabs": 5591.238142112446
+      },
+      "first_projection": {
+        "time": 13,
+        "projected": true,
+        "raw_precision_margin": -0.21110466236204917,
+        "minimum_singular_ratio": 0.07166498091824912,
+        "max_scaled_error": 0.33828663209089016,
+        "coefficient_scaled_errors": [
+          0.33828663209089016,
+          0.06080173022464782,
+          0.062256868549580055
+        ],
+        "correction_maxabs": 74178.37373285003,
+        "target_maxabs": 63872.8736347033,
+        "reference_A_maxabs": 318991.95559591864,
+        "gpu_A_maxabs": 318991.955590768
+      },
+      "mismatched_times": 13,
+      "projection_count": 2,
+      "details": "stage4.json"
+    }
+  ],
+  "checks": [
+    {
+      "name": "localized_stage3",
+      "passed": true,
+      "has_mismatches": false
+    },
+    {
+      "name": "localized_stage4",
+      "passed": true,
+      "has_mismatches": true
+    }
+  ],
+  "interpretation": "Discrepancy localized; optional covariance repair remains rejected. No variance or efficacy inference.",
+  "wall_seconds": 0.5062574431067333
+}

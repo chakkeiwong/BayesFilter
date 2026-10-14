@@ -1,0 +1,69 @@
+{
+  "schema": "replication_repair_attempt_v1",
+  "phase": "iapf_value_fixture",
+  "status": "FAILED",
+  "resource": "cpu",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "backend": "independent R FP64 reference; not BayesFilter runtime",
+  "started_utc": "2026-09-27T20:14:06.543379+00:00",
+  "started_epoch": 1790540046.5433939,
+  "timeout_seconds": 60,
+  "command": [
+    "/usr/bin/Rscript",
+    "--vanilla",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture/sources/export_iapf_paper_value_fixture.R",
+    "export",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture/sources"
+  ],
+  "supervised_command": [
+    "/usr/bin/timeout",
+    "--signal=TERM",
+    "--kill-after=5s",
+    "60s",
+    "/usr/bin/Rscript",
+    "--vanilla",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture/sources/export_iapf_paper_value_fixture.R",
+    "export",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture/sources"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "supervisor_pid": 416987,
+  "supervisor_identity": "38318389",
+  "plan": "docs/plans/iapf-mdpf-whole-repair-plan-20260928.md",
+  "specification": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/value-port-spec.md",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-mdpf-whole-repair-20260928-01/attempt06_iapf_value_fixture",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "source_sha256": {
+    "docs/benchmarks/diagnose_iapf_finite_repair_reference.R": "82a2a421ee1aca6a330dab137d98520f70e1a16ddfdfad51a20a91c5ed6800c1",
+    "docs/benchmarks/reference_iapf_paper.R": "979c84f9dbe906742a8101b94ab5391c3268b2b46c81a903b1d5529022916887",
+    "docs/benchmarks/reference_iapf_scale_aware_fit.R": "77a5015b5843c35d37e9d9e0a0a6b0c8cc193d6153aaedd80175e2ef328dc697",
+    "docs/benchmarks/export_iapf_paper_value_fixture.R": "ccac31f787f80a8c45d1000254ef80a5609d019390aa7b4cc2bb45fb0f66177f"
+  },
+  "seeds": "Fixture seeds and preserved arrays in index.csv",
+  "supervisor_python": "3.11.15 (main, Jun 11 2026, 15:20:16) [GCC 14.3.0]",
+  "interpreter": "/usr/bin/Rscript",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "pid": 416989,
+  "process_identity": "38318392",
+  "ended_utc": "2026-09-27T20:14:06.710100+00:00",
+  "returncode": 1,
+  "wall_seconds": 0.16463520197430626,
+  "charged_seconds": 0.16463622398441657,
+  "decision": {},
+  "output_sha256": {
+    "command.log": "7bbdfbfa80ac70c29f55c7c08a59b1ea77b8d4ab605039c34bd27da0ca2a0b8c",
+    "sources/diagnose_iapf_finite_repair_reference.R": "82a2a421ee1aca6a330dab137d98520f70e1a16ddfdfad51a20a91c5ed6800c1",
+    "sources/export_iapf_paper_value_fixture.R": "ccac31f787f80a8c45d1000254ef80a5609d019390aa7b4cc2bb45fb0f66177f",
+    "sources/reference_iapf_scale_aware_fit.R": "77a5015b5843c35d37e9d9e0a0a6b0c8cc193d6153aaedd80175e2ef328dc697",
+    "sources/reference_iapf_paper.R": "979c84f9dbe906742a8101b94ab5391c3268b2b46c81a903b1d5529022916887"
+  }
+}

@@ -1,0 +1,200 @@
+{
+  "status": "PASS",
+  "scope": "RBF_CORRECTED_FORWARD_CONSUMER",
+  "replication": "INCOMPLETE",
+  "checks": [
+    {
+      "name": "mixture_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "component_means",
+      "passed": true,
+      "max_absolute_error": 1.1102230246251565e-16,
+      "atol": 1e-12,
+      "rtol": 1e-12
+    },
+    {
+      "name": "component_variances",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 1e-12,
+      "rtol": 1e-12
+    },
+    {
+      "name": "mixture_probabilities",
+      "passed": true,
+      "max_absolute_error": 1.1102230246251565e-16,
+      "atol": 1e-12,
+      "rtol": 1e-12
+    },
+    {
+      "name": "gaussian_integral",
+      "passed": true,
+      "max_absolute_error": 4.440892098500626e-16,
+      "atol": 1e-12,
+      "rtol": 1e-12
+    },
+    {
+      "name": "density_ratio",
+      "passed": true,
+      "max_absolute_error": 4.440892098500626e-16,
+      "atol": 1e-12,
+      "rtol": 1e-12
+    },
+    {
+      "name": "negative_beta_rejected",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "negative_weight_rejected",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "zero_mass_rejected",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "mixture_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "corrected_source_consumer_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "corrected_source_x",
+      "passed": true,
+      "max_absolute_error": 3.552713678800501e-15,
+      "atol": 1e-08,
+      "rtol": 1e-09
+    },
+    {
+      "name": "corrected_source_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 4.1744385725905886e-13,
+      "atol": 1e-08,
+      "rtol": 1e-09
+    },
+    {
+      "name": "corrected_source_logZ",
+      "passed": true,
+      "max_absolute_error": 1.9895196601282805e-13,
+      "atol": 1e-08,
+      "rtol": 1e-09
+    },
+    {
+      "name": "corrected_source_ess",
+      "passed": true,
+      "max_absolute_error": 1.2789769243681803e-13,
+      "atol": 1e-08,
+      "rtol": 1e-09
+    },
+    {
+      "name": "corrected_source_ancestry",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "fresh_consumer_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "forward_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    }
+  ],
+  "source_target": "ONE_EXPLICIT_ANCESTOR_PROBABILITY_INDEX_REPAIR",
+  "fit_implemented": false,
+  "final_logZ": [
+    -12.934367904597462,
+    -12.815069996558016
+  ],
+  "fresh_final_logZ": [
+    -13.660664919867033,
+    -12.773182688477892
+  ],
+  "seed": 20261005,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "/device:GPU:0",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "numpy_runtime": false,
+  "pfor": false,
+  "python_time_loop": false,
+  "traces": {
+    "forward": 1,
+    "mixture": 1
+  },
+  "allocator": {
+    "current": 54016,
+    "peak": 109568
+  },
+  "wall_seconds": 4.245650205994025,
+  "nonclaims": [
+    "No NNLS fitting port",
+    "No Table2 replication",
+    "No stochastic ranking or general default"
+  ]
+}
