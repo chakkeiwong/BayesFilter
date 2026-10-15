@@ -1,0 +1,298 @@
+\section{Backward information as a proposal, not a replacement score}
+\label{sec:backward-guidance}
+
+The proposal developed here keeps one LEDH particle cloud, the existing
+per-particle UKF covariance recursion, OT, Contract--E--Chol and the GenUT
+dual-cap correction. Future observations inform where to propose particles;
+they are not appended to the observation likelihood. The returned score is
+the analytical total derivative of the returned finite log normalizer. This
+choice differs from the two-cloud Fisher-score construction: a Fisher
+estimate of the model score need not differentiate a finite particle
+likelihood. Neither construction has established lower model-score error.
+
+\subsection{What travels backward}
+
+Suppose the whole observation sequence is already available. Write
+$f_\theta(x\mid z)$ for the transition density and $g_t(x)$ for the
+observation density at time $t$. All densities in the following proposition
+are with respect to fixed dominating measures, and the conditioning
+normalizers are positive and finite. Future information is the function
+$h_t(x)=p_\theta(y_{t+1:T}\mid X_t=x)$, not a sampled trajectory.
+
+\begin{proposition}[Backward information and the smoothing proposal]
+\label{prop:bg-backward}
+With $h_T=1$,
+\begin{align}
+ h_{t-1}(z)&=\int f_\theta(x\mid z)g_t(x)h_t(x)\,\dd x,
+ \label{eq:bg-backward}\\
+ p_\theta(x_t\mid x_{t-1}=z,y_{t:T})
+ &=\frac{f_\theta(x_t\mid z)g_t(x_t)h_t(x_t)}{h_{t-1}(z)}.
+ \label{eq:bg-smoothing-proposal}
+\end{align}
+If $h_t$ is constant, it has no effect on the normalized proposal.
+\end{proposition}
+\begin{proof}
+Condition on $X_t=x$ in $p(y_{t:T}\mid X_{t-1}=z)$ and use the Markov
+property and conditional independence of observations. This gives the first
+identity. Bayes' rule gives the second; a constant factor cancels between
+numerator and denominator.
+\end{proof}
+This is the state-space backward-information argument of
+\citet[eqs.~(9)--(10), Proposition~4.1]{heng2020controlled}. Their approximate
+dynamic programming fits backward policy corrections using pilot
+parent--child pairs. It is not the same operation as following surviving
+ancestral trajectories. A fitted function may supply useful future
+information without reconstructing any full smoothing path.
+
+\subsection{A precisely defined, frozen-guide proposal}
+
+We first restrict the proposed implementation to full-rank additive Gaussian
+transitions $f_\theta(x\mid z)=\mathcal N(x;a,Q)$, where
+$a=m_\theta(z)$ and $Q=Q_\theta\succ0$. This excludes singular transitions.
+A pilot produces a fixed schedule of guide coefficients $\eta$ before the
+evaluated finite program starts. These coefficients, any fit reference
+parameter, the observation sequence and base Gaussian draws are fixed when
+that program is differentiated. Re-fitting at each evaluated parameter and
+then ignoring the fit derivative would compute a different quantity.
+
+For each incoming particle, let a guide evaluator return symmetric
+$H\succeq0$ and $b$, possibly depending smoothly on its current anchor $a$.
+At this anchor the local proposal factor is
+$\exp(-x^\top Hx/2+b^\top x+c)$. The additive constant $c$ need not be
+known because it cancels on normalization. There is no extra observation
+factor in the importance numerator.
+
+\begin{proposition}[Gaussian proposal and its total tangent]
+\label{prop:bg-gaussian}
+The normalized product of the Gaussian transition and this local factor is
+$q^0=\mathcal N(m,V)$, where
+\begin{align}
+ P&=Q^{-1},& K&=P+H,& V&=K^{-1},& m&=V(Pa+b).
+ \label{eq:bg-gaussian}
+\end{align}
+For any parameter direction, dots denote total directional derivatives,
+including dependence through the incoming state. Then
+\begin{align}
+ \dot P&=-P\dot QP,& \dot K&=\dot P+\dot H,&
+ \dot V&=-V\dot K V,\nonumber\\
+ \dot m&=V(\dot P a+P\dot a+\dot b-\dot K m).
+ \label{eq:bg-gaussian-tangent}
+\end{align}
+For fixed $\xi\sim\mathcal N(0,I)$, put $U=m+L\xi$ with
+$L=\operatorname{chol}(V)$. Its tangent is
+$\dot U=\dot m+\dot L\xi$, where
+$\dot L=L\Phi(L^{-1}\dot V L^{-\top})$ and $\Phi$ retains the lower
+triangle, halves the diagonal and sets the upper triangle to zero.
+\end{proposition}
+\begin{proof}
+Expand the Gaussian exponent, collect its quadratic coefficient $P+H$ and
+linear coefficient $Pa+b$, and complete the square. Since $P\succ0$ and
+$H\succeq0$, $K\succ0$; thus $Q,K,V,L$ are invertible. Explicitly,
+\begin{align*}
+ \dot P Q+P\dot Q&=0,\\
+ \dot K V+K\dot V&=0,\\
+ \dot K m+K\dot m&=\dot P a+P\dot a+\dot b.
+\end{align*}
+Multiplication by the appropriate inverse gives each displayed tangent.
+Differentiating $LL^\top=V$
+and imposing lower triangular $\dot L$ gives the stated Cholesky formula.
+The base draw is constant, giving the last identity.
+\end{proof}
+For a controlled-SMC quadratic policy
+$\psi(x)=\exp(-x^\top A x-\beta^\top x-c)$, the adapter is
+$H=2A$, $b=-\beta$ when $A\succeq0$. The sign and factor of two agree
+with the released Lorenz implementation's shifted Gaussian precision. This
+adapter borrows a proposal factor; it does not claim to execute the complete
+controlled-SMC twisted-potential algorithm. Policies depending on the current
+observation may still be corrected as proposals, but only a future-only
+policy can support the specific lookahead interpretation above.
+
+\subsection{What a kernel mixture can contribute}
+
+A separate optional representation is a positive frozen Gaussian mixture
+$\widehat h(x)=\sum_k\alpha_k\mathcal N(x;c_k,S_k)$ with
+$\alpha_k>0$, $\sum_k\alpha_k=1$, and $S_k\succ0$. Multiplication of
+$\widehat h$ by a positive constant has no effect on the following guide.
+A normalized mixture is only a hypothesis for the shape of backward
+information; backward information need not itself be integrable as a
+function of state. No claim of universal representability is made.
+Unlike sampling a component label, evaluating this mixture introduces no
+categorical discontinuity. Its use here is a new local proposal construction,
+not the IWSG estimator of \citet{younis2023}.
+
+\begin{proposition}[Mixture-informed local Gaussian guidance]
+\label{prop:bg-mixture}
+At the anchor $a$, define $\Lambda_k=S_k^{-1}$ and
+\begin{align}
+ r_k&=\frac{\alpha_k\mathcal N(a;c_k,S_k)}{\widehat h(a)},&
+ v_k&=\Lambda_k(c_k-a),& \bar v&=\sum_k r_kv_k,\nonumber\\
+ H&=\sum_k r_k\Lambda_k,& b&=\sum_k r_k\Lambda_kc_k.
+ \label{eq:bg-mixture}
+\end{align}
+Then $H\succ0$ and the local quadratic has the same spatial gradient as
+$\log\widehat h$ at $a$, since $b-Ha=\bar v$.
+For fixed mixture coefficients,
+\begin{align}
+ \dot r_k&=r_k(v_k-\bar v)^\top\dot a,&
+ \dot H&=\sum_k\dot r_k\Lambda_k,&
+ \dot b&=\sum_k\dot r_k\Lambda_kc_k.
+ \label{eq:bg-mixture-tangent}
+\end{align}
+\end{proposition}
+\begin{proof}
+The gradient of a Gaussian log density is $v_k$ at $a$; differentiation of
+the log-sum-exp gives $\bar v$. In particular,
+$\dot{\log r_k}=v_k^\top\dot a-\bar v^\top\dot a$ and
+$\dot r_k=r_k\dot{\log r_k}$, which gives the claimed tangent.
+Differentiate the finite sums to obtain $\dot H$ and $\dot b$. A positive
+weighted sum of positive-definite matrices is positive definite, and
+substitution gives $b-Ha=\sum_k r_k\Lambda_k(c_k-a)$.
+\end{proof}
+This is gradient matching, not Hessian matching:
+$\nabla^2\log\widehat h(a)=-H+\operatorname{Cov}_r(v_k)$.
+Discarding the covariance term defines the proposal approximation explicitly;
+it does not justify treating a multimodal mixture as log concave. Nor does a
+local Gaussian retain all mixture modes. The omission is not a hidden
+stabilizer for the physical likelihood; the proposal density is corrected
+and the change in finite-particle behavior still requires evaluation.
+
+\subsection{The corrected finite likelihood and its derivative}
+
+Generate the pre-flow particle from $q^0$, not from the unmodified
+transition. Apply the existing LEDH flow using its physical prediction and
+current observation. Write its output as $X=F(U)$ and the log-Jacobian
+quantity computed by the existing flow as $j$. Its incoming normalized
+weight is $W$. The new pre-reset log weight is defined by
+\begin{equation}
+ \lambda=\log W+\log f_\theta(X\mid z)+\log g_t(X)
+                 +j-\log q^0(U).
+ \label{eq:bg-weight}
+\end{equation}
+In particular, subtracting $\log f_\theta(U\mid z)$ instead of
+$\log q^0(U)$ is wrong for this proposal. The guide is not multiplied into
+$g_t$. Initialization is unchanged: this bounded implementation does not
+twist the initial law.
+
+\begin{proposition}[Conditional importance identity and its limitation]
+\label{prop:bg-correction}
+Condition on the incoming cloud and guide. If $F$ is a differentiable
+bijection on the proposal support and $j=\log|\det D_UF|$ is its actual
+Jacobian, then for integrable $\varphi$,
+\[
+ \mathbb E_{U\sim q^0}\!\left[
+ \varphi(F(U))\frac{f_\theta(F(U)\mid z)g_t(F(U))e^j}{q^0(U)}\right]
+ =\int\varphi(x)f_\theta(x\mid z)g_t(x)\,\dd x.
+\]
+\end{proposition}
+\begin{proof}
+Cancel $q^0$ against the sampling density and substitute $x=F(u)$.
+The absolute Jacobian converts $\dd u$ into $\dd x$.
+\end{proof}
+The bijection and actual-Jacobian conditions are substantive. If a localized
+flow records only a frozen-coefficient affine determinant while its
+coefficients depend on the transported particle, this proposition cannot
+certify that implementation. Differentiating the recorded determinant
+correctly does not repair that measure mismatch. This work preserves the
+existing finite LEDH calculation and audits its derivative; it does not
+silently certify those independent flow assumptions. Furthermore, the
+deterministic OT/Contract-E/GenUT reset is not multinomial resampling and
+does not inherit an unbiased full-filter normalizer from this one-step
+identity.
+
+\begin{proposition}[Total derivative of the retained finite program]
+\label{prop:bg-total}
+Fix base draws, guide coefficients, iteration counts, residual design and
+all non-parameter controls. On an open neighborhood where each executed
+operation is differentiable, Cholesky factors exist and branch choices are
+unchanged, define
+\[
+ \widehat\ell_\eta(\theta;\xi)
+  =\sum_{t=1}^T \log\sum_i\exp(\lambda_t^i),\qquad
+ w_t^i=\frac{\exp(\lambda_t^i)}{\sum_j\exp(\lambda_t^j)}.
+\]
+Propagating all input tangents gives
+\begin{align}
+ \dot\lambda&=\dot{\log W}+\dot{\log f}+\dot{\log g}
+                         +\dot j-\dot{\log q^0},\nonumber\\
+ \dot{\widehat\ell}_\eta&=\sum_t\sum_iw_t^i\dot\lambda_t^i,&
+ \dot w_t^i&=w_t^i\left(\dot\lambda_t^i-\sum_jw_t^j\dot\lambda_t^j\right).
+ \label{eq:bg-total}
+\end{align}
+This is the total directional derivative of this same finite scalar.
+\end{proposition}
+\begin{proof}
+For $q^0=\mathcal N(m,V)$, put $e=U-m$. Direct differentiation gives
+\[
+ \dot{\log q^0(U)}=-\tfrac12\operatorname{tr}(V^{-1}\dot V)
+ -(V^{-1}e)^\top(\dot U-\dot m)
+ +\tfrac12e^\top V^{-1}\dot V V^{-1}e.
+\]
+Use Proposition~\ref{prop:bg-gaussian} for all its arguments and, when
+applicable, Proposition~\ref{prop:bg-mixture} for the moving anchor. The
+chain rule gives $\dot\lambda$ and differentiation of log-sum-exp gives
+the remaining expressions. Induct over time, carrying state and covariance
+tangents through the existing UKF, flow and reset. In the reset, if
+$Y=\mathcal T(X,w)$ and $E=\mathcal R(X,w,Y)$, its tangent is
+$\mathcal R_X\dot X+\mathcal R_w\dot w+
+\mathcal R_Y(\mathcal T_X\dot X+\mathcal T_w\dot w)$, with any declared
+ridge/design derivatives as well. Differentiating only $Y$ omits direct
+source-moment terms. Apply the same chain rule to GenUT and both caps.
+This completes the induction, assuming the invoked component tangents are
+correct on that neighborhood.
+\end{proof}
+The proposition does not equate this finite derivative with the exact model
+score. It also does not differentiate the pilot fit: if $\eta=\eta(\theta)$
+is recomputed, the omitted term is
+$(\partial\widehat\ell/\partial\eta)\dot\eta$.
+
+\begin{proposition}[No automatic score improvement]
+\label{prop:bg-no-ranking}
+Even exact sampling from a posterior, with constant importance weights,
+does not imply minimal variance of a posterior score-functional estimate.
+\end{proposition}
+\begin{proof}
+On three states let the posterior be uniform and let its complete-data
+score functional be $(-1,0,1)$. Its expectation is zero. The asymptotic
+variance of a self-normalized importance mean is
+$\sum_i\pi_i^2 H_i^2/q_i$. Choosing $q=\pi$ gives $2/3$; choosing
+$q=(0.45,0.10,0.45)$ gives $40/81<2/3$, despite nonconstant weights.
+These scores can be realized by the exponential family proportional to
+$\exp(\theta H_i)$ at $\theta=0$. Thus even an ideal distributional
+guide does not establish optimal score error. No ranking of finite LEDH
+derivatives follows from likelihood ESS.
+\end{proof}
+
+\subsection{Executable order and scientific scope}
+
+The bounded implementation is an optional single-cloud proposal extension,
+not an alternative LEDH filter. Its order is:
+\begin{enumerate}[nosep]
+\item Freeze a validated time-indexed guide. Its last future-only factor
+      is constant. Fix the existing randomness and numerical controls.
+\item Predict physical UKF moments and compute each transition anchor and
+      its total tangent from the current reset state.
+\item Evaluate $H,b,\dot H,\dot b$; generate $U,\dot U$ from the guided
+      Gaussian. With guidance disabled use the original transition draw.
+\item Run the shared LEDH flow and its analytical tangent. Evaluate the
+      unchanged physical transition and observation densities and the
+      actual guided Gaussian denominator in \eqref{eq:bg-weight}.
+\item Accumulate the finite log normalizer and derivative; update physical
+      UKF covariances. Execute the existing OT, Contract E and GenUT
+      dual-cap reset with all tangents. These particles are the next parents.
+\end{enumerate}
+An OT barycentre has no unique sampled ancestor. Neither its transport
+matrix nor the coefficients of a kernel mixture are thereby a model
+backward-smoothing kernel. No ancestral tracing or Fisher-score substitution
+is part of this implementation.
+
+The first evidence is engineering evidence: disabled-guide parity,
+Gaussian square-completion checks, moving-anchor mixture tangents, and
+finite differences of the complete same-value recursion. The development
+comparator uses $\epsilon=1$ and five Sinkhorn iterations; balancing counts,
+ridge, correction and cap settings are reported independently. These are
+untuned settings. CPU-only small reference tests do not establish GPU/XLA
+readiness. Pilot fitting on actual models, equal-compute repeated-seed score
+comparisons, per-scope tuning, batch-native consumer coverage and any
+scientific or default promotion remain subsequent work. In particular,
+accepting coefficient arrays is not evidence that the replicated fitting
+endpoints have been integrated or that their output represents $h_t$.

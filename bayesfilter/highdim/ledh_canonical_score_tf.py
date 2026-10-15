@@ -115,6 +115,7 @@ def _value_and_analytical_score_impl(
     annealed_seed: int = 0,
     moment_provider: tuple[Callable, Callable] | None = None,
     moment_schedule: Mapping[str, Tensor] | None = None,
+    backward_guide: object | None = None,
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -161,6 +162,14 @@ def _value_and_analytical_score_impl(
     """
 
     dtype = initial_states.dtype
+    if backward_guide is not None:
+        if model.transition_log_density_fn is not None:
+            raise ValueError("Backward-guided proposals require an additive Gaussian transition")
+        if reset_policy != "contract_e":
+            raise ValueError("Backward-guided proposals require the shared Contract-E reset")
+        backward_guide.validate(
+            int(observations.shape[0]), int(initial_states.shape[1]), dtype
+        )
     if return_trace and annealed_stages != 1:
         raise ValueError(
             "return_trace currently supports only annealed_stages=1; "
@@ -280,7 +289,22 @@ def _value_and_analytical_score_impl(
         if d_process_chol is not None:
             d_pre_flow = d_pre_flow + tf.einsum("ij,nj->ni", d_process_chol, noise)
 
+        guided_proposal_log = None
+        d_guided_proposal_log = None
+        guided_proposal_valid = tf.constant(True)
+        if backward_guide is not None:
+            from bayesfilter.highdim.ledh_backward_guide_tf import guided_gaussian_draw
+
+            pre_flow, d_pre_flow, guided_proposal_log, d_guided_proposal_log, guided_proposal_valid = (
+                guided_gaussian_draw(
+                    backward_guide, t, anchors, d_anchors,
+                    model.process_covariance, d_q, noise,
+                )
+            )
+
         observation_record = {}
+        if backward_guide is not None:
+            observation_record["backward_guide_valid"] = guided_proposal_valid
 
         # Per-step density evaluators shared by S4 and the annealed
         # telescope (model callback path or Gaussian fallback).
@@ -356,9 +380,12 @@ def _value_and_analytical_score_impl(
         observation_log, d_observation_log = _observation_density(
             children, d_children
         )
-        proposal_log, d_proposal_log = _transition_density(
-            pre_flow, d_pre_flow, anchors, d_anchors
-        )
+        if backward_guide is None:
+            proposal_log, d_proposal_log = _transition_density(
+                pre_flow, d_pre_flow, anchors, d_anchors
+            )
+        else:
+            proposal_log, d_proposal_log = guided_proposal_log, d_guided_proposal_log
         weights_log = step_incoming_log_weights
         prior_observation_logits = (
             weights_log + transition_log + log_det - proposal_log
@@ -575,7 +602,7 @@ def _value_and_analytical_score_impl(
             numerical_valid = numerical_valid & tf.reduce_all(valid_reset)
 
         # Overall validity: both callbacks and numerical operations must succeed
-        overall_valid = tf.reduce_all(callback_valid) & numerical_valid
+        overall_valid = tf.reduce_all(callback_valid) & numerical_valid & guided_proposal_valid
 
         # When invalid, return -inf for log probability (NaN would propagate differently)
         neg_inf = tf.constant(float("-inf"), dtype)
@@ -608,6 +635,12 @@ def _value_and_analytical_score_impl(
                 "d_prior_observation_weights": d_prior_observation_weights,
                 "prior_observation_logits": prior_observation_logits,
                 "d_prior_observation_logits": d_prior_observation_logits,
+                "transition_log_density": transition_log,
+                "d_transition_log_density": d_transition_log,
+                "proposal_log_density": proposal_log,
+                "d_proposal_log_density": d_proposal_log,
+                "flow_log_determinant": log_det,
+                "d_flow_log_determinant": d_log_det,
                 "prior_observation_log_normalizer": prior_observation_normalizer,
                 "d_prior_observation_log_normalizer": d_prior_observation_normalizer,
                 "observation_log_density": observation_log,

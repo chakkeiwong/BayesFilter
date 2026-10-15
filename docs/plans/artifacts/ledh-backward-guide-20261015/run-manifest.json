@@ -1,0 +1,140 @@
+{
+  "schema": "bayesfilter_backward_guide_engineering_check_v1",
+  "date": "2026-10-15",
+  "working_directory": "/home/chakwong/BayesFilter",
+  "branch": "surrogate-hmc",
+  "git_commit": "feddae4001fb85bb1be932d75179cb91ff4f0d77",
+  "working_tree_dirty": true,
+  "scope": "optional frozen single-cloud proposal guidance; bounded engineering checks only",
+  "plan_file": "docs/plans/ledh-backward-guide-integration-20261015.md",
+  "result_file": "docs/plans/artifacts/ledh-backward-guide-20261015/result.md",
+  "output_root": "docs/plans/artifacts/ledh-backward-guide-20261015",
+  "environment": {
+    "successful_conda_environment": "tftwogpu",
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "execution_device": "CPU",
+    "gpu_used": false,
+    "gpu_intentionally_hidden": true,
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "dtype": "float64",
+    "jit_compile": false,
+    "execution_exception": "CPU-only non-JIT debugging/reference validation; not GPU/XLA readiness evidence"
+  },
+  "data": {
+    "kind": "synthetic diagnostic fixture",
+    "source": "tests/highdim/test_ledh_canonical_total_gaussian_tf.py::_fixture",
+    "random_seeds": [11260907],
+    "horizon": 2,
+    "particle_count": 8,
+    "state_dimension": 2,
+    "observation_dimension": 2,
+    "parameter_dimension": 4,
+    "theta": [0.82, 1.1, -0.35, -0.2],
+    "finite_difference_delta": 0.000002,
+    "finite_difference_rtol": 0.0003,
+    "finite_difference_atol": 0.00003
+  },
+  "recursion_options": {
+    "flow_substeps": 7,
+    "reset_policy": "contract_e",
+    "reset_design": "two copies of the rows of +I_2 and -I_2",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 2,
+    "reset_ridge": 0.00001,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "annealed_stages": 1,
+    "annealed_seed": 0,
+    "moment_provider": null,
+    "moment_schedule": null,
+    "promotion_status": "diagnostic fixture choices; not tuned or promoted defaults"
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py > docs/plans/artifacts/ledh-backward-guide-20261015/pytest-attempt-1.log 2>&1",
+      "exit_code": 2,
+      "classification": "collection failure: TensorFlow/Abseil ABI mismatch in existing symmetric-Sylvester custom operation",
+      "repair": "use the existing compatible tftwogpu environment; no package/environment mutation",
+      "wall_time_seconds": null,
+      "wall_time_note": "full command wall time not preserved",
+      "log": "pytest-attempt-1.log"
+    },
+    {
+      "attempt": 2,
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py > docs/plans/artifacts/ledh-backward-guide-20261015/pytest-attempt-2.log 2>&1",
+      "exit_code": 0,
+      "tests_passed": 10,
+      "warnings": 2,
+      "pytest_reported_duration_seconds": 11.56,
+      "wall_time_seconds": null,
+      "wall_time_note": "pytest duration preserved; full command wall time not preserved",
+      "log": "pytest-attempt-2.log"
+    }
+  ],
+  "document_build": {
+    "working_directory": "/home/chakwong/BayesFilter/docs/papers/ledh_younis_kdm_score",
+    "latexmk_status": "unavailable, exit 127; fallback used",
+    "commands_in_order": [
+      "pdflatex -interaction=nonstopmode -halt-on-error ledh_younis_kdm_score.tex",
+      "bibtex ledh_younis_kdm_score",
+      "pdflatex -interaction=nonstopmode -halt-on-error ledh_younis_kdm_score.tex",
+      "pdflatex -interaction=nonstopmode -halt-on-error ledh_younis_kdm_score.tex"
+    ],
+    "fallback_exit_codes": [0, 0, 0, 0],
+    "pdf": "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf",
+    "pages": 63,
+    "new_section_pages_visually_inspected": [54, 55, 56, 57, 58],
+    "final_unresolved_reference_or_citation_warnings": false,
+    "logs": ["latex-build.log", "latex-build-pdflatex-1.log", "latex-bibtex.log", "latex-build-pdflatex-2.log", "latex-build-pdflatex-3.log"]
+  },
+  "audits": {
+    "provider": "MathDevMCP",
+    "before": {"report": "audit-before.md", "selected_propositions_completed": 4, "status": "diagnostic_only", "tree_audit_internal_failure": true, "fallback_report": "audit-before-fallback.md"},
+    "after": {"report": "audit-after.md", "selected_propositions_completed": 6, "skipped": 0, "status": "diagnostic_only", "unresolved_items": 28, "validated_proof_details": 0},
+    "lexical_comparisons": [
+      {"report": "compare-math-guide.json", "status": "mismatch"},
+      {"report": "compare-math-executor.json", "status": "mismatch"},
+      {"report": "compare-plan-guide.json", "status": "mismatch"}
+    ],
+    "proof_certification": false,
+    "semantic_equivalence_certification": false
+  },
+  "budget": {
+    "cpu_validation_limit_minutes": 20,
+    "test_attempt_limit": 3,
+    "test_attempts_used": 2,
+    "bounded_audit_rounds_used": 2,
+    "total_wall_time_seconds": null,
+    "total_wall_time_note": "task/audit/build aggregate wall time was not preserved; do not infer it from pytest duration",
+    "gpu_runs": 0,
+    "training_runs": 0
+  },
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "93aede5e2a5bd2041cc16c3429204116c72dd2171a159babfe04e2ccf4104b65",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "11d595e3cb4aa2278e3ea28797d7c3b19740d5dd581819990ce15d8eb14b1712",
+    "tests/highdim/test_ledh_backward_guide_tf.py": "f33466d0e02adde7549f251c433562559cf812d4518b72ba73244a748ebf4280",
+    "tests/highdim/test_ledh_canonical_total_gaussian_tf.py": "2c17b8849dd4887e38ce66e7028ff60c773825891984e28a60feeabff791fbfc",
+    "docs/papers/ledh_younis_kdm_score/ledh_backward_guidance.tex": "c0c1189ebd3bd0a65f6eb592514a00d061dd7efda9704506bf5f1ed152046bcd",
+    "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex": "ba3751264f532b0db45ef4550d3cfca87c277c7f6f84fdd64819dc9561e3d4d1",
+    "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf": "93d7f8a24c1c475f790d45423352acc1e783a1e1cff32a0428fa398db8b671e4"
+  },
+  "open_questions": [
+    "actual Jacobian of the existing localized flow map",
+    "formal proof closure and semantic document/code equivalence beyond bounded checks",
+    "target-specific fitted guide and heldout score accuracy",
+    "GPU/XLA execution, canonical admission and HMC readiness"
+  ]
+}
