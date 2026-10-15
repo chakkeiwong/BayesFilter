@@ -176,6 +176,7 @@ def _value_and_analytical_score_impl(
     state_map_scale: Tensor | None = None,
     hilbert_bits: int = 12,
     state_map_policy: str = "adaptive_empirical",
+    backward_guide: object | None = None,
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -228,6 +229,20 @@ def _value_and_analytical_score_impl(
     ):
         raise ValueError("marginal_mixture requires Gaussian transitions, one annealing "
                          "stage and existing_one_to_one ancestry")
+    if backward_guide is not None:
+        if not gaussian_transition:
+            raise ValueError("Backward-guided proposals require an additive Gaussian transition")
+        if importance_weight_policy != "ancestor":
+            raise ValueError("Backward-guided proposals require ancestor importance weights")
+        if annealed_stages != 1:
+            raise ValueError("Backward-guided proposals require one annealing stage")
+        if ancestry_policy != "existing_one_to_one":
+            raise ValueError("Backward-guided proposals require existing_one_to_one ancestry")
+        if reset_policy != "contract_e":
+            raise ValueError("Backward-guided proposals require the shared Contract-E reset")
+        backward_guide.validate(
+            int(observations.shape[0]), int(initial_states.shape[1]), dtype
+        )
     if return_trace and annealed_stages != 1:
         raise ValueError(
             "return_trace currently supports only annealed_stages=1; "
@@ -393,7 +408,22 @@ def _value_and_analytical_score_impl(
         if d_process_chol is not None:
             d_pre_flow = d_pre_flow + tf.einsum("ij,nj->ni", d_process_chol, noise)
 
+        guided_proposal_log = None
+        d_guided_proposal_log = None
+        guided_proposal_valid = tf.constant(True)
+        if backward_guide is not None:
+            from bayesfilter.highdim.ledh_backward_guide_tf import guided_gaussian_draw
+
+            pre_flow, d_pre_flow, guided_proposal_log, d_guided_proposal_log, guided_proposal_valid = (
+                guided_gaussian_draw(
+                    backward_guide, t, anchors, d_anchors,
+                    model.process_covariance, d_q, noise,
+                )
+            )
+
         observation_record = {}
+        if backward_guide is not None:
+            observation_record["backward_guide_valid"] = guided_proposal_valid
 
         # Per-step density evaluators shared by S4 and the annealed
         # telescope (model callback path or Gaussian fallback).
@@ -513,7 +543,14 @@ def _value_and_analytical_score_impl(
                 return_affine=gaussian_transition,
             )
             children, d_children, log_det, d_log_det = flow_result[:4]
-            if gaussian_transition:
+            if backward_guide is not None:
+                transition_log, d_transition_log = _transition_density(
+                    children, d_children, anchors, d_anchors
+                )
+                proposal_log, d_proposal_log = guided_proposal_log, d_guided_proposal_log
+                prior_ratio = transition_log + log_det - proposal_log
+                d_prior_ratio = d_transition_log + d_log_det - d_proposal_log
+            elif gaussian_transition:
                 proposal_means, d_proposal_means, flow_matrix, d_flow_matrix = flow_result[4:]
                 prior_ratio, d_prior_ratio, ratio_valid, ratio_force = marginal_prior_ratio_tangent(
                     children, d_children, anchors, d_anchors, model.process_covariance,
@@ -775,6 +812,7 @@ def _value_and_analytical_score_impl(
             program_valid
             & tf.reduce_all(callback_valid)
             & numerical_valid
+            & guided_proposal_valid
             & tf.math.is_finite(total)
             & tf.math.is_finite(d_total)
             & tf.reduce_all(tf.math.is_finite(new_states))
@@ -856,6 +894,15 @@ def _value_and_analytical_score_impl(
                 "outgoing_log_weights": new_incoming_log_weights,
                 "d_outgoing_log_weights": new_d_incoming_log_weights,
             }
+            if backward_guide is not None:
+                step_record.update({
+                    "transition_log_density": transition_log,
+                    "d_transition_log_density": d_transition_log,
+                    "proposal_log_density": proposal_log,
+                    "d_proposal_log_density": d_proposal_log,
+                    "flow_log_determinant": log_det,
+                    "d_flow_log_determinant": d_log_det,
+                })
             step_record.update(higher_moment_record)
             step_record.update(post_reset_record)
             step_record.update(observation_record)
