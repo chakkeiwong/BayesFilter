@@ -12,6 +12,8 @@ import math
 
 import tensorflow as tf
 
+from bayesfilter.highdim.gaussian_mixture_conditioning_tf import gaussian_mixture_product_moments
+
 
 def _symmetric(matrix):
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
@@ -42,11 +44,35 @@ class FrozenQuadraticBackwardGuide:
 
     precision: tf.Tensor
     linear: tf.Tensor
+    allow_indefinite_information: bool = False
 
     @classmethod
     def from_controlled_smc(cls, quadratic, linear):
         """Adapt exp(-x'Ax-beta'x-c) to H=2A, b=-beta."""
         return cls(2.0 * tf.convert_to_tensor(quadratic), -tf.convert_to_tensor(linear))
+
+    @classmethod
+    def from_scalar_controlled_smc_future(cls, policy, alpha, process_variance):
+        """Integrate the next fitted policy through a frozen scalar transition."""
+        policy = tf.convert_to_tensor(policy)
+        if policy.shape.rank != 2 or policy.shape[-1] != 3:
+            raise ValueError("Scalar controlled-SMC policy must have shape [T,3]")
+        alpha = tf.convert_to_tensor(alpha, dtype=policy.dtype)
+        variance = tf.convert_to_tensor(process_variance, dtype=policy.dtype)
+        if alpha.shape.rank != 0 or variance.shape.rank != 0:
+            raise ValueError("Frozen scalar transition parameters must be scalars")
+        quadratic, linear, _constant = tf.unstack(policy[1:], axis=-1)
+        denominator = 1.0 + 2.0 * variance * quadratic
+        valid = tf.reduce_all(tf.math.is_finite(policy))
+        valid &= tf.math.is_finite(alpha) & tf.math.is_finite(variance) & (variance > 0)
+        valid &= tf.reduce_all(denominator > 0)
+        precision = 2.0 * alpha**2 * quadratic / denominator
+        vector = -alpha * linear / denominator
+        precision = tf.concat([precision, tf.zeros([1], policy.dtype)], axis=0)
+        vector = tf.concat([vector, tf.zeros([1], policy.dtype)], axis=0)
+        invalid = tf.constant(float("nan"), policy.dtype)
+        return cls(tf.where(valid, precision[:, None, None], invalid),
+                   tf.where(valid, vector[:, None], invalid))
 
     def validate(self, horizon, dimension, dtype):
         if self.precision.shape != (horizon, dimension, dimension):
@@ -62,9 +88,10 @@ class FrozenQuadraticBackwardGuide:
         valid = tf.reduce_all(tf.math.is_finite(precision))
         valid = tf.logical_and(valid, tf.reduce_all(tf.math.is_finite(self.linear[time])))
         valid = tf.logical_and(valid, _symmetry_valid(precision))
-        valid = tf.logical_and(
-            valid, tf.reduce_min(tf.linalg.eigvalsh(_symmetric(precision))) >= 0
-        )
+        if not self.allow_indefinite_information:
+            valid = tf.logical_and(
+                valid, tf.reduce_min(tf.linalg.eigvalsh(_symmetric(precision))) >= 0
+            )
         matrices = tf.broadcast_to(precision[None], [count, *precision.shape])
         vectors = tf.broadcast_to(self.linear[time][None], tf.shape(anchors))
         return matrices, vectors, tf.zeros_like(matrices), tf.zeros_like(vectors), valid
@@ -82,8 +109,21 @@ class FrozenMixtureBackwardGuide:
     centers: tf.Tensor
     covariances: tf.Tensor
     active: tf.Tensor
+    conditioning: str = "positive_information"
+
+    def condition_gaussian(self, time, mean, covariance, d_mean, d_covariance):
+        """Condition by the frozen mixture, retaining between-component moments."""
+        return tf.cond(
+            self.active[time],
+            lambda: gaussian_mixture_product_moments(
+                mean, covariance, d_mean, d_covariance, self.logits[time],
+                self.centers[time], self.covariances[time]),
+            lambda: (mean, covariance, d_mean, d_covariance, tf.constant(True),
+                     tf.constant(float("inf"), mean.dtype)))
 
     def validate(self, horizon, dimension, dtype):
+        if self.conditioning not in ("positive_information", "mixture_product_moments"):
+            raise ValueError("Unknown mixture conditioning policy")
         if self.logits.shape.rank != 2 or self.logits.shape[0] != horizon:
             raise ValueError("Mixture logits must have shape [T,K]")
         components = self.logits.shape[1]
@@ -132,8 +172,7 @@ class FrozenMixtureBackwardGuide:
         )
 
 
-def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covariance, noise):
-    """Return U, dU, log q0(U), d log q0(U) and a finite-validity flag."""
+def _information_proposal_moments(guide, time, anchors, d_anchors, covariance, d_covariance):
     matrices, vectors, d_matrices, d_vectors, valid = guide.evaluate(time, anchors, d_anchors)
     dimension = anchors.shape[-1]
     identity = tf.eye(dimension, dtype=anchors.dtype)
@@ -160,7 +199,26 @@ def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covarian
         proposal_covariance,
         d_natural_mean - tf.einsum("nij,nj->ni", d_guided_precision, proposal_mean),
     )
+    return (proposal_mean, proposal_covariance, d_proposal_mean,
+            d_proposal_covariance, valid & valid_process & valid_precision)
+
+
+def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covariance, noise):
+    """Draw the actual Gaussian proposal and differentiate its moving density."""
+    dimension = anchors.shape[-1]
+    identity = tf.eye(dimension, dtype=anchors.dtype)
+    if getattr(guide, "conditioning", None) == "mixture_product_moments":
+        shape = [tf.shape(anchors)[0], dimension, dimension]
+        covariance_tangent = tf.zeros_like(covariance) if d_covariance is None else d_covariance
+        proposal_mean, proposal_covariance, d_proposal_mean, d_proposal_covariance, valid, _ = (
+            guide.condition_gaussian(time, anchors, tf.broadcast_to(covariance, shape),
+                d_anchors, tf.broadcast_to(covariance_tangent, shape)))
+    else:
+        proposal_mean, proposal_covariance, d_proposal_mean, d_proposal_covariance, valid = (
+            _information_proposal_moments(guide, time, anchors, d_anchors, covariance, d_covariance))
     proposal_factor, valid_proposal = _checked_cholesky(proposal_covariance)
+    guided_precision = tf.linalg.cholesky_solve(
+        proposal_factor, tf.broadcast_to(identity, tf.shape(proposal_covariance)))
     intermediate = tf.linalg.triangular_solve(proposal_factor, d_proposal_covariance)
     congruence = tf.linalg.matrix_transpose(
         tf.linalg.triangular_solve(proposal_factor, tf.linalg.matrix_transpose(intermediate))
@@ -185,8 +243,6 @@ def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covarian
         )
         - 0.5 * tf.linalg.trace(guided_precision @ d_proposal_covariance)
     )
-    valid = tf.logical_and(valid, valid_process)
-    valid = tf.logical_and(valid, valid_precision)
     valid = tf.logical_and(valid, valid_proposal)
     valid = tf.logical_and(valid, tf.reduce_all(tf.math.is_finite(points)))
     valid = tf.logical_and(valid, tf.reduce_all(tf.math.is_finite(d_points)))
@@ -205,11 +261,15 @@ def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covarian
 def build_backward_guided_ledh_kernel(
     model_factory, guide, *, horizon, particle_count, state_dimension,
     observation_dimension, parameter_dimension, dtype=tf.float32,
-    jit_compile=True, **options
+    jit_compile=True, dynamic_quadratic=False, mixture_components=None,
+    allow_indefinite_information=False,
+    mixture_conditioning="positive_information", **options
 ):
     """Build one fixed-signature candidate using the shared full LEDH executor.
 
     model_factory(theta, direction) supplies the existing directional callbacks.
+    With dynamic_quadratic=True, pass guide=None and append precision [T,d,d]
+    and linear [T,d] tensors to each call. They are fixed during differentiation.
     No canonical identity or tuning artifact is issued by this factory.
     """
     from bayesfilter.highdim.ledh_canonical_score_tf import _value_and_analytical_score_impl
@@ -228,7 +288,18 @@ def build_backward_guided_ledh_kernel(
         raise ValueError("Guided LEDH requires the existing full higher-moment correction")
     if options.get("coordinate_cap", 0.0) <= 0:
         raise ValueError("Guided LEDH requires an explicit positive coordinate cap")
-    guide.validate(horizon, state_dimension, dtype)
+    if dynamic_quadratic and mixture_components is not None:
+        raise ValueError("Choose one dynamic guide family")
+    if mixture_components is not None:
+        if guide is not None or mixture_components < 1:
+            raise ValueError("Dynamic mixtures require guide=None and positive component count")
+        if mixture_conditioning not in ("positive_information", "mixture_product_moments"):
+            raise ValueError("Unknown mixture conditioning policy")
+    elif dynamic_quadratic:
+        if guide is not None:
+            raise ValueError("Dynamic quadratic coefficients require guide=None")
+    else:
+        guide.validate(horizon, state_dimension, dtype)
     signature = [
         tf.TensorSpec([parameter_dimension], dtype),
         tf.TensorSpec([parameter_dimension], dtype),
@@ -239,13 +310,29 @@ def build_backward_guided_ledh_kernel(
         tf.TensorSpec([particle_count, state_dimension], dtype),
         tf.TensorSpec([particle_count, state_dimension, state_dimension], dtype),
     ]
+    if dynamic_quadratic:
+        signature.extend([
+            tf.TensorSpec([horizon, state_dimension, state_dimension], dtype),
+            tf.TensorSpec([horizon, state_dimension], dtype),
+        ])
+    if mixture_components is not None:
+        signature.extend([
+            tf.TensorSpec([horizon, mixture_components], dtype),
+            tf.TensorSpec([horizon, mixture_components, state_dimension], dtype),
+            tf.TensorSpec([horizon, mixture_components, state_dimension, state_dimension], dtype),
+            tf.TensorSpec([horizon], tf.bool),
+        ])
 
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
-    def kernel(theta, direction, states, covariances, noises, observations, d_states, d_covariances):
+    def kernel(theta, direction, states, covariances, noises, observations, d_states, d_covariances, *coefficients):
+        active_guide = (FrozenQuadraticBackwardGuide(*coefficients,
+            allow_indefinite_information=allow_indefinite_information) if dynamic_quadratic else guide)
+        if mixture_components is not None:
+            active_guide = FrozenMixtureBackwardGuide(*coefficients, conditioning=mixture_conditioning)
         return _value_and_analytical_score_impl(
             model_factory(theta, direction), theta, states, covariances, noises,
             observations, with_score=True, initial_state_tangent=d_states,
-            initial_covariance_tangent=d_covariances, backward_guide=guide, **options
+            initial_covariance_tangent=d_covariances, backward_guide=active_guide, **options
         )
 
     return kernel

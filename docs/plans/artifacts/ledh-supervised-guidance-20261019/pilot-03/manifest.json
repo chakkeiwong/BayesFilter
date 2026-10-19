@@ -1,0 +1,140 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/supervised_guidance_pilot.py",
+    "--horizon",
+    "5",
+    "--seed-offset",
+    "10000",
+    "--budget-seconds",
+    "1400",
+    "--output",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03"
+  ],
+  "commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+  "branch": "ledh-refactor-with-policy-fix",
+  "plan": "docs/plans/ledh-supervised-guidance-20261019.md",
+  "result": "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/summary.json",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_devices": [
+    "/device:GPU:0"
+  ],
+  "execution": "GPU/XLA FP64 diagnostic exception; TF32 off",
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "horizon": 5,
+  "particles": 64,
+  "chunk": 64,
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "partitions": {
+    "calibration": [
+      261029501,
+      261029502
+    ],
+    "validation": [
+      261029503,
+      261029504
+    ],
+    "test": [
+      261029505,
+      261029506,
+      261029507,
+      261029508
+    ]
+  },
+  "particle_seeds": [
+    261029801,
+    261029802
+  ],
+  "model": "canonical_sir_d18_x0_then_transition_observe_v1; no clipping",
+  "guide_fit": {
+    "particles": 512,
+    "validation_count": 256,
+    "components": 32
+  },
+  "budget_seconds": 1400.0,
+  "scientific_status": "pilot_descriptive_only",
+  "data_version": "fresh exact-consumer simulation; latent and particle seeds disjoint",
+  "source_hashes": {
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/supervised_guidance_pilot.py": "94331025bea5ca12badc14d5d26c8e8dff12ada22d4cc6f9f5148de5308b426e",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/supervised_guidance_tf.py": "c9f5bfacfc08d25d8f0710a709ef7076601621d623ac914604dde16874cb8a30",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/ledh_backward_guide_tf.py": "d17ceb2df6caa4e9119001f44d7579209f0c90baa093e07ce77d8614ffd30b0c",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": "1286275934146193a2655fcb171e3d78296fa528b63af779fb195da4f31a44da",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "f7e74d11b720077f8ddb8cee195cb80cded37e9a0b75fc9ded02726c3a59d79f",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "efe8a12bc63da9d3828b42d7a1aad4f8ed1c2d3a675df645a5c3496733ba2c8c",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "60f3b96c4b8e1c6328a3167a8840f73f629547ef33dbf71046adaa94674fa440",
+    "bayesfilter/highdim/gaussian_mixture_conditioning_tf.py": "1676fbf9c0029d46e3f2f27809f6ffc7f38b245134cb0e54aab245dff7e7fabb"
+  },
+  "wall_seconds": 236.6000825560186,
+  "output_artifacts": [
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029506.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-csmc_raw.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-unguided.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029502.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029505.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029504.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/summary.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-kernel_product.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-csmc_original.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-kernel_information.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/derivative-csmc_half.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029508.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/progress.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029507.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/labels.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/manifest.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029503.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/selection.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/fit-261029501.json",
+    "docs/plans/artifacts/ledh-supervised-guidance-20261019/pilot-03/rows.jsonl"
+  ],
+  "allocator": {
+    "current": 8981504,
+    "peak": 82899968
+  }
+}

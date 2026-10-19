@@ -1,3 +1,262 @@
+## Completed supervised guidance pilot — 19 October 2026
+
+[The simulation-supervised guidance plan](ledh-supervised-guidance-20261019.md)
+has executed through its bounded T2/T5 implementation pilot. The manuscript
+derives moment/score risk identities; 34 tests pass; all 96 final T5 rows and
+six directional checks pass through the full shared analytical LEDH executor.
+OT remains `(1,5)`. Unguided has the lowest validation loss; lower guided test
+means do not establish improvement with four independent datasets. No guide
+is promoted. See [results and audit](artifacts/ledh-supervised-guidance-20261019/result.md).
+Next scientific work is fresh scope-specific control calibration and a larger
+independent-dataset comparison, with the original neural KDM still distinct
+from the RBF adapter. Active checkpoint:
+[controlled-smc-kdm-checkpoint.md](controlled-smc-kdm-checkpoint.md).
+
+## Completed SIR execution — 19 October 2026
+
+Completed [the corrected SIR guidance plan](ledh-sir-guidance-execution-20261019.md)
+on `ledh-refactor-with-policy-fix`. OT remains fixed at `(1,5)` in every arm.
+Compare unguided, controlled-SMC quadratic and positive-kernel guided proposals
+against the same saved Zhao–Cui approximate reference, with fresh paired seeds
+and prior/global/local heuristic arms. The kernel guide is a local KDM-inspired
+adaptation, not the replicated neural learner. The existing three-density
+consumer is a diagnostic candidate, not canonical LEDH admission.
+
+The owner has extended the total campaign ceiling to twelve hours (43,200
+GPU-process seconds including earlier attempts); CPU checks/analysis retain a
+300-second allocation. The [96-row result](artifacts/ledh-sir-guidance-20261019/result.md)
+is complete: 95 valid rows and one independently reproduced global-reset
+failure. All four primary intervals show conditional guided harm; no gain.
+Prior/local methods have much smaller descriptive errors. The subsequent
+[independent-beta repair](ledh-sir-beta-repair-20261019.md) fits allocations
+without reference scores and evaluates fresh matched-beta controls. First-stage
+GPU spending is 4,350.29 seconds; 38,849.71 remain. This supersedes earlier next actions;
+the October 18 Sinkhorn sweep is closed and is not a comparison baseline.
+Current recovery state: [checkpoint](controlled-smc-kdm-checkpoint.md).
+
+The [beta-repair result](artifacts/ledh-sir-beta-repair-20261019/result.md) is
+complete: six frozen fits and 112/112 valid evaluations, with 84 finite-
+difference and 42 Richardson checks passing. Two localized optimizer failures
+were repaired without changing J, the beta floor, OT or evaluation seeds.
+Both guides have supported matched-beta gains on data 26100832 under the
+predeclared conditional bootstrap analysis, but no resolved gain on data
+26100831 or against independently calibrated unguided proposals. Both fail
+the componentwise heuristic screen. No improved-LEDH/default claim follows.
+Charged GPU-process time is 9,325.73 seconds; 33,874.27 remain under the
+twelve-hour ceiling. No campaign process remains running.
+
+Next: isolate SIR current-observation proposal/reset error from future-message
+error, and verify the canonical consumer call chain before an LEDH claim.
+Do not enlarge fits, tune OT, transfer old results, or select beta on final
+scores. This is candidate non-promotion, not a continuation veto or rejection
+of controlled SMC/KDM. A new bounded attribution contract must precede the
+next experiment; the completed stage does not authorize an unspecified sweep.
+
+<!-- BEGIN_ACTIVE_SCORE_PROGRAM_20261016 -->
+# Current master program — 18 October 2026
+
+Resume the original question: can controlled-SMC backward information and KDM
+representations improve LEDH estimates of the **model likelihood score**?
+The bounded released-source replication prerequisite is closed. This update
+supersedes the replication-first next-action notice and all dated execution
+instructions below; those entries remain historical records. It does not
+reactivate old processes, budgets, defaults, or pre-August-21 LEDH evidence.
+
+Work in branch `ledh-refactor-with-policy-fix`, checkout
+`/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922`.
+The surrogate-HMC checkout is not the execution location. Current numerical
+base is `ea1018de1da55ed02a29a8d60f08a6827fce8a42` plus the recorded uncommitted
+guide implementation; each new run records its actual source hashes.
+
+## Checked position
+
+| Workstream | Current evidence | Remaining requirement |
+| --- | --- | --- |
+| Controlled SMC / KDM replication | [Bounded source closure](controlled-smc-kdm-source-closure-result-20261014.md), including 283 corrected closure checks | Exact original-paper and population-quality equivalence are not established; original iAPF remains deferred |
+| Mathematical augmentation | Frozen future-only quadratic/mixture proposal, exact proposal correction, shared LEDH/OT/Contract-E total analytical derivative documented in `ledh_backward_guidance.tex` | MathDev audit is inconclusive; local derivation and executable checks do not prove model-score improvement |
+| Scalar fitted guide | [Pilot result](artifacts/ledh-fitted-guide-20261016/result.md): real replicated cSMC fitter, full shared consumer, 44 focused tests, 624 GPU/XLA reference rows | Every tested condition fails heuristic promotion; baseline Gaussian score error must be explained |
+| Gaussian baseline localization | [Diagnostic result](artifacts/ledh-gaussian-score-error-20261016/result.md): 255/280 rows; finite-program derivative fixtures pass; grid stopped at transport-column validity veto | Incomplete grid is not a score ranking or Phase0C completion |
+| Transport and conditional proposal localization | [Completed reference diagnosis](artifacts/ledh-ot-balance-weight-20261016/result.md): more iterations fail; optional zero denominator restores mass but fails13/17 state non-harm checks; Gaussian density identities pass | These findings concern the tested single-flow consumer, not the existing three-component mixture. The TV threshold failure does not establish material score harm |
+| Existing three-component proposal | [Guide integration](artifacts/ledh-mixture-guide-20261016/result.md): frozen quadratic/mixture guidance enters shared global/local maps; analytical derivative checks pass | Its separate moment-restoring reset is not canonical Contract-E admission |
+| Same-consumer Gaussian comparison | [Completed exploratory comparison](artifacts/ledh-guided-mixture-score-20261016/proportionality-result.md):392 valid rows; all336 prior accepted results unchanged;12 focused tests pass | Fitted-guide promotion fails the descriptive heuristic screen; no improvement over current/global is established |
+| Guidance/beta separation | [Completed factorial diagnostic](artifacts/ledh-guidance-beta-factorial-20261016/result.md): 616 valid rows, 11 arms, four regimes; 23 focused tests pass | All 20 fixed-beta guidance intervals for log-process-SD error include zero; every guided arm has a descriptive heuristic loss. Conditional cloud/count localization is now complete below |
+| Conditional cloud/count localization | [Completed two-count diagnostic](artifacts/ledh-conditional-clouds-20261016/result.md): 832 valid rows, 27 focused tests, zero roundoff warnings; N32/64 paired across twelve clouds per fixed dataset | Both guided candidates fail heuristic promotion; doubling N lowers observed global-arm MSE in 7/8 cells, with five exploratory conditional intervals below zero. No population ranking or asymptotic-bias conclusion |
+| KSC nonlinear reference and consumer | [Completed diagnostic](artifacts/ledh-ksc-guidance-20261017/result.md): 192 valid GPU/XLA rows, 16 focused tests, 24 analytical finite-difference checks; terminal audit verifies 72 source files | All four guided arms fail at least one descriptive heuristic screen; no statistically supported score improvement. This is the seven-mixture observation model, not the native SV likelihood |
+| Target-specific fitted guides | [Completed KSC fit comparison](artifacts/ledh-ksc-fitted-guides-20261017/result.md): 120 development fits; 1,920 valid final evaluations and 384 ineligible quadratic cells; independent audit passes | No quadratic configuration eligible; both kernel arms fail promotion and three conditional contrasts support worse MSE. This local kernel fit is not original KDM training |
+| Mixture-information mechanism | [Completed saved-fit diagnosis](artifacts/ledh-ksc-information-20261017/result.md): 48 rows, four focused tests and an explicit covariance-gap proof | The old global consumer omits between-component uncertainty; product-moment repair is now evaluated below |
+| Optional product-moment repair | [Completed fresh comparison](artifacts/ledh-mixture-product-20261018/result.md): 2,304 valid rows, 20 focused tests plus two extended map checks, 24 finite-difference checks and independent terminal audit | Four conditional intervals favor the repair over the old fitted/global consumer; none over unguided global. Both arms fail heuristic promotion |
+| Message/consumer attribution | [Completed paired comparison](artifacts/ledh-message-consumer-20261018/result.md): 2,688 valid rows, 16,128 trace checks and 48 derivative checks | All 36 simultaneous contrasts are unresolved; all four candidates fail heuristic promotion. Fitting error alone does not explain the remaining positive-tail error |
+| Particle-count stress repair | [Completed N32/N64 diagnostic](artifacts/ledh-particle-count-stress-20261018/result.md): 768 valid rows, 4,608 trace checks and 16 derivative checks | All 14 simultaneous contrasts remain unresolved; both products lose descriptively to Gaussian-future global at N64. No numerical continuation veto |
+| Final particle-count follow-up | [Completed N64/N128 diagnostic](artifacts/ledh-particle-count-followup-20261018/result.md): 1,536 valid rows, 9,216 trace checks and 16 derivative checks | Four of 14 simultaneous contrasts support conditional gains over own-N64/local-N128 comparators, none over strong global heuristics. Both products fail heuristic promotion; next isolate current-observation map/reset error |
+| Model coverage | Gaussian oracle and particle comparator infrastructure exists | A current, scope-tuned comparison is still required for each nonlinear target; the historical SIR/range-bearing/SV/predator-prey table is not current admission evidence |
+
+The pilot's primary coordinate is **log process-noise standard deviation**.
+Its old `log_q` field names are aliases, not log-variance coordinates. Guidance
+was descriptively favorable against plain LEDH in one condition, yet still
+lost to simpler particle methods. This rejects promotion of the tested
+candidate; it does not reject the backward-information research direction.
+
+## Execution order
+
+1. **Phase 0C/0F diagnostic stopped and localized.** The
+   [bounded diagnostic](ledh-gaussian-score-error-20261016.md) produced 255/280
+   rows before a genuine transport-validity veto. Analytical finite-program
+   derivative fixtures pass, but persistent-condition model-score errors
+   remain large. This does not complete Phase 0C or reject the guide idea.
+2. **Completed: reconcile and integrate the existing mixture proposal.** The
+   [completed localization](artifacts/ledh-ot-balance-weight-20261016/result.md)
+   separates additive OT mass error from first-step proposal concentration.
+   Zero denominator passes tested mass/derivative checks but fails the
+   declared drop-in non-harm screen; defaults and guards remain unchanged.
+   The [owner correction](artifacts/ledh-ot-balance-weight-20261016/mixture-route-correction.md)
+   identifies an existing identity/global/local density mixture with a local
+   conditional-covariance bridge and independent-pilot beta optimization.
+   The unguided implementation already exists in this checkout and local main.
+   The [bounded integration](artifacts/ledh-mixture-guide-20261016/result.md)
+   now adds frozen guidance to its shared global/local maps, preserves the
+   physical identity branch and complete density weights, and checks total
+   analytical derivatives through the existing reset. The manuscript now
+   distinguishes consumers. This optional candidate is not canonical reset
+   admission; the previous TV failure does not establish mixture-score harm.
+3. **Completed bounded Gaussian localization, with proportionate moment checks (0C/0E).** The
+   [same-consumer experiment](ledh-guided-mixture-score-comparison-20261016.md)
+   ran but stopped at observation3 of final seed100204: the identity proposal
+   has a roughly1e-13 mean/covariance residual above an unjustified cutoff.
+   The owner's correction retires the proposed reset-precision campaign.
+   Keep the old cutoff as a warning and use the documented relative precision
+   budget for invalidity; factorizations, finiteness and cap checks remain.
+   Twelve focused checks pass, including injected material errors. All392
+   evaluations now complete with epsilon1/iterations5; all336 previously
+   accepted scores, likelihood errors and betas are bitwise unchanged.
+   The fitted guide fails the descriptive heuristic promotion screen and its
+   paired intervals versus current/global include zero in all conditions.
+   Exact-future and fitted scores agree within1.24e-11. The fresh
+   [crossed guidance/beta diagnostic](ledh-guidance-beta-factorial-20261016.md)
+   is complete: 616 valid evaluations across eleven arms and four regimes,
+   with 23 focused tests passing. A calibration iteration-cap failure was
+   repaired without changing the solver or its accuracy certificate; all 154
+   previously accepted rows replay unchanged. All 20 fixed-beta guidance
+   intervals for log-process-SD error include zero, and every future-guided
+   arm loses descriptively to a simple heuristic in at least one regime.
+   Persistent-stress errors depend strongly on beta and one particle/data
+   realization. The [conditional cloud stage](ledh-conditional-cloud-localization-20261016.md)
+   is complete: 832 valid evaluations on fresh fixed datasets, twelve clouds
+   each, and N=32/64 with separate calibration. Its 27 focused checks pass,
+   including shared-filter wiring and data/cloud/calibration integrity.
+   Both guided candidates fail the descriptive heuristic screen. No primary
+   guidance improvement is supported; one exploratory conditional interval
+   indicates harm. Doubling N lowers observed global-arm MSE in seven of eight
+   cells, with five intervals below zero. Stress mean error and variance both
+   decrease descriptively. This explains part of the finite-particle error;
+   it does not identify an asymptotic bias floor or establish population ranking.
+   There is no numerical continuation veto. Continue to the nonlinear protocol
+   rather than requiring further Gaussian count or precision campaigns.
+   This result alone does not justify more KDM capacity. The completed-stage
+   [checkpoint](artifacts/ledh-conditional-clouds-20261016/checkpoint.md)
+   retains that stage's accounting. Preserve
+   both comparisons; the earlier one remains exploratory after the guard
+   amendment. Score-based tuning and canonical/default promotion
+   remain outside scope. Do not restart a precision-repair campaign for1e-13.
+4. **Completed moment repair; next separate fitting and consumer error (0D/0E/0G).**
+   The [fitted-guide comparison](artifacts/ledh-ksc-fitted-guides-20261017/result.md)
+   is complete. No quadratic configuration is eligible, both fitted-kernel arms
+   fail heuristic promotion, and three conditional simultaneous contrasts
+   support increased MSE for kernel/global. None supports improvement.
+   Reference, consumer wiring and finite-program analytical derivative checks
+   pass; candidate rejection is not a continuation veto. The subsequent
+   [information diagnosis](artifacts/ledh-ksc-information-20261017/result.md)
+   checks all 48 saved-fit/control rows and the actual global/local call chain.
+   The fitted-mixture product variance is 2.45–6.18 times the global consumer's
+   variance across these saved clouds: its positive-information approximation
+   omits between-component uncertainty. This is a mechanism finding, not causal
+   proof of the score failure. The [moment-repair comparison](artifacts/ledh-mixture-product-20261018/result.md)
+   is now complete: shared general Gaussian-product moments and analytical
+   derivatives are implemented as an optional global consumer. All 2,304 fresh
+   rows pass the terminal audit. Four simultaneous conditional intervals favor
+   it over the old fitted/global consumer, but none supports improvement over
+   unguided global. Product/global and product/equal have seven and 21
+   descriptive heuristic losses, respectively; neither is promoted. No
+   numerical continuation veto fires. The same-consumer exact/fitted comparison
+   is now complete in step 5; it does not justify enlarging fitting capacity.
+   A direct Hessian substitution is unsuitable without a
+   different justified construction: 252 of 792 fitted anchors have negative
+   negative-Hessian. Do not assume more fitting capacity repairs this consumer.
+   Do not retune on final scores or change canonical defaults. Fit loss remains
+   separate from downstream score accuracy; original KDM training and canonical
+   Contract-E admission are still unestablished.
+5. **Message/consumer attribution and both count repairs completed.** The
+   [comparison and automatic attribution](artifacts/ledh-message-consumer-20261018/result.md)
+   pass the audit of 2,688 rows, 16,128 traces and 48 derivative checks.
+   All 36 adjusted contrasts are unresolved; all candidates fail heuristic
+   promotion. Exact product/global still loses descriptively in the positive
+   tail, so larger fitting capacity is not the next justified action. The
+   [nested N=32/64 stress check](artifacts/ledh-particle-count-stress-20261018/result.md)
+   passes its audit, but all 14 simultaneous contrasts remain unresolved.
+   The [N=64/128 follow-up](artifacts/ledh-particle-count-followup-20261018/result.md)
+   passes all 1,536 rows, 9,216 trace checks and 16 derivative checks. Four of
+   14 simultaneous contrasts support conditional gains over own-N64 and
+   unguided-local N128 comparators, but none establishes improvement over
+   unguided-global or Gaussian-future-global N128. Both products fail heuristic
+   promotion. Next design a bounded separation of current-observation
+   Gaussian/map approximation from moment-restoring reset error; do not assume
+   larger message fits will repair either. The third launch closes the
+   authorized attempt budget. Refresh and document automatically, but do not
+   silently launch attempt four or treat this as a scientific rejection.
+6. **Cross-model confirmation (Phases 2–4 and 7–9).** Only after the preceding
+   evidence, run each target's own tuning and untouched comparison, conditional
+   heuristic checks, error/cost uncertainty and terminal math/code audit.
+
+The development OT pair remains epsilon 1 / five Sinkhorn iterations at the
+owner's request. It is not a universally optimal or scope-tuned setting.
+Canonical claims still require the repository-issued per-scope tuning evidence,
+the full UKF/dual-cap correction/Contract-E lifecycle and analytical recursion.
+The FP64 GPU/XLA diagnostic is a reference exception, not TF32 readiness.
+
+## Automatic phase refresh and repair
+
+The owner's continuation authorization covers successive diagnostics and
+localized repairs in the current scientific direction. At each phase boundary:
+audit evidence and remaining budget; separate promotion vetoes from continuation
+vetoes; choose the next discriminating repair; refresh its evidence contract and
+assumptions; update the concise checkpoint; and execute. Phase completion,
+reviewer unavailability and candidate rejection are not reasons to ask for
+another continuation instruction. Stop for unresolved scientific invalidity,
+an exhausted campaign budget, a material scope/resource/permission change, or
+completion. Local retries use fresh outputs and consume the existing budget.
+
+The [message/consumer campaign](ledh-message-consumer-continuation-20261018.md)
+implements this loop: first compare exact and fitted messages with the same
+consumer, then automatically analyze their interaction with the old consumer
+and refresh the next repair. Its budget is 1,200 GPU-process seconds over at
+most three attempts, plus the explicit CPU/test/document sub-budgets.
+
+## Current budget and handoff
+
+Previous comparison and localization stages are closed; their linked results
+retain the accounting. The completed fitted-guide stage used 236.915905972/900
+GPU-process wall seconds and both permitted launches; its CPU reference,
+analysis and smoke ledger remains below 20/180 seconds. The independent audit
+passes. The saved-fit mechanism diagnosis also closes successfully: 48 rows,
+four focused tests, one attempt and 6.013315/180 CPU diagnostic seconds. No
+process from that stage is running, and there is no third fitted-campaign launch
+or transfer of unused time. The [moment-repair checkpoint](artifacts/ledh-mixture-product-20261018/checkpoint.md)
+records the completed moment repair: 407.033164738/900 GPU-process seconds,
+one of two permitted launches, 1.562513115/180 CPU diagnostic seconds and
+34.49/300 focused-test seconds. The stage is closed; unused time does not
+transfer. Document build/review accounting is linked there. The current
+message/consumer campaign has completed all three permitted launches, using
+894.367691905/1,200 GPU-process seconds and 4.615978229/180 CPU reference/analysis
+seconds. All terminal audits pass; no process is running. The launch limit,
+not a numerical continuation veto, prevents a fourth attempt. The next
+current-observation map/reset diagnostic needs its own bounded plan and budget;
+unused time does not transfer. The
+[active checkpoint](controlled-smc-kdm-checkpoint.md) carries the exact next
+action. Earlier budgets remain closed. No Gaussian precision repair, production-setting
+change, tuning-policy change, canonical admission, commit, push or cross-branch
+synchronization is part of this update.
+
+<!-- END_ACTIVE_SCORE_PROGRAM_20261016 -->
+
 <!-- BEGIN_REPLICATION_FIRST_AUTHORITY_20260924 -->
 > **Authority update — 2026-09-24:** the [unified iAPF and MDPF/IWSG replication master](/home/chakwong/BayesFilter/docs/plans/iapf-kdm-replication-master-program-2026-09-24.md) now governs the next work. Use its [current checkpoint](/home/chakwong/BayesFilter/docs/plans/iapf-kdm-replication-checkpoint.md). Both scoped replications precede extensions and integration. The next stage is source/reference closure; the old precision-repair queue is deferred. Execution-state text below is preserved historical evidence, not a current launch instruction or live-process report.
 <!-- END_REPLICATION_FIRST_AUTHORITY_20260924 -->

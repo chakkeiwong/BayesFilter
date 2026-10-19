@@ -1,49 +1,59 @@
 # Controlled-SMC / KDM active checkpoint
 
-Updated 14 October 2026. Branch ledh-refactor-with-policy-fix; working checkout:
-/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922.
-The campaign numerical base was 89065bc6354801cb368d5e163ba49fd9c4372d10.
-Current commit: read git HEAD; branch synchronization is recorded in
-replication-branch-synchronization-20261014.md. Preserve unrelated edits.
+Updated 19 October 2026. The requested supervised-guidance implementation
+plan is complete through its bounded T2/T5 pilot. Active scientific question:
+can cSMC/KDM-inspired guidance improve the full analytical LEDH score when
+selected using simulation labels? OT remains epsilon 1, five iterations;
+32 terminal balancing updates also remain fixed. No OT tuning.
 
-Stage COMPLETE: bounded released-source replication closure.
-Controlled-SMC remains accepted on its existing tested-input/failure scope.
-KDM: ACCEPTED_BOUNDED_RELEASED_SOURCE_REPLICATION for released 25-particle
-bearings MDPF/A-MDPF, on the tested source operations and consumers.
+Worktree: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922
+Branch: ledh-refactor-with-policy-fix
+HEAD: ea1018de1da55ed02a29a8d60f08a6827fce8a42
+Preserve unrelated dirty work. Owner now requests a commit and a thorough
+review of why the proposal has not established score improvement. No push
+or branch synchronization requested.
 
-Corrected source-closure attempt03 passed 283 checks across seven groups.
-All eight numerical runtime files match saved verification; 14 auditor
-failure-case tests passed. Current compiled consumer wiring, pinned author
-sources, saved numerical assertions and hashes were checked. Three surrounding
-harness changes were reviewed. No algorithm changes or new training.
+Checked: four new propositions/proofs; exact-law SIR labels; optional Gaussian
+product-moment and admissible indefinite-quadratic consumers; actual shared
+UKF/flow/Contract-E/GenUT analytical recursion. Thirty-four distinct CPU tests
+pass. T2 pilot-02 has 80/96 valid rows; raw-guide failures were a legacy PSD
+check mismatch, repaired before fresh T5 pilot-03. T5 has 96/96 valid rows and
+six passing finite-program directional checks. No GPU job remains.
 
-Attempts01/02 are INVALID audit-development outputs; do not use their verdicts.
-Saved numerical experiments were unchanged. See their INVALIDATED.md notes.
+T5 unguided validation loss is lowest. Guided test means are lower but are
+dominated by one sequence and noise-score errors; every guide loses on another
+sequence. Four test datasets establish no statistical ranking. No guide,
+default, canonical tuning or HMC promotion. This is finite-bank selection,
+not neural KDM retraining or continuous coefficient optimization.
 
-Exact next action: finish the owner-authorized commit/merge/push synchronization.
-No further replication run is queued.
-Reopen only for a named missing operation/consumer, reproducible common-input
-mismatch, added port invalidity or changed numerical implementation.
-Independent-training score differences remain descriptive, not an automatic
-failure or equivalence proof. Do not launch another generic training ladder.
+Current plan: ledh-supervised-guidance-20261019.md
+Result and exact evidence: artifacts/ledh-supervised-guidance-20261019/result.md
+Terminal audit: artifacts/ledh-supervised-guidance-20261019/terminal-audit.json
+Math/code audit: artifacts/ledh-supervised-guidance-20261019/audit.md
+Manuscript: ../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex
+New section: ../papers/ledh_younis_kdm_score/ledh_supervised_guidance.tex
+Final PDF: ../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf
+86 pages; section 15, pages 75--80, contains the new proposal and pilot results.
+Two clean pdflatex passes; title and pages 75--80 visually inspected.
 
-Remaining limitations: exact Appendix B/original-paper reconstruction is
-NOT_ESTABLISHED; generic toy code exists. Population quality equivalence,
-production/HMC readiness, original iAPF and Task3 are not concluded.
+MathDevMCP proves two scalar algebra identities; document/probability checks
+failed or were unencodable. Claude review could not authenticate. Direct
+proof review and executable checks are recorded; external full certification
+is not claimed. Build with installed pdflatex (latexmk absent).
 
-Master: docs/plans/controlled-smc-kdm-replication-master-program-20260928.md
-Plan: docs/plans/controlled-smc-kdm-source-closure-plan-20261014.md
-Result: docs/plans/controlled-smc-kdm-source-closure-result-20261014.md
-Audit: docs/plans/artifacts/controlled-smc-kdm-replication-20260928/source-closure-20261014/attempt03
-Key artifacts: coverage.json, manifest.json, execution.log, terminal-review.json.
+Owner budget: 43200 GPU-process seconds; prior charge 9325.730914790, this
+stage 570.83 (including conservative 60-second initialization reserve).
+Total 9896.560914790; remaining 33303.439085210. CPU stage reserve 150 seconds
+within 600. All failed attempts and prior stage evidence remain preserved.
 
-Before closure: 205463.582169 CPU / 71779.382403 GPU seconds remaining.
-Terminal audit: 1.515 wall / 1.442 process CPU seconds, zero GPU.
-Conservatively reserving the entire 600 CPU-second closure cap leaves at least
-204863.582169 CPU / unchanged 71779.382403 GPU seconds. No new allocation.
+Next research action: write a bounded fresh SIR scope-specific calibration
+and independent-dataset protocol. First distinguish poorly calibrated
+finite-program derivatives and label variance from guide benefit; include
+unguided retention, frozen independent heuristic comparisons, numerical-control
+justification, adequate dataset replication and parameter coverage. Preserve
+OT (1,5). No direction-rejection or continuation veto fired; the completed
+pilot does not itself authorize an unplanned default change.
 
-The task-owned code, tests, plans and compact results have been copied to this
-worktree with verified hashes. Bulk raw evidence remains at its original
-absolute locations under /home/chakwong/BayesFilter/docs/plans/artifacts;
-a fresh clone alone does not contain those raw inputs or trained checkpoints.
-The other agent's surrogate-hmc checkout has not been altered.
+Earlier diagnostics and budget details are linked in:
+artifacts/ledh-sir-guidance-20261019/result.md
+artifacts/ledh-sir-beta-repair-20261019/result.md

@@ -154,6 +154,7 @@ def _value_and_analytical_score_impl(
     reset_sinkhorn_steps: int = 8,
     reset_balance_steps: int = 8,
     reset_ridge: float = 1.0e-5,
+    reset_denominator_regularization: float = 1.0e-7,
     correction_steps: int = 0,
     correction_strength: float = 0.2,
     correction_lm_damping: float = 1.0e-2,
@@ -659,6 +660,7 @@ def _value_and_analytical_score_impl(
                 sinkhorn_steps=reset_sinkhorn_steps,
                 balance_steps=reset_balance_steps,
                 ridge=reset_ridge,
+                denominator_regularization=reset_denominator_regularization,
             )
             reset_row_error = tf.reduce_max(
                 tf.abs(tf.reduce_sum(reset_transport, axis=1) - 1.0)
@@ -851,6 +853,9 @@ def _value_and_analytical_score_impl(
                 "reset_numerical_valid": (tf.reduce_all(valid_reset)
                                           if reset_policy == "contract_e"
                                           else tf.constant(True)),
+                "reset_transport_valid": (reset_valid if reset_policy == "contract_e"
+                                          else tf.constant(True)),
+                "guided_proposal_valid": guided_proposal_valid,
                 "predicted_covariances_finite": tf.reduce_all(tf.math.is_finite(predicted_covs)),
                 "post_covariances_finite": tf.reduce_all(tf.math.is_finite(post_covs)),
                 "flow_states_finite": tf.reduce_all(tf.math.is_finite(children)),
@@ -975,6 +980,7 @@ def canonical_value_and_analytical_score(
     reset_sinkhorn_steps: int = 8,
     reset_balance_steps: int = 8,
     reset_ridge: float = 1.0e-5,
+    reset_denominator_regularization: float = 1.0e-7,
     correction_steps: int = 0,
     correction_strength: float = 0.2,
     correction_lm_damping: float = 1.0e-2,
@@ -1040,6 +1046,7 @@ def canonical_value_and_analytical_score(
         reset_sinkhorn_steps=reset_sinkhorn_steps,
         reset_balance_steps=reset_balance_steps,
         reset_ridge=reset_ridge,
+        reset_denominator_regularization=reset_denominator_regularization,
         correction_steps=correction_steps,
         correction_strength=correction_strength,
         correction_lm_damping=correction_lm_damping,

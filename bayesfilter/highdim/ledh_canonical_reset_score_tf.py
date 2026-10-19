@@ -28,6 +28,7 @@ def sinkhorn_contract_e_reset_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
+    denominator_regularization: float = 1.0e-7,
 ) -> tuple[Tensor, Tensor, Tensor]:
     """Return reset particles and one analytical score-direction tangent.
 
@@ -58,6 +59,7 @@ def sinkhorn_contract_e_reset_with_tangent(
         sinkhorn_steps=sinkhorn_steps,
         balance_steps=balance_steps,
         ridge=ridge,
+        denominator_regularization=denominator_regularization,
     )
     return result[0][0], result[1][0, 0], result[6]
 
@@ -75,6 +77,7 @@ def sinkhorn_contract_e_reset_triple_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
+    denominator_regularization: float = 1.0e-7,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
     """Reset states and carry covariances using the same shared transport.
 
@@ -107,6 +110,7 @@ def sinkhorn_contract_e_reset_triple_with_tangent(
         sinkhorn_steps=sinkhorn_steps,
         balance_steps=balance_steps,
         ridge=ridge,
+        denominator_regularization=denominator_regularization,
     )
     return (
         result[0][0],

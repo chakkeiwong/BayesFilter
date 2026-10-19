@@ -1,5 +1,81 @@
 # Authoritative master: controlled SMC and KDM/IWSG replication
 
+## Completed supervised guidance pilot — 19 October 2026
+
+Replication remains closed. [Simulation-supervised guide selection](ledh-supervised-guidance-20261019.md)
+has executed on the full shared analytical LEDH executor with disjoint
+simulated datasets. The new proofs, 34 tests and final 96/96 valid T5 rows
+support the bounded implementation, not statistical improvement. Unguided
+has the lowest validation loss; no guide is promoted. See the
+[result and audit](artifacts/ledh-supervised-guidance-20261019/result.md).
+OT remains `(1,5)`. Next: fresh scope-specific calibration and more independent
+datasets. The finite RBF bank is not original neural KDM retraining or
+canonical admission. Earlier diagnostic-consumer results below remain history.
+
+
+## Earlier program handoff — 19 October 2026
+
+Replication remains closed. Continue the original score question through the
+[corrected SIR guidance execution](ledh-sir-guidance-execution-20261019.md),
+holding OT at `(1,5)`. Fit SIR-specific backward messages and compare their
+analytical score consumers with the unguided and simple-proposal arms.
+The positive-kernel adapter is KDM-inspired, not original KDM training; the
+current three-density consumer remains noncanonical diagnostic evidence.
+This handoff supersedes earlier next actions. The owner now authorizes twelve
+hours total for this campaign; bounded allocations and repair rules remain in
+the plan. October 18 is closed.
+Use the [active checkpoint](controlled-smc-kdm-checkpoint.md) for recovery.
+The [completed SIR result](artifacts/ledh-sir-guidance-20261019/result.md)
+shows conditional harm for both equal-mixture guides on both datasets.
+All 96 keys are evaluated, with one failed global comparator. The subsequent
+[independent-beta repair](ledh-sir-beta-repair-20261019.md) uses fresh seeds;
+replication remains closed and OT remains (1,5).
+Six independent beta fits pass their optimization/validation checks and all
+112 held-out rows are valid. The [completed result](artifacts/ledh-sir-beta-repair-20261019/result.md)
+supports two matched-beta gains on data 26100832 under its conditional
+bootstrap analysis, but neither guide meets the full cross-dataset criterion
+or passes the componentwise simple-method screen. Lower pilot objectives are
+not score improvement. GPU spending is 9,325.73/43,200 seconds; no campaign
+process remains. Next resolve SIR proposal/reset versus message error and
+the canonical consumer call chain, under a fresh bounded attribution plan.
+Do not reopen replication, sweep OT, or promote the diagnostic consumer.
+
+## Active-program handoff — 18 October 2026
+
+Replication remains closed at the bounded scope below. The owner's instruction
+to refresh and continue resumes the [original score master](younis-kdm-score-master-program-2026-09-14.md),
+now updated with the [completed message/consumer comparison](artifacts/ledh-message-consumer-20261018/result.md).
+The 2,688 fresh GPU/XLA rows, 16,128 trace checks and 48 derivative checks pass.
+None of 36 simultaneous contrasts establishes a gain or harm. All four
+product-consumer candidates fail the descriptive heuristic promotion screen;
+all remain numerically viable. This local kernel experiment is not original
+KDM training or canonical LEDH admission.
+
+There is no numerical continuation veto. The
+[paired particle-count repair](artifacts/ledh-particle-count-stress-20261018/result.md)
+passes its audit of 768 rows, 4,608 trace checks and 16 derivative checks.
+All 14 simultaneous contrasts remain unresolved; both product arms still
+lose descriptively to Gaussian-future global in the second score coordinate
+at N64. The [final bounded follow-up](artifacts/ledh-particle-count-followup-20261018/result.md)
+also passes: 1,536 rows, 9,216 trace checks and 16 derivative checks on fresh
+nested N64/N128 clouds with twelve replicates per fit. Four of 14 simultaneous
+contrasts support conditional gains over each product's own N64 arm and over
+unguided local at N128; none establishes improvement over the strong global
+heuristics. Both products still fail heuristic promotion. The next repair
+must separate the current-observation Gaussian/map approximation from the
+moment-restoring reset, not assume that more message fitting will suffice.
+MathDev verifies scoped scalar identities; its full matrix-proof audit remains
+parser-inconclusive. The campaign closes at 894.367691905/1,200 GPU-process
+seconds, 4.615978229/180 CPU reference/analysis seconds and three of three
+launches. No process is running. The launch limit is a real resource boundary,
+not a numerical continuation veto; unused time does not authorize attempt four.
+Earlier budgets remain closed. Use the
+[active checkpoint](controlled-smc-kdm-checkpoint.md) for process and next-action
+status. Phase completion and candidate rejection trigger automatic audit,
+repair and refresh within the remaining authorized budget.
+This is algorithm-improvement work, not a reopened replication ladder; the
+dated replication actions below remain historical.
+
 ## Final campaign summary and repository handoff — 14 October 2026
 
 The bounded replication phase is complete: controlled SMC retains its accepted

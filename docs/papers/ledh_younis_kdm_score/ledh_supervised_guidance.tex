@@ -1,0 +1,354 @@
+\section{Learning guides for moments and scores without a posterior oracle}
+\label{sec:supervised-guidance}
+
+Contract E preserves specified moments of the weighted cloud presented to the
+reset. It cannot correct a cloud whose moments already differ from the desired
+posterior moments. We therefore keep the reset and its analytical derivative
+fixed and change the objective used to fit and select the upstream guide.
+The distinction is consequential: a small error in a backward-message
+regression, or small variability of importance weights, need not imply a
+small error in the parameter score. The proposal below trains against the
+quantities we wish to estimate, while avoiding an observed-score oracle.
+
+The starting point is simulation. A simulated latent state is not a posterior
+mean, but it is a noisy label whose conditional mean is precisely that
+posterior mean. This observation gives an exact population-risk identity.
+Complete-data parameter scores provide an analogous label for the observed-data
+score. Neither identity asserts that a finite optimization finds its population
+minimum, or that improvement averaged over simulated datasets transfers to
+every particular observation sequence.
+
+\subsection{Why one simulated trajectory can supervise conditional moments}
+
+Let $C$ be the conditioning information available to the estimator, and let
+$V=\Phi(X,C)\in\R^r$ be a vector of features of a simulated latent variable.
+For filtering moments $C=(\theta,Y_{1:t})$; for a proposal informed by future
+observations it may instead be $(\theta,X_{t-1},Y_{t:T})$. These are different
+conditional distributions and their labels must not be interchanged. Define
+$\mu(C)=\mathbb E[V\mid C]$. The estimator
+$A_\eta(C,U)$ uses guide settings $\eta$ and algorithmic randomness $U$.
+The features can contain state coordinates, raw products $X_jX_k$, and
+selected nonlinear functions appearing in transition or observation scores.
+Raw products are labels for second moments; covariance is subsequently
+obtained by subtracting the outer product of the estimated mean.
+
+\begin{assumption}[Simulation labels and information separation]
+\label{ass:sg-separation}
+Training pairs $(C,V)$ have the declared model law. Conditional on $C$, the
+particle randomness $U$ is independent of $V$. For each fixed candidate
+$\eta$, $A_\eta$ is measurable with respect to $(C,U)$ and does not receive
+the latent label. Both $V$ and $A_\eta$ are square integrable. The symmetric
+weight matrix $W(C)$ is positive semidefinite and specified without access to
+the latent evaluation label beyond $C$; it is the same for every candidate.
+All displayed weighted second moments are finite. Learned weights and settings are treated
+as fixed when evaluating a fresh validation or test dataset.
+\end{assumption}
+
+\begin{proposition}[Moment supervision without known posterior moments]
+\label{prop:sg-moment-risk}
+Under Assumption~\ref{ass:sg-separation}, with
+$\|v\|_W^2=v^\top Wv$,
+\begin{equation}
+\mathbb E\|A_\eta-V\|_W^2
+=\mathbb E\|A_\eta-\mu(C)\|_W^2
+ +\mathbb E\|V-\mu(C)\|_W^2.
+\label{eq:sg-moment-risk}
+\end{equation}
+Consequently the supervised population loss and the actual conditional-moment
+MSE have the same minimizers over any fixed candidate family.
+\end{proposition}
+\begin{proof}
+Write $A_\eta-V=(A_\eta-\mu)-(V-\mu)$ and expand the square.
+The mixed term has conditional expectation
+\[
+\mathbb E[(A_\eta-\mu)^\top W(V-\mu)\mid C,U]
+=(A_\eta-\mu)^\top W\,
+  \mathbb E[V-\mu\mid C,U]=0.
+\]
+The last equality uses conditional independence and the definition of $\mu$.
+Taking expectations gives the identity. Its second term is independent of
+$\eta$, proving the minimizer statement.
+\end{proof}
+
+For example, if $X\mid C$ is scalar normal with mean $m$ and variance $v$,
+then $\mathbb E[(a-X)^2\mid C]=(a-m)^2+v$.
+Replacing $X$ by $X^2$ gives a label for $m^2+v$; its irreducible conditional
+variance is $2v^2+4m^2v$. Higher-order features therefore bring additional
+label noise. We choose them because the score uses them, rather than assuming
+that matching every available moment must help. A moment-matching objective
+alone gives no theorem about the derivative of the finite LEDH program.
+
+\subsection{Complete-data labels target the actual LEDH score risk}
+
+Fix a parameter $\theta$ and a joint density $p_\theta(x,y)$ with a
+parameter-independent dominating measure. Suppose differentiation can pass
+under the integral defining $p_\theta(y)$, the relevant scores are square
+integrable, and $p_\theta(y)>0$. Define
+\begin{equation}
+ H_\theta(x,y)=\nabla_\theta\log p_\theta(x,y),\qquad
+ s_\theta(y)=\nabla_\theta\log p_\theta(y).
+\label{eq:sg-score-definitions}
+\end{equation}
+The latent path is held fixed in $H_\theta$. Differentiating the simulated
+path itself with common base noise generally computes a different quantity.
+
+\begin{proposition}[Score supervision and paired comparisons]
+\label{prop:sg-score-risk}
+Under the preceding regularity conditions,
+$\mathbb E[H_\theta(X,Y)\mid Y]=s_\theta(Y)$. For any estimator
+$\widehat s_{\theta,\eta}(Y,U)$ satisfying the separation and integrability
+conditions of Assumption~\ref{ass:sg-separation},
+\begin{equation}
+ \mathbb E\|\widehat s_{\theta,\eta}-H_\theta\|_W^2
+ =\mathbb E\|\widehat s_{\theta,\eta}-s_\theta(Y)\|_W^2+C_\theta,
+ \quad C_\theta=\mathbb E\|H_\theta-s_\theta(Y)\|_W^2.
+\label{eq:sg-score-risk}
+\end{equation}
+For two fixed candidates $a,b$, the expectation of their difference in
+supervised losses equals their difference in true score MSE.
+\end{proposition}
+\begin{proof}
+For almost every $y$ with positive marginal density,
+\[
+ \int H_\theta(x,y)p_\theta(x\mid y)\,\dd x
+ =\frac{1}{p_\theta(y)}\int\nabla_\theta p_\theta(x,y)\,\dd x
+ =\frac{\nabla_\theta p_\theta(y)}{p_\theta(y)}.
+\]
+This is the stated conditional identity. Apply
+Proposition~\ref{prop:sg-moment-risk} with $C=(\theta,Y)$ and $V=H_\theta$.
+Subtracting the identities for $a$ and $b$ cancels $C_\theta$.
+\end{proof}
+
+Here $\widehat s$ can be the analytical total derivative of the same frozen
+finite LEDH likelihood program used for evaluation. The result does not
+replace that derivative by a smoothing estimator: complete-data scores are
+training labels only. Nor does it require $\widehat s$ to be unbiased.
+The risk includes both squared bias and particle variance. If $\theta$ is
+drawn from a specified training distribution, integrating the identity over
+that distribution gives the corresponding average-risk statement. A fit at
+one $\theta$ establishes no coverage of other parameter regions.
+
+The population identity does not make an in-sample loss difference an unbiased
+assessment of a selected candidate. Select settings using calibration and
+validation data, freeze them, and assess them on independent test sequences.
+For each sequence share its label and, where possible, particle seeds between
+candidates. Average particle replicates within a sequence before computing
+uncertainty across independent sequences. Reusing a seed to generate both the
+latent label and the particle approximation can invalidate the proof.
+
+\subsection{Exact labels for the SIR scope actually being computed}
+
+The active continuous SIR comparison has
+$X_0\sim\mathcal N(m_0,I)$,
+$X_t\mid X_{t-1}\sim\mathcal N(f_\theta(X_{t-1}),I)$ and
+$Y_t\mid X_t\sim\mathcal N(BX_t,\sigma_\theta^2 I_9)$,
+where $B$ extracts infectious coordinates and
+$\sigma_\theta=10e^{\theta_3}$. The first two parameters are log scales of
+infection and removal coefficients in the existing RK4 transition.
+This is the continuous law used by the shared consumer, not an assertion
+that a simulator which clips susceptible states has the same joint density.
+The initial distribution is parameter independent in this scope.
+
+\begin{proposition}[Fixed-path SIR score labels]
+\label{prop:sg-sir-label}
+Let $r_t=X_t-f_\theta(X_{t-1})$ and $e_t=Y_t-BX_t$.
+The complete-data label in these three parameter coordinates is
+\begin{equation}
+ H_j=\sum_{t=1}^T
+       r_t^\top\partial_{\theta_j}f_\theta(X_{t-1}),\quad j=1,2,
+ \qquad
+ H_3=\sum_{t=1}^T(\|e_t\|^2/\sigma_\theta^2-9).
+\label{eq:sg-sir-label}
+\end{equation}
+\end{proposition}
+\begin{proof}
+The transition log density contributes $-\tfrac12 r_t^\top r_t$ and a
+parameter-independent normalizer. At fixed adjacent states,
+$\partial_{\theta_j}r_t=-\partial_{\theta_j}f_\theta(X_{t-1})$, giving
+the first expression. The observation term is
+$-9\log\sigma_\theta-\|e_t\|^2/(2\sigma_\theta^2)$ plus a constant.
+Since $\partial_{\theta_3}\log\sigma_\theta=1$ and $BX_t$ is fixed,
+its derivative is the second expression. Sum over time; the initial law
+contributes zero.
+\end{proof}
+
+The implementation must reuse the consumer's transition and its analytical
+parameter tangent with zero incoming state tangent. This prevents a second,
+inconsistent SIR integrator from defining the labels. A separate fixed-path
+finite-difference check verifies the sum of joint log densities. For an
+alternative clipped model, one must instead use a correct mixed-measure
+density or a continuous pre-clipping augmentation with the correct observation
+and transition laws. Simply evaluating a Gaussian density on clipped states
+would violate the assumptions of Proposition~\ref{prop:sg-score-risk}.
+
+\subsection{Changing controlled SMC and KDM at their actual consumers}
+
+Controlled SMC supplies a useful initial policy through the backward
+least-squares recursion of \citet[Section 4.2, equations (20)--(21)]{heng2020controlled}.
+We retain that recursion and evaluate settings such as basis, iteration count
+and guide strength by the moments or analytical scores produced downstream.
+The first implementation can select a finite, declared bank of such settings;
+continuous optimization of every control coefficient is a further method,
+requiring its own derivative and optimization checks. A smaller backward
+residual is an explanatory measurement, not the supervised objective.
+
+For KDM, \citet[Section 5, equation (18)]{younis2023} train density NLL and
+also describe subsequent refinement of the weighted mean by MSE; Appendix
+D.1, equation (23), defines that mean loss. Their released full-sequence
+trainer evaluates the chosen loss on latent-state labels. Replacing the mean
+feature by selected features gives Proposition~\ref{prop:sg-moment-risk};
+using the actual LEDH score and complete-data labels gives
+Proposition~\ref{prop:sg-score-risk}. These are adaptations. Our positive-RBF
+SIR message export is KDM-inspired and does not become original neural KDM
+training merely by changing its selection objective.
+
+The consumer matters as much as the loss. If a Gaussian base is multiplied
+by a Gaussian-mixture message, each product component has mean $m_k$ and
+covariance $C_k$, and normalized product weight $\alpha_k$. Its moments are
+\begin{equation}
+ \bar m=\sum_k\alpha_km_k,\qquad
+ \bar C=\sum_k\alpha_k\{C_k+(m_k-\bar m)(m_k-\bar m)^\top\}.
+\label{eq:sg-product-moments}
+\end{equation}
+This follows by expanding
+$\mathbb E[(X-\bar m)(X-\bar m)^\top\mid k]$ and averaging over $k$.
+Averaging component precision matrices omits the displayed between-component
+dispersion. We can use $\mathcal N(\bar m,\bar C)$ as the proposal while
+retaining all analytical derivatives of these moments. It is a moment-matched
+Gaussian, not a draw from the full product mixture. Consequently the
+importance denominator must be this Gaussian density, followed by the
+existing flow Jacobian correction. The original target density is unchanged.
+
+\begin{proposition}[Admissible quadratic guidance]
+\label{prop:sg-quadratic-domain}
+Multiplying $\mathcal N(m,Q)$, $Q\succ0$, by
+$\exp(-x^\top\Lambda x/2+b^\top x)$ with symmetric $\Lambda$
+defines a normalizable Gaussian density if and only if
+$Q^{-1}+\Lambda\succ0$.
+\end{proposition}
+\begin{proof}
+The exponent has quadratic precision $P=Q^{-1}+\Lambda$ and linear term
+$Q^{-1}m+b$. When $P\succ0$, completing the square gives covariance
+$P^{-1}$ and mean $P^{-1}(Q^{-1}m+b)$ and a finite Gaussian integral.
+If $P$ has a negative eigenvalue, the integral grows exponentially along
+that eigendirection. If it is positive semidefinite and singular, integration
+along a null direction diverges whether the corresponding linear coefficient
+is zero or nonzero. These exhaust the symmetric cases.
+\end{proof}
+
+Thus $\Lambda\succeq0$ is sufficient but unnecessarily restrictive. The
+optional unprojected quadratic candidate must pass the actual total-precision
+check at every consumed covariance. Failure rejects the candidate; it does
+not authorize clipping or silently changing the target. Product-moment and
+unprojected-quadratic settings are evaluated separately, so that changed
+representation and changed fitting objective can be distinguished.
+
+\subsection{Executable training and evaluation order}
+
+\begin{enumerate}[leftmargin=*]
+\item Declare the exact model law, parameter coordinates and training region;
+choose moment or score loss and its frozen scaling. Partition simulation seeds
+into calibration, validation and test sets before fitting.
+\item Simulate $(X,Y)$ and compute fixed-path labels. Pass only $Y$, the
+declared parameter and independent fit randomness to cSMC/KDM. Latent paths
+are retained solely in the label calculation.
+\item Fit backward messages on observations; construct each declared guide
+candidate. For each candidate run the shared full analytical LEDH executor
+with independent particle noise, Contract E and OT $(1,5)$. Include the
+unchanged and unguided comparators. Compute losses from the actual consumed
+proposal and actual final score, rather than a detached guide-only prediction.
+\item Select guide settings on calibration/validation data, with numerical
+validity checked before loss. Freeze all choices and evaluate independent
+test sequences. Keep latent labels and particle randomness independent
+conditionally on the observations and parameter throughout.
+\item Report paired score-loss differences and their uncertainty, separately
+from moment error and message fit. A finite bank implements supervised
+selection; it does not establish globally optimal controls, neural capacity
+training, or canonical tuning admission.
+\end{enumerate}
+
+Offline fitting parameters remain fixed in the analytical score recursion.
+If a future implementation makes guide coefficients explicit functions of
+$\theta$ inside the value program, their derivatives must be included; a
+frozen-guide partial derivative must not be called that program's total
+derivative. Optimization over guide settings does not require differentiating
+the score: a finite candidate bank already supplies a valid first experiment.
+For gradient optimization, the required mixed derivatives concern training
+parameters and must be distinguished from the analytical model-score path.
+
+\subsection{The first SIR implementation and its limits}
+\label{sec:sg-pilot}
+
+The first implementation selects a finite bank of guide settings using the
+analytical score produced by the shared LEDH executor. It includes the UKF
+covariance lifecycle, flow, Contract E reset and both diagonal and pairwise
+GenUT corrections. The kernel alternative uses the fitted positive-RBF
+message described above. It does not train a new neural KDM. Direct moment
+supervision is implemented as a loss, but the executed bank selection uses
+score loss; terminal first- and second-moment errors are explanatory only.
+
+The short SIR experiments use 64 particles at $\theta=(0,0,0)$, two
+calibration sequences, two validation sequences and four untouched test
+sequences, each evaluated with two independent particle streams. OT remains
+$(1,5)$, with 32 terminal balancing updates also held fixed. Computation uses
+double precision on the GPU as a diagnostic
+exception. These small experiments test the learning signal and the actual
+consumer, rather than establish settings for a longer horizon or a different
+parameter region.
+
+At $T=2$, the unprojected quadratic guide was initially rejected by an
+implementation check requiring $\Lambda\succeq0$. Proposition
+\ref{prop:sg-quadratic-domain} shows why that condition is unnecessarily
+restrictive. An explicit optional setting now checks positive total precision
+instead, while preserving the old default. Tests cover both an admissible
+indefinite guide and a nonnormalizable proposal. The failed rows are retained
+as implementation failures; they are not evidence against unprojected guidance.
+
+After that repair, a fresh $T=5$ experiment completed all 96 candidate runs
+with valid stage diagnostics. Each of its six candidates also passed a
+directional finite-difference check of the frozen finite program. Table
+\ref{tab:sg-pilot} reports the scaled supervised loss
+$\sum_{j=1}^3((\widehat s_j-H_j)/a_j)^2$, where
+$a_j=\max\{1,\sqrt{\operatorname{mean}_{\rm calibration}H_j^2}\}$
+is fixed before validation. Thus these entries include irreducible label
+noise; they are not measured squared errors against a known observed score.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Guide & Validation mean loss & Test mean loss \\
+\midrule
+None & 1653.53 & 65902.87 \\
+cSMC, half strength & 4515.01 & 23443.86 \\
+cSMC, projected & 3136.57 & 9575.05 \\
+cSMC, unprojected & 3151.98 & 9454.93 \\
+Kernel, positive information & 3328.31 & 15098.74 \\
+Kernel, product moments & 3592.32 & 10847.56 \\
+\bottomrule
+\end{tabular}
+\caption{Descriptive $T=5$, $N=64$ supervised score losses. Particle
+replicates are averaged within each sequence, then independent sequences
+are averaged. The validation and test sets contain two and four sequences,
+respectively. No statistical ranking follows from this table.}
+\label{tab:sg-pilot}
+\end{table}
+
+Unguided LEDH has the lowest validation loss. Selection within each guide
+family nominates projected cSMC and positive-information kernel guidance,
+but neither nomination justifies replacing the unguided method. All guided
+test means are lower than the unguided test mean, yet every guided candidate
+has higher loss on one of the four test sequences. Most of the mean difference
+comes from the observation-noise score and a single sequence on which the
+unguided loss is very large. The separate validation and test comparisons
+therefore do not establish a reliable ranking. They also do not invalidate
+the population identity: a small, noisy sample need not order candidates by
+their population risk.
+
+The next scientific comparison needs fresh simulations, more independent
+sequences and its own scope-specific calibration of the remaining LEDH and
+guide controls. The same fixed OT choice can be retained. More particle
+replicates alone would not resolve uncertainty across datasets. The
+implementation plan and full paired results are preserved in
+\path{docs/plans/ledh-supervised-guidance-20261019.md} and
+\path{docs/plans/artifacts/ledh-supervised-guidance-20261019/result.md}.

@@ -27,7 +27,7 @@
 \title{Younis Kernel Mixtures and Model-Score Estimation\\
 From the LEDH--OT--GenUT Filter to Corrected Mixtures}
 \author{BayesFilter research note}
-\date{14 October 2026}
+\date{19 October 2026}
 
 \begin{document}
 \maketitle
@@ -66,8 +66,14 @@ likelihood, whose finite-particle score also contains a random normalization.
 The note documents the implemented finite programs, the reasons for each
 change in direction, the complete proposed recursions, and the experiments
 needed to distinguish improved model-score accuracy from implementation
-correctness. The new combination is a research proposal; its finite-particle
-bias and computational value remain to be measured.
+correctness. We also derive simulation-supervised moment and score objectives:
+complete-data labels have the required posterior conditional means, so their
+population squared losses differ from the desired estimation risks only by
+a candidate-independent constant. A first SIR implementation selects frozen
+cSMC and kernel guide settings through the full analytical LEDH executor.
+Its short-horizon pilot passes numerical checks but does not establish a
+statistical score improvement; finite-particle bias and computational value
+remain research questions.
 \end{abstract}
 \clearpage
 \tableofcontents
@@ -3866,9 +3872,57 @@ The finite-program checks have the following distinct purposes:
 \end{enumerate}
 
 \input{ledh_backward_guidance}
+\input{ledh_supervised_guidance}
 
-\section{The next discriminating comparison}
+\section{Subsequent discriminating comparisons}
 \label{sec:next-study}
+
+The current implementation is the supervised full-LEDH pilot in
+Section~\ref{sec:sg-pilot}. It provides a mathematically justified fitting
+objective and executable consumer checks, but no established method ranking.
+The earlier comparisons below explain the route to that objective and retain
+their original, narrower consumer scope.
+
+The earlier Gaussian localization concerns the single-flow consumer, not the
+identity/global/local mixture of Section~\ref{sec:bg-three-map-mixture}. In
+that single-flow experiment, removing additive scaling restores transport
+mass accuracy but fails the stated interchangeable-repair test; its numerical
+default therefore remains unchanged. These results do not diagnose the
+existing mixture, whose local bridge already uses conditional covariance.
+Frozen future guidance is now composed with that mixture's global and local
+maps while retaining its physical importance numerator and full proposal
+density. Gaussian moment, density, wiring and finite-program derivative checks
+pass on the bounded fixtures. They establish neither improved model-score
+accuracy nor equivalence of the mixture's separate moment-restoring reset to
+canonical Contract E.
+
+The optional product-moment consumer in
+Proposition~\ref{prop:bg-product-moments} has now been evaluated on fresh
+fitting and particle-cloud seeds. Section~\ref{sec:bg-product-result} reports
+four conditional improvements over the old fitted global consumer, with none
+established over unguided global proposals; both repaired arms still fail the
+simple-method comparison. The subsequent comparison of exact seven-component
+and fitted future messages under the same product-moment consumer is complete:
+all 36 simultaneous contrasts are unresolved, and positive-tail error persists
+even with the exact future message. A further saved-fit diagnostic at 64 and
+128 particles supports four conditional gains: each product arm improves over
+its own lower-count arm and over unguided local at 128 particles. Neither has
+an established gain over the strong unguided-global or Gaussian-future-global
+alternatives, and both still fail the simple-method comparison. That Gaussian
+diagnostic motivates separating the current-observation and flow-map approximation
+from the moment-restoring reset, not to assume a larger future-message fit
+will repair the error. These saved-fit, fixed-data comparisons do not replace
+confirmation with new fits and eventually new datasets, establish
+particle-count convergence, or justify a default change. The broader
+comparisons below follow that work. The completed SIR comparison with
+independently fitted allocation and matched-beta controls appears in
+Section~\ref{sec:bg-sir-calibrated-results}, following the negative
+equal-mixture result in Section~\ref{sec:bg-sir-fixed-transport-results}.
+It supports two conditional matched-beta gains on one data set, but neither
+guide meets the full accuracy criterion or the simple-method screen.
+This proposal augmentation retains the
+analytical derivative of its finite likelihood program; ancestor averaging
+is a separate research variant in the wider score-estimation program.
 
 For models with regular transition densities, the reference question is
 whether model-corrected mixture proposals and ancestor averaging reduce
@@ -4036,6 +4090,41 @@ The controlled-SMC citation was checked against the locally retained
 published paper, Sections~4.2--4.3, and the source-closure record; the local
 author source is under \path{.localresources/code/heng-controlled-smc/}.
 
+The October~16 continuation ran in the LEDH worktree on branch
+\path{ledh-refactor-with-policy-fix}. The refreshed master is
+\path{docs/plans/younis-kdm-score-master-program-2026-09-14.md}.
+The fitted-guide result is retained in
+\path{docs/plans/artifacts/ledh-fitted-guide-20261016/result.md}; the subsequent
+Gaussian diagnostic, CPU validity localization, source hashes, commands and
+regression checks are in
+\path{docs/plans/artifacts/ledh-gaussian-score-error-20261016/}.
+Those dated records preserve the then-incomplete grid; the active master
+records subsequent completion and the retired roundoff concern.
+
+The October~17 nonlinear fitted comparison and its independent terminal
+audit are in
+\path{docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/result.md}.
+The subsequent saved-fit mechanism calculation, input and source hashes,
+four focused tests, and MathDev reports are in
+\path{docs/plans/artifacts/ledh-ksc-information-20261017/}.
+The added proposition states its assumptions and proof explicitly. MathDev
+verifies its scalar variance algebra, while its implementation-proof parser
+remains inconclusive; this is not an automated certificate of the full
+proposition or implementation.
+
+The October~18 optional product-moment implementation, fresh conditional
+comparison, source closure and independent terminal audit are preserved in
+\path{docs/plans/artifacts/ledh-mixture-product-20261018/}.
+MathDev verifies the scoped scalar mean and covariance derivative identities.
+Its full implementation audit does not certify
+Proposition~\ref{prop:bg-product-moments}: all 19 proof obligations remain
+parser-inconclusive. The aggregate lexical mismatch concerns document words
+and LaTeX tokens absent from Python identifiers, not a refuted mathematical
+identity. The required operations are present, shape evidence is supported
+and code contracts are consistent. The explicit proof and independent
+multidimensional moment, tangent and shared-consumer tests supply the checked
+local evidence; automated certification of the general proof remains open.
+
 Phase~4A records are under
 \path{docs/benchmarks/artifacts/ledh_younis_kdm_phase4_20260908/}; the
 corrected all-bandwidth diagnostic is
@@ -4078,8 +4167,8 @@ The revision's protected baseline, source archive, equation-preservation
 review, exact arithmetic examples, implementation wiring inspection, and
 PDF build records are retained under
 \path{docs/plans/artifacts/younis-manuscript-update-20260911/}.
-This revision added analysis and exposition, and ran document and reference
-checks. It launched no new particle-filter experiment.
+That September revision added analysis and exposition, and ran document and
+reference checks. It launched no new particle-filter experiment.
 
 
 \clearpage
