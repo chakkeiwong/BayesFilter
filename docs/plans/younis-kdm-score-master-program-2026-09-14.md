@@ -1,3 +1,18 @@
+## Failure review — 20 October 2026
+
+Implementation/pilot committed as `4abbaf9f1` on the LEDH branch. The
+[mathematical, consumer and evidence review](artifacts/ledh-supervised-guidance-20261019/failure-review/review.md)
+finds no failure of the supervised-risk identity. The pilot selected existing
+message-fitted guides, and the pre-flow construction generally changes the
+physical future message from `h(x)` to `h(F^{-1}(x))`. Correct importance weights
+do not establish a score benefit. The manuscript now proves this distinction
+and gives a harmful exact-Gaussian example; focused shared-consumer checks pass.
+No new GPU campaign, OT change or promotion. Before enlarging the dataset bank,
+the next repair should test an aligned quadratic guide using the actual shared
+flow and its total analytical tangents, then genuine downstream supervision on
+fresh data. This replaces the older next action below; the review separates
+proved structural facts from unmeasured SIR causal contributions.
+
 ## Completed supervised guidance pilot — 19 October 2026
 
 [The simulation-supervised guidance plan](ledh-supervised-guidance-20261019.md)

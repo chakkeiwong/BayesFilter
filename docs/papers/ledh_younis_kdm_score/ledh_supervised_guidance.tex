@@ -352,3 +352,114 @@ replicates alone would not resolve uncertainty across datasets. The
 implementation plan and full paired results are preserved in
 \path{docs/plans/ledh-supervised-guidance-20261019.md} and
 \path{docs/plans/artifacts/ledh-supervised-guidance-20261019/result.md}.
+
+\subsection{Why a valid future guide can lose its intended effect in the flow}
+\label{sec:sg-flow-coordinates}
+
+The preceding risk identity supplies an objective; it does not establish that
+the current proposal family can reduce it. There is a further distinction
+between fitting a future message and applying that message in the coordinates
+where it was fitted. The backward message $h_t(x)$ is a function of the
+physical state after the current observation update. Our implemented adapter
+instead multiplies a Gaussian density before the LEDH transformation by a
+quadratic approximation to this message. This is the pre-flow algorithm
+specified in Section~\ref{sec:backward-guidance}; its importance correction
+remains valid. It is generally different from tilting the distribution after
+the flow by the same future message.
+
+\begin{proposition}[Transporting the argument of a guide]
+\label{prop:sg-guide-coordinates}
+Condition on an incoming cloud and one ancestor's fixed invertible affine
+flow $F(z)=Bz+c$. Let $r(z)$ be its unguided pre-flow density, and let
+$q_F(x)=r(F^{-1}(x))|\det B|^{-1}$. For a positive guide $h$ with finite,
+nonzero normalizers, drawing $Z$ from $r(z)h(z)/C_{\rm pre}$ gives
+\begin{equation}
+ q_{\rm pre}(x)
+ =\frac{q_F(x)h(F^{-1}(x))}{C_{\rm pre}},
+ \qquad C_{\rm pre}=\int r(z)h(z)\,\dd z.
+ \label{eq:sg-preflow-tilt}
+\end{equation}
+To obtain $q_{\rm post}(x)\propto q_F(x)h(x)$ instead, the pre-flow guide
+must be $h(F(z))$. For symmetric $\Lambda$ and
+$h(x)=\exp\{-\tfrac12x^\top\Lambda x+b^\top x\}$, its coefficients
+in the pre-flow coordinates are
+\begin{equation}
+ \widetilde\Lambda=B^\top\Lambda B,
+ \qquad \widetilde b=B^\top(b-\Lambda c).
+ \label{eq:sg-pulled-guide}
+\end{equation}
+For $r=\mathcal N(m,Q)$ with $Q\succ0$, this defines a normalizable Gaussian proposal
+when $Q^{-1}+\widetilde\Lambda$ is positive definite.
+\end{proposition}
+\begin{proof}
+Changing variables from $z$ to $x=F(z)$ in $r(z)h(z)/C_{\rm pre}$ gives
+\eqref{eq:sg-preflow-tilt}. Replacing $h(z)$ by $h(F(z))$ gives the
+stated post-flow tilt, with normalizer $\int r(z)h(F(z))\,\dd z$.
+Expanding the quadratic yields
+\[
+ -\tfrac12(Bz+c)^\top\Lambda(Bz+c)+b^\top(Bz+c)
+ =-\tfrac12z^\top B^\top\Lambda Bz
+   +z^\top B^\top(b-\Lambda c)
+   -\tfrac12c^\top\Lambda c+b^\top c.
+\]
+The last two terms are constant in $z$. Adding the Gaussian log density
+leaves precision $Q^{-1}+B^\top\Lambda B$, proving the final assertion.
+\end{proof}
+
+This calculation concerns each ancestor conditional on the incoming cloud.
+The shared executor supplies the affine matrix from the actual auxiliary
+trajectory, as established in Proposition~\ref{prop:bg-flow-jacobian}.
+Its nonlinear observation model therefore does not invalidate this argument.
+If $B$ and $c$ depend on $\theta$, an aligned analytical score must include
+their derivatives in \eqref{eq:sg-pulled-guide}, even when the fitted
+$\Lambda,b$ are held fixed. Alignment would reproduce the tilt of $q_F$;
+it would equal the exact smoothing conditional only if $q_F$ were the
+appropriate exact current-observation conditional and $h$ were exact.
+Gaussian moment closure introduces an additional approximation for mixture
+guides, so the exact-tilt statement is not a claim about that closure.
+
+A scalar example shows that this distinction can matter even with a perfect
+message. Let one static latent state have prior $X\sim\mathcal N(0,1)$,
+and let $Y_1,Y_2$ be conditionally independent with
+$Y_j\mid X\sim\mathcal N(X,1)$.
+After observing the first value $2$, the posterior is
+$\mathcal N(1,1/2)$. Its exact affine transport from the prior is
+$F(z)=1+z/\sqrt2$. If the second observation is $1$, its exact message is
+$h(x)\propto\exp\{-(x-1)^2/2\}$ and the two-observation posterior is
+$\mathcal N(1,1/3)$. Multiplying the prior by $h(z)$ first gives
+$\mathcal N(1/2,1/2)$; applying $F$ then gives
+$\mathcal N(1+1/(2\sqrt2),1/4)$. The mean moves away from the correct
+value, although the unguided mean was already correct. In fact,
+$D_{\rm KL}(p_{\rm target}\Vert q)$ increases from $0.03607$ for the
+unguided proposal to $0.27283$ for the unaligned guide. Applying $h(F(z))$
+instead gives the exact target. This is a counterexample to a guaranteed
+benefit from the pre-flow construction, not a measurement of its causal
+contribution to the SIR errors.
+
+There is also no general implication from likelihood accuracy to score
+accuracy. Write a positive differentiable likelihood approximation as
+$\widehat Z_\theta=Z_\theta(1+e_\theta)$. Direct differentiation gives
+\begin{equation}
+ \nabla_\theta\log\widehat Z_\theta-\nabla_\theta\log Z_\theta
+ =\frac{\nabla_\theta e_\theta}{1+e_\theta}.
+ \label{eq:sg-value-versus-score}
+\end{equation}
+For example, $e_\theta=\delta\sin(\theta/\delta^2)$, with
+$0<\delta<1$, has uniformly small amplitude but score error $1/\delta$
+at $\theta=0$. Lower weight variance in a separate controlled-SMC fit
+therefore cannot establish accuracy of the derivative of the LEDH program.
+
+The saved SIR results expose this gap. Mean ESS in the separate 512-particle
+controlled-SMC pilot rises descriptively from about 181 to 505. Yet the
+guides in the consumer were selected from a small bank: their coefficients
+were not optimized against the supervised score objective. The kernel fits
+the already fitted cSMC future message, adding another approximation. In
+the $T=5$ comparison, more than $99.3\%$ of every method's validation and
+test loss comes from the scaled observation-noise coordinate. This fraction
+depends on the frozen calibration scales; it does not mean the other
+unscaled coordinate errors are small. Every guide loses to unguided LEDH
+on test sequence 261029508. An aligned guide and stronger supervision remain
+testable repairs, while neither better message fits nor this structural
+calculation establishes a score improvement. The derivation, consumer check,
+and exact arithmetic over the saved results are recorded in
+\path{docs/plans/artifacts/ledh-supervised-guidance-20261019/failure-review/review.md}.

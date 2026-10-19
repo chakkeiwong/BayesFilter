@@ -1,5 +1,19 @@
 # Authoritative master: controlled SMC and KDM/IWSG replication
 
+## Failure review — 20 October 2026
+
+Implementation and supervised pilot committed as `4abbaf9f1` on
+`ledh-refactor-with-policy-fix`. The [thorough review](artifacts/ledh-supervised-guidance-20261019/failure-review/review.md)
+finds a correct risk identity but finite-bank selection rather than coefficient
+training for score risk. A physical future guide applied before the LEDH flow
+becomes `h(F^{-1}(x))` after it, not `h(x)`; an exact Gaussian counterexample
+shows this can hurt even with a perfect message. The existing proposal density
+correction remains correct. Its causal importance for SIR is unmeasured.
+No guide is promoted and no new GPU run was launched. This supersedes the next
+action below: first plan/test a guide composed with the actual shared affine
+flow, including its analytical tangents, before a larger fresh supervised
+comparison. Keep OT `(1,5)`. See the active checkpoint for scope and budget.
+
 ## Completed supervised guidance pilot — 19 October 2026
 
 Replication remains closed. [Simulation-supervised guide selection](ledh-supervised-guidance-20261019.md)

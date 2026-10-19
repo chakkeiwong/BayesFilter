@@ -1,0 +1,50 @@
+
+==================================== ERRORS ====================================
+________ ERROR collecting tests/highdim/test_ledh_backward_guide_tf.py _________
+ImportError while importing test module '/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/tests/highdim/test_ledh_backward_guide_tf.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+bayesfilter/ops/symmetric_sylvester_tf.py:15: in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/load_library.py:54: in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   tensorflow.python.framework.errors_impl.NotFoundError: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/ops/_symmetric_sylvester_ops.so: undefined symbol: _ZN4absl12lts_2023080213hash_internal15MixingHashState5kSeedE, version tensorflow
+
+The above exception was the direct cause of the following exception:
+../../../../anaconda3/envs/tf-gpu/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/highdim/test_ledh_backward_guide_tf.py:13: in <module>
+    from bayesfilter.highdim import ledh_canonical_score_tf as shared_score
+bayesfilter/__init__.py:13: in <module>
+    from bayesfilter.ops import symmetric_principal_sqrt as _preloaded_principal_sqrt
+bayesfilter/ops/__init__.py:5: in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+bayesfilter/ops/symmetric_sylvester_tf.py:17: in <module>
+    raise ImportError(
+E   ImportError: Could not load BayesFilter symmetric Sylvester op at /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/ops/_symmetric_sylvester_ops.so: undefined symbol: _ZN4absl12lts_2023080213hash_internal15MixingHashState5kSeedE, version tensorflow
+------------------------------- Captured stderr --------------------------------
+2026-10-20 00:48:10.608563: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792428490.634491       8 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792428490.642794       8 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792428490.723631       8 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792428490.723704       8 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792428490.723705       8 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792428490.723707       8 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+=============================== warnings summary ===============================
+../../../../anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/highdim/test_ledh_backward_guide_tf.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+2 warnings, 1 error in 9.81s

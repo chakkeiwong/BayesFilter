@@ -254,6 +254,61 @@ def test_guided_consumer_actual_nonlinear_flow_jacobian(integrated, monkeypatch)
             )
 
 
+def test_quadratic_guide_is_applied_in_preflow_coordinates(integrated):
+    fixture, _ = integrated
+    theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
+    direction = tf.zeros_like(theta)
+    model = _curved_observation_model(theta, direction)
+    guide = FrozenQuadraticBackwardGuide(
+        tf.constant([[[0.8, 0.1], [0.1, 0.4]]] * 2, DTYPE),
+        tf.constant([[0.5, -0.3]] * 2, DTYPE),
+    )
+    _, _, trace = shared_score._value_and_analytical_score_impl(
+        model, theta, fixture["initial_states"], fixture["initial_covariances"],
+        fixture["noises"], fixture["observations"], with_score=True,
+        return_trace=True, backward_guide=guide, **fixture["options"],
+    )
+    record = trace[0]
+    anchors = model.transition_mean_fn(theta, fixture["initial_states"])
+    points, tangent, _, _, valid = guided_gaussian_draw(
+        guide, 0, anchors, tf.zeros_like(anchors), model.process_covariance,
+        tf.zeros_like(model.process_covariance), fixture["noises"][0],
+    )
+    assert bool(valid)
+    np.testing.assert_allclose(record["pre_flow"], points, atol=1e-13)
+    flow = shared_score._flow_substeps_with_tangent(
+        model, points, tangent, anchors, tf.zeros_like(anchors),
+        record["predicted_covariances"], record["d_predicted_covariances"],
+        fixture["observations"][0], model.observation_covariance,
+        tf.zeros_like(model.observation_covariance),
+        tf.linalg.inv(model.observation_covariance),
+        tf.zeros_like(model.observation_covariance),
+        substeps=fixture["options"]["flow_substeps"], eye=tf.eye(2, dtype=DTYPE),
+        return_affine=True,
+    )
+    affine = flow[6]
+    shift = flow[4] - tf.einsum("nij,nj->ni", affine, anchors)
+    children = tf.einsum("nij,nj->ni", affine, points) + shift
+    np.testing.assert_allclose(record["children"], children, atol=1e-13)
+    recovered = tf.linalg.solve(affine, (children - shift)[..., None])[..., 0]
+    np.testing.assert_allclose(recovered, points, atol=1e-13)
+
+    def log_guide(values):
+        return (-0.5 * tf.einsum("ni,ij,nj->n", values, guide.precision[0], values)
+                + tf.einsum("ni,i->n", values, guide.linear[0]))
+
+    assert float(tf.reduce_max(tf.abs(log_guide(recovered) - log_guide(children)))) > 1e-2
+    pulled_precision = tf.einsum("nji,jk,nkl->nil", affine, guide.precision[0], affine)
+    assert float(tf.reduce_max(tf.abs(pulled_precision - guide.precision[0]))) > 1e-2
+    pulled_linear = tf.einsum(
+        "nji,nj->ni", affine,
+        guide.linear[0] - tf.einsum("ij,nj->ni", guide.precision[0], shift),
+    )
+    pulled_value = (-0.5 * tf.einsum("ni,nij,nj->n", points, pulled_precision, points)
+                    + tf.einsum("ni,ni->n", points, pulled_linear) + log_guide(shift))
+    np.testing.assert_allclose(pulled_value, log_guide(children), atol=1e-13)
+
+
 def test_curved_guided_flow_logdet_and_score_total_derivative(integrated):
     fixture, _ = integrated
     theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)

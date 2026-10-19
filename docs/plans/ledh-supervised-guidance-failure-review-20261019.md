@@ -38,6 +38,11 @@ checking. A successful analysis command alone cannot resolve causal attribution.
 2. Audit the theorem assumptions and endpoint-to-fitter/consumer call chain.
 3. Recompute existing paired losses and decompose component, dataset and particle
    contributions; inspect guide-fit diagnostics and selection sensitivity.
+   Check the change of variables through the shared affine LEDH flow: a guide
+   fitted as a function of the post-flow state need not retain that meaning
+   when applied to the pre-flow draw. Use an exact scalar Gaussian example and
+   the shared flow call chain; this is a structural diagnostic, not a new
+   candidate campaign or a claim of causal dominance on SIR.
 4. Write a verdict distinguishing established findings from causal hypotheses,
    update the concise checkpoint and master-program interpretation, and commit
    the review separately.
@@ -48,3 +53,19 @@ saved JSON only, with GPU devices intentionally hidden for framework tests.
 Artifacts: docs/plans/artifacts/ledh-supervised-guidance-20261019/failure-review/.
 No external reviewer launch is required; unavailable independent review must
 be disclosed, not silently represented as complete.
+
+## Completed review, 20 October
+
+Step 1 committed as 4abbaf9f1; the review is a separate commit. The theorem is
+correct under its assumptions. Fitting/selection does not yet optimize guide
+coefficients for score risk; the physical-state guide is changed by the
+pre-flow composition. Exact change-of-variables and Gaussian counterexample,
+MathDevMCP scalar algebra, and an executable shared-consumer check support this
+finding. Its causal contribution to SIR remains unmeasured. Arithmetic and ten
+runtime hashes check out. No new candidate was fitted or promoted.
+
+Report: artifacts/ledh-supervised-guidance-20261019/failure-review/review.md.
+Commands, attempts and budget: failure-review/review-run.json. Both master
+programs and the manuscript now identify the aligned-guide repair before a
+larger supervised comparison. Independent whole-document review remains
+unavailable; the local derivation and executable evidence are explicitly scoped.
