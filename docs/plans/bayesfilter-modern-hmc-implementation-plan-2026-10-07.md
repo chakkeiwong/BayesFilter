@@ -1,13 +1,135 @@
 # Implementation and validation plan for modern HMC methods
 
-Date: 7 October 2026. Status: **execution in progress following the owner's
-review-and-execute instruction**. Optional typed randomized HMC, deterministic
-fully refreshed MAMS and discarded ChEES-rate/SNAPER proposals are implemented
-for engineering validation. They are experimental; the implementation is not
-a posterior, efficiency or release result. Current tests, repairs and remaining
-phases are recorded in the [active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
+Date: 7 October 2026. Status: **SIR bounded cohort complete; master program
+in progress; checkpoint refreshed 20 October 2026**. Optional typed randomized
+HMC, deterministic fully refreshed MAMS and discarded ChEES-rate/SNAPER proposals
+are implemented for engineering validation. They remain experimental. Current
+tests, repairs and remaining phases are recorded in the
+[active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
 
-**Current status, 13 October:** The bounded full SGQF MAMS continuation finished;
+**Current checkpoint, 20 October 2026:** The
+[full-model SIR phase](bayesfilter-modern-hmc-sir-evidence-phase-2026-10-17.md)
+finished at **01:42 China time**. All four methods are terminal and the service
+is inactive. The [terminal result](bayesfilter-modern-hmc-sir-result-2026-10-20.md)
+records 24 verified tuning members, 23 completed posterior assessments and
+21 posterior/reference deliveries.
+
+| Method | Verified | Posterior checks passed | Posterior/reference deliveries | Other disposition |
+| --- | ---: | ---: | ---: | --- |
+| Fixed HMC | 8 | 7 | 6 | Member 1 reference failure; member 8 resource-censored |
+| Randomized HMC | 8 | 8 | 7 | Member 1 reference failure |
+| SNAPER-proposed randomized HMC | 6 | 6 | 6 | None in this cohort |
+| Fully refreshed MAMS | 2 | 2 | 2 | None in this cohort |
+
+All verified tuning members remain retained. Neither reference failure was
+selectively retried. Posterior R-hat, ESS, MCSE and reference agreement remain
+separate from acceptance/health-based tuning membership. These descriptive
+counts do not rank methods; candidate sets and costs differ and independent-fit
+replications remain missing. The reference applies to the declared finite-filter
+target, not the exact nonlinear state-space posterior.
+
+The [controller recovery](bayesfilter-modern-hmc-sir-controller-recovery-2026-10-18.md)
+preserved the fixed prefix without replay; its exact orchestration snapshot
+passed 185 tests. Numerical authority remains `full-model-source-e68cdf1c4`,
+and all designs, seeds, thresholds and recorded GPU/XLA/memory-growth settings
+remain frozen. Saved strict audits and a fresh closeout check passed: **5,530
+unique source/evidence hashes** plus member decisions and accounting reconcile.
+The fresh audit does not independently recompute TensorFlow ESS/R-hat/MCSE.
+
+Inclusive numerical cost was `197315.48680924764` seconds. Controller accounting,
+the previously outstanding submission receipt and measured closeout check leave
+**`22375.605841124954` seconds** from the SIR allocation. Pricing and nested
+worker time were not charged again. See the
+[closeout settlement](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/sir-cohort-20261017-01/closeout-20261020-01/settlement.json).
+The separate diagnostic pool remains **`131192.0584563613` seconds**; the
+separate 3600-second hold and historical 1579.5929542018566-second balance remain
+excluded. No new numerical study has been launched or allocated.
+
+The SGQF cohorts are also terminal; SNAPER delivered five of six qualified
+members. The [stationary-stress](bayesfilter-mcse-stationary-stress-result-2026-10-18.md),
+[antithetic ESS](bayesfilter-mcse-antithetic-ess-result-2026-10-18.md),
+[saved nonlinear replay](bayesfilter-mcse-saved-nonlinear-result-2026-10-18.md)
+and [interval follow-up](bayesfilter-mcse-dependence-interval-result-2026-10-18.md)
+are complete. The interval study's 768 records represent 384 independent latent
+four-chain units: 22/108 fixed and 3/108 conditional stopped screens flagged
+undercoverage among 231 adjusted screens. Dependent cells mostly never stopped.
+No replacement estimator/default was validated, and stationary starts supply
+no burn-in evidence. The
+[documentation closeout](bayesfilter-mcse-interval-documentation-result-2026-10-18.md)
+passed 15 contract checks, a diagnostics PDF build and changed-page inspection.
+
+**Next N5 phase:** scope and price a predeclared multi-model/independent-fit
+confirmation from measured all-member costs, with full failure/censoring
+denominators and uncertainty analysis. Do not selectively retry failed members
+or automatically spend the released balance. Calibrated precision/stopping and
+actual MacroFinance/DSGE consumer qualification remain open. The
+[N8 engineering slice](bayesfilter-modern-hmc-n8-consumer-audit-result-2026-10-17.md)
+passed 171 tests, 15 documentation checks and an 82-page excerpt; it is not
+external-consumer or release qualification. N6/N7 remain conditional branches,
+separate from a scoped N2–N5 release. The
+[active checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md)
+contains exact paths and next actions. Earlier observations below are historical
+and do not supersede this terminal SIR status.
+
+**Prior status, 15 October:** The fixed-HMC continuation is terminal: all
+eight verified candidates were assessed, seven delivered and one failed the
+declared precision/reference screen without a tuning veto. Its 48-hour grant
+settled with 137,361.195109 worker-seconds available after the held local
+reserve. The storage cleanup that preceded this refresh was performed to free
+capacity for this same program; archived evidence was retained and no separate
+campaign consumed the balance. The next prescribed comparator is the frozen
+randomized-HMC SGQF cohort. Its minimum-count price exceeds the balance, so the
+new phase is explicitly a bounded feasibility attempt with full root and repair
+denominators, not a promised complete comparison. The executable phase is in
+the [randomized-HMC feasibility plan](bayesfilter-modern-hmc-randomized-feasibility-2026-10-15.md).
+
+**Historical execution update, 15 October:** The randomized-HMC phase passed its actual
+immutable-source GPU preflight and launched as
+`bayesfilter-modern-randomized-feasibility-20261015-01.service` on GPU 1. The
+preflight performed no sampling and verified source commit
+`e68cdf1c4c6b75c16f92b86a3363a1e24690d22c`, the eight frozen roots,
+the 18-quantity reference compatibility report, data and geometry identities,
+XLA and memory growth. The launch receipt and allocation are under
+`N5/generic-adaptation/priced-comparison-01/randomized-feasibility-01/`.
+The numerical cap is 137,000 inclusive seconds from 137,361.195109 settled
+seconds; the existing 3,600-second local reserve is already held and is not
+charged twice. At that launch the worker was qualifying and resource censoring
+was possible; no ranking, default, broad validity or release conclusion was
+permitted. The recoverable phase checkpoint is
+`bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md`.
+
+**Historical status, 14 October:** The fixed-HMC comparator stopped at its total
+allocation at 11:21 China time. All eight primary candidates were independently
+verified and retained; one passed posterior/reference checks, one has seven
+saved sampling chunks, and six have not started posterior assessment. The
+[fixed-HMC terminal audit](bayesfilter-modern-hmc-fixed-terminal-2026-10-14.md)
+checks source/input and saved-chunk integrity, records the reporting repair,
+and settles the allocation. The owner has now granted 48 additional hours.
+The [posterior continuation plan](bayesfilter-modern-hmc-posterior-resume-2026-10-14.md)
+reserves one hour for checks/closeout and up to 47 hours for the complete
+unfinished cohort. A separate resume driver reuses the immutable numerical
+source, all eight verified identities, completed outcomes, saved chunks and
+original seeds. Forty-two continuation/consumer tests and six supplemental
+checks pass; two additional fixed-trajectory tests and the actual-source GPU
+preflight also passed. The detached continuation launched on GPU 1 at 17:45
+China time on 14 October. Its inclusive 47-hour cap ends approximately 16:45 on
+16 October; the supervisor records heartbeats and committed work separately.
+The [active checkpoint](bayesfilter-modern-hmc-active-checkpoint-2026-10-13.md)
+records its service, output and budget receipts. Descriptive saved-price scenarios are
+25–42 hours before overhead or changed machine contention; completion within
+the allocation is not guaranteed. No tuning work is repeated.
+
+At the 14 October 23:37 China-time inspection, six members passed posterior
+and reference checks, one reached the sample cap with insufficient precision,
+and the eighth is sampling. The [interim result](bayesfilter-modern-hmc-continuation-progress-2026-10-14.md)
+records the failed second-moment screen and a passing source/checkpoint audit.
+The active cohort continues. Its failure is a posterior outcome, with tuning
+membership preserved; no reference threshold, estimator or count cap changes.
+The [closeout plan](bayesfilter-modern-hmc-cohort-closeout-2026-10-14.md)
+adds tested terminal settlement and prepares the complete randomized-HMC
+baseline next, subject to terminal audit and the actual released balance.
+
+The bounded full SGQF MAMS continuation finished;
 four of four verified candidates passed all declared posterior and finite-target
 reference screens. The [terminal note](bayesfilter-modern-hmc-priced-mams-terminal-2026-10-13.md)
 records the result and cost. N5 broader matched-model confirmation, broader
@@ -22,10 +144,10 @@ CPU-worker seconds for a fresh optional MCSE safeguard evaluation and allocates
 unchanged SGQF design and immutable numerical source. Forty-eight focused
 settlement/report/launch tests pass. Other methods/models and independent
 replications remain unfunded in this allocation. The precision experiment
-cannot retroactively change the completed MAMS result or active comparator rules.
+cannot retroactively change the completed MAMS result or frozen comparator rules.
 
-The fixed-HMC service started at 13:18 China time and has begun recording
-native qualification receipts. The optional `lugsail_max_batch_means` policy
+The fixed-HMC service ran from 13 October at 13:18 until 14 October at 11:21
+China time, preserving 896 qualification calls. The optional `lugsail_max_batch_means` policy
 is implemented with both component estimates and activation diagnostics; 78
 focused CPU/XLA checks and nine GPU parity cases pass. Reassessment of all four saved MAMS members
 reproduces the original precision values and preserves their first passing
@@ -34,9 +156,13 @@ calibration is complete, with all 768 records audited. The
 [terminal precision result](bayesfilter-mcse-safeguard-result-2026-10-13.md)
 records both favorable antithetic variance behavior and unresolved coverage.
 There is no supported paired coverage ranking or default promotion. Actual
-CPU-study cost is 2019.235247 seconds, releasing 1580.764753 seconds to hold
-until the next terminal refresh. The fixed-HMC ceiling and held local reserve
-remain unchanged. The book chapter and API guide document the optional policy.
+CPU-study cost is 2019.235247 seconds, releasing 1580.764753 seconds. Charging
+the fixed-HMC supervisor's 1.171799-second termination overhead leaves
+1579.592954 seconds unallocated; the full local-check reserve remains held.
+The terminal note records the accounting. This balance does not fund the
+seven remaining posterior assessments; the October 14 grant above funds their
+bounded continuation separately.
+The book chapter and API guide document the optional policy.
 
 **Earlier progress through 12 October:** D2f, D3, E3, D4a and the first D4b1
 full SGQF cohort are terminal. All 15 frozen SGQF proposals completed fresh
@@ -59,7 +185,7 @@ unused reserves and left **133819.625 seconds (37.17 worker-hours)** unallocated
 see `preconfirmation-01/settlement-03.json` and the consumer plan. No worker
 from that deployment phase remains active. The October 13 continuation above
 has since assigned that balance to terminal pricing/MAMS charges, the held
-local-check and precision-study reserves, and the active fixed-HMC ceiling.
+local-check and precision-study reserves, and the now-settled fixed-HMC ceiling.
 It is not an additional unallocated balance and cannot fund another campaign.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation

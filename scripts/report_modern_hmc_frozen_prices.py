@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.audit_mams_full_model_pricing import (
     check_hashes, check_tensor_tree, decode_metadata, digest, payload_digest, read,
 )
-from scripts.price_modern_hmc_frozen_design import cost_envelope
+from scripts.price_modern_hmc_frozen_design import audit_attempts, cost_envelope, pricing_seed
 
 
 def check_design_reuse(priced, current):
@@ -39,11 +39,12 @@ def check_design_reuse(priced, current):
 
 def audit_call(directory, cell, root, call, *, dimension):
     key = f"root-{root['index']:03d}-repeat-{call['repeat']}"
-    path = directory / "committed" / key / "bundle.json"
+    checkpoint_directory = Path(call.get("checkpoint_directory", directory))
+    path = checkpoint_directory / "committed" / key / "bundle.json"
     if digest(path) != path.with_name("bundle.sha256").read_text().strip():
         raise ValueError("price checkpoint checksum mismatch")
     bundle = read(path)
-    identity = read(directory / "identity.json")
+    identity = read(checkpoint_directory / "identity.json")
     inputs = read(Path(bundle["metadata"]["attempt"]) / "call-start.json")["inputs"]
     candidate = inputs["candidate"]
     if (bundle["schema"] != "bayesfilter.durable_tensor_checkpoint.v1"
@@ -90,6 +91,8 @@ def build_report(prices_path, design_paths, *, available_seconds,
     prices = read(prices_path)
     if prices["status"] != "completed":
         raise ValueError("complete prices required; preserve and report missing cells separately")
+    attempts = audit_attempts(prices, prices_path.parent)
+    prior_prices = read(Path(prices["resume_of"])) if prices.get("resume_of") else None
     memory = prices["memory_policy"]
     if (prices["gpu_trust_basis"] != "trusted_escalated_gpu_execution"
             or prices["memory_growth_environment"].lower() != "true"
@@ -106,6 +109,7 @@ def build_report(prices_path, design_paths, *, available_seconds,
     report = dict(prices_file=str(prices_path), prices_sha256=digest(prices_path),
         source=prices["numerical_source"], available_seconds=available_seconds,
         actual_price_worker_seconds=prices["supervisor_elapsed_seconds"],
+        pricing_attempts=attempts,
         load_factors=[1., 2., 4.], rows=[], all_method_scenarios=[],
         qualification_authority=False, posterior_authority=False, method_ranking=None,
         probabilistic_upper_bound=False, launch_authorized_by_report=False)
@@ -142,6 +146,22 @@ def build_report(prices_path, design_paths, *, available_seconds,
                 if tuple(call["seed"]) in seeds:
                     raise ValueError("price stream reused")
                 seeds.add(tuple(call["seed"]))
+                location = Path(call.get("checkpoint_directory",
+                    prices_path.parent / f"cell-{index:02d}")).resolve()
+                allowed = {Path(a["output_directory"]) / f"cell-{index:02d}" for a in attempts}
+                if location not in allowed:
+                    raise ValueError("price checkpoint is outside the recorded attempts")
+                origin = next(a for a in attempts if location ==
+                              Path(a["output_directory"]) / f"cell-{index:02d}")
+                if tuple(call["seed"]) != pricing_seed(origin["seed_namespace"], index,
+                                                      root_index, call["repeat"]):
+                    raise ValueError("price stream differs from its originating attempt")
+                if prior_prices is not None and location == Path(attempts[0]["output_directory"]) / f"cell-{index:02d}":
+                    prior_calls = prior_prices["rows"][index]["roots"][root_index]["calls"]
+                    unchanged = [dict(c, checkpoint_directory=str(location)) for c in prior_calls
+                                 if c.get("status") == "returned" and c["repeat"] == call["repeat"]]
+                    if unchanged != [call]:
+                        raise ValueError("reused price call changed from its original terminal receipt")
                 audit = audit_call(prices_path.parent / f"cell-{index:02d}", cell, root, call,
                                    dimension=dimension)
                 calls.append(dict(root_index=root_index, repeat=call["repeat"],

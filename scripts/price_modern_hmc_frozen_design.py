@@ -7,6 +7,7 @@ members, select a policy, or establish posterior performance.
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -17,6 +18,8 @@ import signal
 import subprocess
 import sys
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def read(path):
@@ -54,6 +57,156 @@ def planned_rows(design_paths):
             status="not_started", roots=[dict(index=i, leapfrog_steps=l, epsilon=e,
                 status="not_started", calls=[]) for i, (l, e) in enumerate(pairs)]))
     return rows
+
+
+def pricing_seed(namespace, cell_index, root_index, repeat):
+    """Keep the historical stream layout; require a new namespace for new work."""
+    if (type(namespace) is not int or not 0 <= namespace < 2**31
+            or type(cell_index) is not int or cell_index < 0
+            or type(root_index) is not int or root_index < 0
+            or type(repeat) is not int or repeat not in (0, 1)):
+        raise ValueError("invalid pricing stream scope")
+    second = 800000 + 10000*cell_index + 2*root_index + repeat
+    if second >= 2**31:
+        raise ValueError("pricing stream exceeds stateless seed range")
+    return (namespace, second)
+
+
+def worker_command(args):
+    command = [sys.executable, str(Path(__file__).resolve()), "--source-root", str(args.source_root),
+        "--design", *(str(p) for p in args.design), "--output", str(args.output), "--plan", args.plan,
+        "--max-wall-seconds", str(args.max_wall_seconds),
+        "--seed-namespace", str(args.seed_namespace)]
+    if getattr(args, "resume_prices", None) is not None:
+        command.extend(["--resume-prices", str(args.resume_prices)])
+    return command + ["--worker"]
+
+
+def attempt_receipt(prices, directory):
+    """Inclusive charge and driver identity for one settled price supervisor."""
+    elapsed = prices.get("current_supervisor_elapsed_seconds",
+                         prices.get("supervisor_elapsed_seconds"))
+    if (type(elapsed) not in (int, float) or not math.isfinite(elapsed) or elapsed <= 0
+            or prices.get("status") not in {"completed", "supervisor_budget_exhausted"}):
+        raise ValueError("pricing attempt needs a supported terminal inclusive charge")
+    return dict(output_directory=str(Path(directory).resolve()),
+        driver_path=str(Path(prices["command"][1]).resolve()),
+        driver_sha256=prices["driver_sha256"], seed_namespace=prices["pricing_seed_namespace"],
+        status=prices["status"], supervisor_elapsed_seconds=elapsed)
+
+
+def audit_attempts(prices, directory):
+    """Check the original receipt and at most one cost-only timeout recovery."""
+    from scripts.audit_mams_full_model_pricing import check_hashes
+    current = attempt_receipt(prices, directory)
+    expected = [current]
+    if prices.get("output_directory", current["output_directory"]) != current["output_directory"]:
+        raise ValueError("pricing output directory changed")
+    if prices.get("resume_of"):
+        prior_path = Path(prices["resume_of"]).resolve()
+        prior = read(prior_path)
+        if prior.get("resume_of") or prior.get("status") != "supervisor_budget_exhausted":
+            raise ValueError("only one recovery of an original price timeout is supported")
+        if digest(prior_path) != prices.get("resume_sha256"):
+            raise ValueError("original terminal price receipt changed")
+        expected = audit_attempts(prior, prior_path.parent) + expected
+        if expected[0]["seed_namespace"] == current["seed_namespace"]:
+            raise ValueError("recovery pricing namespace was reused")
+    if prices.get("pricing_attempts", expected) != expected:
+        raise ValueError("pricing attempt ledger disagrees with terminal receipts")
+    total = math.fsum(a["supervisor_elapsed_seconds"] for a in expected)
+    if not math.isclose(prices["supervisor_elapsed_seconds"], total, abs_tol=1e-6, rel_tol=0):
+        raise ValueError("pricing cumulative charge does not reconcile")
+    for item in expected:
+        check_hashes({item["driver_path"]: item["driver_sha256"]})
+    return expected
+
+
+def resume_rows(prior, design_paths, *, seed_namespace, prior_directory):
+    """Reuse only returned checkpoints from a timed-out complete design run."""
+    if prior.get("status") != "supervisor_budget_exhausted":
+        raise ValueError("only a terminal budget-exhausted pricing attempt may resume")
+    if prior.get("resume_of"):
+        raise ValueError("a second timeout recovery needs a revised campaign plan")
+    audit_attempts(prior, prior_directory)
+    if prior.get("pricing_seed_namespace") == seed_namespace:
+        raise ValueError("pricing resume requires a fresh random namespace")
+    old_rows = prior.get("rows")
+    new_rows = planned_rows(design_paths)
+    if not isinstance(old_rows, list) or len(old_rows) != len(new_rows):
+        raise ValueError("resume must preserve the complete ordered method inventory")
+    checkpoint_base = Path(prior_directory).resolve()
+    from scripts.audit_mams_full_model_pricing import check_hashes
+    source = Path(prior["source_root"])
+    if read(source / ".validation-source.json") != prior["numerical_source"]:
+        raise ValueError("prior numerical source provenance changed")
+    check_hashes({str(source / name): value
+                  for name, value in prior["compiled_operator_sha256"].items()})
+    memory = prior.get("memory_policy", {})
+    if (prior.get("gpu_trust_basis") != "trusted_escalated_gpu_execution"
+            or prior.get("memory_growth_environment", "").lower() != "true"
+            or memory.get("all_physical_devices_memory_growth") is not True
+            or memory.get("configured_before_logical_device_initialization") is not True):
+        raise ValueError("prior pricing GPU memory policy is ineligible")
+    prior_seeds = set()
+    for index, (old, new) in enumerate(zip(old_rows, new_rows)):
+        for key in ("target", "method", "seed", "design_file", "design_sha256"):
+            if old.get(key) != new.get(key):
+                raise ValueError("pricing resume changes a design cell: " + key)
+        if len(old.get("roots", [])) != len(new["roots"]):
+            raise ValueError("pricing resume changes the root count")
+        row = deepcopy(old)
+        check_hashes(old.get("source_sha256", {}))
+        geometry_dir = Path(read(new["design_file"])["geometry_directory"])
+        if "binding_hash" in old:
+            if (digest(geometry_dir / "geometry.json") != old["geometry_sha256"]
+                    or read(geometry_dir / "design.json")["metadata"]["data_sha256"] != old["data_sha256"]
+                    or not old.get("source_sha256")):
+                raise ValueError("prior pricing source, data or geometry changed")
+        row["resume_previous_status"] = old.get("status")
+        row["status"] = "resume_pending"
+        roots = []
+        for prior_root, planned_root in zip(old["roots"], new["roots"]):
+            for key in ("index", "leapfrog_steps", "epsilon"):
+                if prior_root.get(key) != planned_root[key]:
+                    raise ValueError("pricing resume changes a candidate root")
+            for call in prior_root.get("calls", []):
+                expected_seed = pricing_seed(prior["pricing_seed_namespace"], index,
+                                             prior_root["index"], call["repeat"])
+                seed = tuple(call.get("seed", ()))
+                if seed != expected_seed or seed in prior_seeds:
+                    raise ValueError("prior attempted price stream differs or was reused")
+                prior_seeds.add(seed)
+            returned = [call for call in prior_root.get("calls", [])
+                        if call.get("status") == "returned"]
+            repeats = [call.get("repeat") for call in returned]
+            if len(set(repeats)) != len(repeats) or any(x not in (0, 1) for x in repeats):
+                raise ValueError("prior price calls have invalid repeat identities")
+            root = deepcopy(prior_root)
+            root["prior_attempts"] = deepcopy(prior_root.get("calls", []))
+            root["calls"] = []
+            checkpoint_dir = checkpoint_base / f"cell-{index:02d}"
+            dimension = len(read(geometry_dir / "geometry.json")["center"])
+            for call in returned:
+                reused = deepcopy(call)
+                location = Path(reused.get("checkpoint_directory", checkpoint_dir)).resolve()
+                if location != checkpoint_dir:
+                    raise ValueError("prior price checkpoint is outside its original cell")
+                from scripts.report_modern_hmc_frozen_prices import audit_call
+                audit_call(location, old, prior_root, reused, dimension=dimension)
+                reused["checkpoint_directory"] = str(location)
+                root["calls"].append(reused)
+            root["resume_missing_repeats"] = [repeat for repeat in (0, 1) if repeat not in repeats]
+            root["status"] = ("resume_pending" if root["resume_missing_repeats"] else
+                "priced_with_veto" if any(c.get("hard_vetoes") for c in returned) else "priced")
+            roots.append(root)
+        row["roots"] = roots
+        row["resume_binding_identity"] = {key: old[key] for key in (
+            "binding_hash", "initial_active_state_sha256", "data_sha256", "geometry_sha256",
+            "source_sha256") if key in old}
+        row["status"] = "completed" if all(not r["resume_missing_repeats"] for r in roots) else "resume_pending"
+        new_rows[index] = row
+    return new_rows
 
 
 def cost_envelope(design, priced, *, load_multiplier, overhead_seconds, trial_overhead_seconds):
@@ -135,13 +288,24 @@ def cost_envelope(design, priced, *, load_multiplier, overhead_seconds, trial_ov
 def finalize(output, *, status, elapsed):
     path = Path(output) / "result.json"
     report = read(path)
-    report.update(status=status, supervisor_elapsed_seconds=elapsed,
-                  finished_utc=datetime.now(timezone.utc).isoformat())
+    attempts = list(report.get("pricing_attempts", []))
+    if "command" in report:
+        current_attempt = dict(output_directory=str(Path(output).resolve()),
+            driver_path=str(Path(report["command"][1]).resolve()),
+            driver_sha256=report["driver_sha256"], seed_namespace=report["pricing_seed_namespace"],
+            status=status, supervisor_elapsed_seconds=elapsed)
+        attempts.append(current_attempt)
+    total = (math.fsum(float(item["supervisor_elapsed_seconds"]) for item in attempts)
+             if attempts else elapsed)
+    report.update(status=status, output_directory=str(Path(output).resolve()),
+        current_supervisor_elapsed_seconds=elapsed, pricing_attempts=attempts,
+        supervisor_elapsed_seconds=total,
+        finished_utc=datetime.now(timezone.utc).isoformat())
     for cell in report["rows"]:
-        if cell["status"] in {"running", "preparing", "not_started"}:
+        if cell["status"] in {"running", "preparing", "not_started", "resume_pending"}:
             cell["status"] += "_" + status
         for root in cell["roots"]:
-            if root["status"] in {"running", "not_started"}:
+            if root["status"] in {"running", "not_started", "resume_pending"}:
                 root["status"] += "_" + status
             for call in root["calls"]:
                 if call["status"] == "running":
@@ -177,6 +341,8 @@ def worker(args):
     with execution_budget(check=lambda: time.monotonic()-started < args.max_wall_seconds,
                           replace_wall_time_limit=True):
         for cell_index, cell in enumerate(report["rows"]):
+            if cell["status"] == "completed":
+                continue
             require_execution_budget()
             tick = time.monotonic()
             cell["status"] = "preparing"
@@ -196,10 +362,14 @@ def worker(args):
                 repair_factor=design["repair_factor"], max_repairs_per_family=design["max_repairs_per_family"],
                 source_paths=execution_source_paths())
             validate_frozen_search(binding, search)
-            cell.update(status="running", binding_hash=binding.binding_hash,
-                initial_active_state_sha256=DurableTensorCheckpoint.tensor_hash(binding.initial_active_state),
-                data_sha256=metadata["data_sha256"], geometry_sha256=metadata["geometry_sha256"],
-                source_sha256=binding._spec["source_closure"], runtime=binding._runtime,
+            active_sha = DurableTensorCheckpoint.tensor_hash(binding.initial_active_state)
+            resume_identity = cell.get("resume_binding_identity", {})
+            actual_identity = dict(binding_hash=binding.binding_hash,
+                initial_active_state_sha256=active_sha, data_sha256=metadata["data_sha256"],
+                geometry_sha256=metadata["geometry_sha256"], source_sha256=binding._spec["source_closure"])
+            if resume_identity and resume_identity != actual_identity:
+                raise ValueError("price resume source, start, geometry or binding identity changed")
+            cell.update(status="running", **actual_identity, runtime=binding._runtime,
                 preparation_seconds=time.monotonic()-tick)
             write(args.output / "result.json", report)
             with DurableTensorCheckpoint(args.output / f"cell-{cell_index:02d}",
@@ -208,12 +378,19 @@ def worker(args):
                     candidate = HMCTuningCandidateRecord.create(binding.scope,
                         leapfrog_steps=row["leapfrog_steps"], epsilon=row["epsilon"],
                         creation_ordinal=row["index"]+1)
+                    if row.get("candidate_id") not in (None, candidate.candidate_id):
+                        raise ValueError("price resume candidate identity changed")
                     row.update(status="running", candidate_id=candidate.candidate_id,
                                transition_spec=candidate.transition_spec.payload())
+                    completed_repeats = {call.get("repeat") for call in row["calls"]
+                                         if call.get("status") == "returned"}
                     for repeat in range(2):
+                        if repeat in completed_repeats:
+                            continue
                         require_execution_budget()
-                        seed = (20261012, 800000 + 10000*cell_index + 2*row["index"] + repeat)
-                        call = dict(status="running", seed=seed, transitions=64, repeat=repeat)
+                        seed = pricing_seed(args.seed_namespace, cell_index, row["index"], repeat)
+                        call = dict(status="running", seed=seed, transitions=64, repeat=repeat,
+                                    checkpoint_directory=str(args.output / f"cell-{cell_index:02d}"))
                         row["calls"].append(call)
                         write(args.output / "result.json", report)
                         call_tick = time.monotonic()
@@ -229,7 +406,12 @@ def worker(args):
                             mean_acceptance=float(tf.reduce_mean(tf.exp(tf.minimum(value["trace"]["log_accept_ratio"], 0.)))),
                             sample_device=value["samples"].device)
                         write(args.output / "result.json", report)
-                    row["status"] = "priced_with_veto" if any(c["hard_vetoes"] for c in row["calls"]) else "priced"
+                    returned = [c for c in row["calls"] if c.get("status") == "returned"]
+                    if len(returned) != 2 or {c["repeat"] for c in returned} != {0, 1}:
+                        raise ValueError("pricing resume did not produce both successful calls")
+                    row["calls"].sort(key=lambda c: c["repeat"])
+                    row.pop("resume_missing_repeats", None)
+                    row["status"] = "priced_with_veto" if any(c["hard_vetoes"] for c in returned) else "priced"
             binding.validate()
             if digest(cell["design_file"]) != cell["design_sha256"]:
                 raise ValueError("price design changed")
@@ -242,8 +424,36 @@ def worker(args):
 
 
 def supervise(args):
-    rows = planned_rows(args.design)
+    prior_path = getattr(args, "resume_prices", None)
+    prior = read(prior_path) if prior_path is not None else None
+    rows = (planned_rows(args.design) if prior is None else
+        resume_rows(prior, args.design, seed_namespace=args.seed_namespace,
+                    prior_directory=args.resume_prices.parent))
+    seeds = []
+    prior_attempts = []
+    if prior is not None:
+        prior_attempts = audit_attempts(prior, prior_path.parent)
+        seeds.extend(tuple(call["seed"]) for cell in rows for root in cell["roots"]
+                     for call in root["calls"] if call.get("status") == "returned")
+    for i, cell in enumerate(rows):
+        for root in cell["roots"]:
+            completed = {call.get("repeat") for call in root["calls"]
+                         if call.get("status") == "returned"}
+            missing = root.get("resume_missing_repeats", [0, 1])
+            seeds.extend(pricing_seed(args.seed_namespace, i, root["index"], repeat)
+                         for repeat in missing if repeat not in completed)
+    runtime_seeds = set()
+    for path in args.design:
+        design = read(path)
+        if design.get("seed_namespace") == args.seed_namespace:
+            raise ValueError("pricing requires a separate random namespace")
+        runtime_seeds.update(tuple(design[key]["seed"]) for key in ("execution", "posterior"))
+    if len(set(seeds)) != len(seeds) or set(seeds) & runtime_seeds:
+        raise ValueError("pricing streams overlap each other or a runtime base seed")
     provenance = read(args.source_root / ".validation-source.json")
+    if prior is not None and (prior.get("source_root") != str(args.source_root)
+                             or prior.get("numerical_source") != provenance):
+        raise ValueError("pricing resume changed the immutable numerical source")
     relative = "bayesfilter/ops/_symmetric_sylvester_ops.so"
     expected = provenance["compiled_operator_sha256"]
     expected = expected[relative] if isinstance(expected, dict) else expected
@@ -257,11 +467,13 @@ def supervise(args):
         compiled_operator_sha256={relative:expected},
         driver_sha256=digest(__file__), gpu_trust_basis="trusted_escalated_gpu_execution",
         memory_growth_environment=os.environ["TF_FORCE_GPU_ALLOW_GROWTH"],
+        pricing_seed_namespace=args.seed_namespace,
+        pricing_attempts=prior_attempts, resume_of=None if prior_path is None
+            else str(prior_path.resolve()),
+        resume_sha256=None if prior is None else digest(prior_path),
         max_wall_seconds=args.max_wall_seconds, qualification_authority=False,
         posterior_authority=False, method_ranking=None, release_qualified=False))
-    command = [sys.executable, str(Path(__file__).resolve()), "--source-root", str(args.source_root),
-        "--design", *(str(p) for p in args.design), "--output", str(args.output), "--plan", args.plan,
-        "--max-wall-seconds", str(args.max_wall_seconds), "--worker"]
+    command = worker_command(args)
     started = time.monotonic()
     status = None
     with subprocess.Popen(command, cwd=args.source_root, start_new_session=True) as process:
@@ -288,9 +500,15 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--plan", required=True)
     parser.add_argument("--max-wall-seconds", type=float, required=True)
+    parser.add_argument("--seed-namespace", type=int, default=20261012,
+                        help="independent pricing namespace; default preserves historical streams")
+    parser.add_argument("--resume-prices", type=Path,
+                        help="terminal budget-exhausted price result to resume without rerunning returned calls")
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     args.source_root, args.output = args.source_root.resolve(), args.output.resolve()
+    if args.resume_prices is not None:
+        args.resume_prices = args.resume_prices.resolve()
     args.design = [p.resolve() for p in args.design]
     if not math.isfinite(args.max_wall_seconds) or args.max_wall_seconds <= 0:
         raise ValueError("positive finite allocation required")
