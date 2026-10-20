@@ -1,0 +1,357 @@
+{
+  "status": "PASS",
+  "scope": "FULL_SCOPE_GUARD_PARITY_AND_RECURSION_CAPTURE",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU/XLA plus explicitly placed CPU graph diagnostic",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "checks": [
+    {
+      "name": "input_hash_normal.bin",
+      "passed": true
+    },
+    {
+      "name": "input_hash_uniform.bin",
+      "passed": true
+    },
+    {
+      "name": "full_healthy_controller_valid",
+      "passed": true
+    },
+    {
+      "name": "full_healthy_iteration_count",
+      "passed": true
+    },
+    {
+      "name": "full_healthy_A",
+      "passed": false,
+      "max_absolute": 3.567720341379754e-07
+    },
+    {
+      "name": "full_healthy_b",
+      "passed": false,
+      "max_absolute": 5.5507844081148505e-06
+    },
+    {
+      "name": "full_healthy_c",
+      "passed": true,
+      "max_absolute": 3.091746475547552e-05
+    },
+    {
+      "name": "full_healthy_x",
+      "passed": true,
+      "max_absolute": 3.3524960585396e-10
+    },
+    {
+      "name": "full_healthy_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "full_healthy_log_incremental_weight",
+      "passed": true,
+      "max_absolute": 6.824775482527912e-07
+    },
+    {
+      "name": "full_healthy_logZ",
+      "passed": true,
+      "max_absolute": 1.1833981261588633e-06
+    },
+    {
+      "name": "full_healthy_ess",
+      "passed": true,
+      "max_absolute": 2.360163193770859e-07
+    },
+    {
+      "name": "both_frozen_backward_valid",
+      "passed": true
+    },
+    {
+      "name": "stable_graphs",
+      "passed": true
+    }
+  ],
+  "recursion_comparisons": [
+    {
+      "lane": "gpu",
+      "keys": {
+        "A": {
+          "passed": false,
+          "max_absolute": 1435494.4560065048
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 97029.65942313029
+        },
+        "c": {
+          "passed": false,
+          "max_absolute": 1164214.6171719865
+        },
+        "correction_log_integral": {
+          "passed": false,
+          "max_absolute": 1207368.5584823596
+        },
+        "projection_added_A": {
+          "passed": false,
+          "max_absolute": 1439667.425314713
+        }
+      }
+    },
+    {
+      "lane": "cpu_graph",
+      "keys": {
+        "A": {
+          "passed": false,
+          "max_absolute": 1435494.187254842
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 97029.65123504751
+        },
+        "c": {
+          "passed": false,
+          "max_absolute": 1164214.5768892788
+        },
+        "correction_log_integral": {
+          "passed": false,
+          "max_absolute": 1207368.5138174852
+        },
+        "projection_added_A": {
+          "passed": false,
+          "max_absolute": 1439667.1562020436
+        }
+      }
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "wall_seconds": 44.81433535995893,
+  "healthy_iterations": 4,
+  "healthy_per_stage": [
+    {
+      "stage": 0,
+      "comparisons": {
+        "A": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "b": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "x": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "ancestors": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "logZ": {
+          "passed": true,
+          "max_absolute": 4.0745362639427185e-10
+        }
+      }
+    },
+    {
+      "stage": 1,
+      "comparisons": {
+        "A": {
+          "passed": true,
+          "max_absolute": 1.4435499906539917e-07
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 3.417662810534239e-06
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 2.6728608645498753e-05
+        },
+        "x": {
+          "passed": true,
+          "max_absolute": 1.2182255204606918e-10
+        },
+        "ancestors": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "logZ": {
+          "passed": true,
+          "max_absolute": 7.714625098742545e-07
+        }
+      }
+    },
+    {
+      "stage": 2,
+      "comparisons": {
+        "A": {
+          "passed": false,
+          "max_absolute": 3.567720341379754e-07
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 4.468136467039585e-06
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 2.021284308284521e-05
+        },
+        "x": {
+          "passed": true,
+          "max_absolute": 3.3524960585396e-10
+        },
+        "ancestors": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "logZ": {
+          "passed": true,
+          "max_absolute": 1.1833981261588633e-06
+        }
+      }
+    },
+    {
+      "stage": 3,
+      "comparisons": {
+        "A": {
+          "passed": false,
+          "max_absolute": 2.4233395379269496e-07
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 5.5507844081148505e-06
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 3.091746475547552e-05
+        },
+        "x": {
+          "passed": true,
+          "max_absolute": 8.419398511705367e-11
+        },
+        "ancestors": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "logZ": {
+          "passed": true,
+          "max_absolute": 9.759605745784938e-08
+        }
+      }
+    },
+    {
+      "stage": 4,
+      "comparisons": {
+        "A": {
+          "passed": false,
+          "max_absolute": 2.387705535511486e-07
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 4.0598170016892254e-06
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 2.4462700821459293e-05
+        },
+        "x": {
+          "passed": true,
+          "max_absolute": 2.155342571086294e-11
+        },
+        "ancestors": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "logZ": {
+          "passed": true,
+          "max_absolute": 5.729816621169448e-09
+        }
+      }
+    }
+  ],
+  "healthy_frozen_fit": {
+    "stage": 1,
+    "comparisons": {
+      "A": {
+        "passed": true,
+        "max_absolute": 1.44427758641541e-09
+      },
+      "b": {
+        "passed": true,
+        "max_absolute": 1.728767529129982e-08
+      },
+      "c": {
+        "passed": true,
+        "max_absolute": 1.2456439435482025e-07
+      },
+      "correction_log_integral": {
+        "passed": true,
+        "max_absolute": 1.8280843505635858e-09
+      }
+    }
+  },
+  "healthy_frozen_forward": {
+    "stage": 1,
+    "comparisons": {
+      "x": {
+        "passed": true,
+        "max_absolute": 0.0
+      },
+      "ancestors": {
+        "passed": true,
+        "max_absolute": 0.0
+      },
+      "logZ": {
+        "passed": true,
+        "max_absolute": 4.0745362639427185e-10
+      },
+      "log_incremental_weight": {
+        "passed": true,
+        "max_absolute": 6.984919309616089e-10
+      }
+    }
+  },
+  "traces": {
+    "gpu": 1,
+    "cpu_graph": 1
+  },
+  "guard_admissible": false
+}

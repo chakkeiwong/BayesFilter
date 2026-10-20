@@ -7,15 +7,15 @@ import json
 import numpy as np
 import pytest
 import tensorflow as tf
-import bayesfilter.inference.posterior_curvature_refinement as refinement
-from bayesfilter.inference.score_curvature_tf import (
-    _relative_response_rmse,
-    fit_dense_score_precision_tf,
-)
 
 from bayesfilter.inference import (
     PosteriorCurvatureRefinementConfig,
     refine_posterior_local_curvature,
+)
+from bayesfilter.inference import posterior_curvature_tf as runtime
+from bayesfilter.inference.score_curvature_tf import (
+    _relative_response_rmse,
+    fit_dense_score_precision_tf,
 )
 
 
@@ -109,8 +109,10 @@ def test_pilot_width_does_not_shrink_exact_gaussian_result() -> None:
 @pytest.mark.parametrize("dimension", [1, 7, 142])
 def test_uniform_ball_design_is_bounded_and_reproducible(dimension) -> None:
     seed = tf.constant([918, 17], tf.int32)
-    first = refinement._uniform_ball_offsets(512, dimension, seed, 1.0)
-    second = refinement._uniform_ball_offsets(512, dimension, seed, 1.0)
+    draw = tf.function(lambda seed: runtime.draw_offsets(512, dimension, seed, 1.0, "uniform_ball"),
+        input_signature=[tf.TensorSpec([2], tf.int32)], autograph=False, jit_compile=True)
+    first = draw(seed)
+    second = draw(seed)
     np.testing.assert_array_equal(first, second)
     assert bool(tf.reduce_all(tf.linalg.norm(first, axis=1) <= 1.0).numpy())
     mean_squared_radius = float(tf.reduce_mean(tf.reduce_sum(first * first, axis=1)).numpy())
@@ -293,16 +295,14 @@ def test_physical_row_budget_is_checked_before_target_calls() -> None:
 
 
 def test_selection_failure_does_not_evaluate_audit_or_proposal() -> None:
-    calls: list[tuple[int, int]] = []
+    calls = tf.Variable(0, dtype=tf.int64)
 
     def target(theta: tf.Tensor):
-        calls.append((int(theta.shape[0]), len(calls)))
+        count = calls.assign_add(1)
         value = -tf.reduce_sum(theta * theta, axis=1)
         score = -2.0 * theta
-        if len(calls) == 14:
-            score = tf.tensor_scatter_nd_update(
-                score, [[0, 0]], [tf.constant(np.nan, tf.float64)]
-            )
+        score = tf.cond(count == 14, lambda: tf.tensor_scatter_nd_update(
+            score, [[0, 0]], [tf.constant(np.nan, tf.float64)]), lambda: score)
         return value, score
 
     result = refine_posterior_local_curvature(
@@ -320,6 +320,7 @@ def test_selection_failure_does_not_evaluate_audit_or_proposal() -> None:
     assert result.diagnostics["target_rows"] == 112
     assert result.diagnostics["failure_partition"] == "selection_0"
     assert result.diagnostics["logical_rows_per_partition"] == 48
+    assert int(calls) == 14
 
 
 def _run(target=None, *, eligibility=_all_eligible, **config):
@@ -368,7 +369,7 @@ def test_relative_residual_is_scale_invariant_without_squaring_overflow(scale) -
     np.column_stack((np.linspace(-1, 1, 16), np.linspace(-1, 1, 16) ** 2 * 1e-8)),
 ])
 def test_rank_deficient_or_ill_conditioned_design_rejects_before_audit(monkeypatch, design) -> None:
-    monkeypatch.setattr(refinement, "_uniform_offsets", lambda *args: tf.constant(design, tf.float64))
+    monkeypatch.setattr(runtime, "draw_offsets", lambda *args: tf.constant(design, tf.float64))
     result = _run()
     assert not result.accepted and result.status == "curvature_fit_rejected"
     assert result.refined_factor is None
@@ -388,12 +389,14 @@ def test_raw_non_spd_or_excessive_precision_condition_is_not_projected(precision
 
 def test_all_pairs_replicate_spread_detects_scale_changes() -> None:
     identity = tf.eye(2, dtype=tf.float64)
-    spread = refinement._precision_spread((identity, 1.4 * identity, identity / 1.4))
+    program = tf.function(runtime.precision_spread,
+        input_signature=[tf.TensorSpec([3, 2, 2], tf.float64)], autograph=False, jit_compile=True)
+    spread = float(program(tf.stack((identity, 1.4 * identity, identity / 1.4))))
     assert spread == pytest.approx(1.96)
 
 
 def test_replicate_instability_rejects_without_audit(monkeypatch) -> None:
-    monkeypatch.setattr(refinement, "_precision_spread", lambda _: 2.0)
+    monkeypatch.setattr(runtime, "precision_spread", lambda _, **kwargs: tf.constant(2., tf.float64))
     result = _run()
     assert result.status == "replicate_instability"
     assert result.diagnostics["callback_batches"] == 5
@@ -404,43 +407,55 @@ def test_replicate_instability_rejects_without_audit(monkeypatch) -> None:
 ])
 @pytest.mark.parametrize("fit_design", ["uniform_box", "uniform_ball"])
 def test_holdouts_veto_frozen_candidate_without_refit(monkeypatch, bad_call, status, calls, fit_design) -> None:
-    events = []
-    callback_count = 0
-    original = refinement.fit_dense_score_precision_tf
+    events = tf.Variable(tf.zeros([16], tf.int64))
+    with tf.device(events.device):
+        callback_count = tf.Variable(0, dtype=tf.int64)
+        event_count = tf.Variable(0, dtype=tf.int64)
+    original = runtime.fit_dense_score_precision_tf
+
+    def record_event(value):
+        index = event_count.assign_add(1) - 1
+        return events.scatter_nd_update(tf.reshape(index, [1, 1]), tf.reshape(value, [1]))
 
     def fit(*args, **kwargs):
-        events.append("fit")
-        return original(*args, **kwargs)
+        recorded = record_event(tf.constant(-1, tf.int64))
+        with tf.control_dependencies([recorded]):
+            return original(*args, **kwargs)
 
     def target(theta):
-        nonlocal callback_count
-        callback_count += 1
-        events.append(f"target_{callback_count}")
-        values = -0.5 * tf.reduce_sum(theta**2, axis=1)
-        return values, -theta * (2.0 if callback_count == bad_call else 1.0)
+        count = callback_count.assign_add(1)
+        recorded = record_event(count)
+        with tf.control_dependencies([recorded]):
+            values = -0.5 * tf.reduce_sum(theta**2, axis=1)
+            return values, -theta * tf.where(count == bad_call, tf.constant(2., tf.float64), tf.constant(1., tf.float64))
 
-    monkeypatch.setattr(refinement, "fit_dense_score_precision_tf", fit)
+    monkeypatch.setattr(runtime, "fit_dense_score_precision_tf", fit)
     result = _run(target, fit_design=fit_design)
     assert result.status == status and result.refined_factor is None
-    assert callback_count == calls
-    assert events[5:8] == ["fit", "fit", "target_6"]
-    assert events.count("fit") == 2
+    assert int(callback_count) == calls
+    completed = events.numpy()[:int(event_count)].tolist()
+    assert completed == [1, 2, 3, 4, 5, -1, -1, *range(6, calls + 1)]
 
 
 def test_proposal_is_generated_with_refined_factor_and_distinct_seed() -> None:
-    batches = []
+    batches = tf.Variable(tf.zeros([7, 16, 2], tf.float64))
+    with tf.device(batches.device):
+        calls = tf.Variable(0, dtype=tf.int64)
     target = _gaussian(np.zeros(2), np.array([[4.0, 1.0], [1.0, 2.0]]))
 
     def record(theta):
-        batches.append(theta.numpy())
-        return target(theta)
+        index = calls.assign_add(1) - 1
+        recorded = batches.scatter_nd_update(tf.reshape(index, [1, 1]), theta[None])
+        with tf.control_dependencies([recorded]):
+            return target(theta)
 
     result = _run(record)
     assert result.accepted
+    assert int(calls) == 7
     seed = result.diagnostics["partitions"][-1]["seed"]
     latent = tf.random.stateless_normal([16, 2], seed, dtype=tf.float64).numpy()
-    np.testing.assert_allclose(batches[-1], latent @ result.refined_factor.numpy().T, atol=1e-14)
-    assert not np.allclose(batches[-1], latent)
+    np.testing.assert_allclose(batches[-1].numpy(), latent @ result.refined_factor.numpy().T, atol=1e-14)
+    assert not np.allclose(batches[-1].numpy(), latent)
     seeds = [tuple(part["seed"]) for part in result.diagnostics["partitions"][1:]]
     assert len(set(seeds)) == 6
 
@@ -517,22 +532,21 @@ def test_failed_center_attempts_are_accounted_and_payload_is_strict_json(which) 
     ("nan", "factorization_failed"), ("reconstruction", "factor_reconstruction_failed"),
 ])
 def test_factorization_cannot_pass_nan_or_bad_reconstruction(monkeypatch, fault, status) -> None:
-    monkeypatch.setattr(refinement, "_precision_spread", lambda _: 1.0)
+    monkeypatch.setattr(runtime, "precision_spread", lambda _, **kwargs: tf.constant(1., tf.float64))
     original = tf.linalg.cholesky
-    calls = 0
+    calls = tf.Variable(0, dtype=tf.int64)
 
     def cholesky(matrix):
-        nonlocal calls
-        calls += 1
+        count = calls.assign_add(1)
         actual = original(matrix)
-        if calls == 2:
-            return actual * (float("nan") if fault == "nan" else 1.01)
-        return actual
+        return tf.cond(count == 2,
+            lambda: actual * (float("nan") if fault == "nan" else 1.01), lambda: actual)
 
     monkeypatch.setattr(tf.linalg, "cholesky", cholesky)
     result = _run()
     assert result.status == status and result.refined_factor is None
     assert result.diagnostics["callback_batches"] == 6
+    assert int(calls) == 2
     json.dumps(result.payload(), allow_nan=False)
 
 
@@ -548,9 +562,12 @@ def test_nonfinite_transformed_score_is_rejected() -> None:
 
 
 def test_nonfinite_position_is_not_sent_to_callbacks() -> None:
+    nonfinite_calls = tf.Variable(0, dtype=tf.int64)
+
     def target(theta):
-        assert bool(tf.reduce_all(tf.math.is_finite(theta)))
-        return tf.zeros(tf.shape(theta)[0], tf.float64), tf.zeros_like(theta)
+        recorded = nonfinite_calls.assign_add(tf.cast(~tf.reduce_all(tf.math.is_finite(theta)), tf.int64))
+        with tf.control_dependencies([recorded]):
+            return tf.zeros(tf.shape(theta)[0], tf.float64), tf.zeros_like(theta)
 
     result = refine_posterior_local_curvature(
         target, np.array([1e308, 0.0]), np.diag([1e308, 1.0]),
@@ -558,6 +575,7 @@ def test_nonfinite_position_is_not_sent_to_callbacks() -> None:
     )
     assert result.status == "nonfinite_position"
     assert result.diagnostics["physical_rows"] > result.diagnostics["target_rows"]
+    assert int(nonfinite_calls) == 0
 
 
 @pytest.mark.parametrize("name", ["seed", "replicate_count", "batch_size", "rows_per_partition", "max_physical_rows"])

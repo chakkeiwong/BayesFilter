@@ -11,6 +11,7 @@ from __future__ import annotations
 import tensorflow as tf
 
 from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
+from bayesfilter.highdim.moment_safety_tf import SAFETY_KEYS
 
 Tensor = tf.Tensor
 
@@ -48,9 +49,11 @@ _SCALAR_FLOAT_KEYS = (
     "maximum_diagonal_post_cap_particle_rms",
 )
 
+_SCALAR_FLOAT_KEYS += SAFETY_KEYS
+
 
 def _output_signature(
-    particle_count: int, state_dim: int, direction_count: int, dtype: tf.DType
+    particle_count: int, state_dim: int, direction_count: int, dtype: tf.DType, return_stages: bool = False
 ) -> dict[str, tf.TensorSpec]:
     signature: dict[str, tf.TensorSpec] = {
         "particles": tf.TensorSpec([particle_count, state_dim], dtype),
@@ -69,6 +72,10 @@ def _output_signature(
     signature.update(
         {key: tf.TensorSpec([], dtype) for key in _SCALAR_FLOAT_KEYS}
     )
+    if return_stages:
+        for stage in ("raw_reset", "pre_cap", "post_cap"):
+            signature["stage_" + stage] = tf.TensorSpec([particle_count, state_dim], dtype)
+            signature["stage_" + stage + "_tangent"] = tf.TensorSpec([particle_count, state_dim, direction_count], dtype)
     return signature
 
 
@@ -92,6 +99,9 @@ def batched_higher_moment_shape_jvp(
     pairwise_particle_rms_cap: float = 0.0,
     coordinatewise_standardized_cap: float = 0.0,
     coordinatewise_standardized_cap_power: int = 8,
+    coordinatewise_standardized_identity_radius: float = 0.0,
+    return_stages: bool = False,
+    moment_safety: bool = False,
 ) -> dict[str, Tensor]:
     """Correct B clouds with K analytical tangent directions.
 
@@ -141,6 +151,9 @@ def batched_higher_moment_shape_jvp(
             pairwise_particle_rms_cap=pairwise_particle_rms_cap,
             coordinatewise_standardized_cap=coordinatewise_standardized_cap,
             coordinatewise_standardized_cap_power=coordinatewise_standardized_cap_power,
+            coordinatewise_standardized_identity_radius=coordinatewise_standardized_identity_radius,
+            return_stages=return_stages,
+            moment_safety=moment_safety,
         )
 
     result = tf.map_fn(
@@ -154,7 +167,7 @@ def batched_higher_moment_shape_jvp(
             points_tangent_by_row,
         ),
         fn_output_signature=_output_signature(
-            particle_count, state_dim, direction_count, dtype
+            particle_count, state_dim, direction_count, dtype, return_stages
         ),
         parallel_iterations=1,
     )

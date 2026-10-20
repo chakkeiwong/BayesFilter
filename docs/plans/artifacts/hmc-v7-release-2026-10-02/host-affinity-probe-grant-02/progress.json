@@ -1,0 +1,213 @@
+{
+  "command": [
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/probe_host_affinity.py",
+    "--source",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+    "--output",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02",
+    "--gpu",
+    "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+    "--model",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/lgssm_qr/model",
+    "--model",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/nonlinear/model",
+    "--model",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/funnel_residual/model"
+  ],
+  "source": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+  "environment": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "resource": "gpu",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "started_utc": "2026-10-04T15:38:56.903947+00:00",
+  "budget_seconds": 400,
+  "per_worker_cap_seconds": 90,
+  "arms": [
+    [
+      "original-01",
+      [
+        8,
+        9,
+        10,
+        11
+      ]
+    ],
+    [
+      "candidate-01",
+      [
+        32,
+        33,
+        34,
+        35
+      ]
+    ],
+    [
+      "candidate-02",
+      [
+        32,
+        33,
+        34,
+        35
+      ]
+    ],
+    [
+      "original-02",
+      [
+        8,
+        9,
+        10,
+        11
+      ]
+    ]
+  ],
+  "attempts": [
+    {
+      "arm": "original-01",
+      "cpu_affinity": [
+        8,
+        9,
+        10,
+        11
+      ],
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/worker.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/original-01",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--cpus",
+        "8",
+        "9",
+        "10",
+        "11",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/lgssm_qr/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/nonlinear/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/funnel_residual/model"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 44.53194638504647
+    },
+    {
+      "arm": "candidate-01",
+      "cpu_affinity": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/worker.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/candidate-01",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--cpus",
+        "32",
+        "33",
+        "34",
+        "35",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/lgssm_qr/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/nonlinear/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/funnel_residual/model"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 44.3295352878049
+    },
+    {
+      "arm": "candidate-02",
+      "cpu_affinity": [
+        32,
+        33,
+        34,
+        35
+      ],
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/worker.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/candidate-02",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--cpus",
+        "32",
+        "33",
+        "34",
+        "35",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/lgssm_qr/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/nonlinear/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/funnel_residual/model"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 44.133626381866634
+    },
+    {
+      "arm": "original-02",
+      "cpu_affinity": [
+        8,
+        9,
+        10,
+        11
+      ],
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/worker.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/host-affinity-probe-grant-02/original-02",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--cpus",
+        "8",
+        "9",
+        "10",
+        "11",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/lgssm_qr/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/nonlinear/model",
+        "--model",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/funnel_residual/model"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 44.53276687092148
+    }
+  ],
+  "release_ready": false,
+  "plan": "docs/plans/artifacts/hmc-v7-release-2026-10-02/continuation-grant-2026-10-04.md",
+  "original_worker_sha256": "961debad29c255e66581d1fb14db3ee605c58139cfbc763f1ff56edf2f57a303",
+  "worker_sha256": "259e76d8faef1ea6a3844694df0fb6ba54bc401821541c8e8cbee16a4ba9d2a4",
+  "preflight_compute_processes": [
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750747",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750770",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750793",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750816",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750817",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750862",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750863",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750908",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750909",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750954",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750980",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1750984",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1751034",
+    "GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, 1751035",
+    "GPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, 6247"
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "schema": "filter_repair_measurement.v2",
+  "fixture": "particle_alg1",
+  "size": 1,
+  "jit": "on",
+  "device": "CPU",
+  "source_root": "/home/ubuntu/workspace/BayesFilter",
+  "worker_sha256": "033f83e72820f10398609d37bd299f83ae0956809afc7eb4d77f4a4adbd5e760",
+  "harness_sha256": {
+    "filter_repair_benchmark_worker.py": "033f83e72820f10398609d37bd299f83ae0956809afc7eb4d77f4a4adbd5e760",
+    "measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7"
+  },
+  "stages": {
+    "start": {
+      "VmHWM": 21413888,
+      "VmRSS": 21413888
+    },
+    "prepared": {
+      "VmHWM": 648269824,
+      "VmRSS": 648269824
+    },
+    "traced": {
+      "VmHWM": 881274880,
+      "VmRSS": 881274880
+    }
+  },
+  "status": "failed",
+  "phase": "first_execution",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.19.1",
+  "tf32": true,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_XLA_FLAGS": null,
+    "XLA_FLAGS": null
+  },
+  "hardware": {
+    "machine": "x86_64",
+    "processor": "model name\t: AMD EPYC 7773X 64-Core Processor"
+  },
+  "preparation_seconds": 2.1646083910018206,
+  "dimensions": {
+    "horizon": 2,
+    "particles": 4,
+    "state": 1,
+    "pseudo_time_steps": 2,
+    "resampling": "ot_sinkhorn_barycentric_covariance_carry",
+    "canonical_admitted": false,
+    "score": "observation_autodiff_diagnostic"
+  },
+  "input_sha256": "6b10f0ca50deb7d7516ed63a98a3b1c9654d34269291de88a8d94b3fcea041e4",
+  "input_shapes": [
+    [
+      2,
+      1
+    ],
+    [
+      4,
+      1
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      2
+    ]
+  ],
+  "input_dtypes": [
+    "float64",
+    "float64",
+    "float64",
+    "float64"
+  ],
+  "trace_seconds": 4.462668718988425,
+  "graph": {
+    "nodes": 17415,
+    "functions": 71,
+    "callbacks": [],
+    "must_compile": true,
+    "nested_xla": [
+      "__inference_replay_6234",
+      "__inference_backward_8304",
+      "__inference_backward_8461",
+      "__inference_backward_21903",
+      "__inference_replay_2822",
+      "__inference_replay_2963"
+    ],
+    "xla_ops": []
+  },
+  "error_type": "InvalidArgumentError",
+  "error": "Traceback (most recent call last):\n  File \"/home/ubuntu/workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 529, in main\n    measure(args, result)\n  File \"/home/ubuntu/workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 467, in measure\n    values, host, timing = call()\n                           ^^^^^^\n  File \"/home/ubuntu/workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 456, in call\n    values = tf.nest.flatten(target(*inputs))\n                             ^^^^^^^^^^^^^^^\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py\", line 59, in quick_execute\n    except TypeError as e:\ntensorflow.python.framework.errors_impl.InvalidArgumentError: Input 1 to node `gradients/map/while_grad/gradients/map/while/TensorArrayV2Read/TensorListGetItem_grad/TensorListReserve` with op TensorListReserve must be a compile-time constant.\n\nXLA compilation requires that operator arguments that represent shapes or dimensions be evaluated to concrete values at compile time. This error means that a shape or dimension argument could not be evaluated at compile time, usually because the value of the argument depends on a parameter to the computation, on a variable, or on a stateful operation such as a random number generator.\n\nStack trace for op definition: \nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 544, in <module>\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 529, in main\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 444, in measure\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 63, in evaluate\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 192, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 96, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 96, in <lambda>\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 87, in pullback\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\n\n\t [[{{node gradients/map/while_grad/gradients/map/while/TensorArrayV2Read/TensorListGetItem_grad/TensorListReserve}}]]\n\ttf2xla conversion failed while converting map_while_body_993_grad_7572_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\nStack trace for op definition: \nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 544, in <module>\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 529, in main\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 444, in measure\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 63, in evaluate\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 192, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 96, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 96, in <lambda>\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 87, in pullback\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\n\n\t [[PartitionedCall_1/gradients/map/while_grad/map/while_grad]]\n\ttf2xla conversion failed while converting __inference_backward_8304[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\ttf2xla conversion failed while converting gradients_while_grad_gradients_while_IdentityN_grad_cond_true_7453[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\nStack trace for op definition: \nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 544, in <module>\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 529, in main\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 444, in measure\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 63, in evaluate\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 192, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 96, in grad\n\n\t [[gradients/while_grad/gradients/while/IdentityN_grad/cond]]\n\ttf2xla conversion failed while converting while_body_3601_grad_6680_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\nStack trace for op definition: \nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 544, in <module>\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 529, in main\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 444, in measure\nFile \"workspace/BayesFilter/scripts/filter_repair_benchmark_worker.py\", line 63, in evaluate\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 192, in grad\nFile \"workspace/BayesFilter/experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py\", line 170, in backward\n\n\t [[PartitionedCall_1/PartitionedCall_1/gradients/while_grad/while_grad]]\n\ttf2xla conversion failed while converting __inference_evaluate_21916[_XlaMustCompile=true,config_proto=13561319589895757934,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_evaluate_21916]\n",
+  "imported_source_sha256": {
+    "scripts/filter_repair_benchmark_worker.py": "033f83e72820f10398609d37bd299f83ae0956809afc7eb4d77f4a4adbd5e760",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "experiments/__init__.py": "0a49d2e8f480ddbe6ebcfb336f0d9539474657715a00f5c4a647eeca041da53b",
+    "experiments/dpf_implementation/__init__.py": "fdff07846ca765cbea55f5540782db1b357bcc8ff25cdc8bae5b686247f6090f",
+    "experiments/dpf_implementation/tf_tfp/__init__.py": "15eb4f04b90d59fabc537a1806b35599b4a4eae799341a4d09f88f71a889b0de",
+    "experiments/dpf_implementation/tf_tfp/filters/__init__.py": "a8da3f78e890c58e9edb3df693f3c8e13dae0b14ed23ec551b87e95a5c2b4e5a",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/slogdet_tf.py": "647a6940ca8f4e764fb4e3f59da282097f11e4ba5bebbb1a939ab79362182787",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/svd_factor_tf.py": "b1f70b77fc840882427e8d7e930414ae011828b328e4decf31cb63e47b35683d",
+    "bayesfilter/nonlinear/__init__.py": "f0edaabc1fdc132742f578b6351795c78d4aa5826fd88d04ed61a433c47b93ad",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "1aa062a50d702e05d69d33cef26dabd8e941c43485f9f249b82b65711c361156",
+    "bayesfilter/ops/stateless_random_tf.py": "93ba3c258b5961b5ff4b0ff061646c8b4b2b252e3d18dd30c968f3238b47a32f",
+    "experiments/dpf_implementation/tf_tfp/filters/bootstrap_pf_tf.py": "ba1c1fe37d24d2c8a9f6d974c576e5139e7377ad19f4ad7458c3683c1720346d",
+    "experiments/dpf_implementation/tf_tfp/resampling/__init__.py": "39bf04e22eae76cb3477e60bd311f20ab25d4fd296b2fb689b0d68832a7238dc",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/bases.py": "ac4177ed5913c2e6a554fc1dd99b7682b7c8a315f3615d3db762139356a28b9c",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/tt.py": "cbe482ab3f595d3360bdca7e8fa7f0e24c56f99f74b531fd15694542eed6a8a8",
+    "bayesfilter/highdim/squared_tt.py": "703846596b66eb2834ae5a00052fbb03756cc6e9c876c9669422e52419793056",
+    "bayesfilter/highdim/derivatives.py": "f965cc531e288f169ba21db3c73341000998353983488205eb3b9d75c5123404",
+    "bayesfilter/highdim/fitting.py": "b07316816db82dd7733fe4f52fe1557a60aeb81e141cedf516bd70126d599f69",
+    "bayesfilter/highdim/models.py": "0f4097739f40c0942552d57c04058c0feb4f4c052d80606ec99262e035a4a54d",
+    "bayesfilter/highdim/filtering.py": "8541ff14e398d7e80bea549882095475547fe0d9fceaa74920dfd43265cfabc1",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/native_generalized_sv.py": "2cfb4d3abb8b32ff5e9ba256183bf50c752c236638813f25a5f53cbc9164367c",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "0b1f6e82e28c8a38d010c3e5d8a7583052dbdbcf786b0cadee5c713aac917f58",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/highdim/transport.py": "ff03fac036aa8486732962373e053ff63c4a2b0b26085517be86ac9034a0949c",
+    "bayesfilter/highdim/source_route.py": "864061837818e597a6ff03cc7ee37d9c18dd718a2a5486871c47eb8e81fe6281",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "6072f0024d742dccdcc502683c3c6be97206c510f800d1177b33eea91e448ce4",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "91f59ecad8d62224e3fffe2d1eede2c79ee59e190eae04c493cd50e7ea4865ce",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "94921270407283d8639fb904af7fec956243c7a7899fb7567ce2e3988f0ca9d2",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "experiments/dpf_implementation/tf_tfp/resampling/annealed_transport_tf.py": "ef7cd4c561cc9cd501344aed82cb00e2a09fc5eb243fe2890b2b10173637956b",
+    "experiments/dpf_implementation/tf_tfp/resampling/sinkhorn_tf.py": "abbb445c5d2445cf1f83d1dfcbfabee45f63d6da41ceaf1cb6adeb9db4cc8acd",
+    "experiments/dpf_implementation/tf_tfp/filters/ledh_pfpf_alg1_ukf_tf.py": "f4d71560d2ddf4e7416b9c07890b8eac2d29644afa833534e574100da80e3fe0",
+    "experiments/dpf_implementation/tf_tfp/flows/jacobians_tf.py": "7e590940d4b2fb178dfbbfbe04e94ed8ad99874be0421032b3023da53347d3c0",
+    "experiments/dpf_implementation/tf_tfp/flows/ledh_tf.py": "15b9dbdb22280f9fa5293a5215ecda4eec08894bf19ad3e6b039a4a075ab008f",
+    "experiments/dpf_implementation/tf_tfp/flows/__init__.py": "0b199a8d197315efefd120be70680d0631fa720738ae39dacc5873ec47325227",
+    "experiments/dpf_implementation/tf_tfp/filters/native_execution_tf.py": "26e2e20392fef1d744d26031812449ba2a7e98e431d921e52f9c657e05520fcb",
+    "experiments/dpf_implementation/tf_tfp/filters/alg1_execution_tf.py": "0ab13e4db113a6ad009ed8622a8f665abdade5f17617bb0f94cbe2de16742d8c"
+  },
+  "wall_seconds": 12.997834736001096
+}

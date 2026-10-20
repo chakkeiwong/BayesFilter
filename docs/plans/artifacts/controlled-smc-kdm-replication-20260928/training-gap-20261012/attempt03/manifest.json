@@ -1,0 +1,85 @@
+{
+  "status": "COMPLETED",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_kdm_current_training_gap.py",
+    "--saved-optimizer"
+  ],
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan_file": "docs/plans/controlled-smc-kdm-training-gap-investigation-20261012.md",
+  "result_file": "docs/plans/controlled-smc-kdm-training-gap-result-20261012.md",
+  "started_utc": "2026-10-12T00:56:25.342020+00:00",
+  "seed": 202610121,
+  "cpu_gpu_status": "CPU author explicitly hides GPU; escalated TF GPU/XLA, TF32 disabled",
+  "environment": {
+    "cpu": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+    "gpu": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python"
+  },
+  "campaign_before": {
+    "cpu": 1779.0173048020806,
+    "gpu": 1690.6077120117843
+  },
+  "resource_wall_seconds": {
+    "cpu": 9.636109289946035,
+    "gpu": 56.571450364775956
+  },
+  "steps": [
+    {
+      "label": "nvidia",
+      "command": [
+        "nvidia-smi",
+        "--query-gpu=name,memory.used,memory.total",
+        "--format=csv"
+      ],
+      "resource": "gpu",
+      "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/nvidia.log",
+      "returncode": 0,
+      "wall_seconds": 0.06539933080784976
+    },
+    {
+      "label": "author",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_current_training_gap.py",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/reference",
+        "--saved-optimizer"
+      ],
+      "resource": "cpu",
+      "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/author.log",
+      "returncode": 0,
+      "wall_seconds": 9.636109289946035
+    },
+    {
+      "label": "tf",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_neural_precision_tf.py",
+        "--reference",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/reference/author.json",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/tf",
+        "--plan",
+        "docs/plans/controlled-smc-kdm-training-gap-investigation-20261012.md",
+        "--result-note",
+        "docs/plans/controlled-smc-kdm-training-gap-result-20261012.md"
+      ],
+      "resource": "gpu",
+      "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt03/tf.log",
+      "returncode": 0,
+      "wall_seconds": 56.506051033968106
+    }
+  ],
+  "source_hashes": {
+    "docs/benchmarks/run_kdm_current_training_gap.py": "ce56eb853f5e86db80ec1c4db1d72a8f49e725d99d784c56177eb587989d14aa",
+    "docs/plans/controlled-smc-kdm-training-gap-investigation-20261012.md": "e3413d9a59c0a9d5e8f64eb028c950f00a02b8fb4f1d5f44ea8ae44200a874e4",
+    "docs/benchmarks/reference_kdm_current_training_gap.py": "da4b37c1583a523e3fa8b06597673d80946141400927e195bc72fa71e0932cc8",
+    "docs/benchmarks/reference_kdm_coupled_updates.py": "60d25417912960e878ce5bbb759c0506105dbdc266a607bcfe1bfb8149ed1290",
+    "docs/benchmarks/diagnose_kdm_neural_precision_tf.py": "e9b708e9fb1f28448748e0e29d1bf5f6ebf6e05ae2058059f24cdec2d568b053"
+  },
+  "ended_utc": "2026-10-12T00:57:33.769219+00:00"
+}

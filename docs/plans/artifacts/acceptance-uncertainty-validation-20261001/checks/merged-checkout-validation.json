@@ -1,0 +1,52 @@
+{
+  "role": "clean_merged_checkout_regression_only",
+  "integration_parent": "56bab6c28445cf7ddf07354729fd690c7af7f597",
+  "remote_parent": "88297ad29043746381b961d7c849e7101ca59ae2",
+  "implementation_parent": "70a6d7e9611a9f859a2519f37f236b61cac35c1e",
+  "source_checksums": {
+    "bayesfilter/inference/hmc_verification.py": "b9c033555cd55c9f17879f5f1440cf71fd6f21172032de09d284baa6c9e7b0ab",
+    "bayesfilter/inference/hmc_candidate_set_execution.py": "c5e58e4abc0e6b3043e51101495916b3d5c99be96de74797ca97afd51d2fefe9",
+    "bayesfilter/testing/acceptance_uncertainty_models.py": "30a305036a2de762c85a47c76cab5940615d2a348ac11b83ff149c0985e078b8",
+    "bayesfilter/testing/inference_validation/ssm_targets.py": "3231ba9551afd300b628b09e25154b87aa25d441708e8b701d31217c9ded6b5b",
+    "bayesfilter/testing/lgssm_generic_target_adapter_tf.py": "688750ae879ff753f2c3f6150283ccb6a815785dd10a5941bc9573fa2c1b199b",
+    "bayesfilter/testing/simple_nonlinear_generic_target_adapter_tf.py": "c71723e06359bb91f3f15165dd476d7981f943c1dee3e2d48bfb1b7034fe65b5",
+    "bayesfilter/testing/tf_hmc_readiness.py": "9b8d3cb7fb079d7d72326d2e789cb422a44b1ab0b8ccc1adbd2b00032b5a6873",
+    "tests/test_hmc_acceptance_uncertainty.py": "86272287696f05a3f4823fccd0633a562a8f18cc4c66608a6c92c7ef06f670f5"
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "4",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "pytest_args": [
+    "tests/test_hmc_acceptance_uncertainty.py",
+    "tests/test_hmc_acceptance_uncertainty_models.py",
+    "tests/test_hmc_verification.py",
+    "tests/test_hmc_candidate_set_tuning.py",
+    "tests/test_hmc_candidate_set_artifacts.py",
+    "tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence",
+    "tests/test_hmc_candidate_set_execution.py::test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision",
+    "tests/test_lgssm_generic_target_adapter_tf.py",
+    "tests/test_simple_nonlinear_generic_target_adapter_tf.py",
+    "--disable-warnings",
+    "--junitxml=/tmp/bf-acceptance-merged-r2.xml",
+    "-q"
+  ],
+  "testsuite": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "201",
+    "time": "100.246",
+    "timestamp": "2026-10-01T12:00:41.906747+08:00",
+    "hostname": "ubuntu-MZ72-HB2-00"
+  },
+  "ignored_sylvester_binary_source": "shared checkout local build; copied into temporary worktree and not committed",
+  "ignored_sylvester_binary_sha256": "2feb93135f2359e60aca446f52f8468b104199b4d398d4fe6057030df20f23d6",
+  "scientific_policy_change": false,
+  "calibration_repeated": false
+}

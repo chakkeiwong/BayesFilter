@@ -9,7 +9,8 @@ likelihood is a BayesFilter clean-room fixed adaptation.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from functools import lru_cache
 
 import tensorflow as tf
 
@@ -24,10 +25,26 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
     ssl_lstm_observation,
     ssl_lstm_observation_parameter_derivative,
     ssl_lstm_observation_state_jvp,
+    ssl_lstm_parameter_slices,
     ssl_lstm_transition,
     ssl_lstm_transition_parameter_derivative,
     ssl_lstm_transition_state_jvp,
     unpack_ssl_lstm_parameters,
+)
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context, tensor_program
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
+
+_PARAMETER_TENSOR_FIELDS = tuple(
+    field.name for field in fields(SSLLSTMConstrainedParameters)
+    if field.name not in ("config", "slices", "std_floor")
+)
+_RESULT_TENSOR_FIELDS = (
+    "log_likelihood", "score", "particle_log_likelihoods",
+    "normalized_particle_weights", "filtered_means", "final_particles",
+)
+_NUMERICAL_DIAGNOSTIC_FIELDS = (
+    "score_norm", "particle_log_likelihood_min", "particle_log_likelihood_max",
+    "recenter_frame",
 )
 
 
@@ -149,22 +166,100 @@ def tf_ssl_lstm_zhaocui_fixed_score(
     evidence_path: str,
     manifest: SSLLSTMZhaoCuiFixedManifest | None = None,
     std_floor: float = 1.0e-4,
+    jit_compile: bool = True,
 ) -> tuple[SSLLSTMZhaoCuiFixedScoreResult, SSLLSTMZhaoCuiFixedComponents]:
-    """Evaluate the deterministic fixed replay value and manual score."""
+    """Evaluate the complete fixed replay with an enclosing XLA default.
 
-    components = make_ssl_lstm_zhaocui_fixed_components(
-        theta,
+    ``jit_compile=False`` is an explicit graph-reference exception. Preserve
+    the previous ordinary TF draws for direct calls, and the previous XLA
+    draws for callers that already supplied an enclosing XLA program.
+    """
+    theta = tf.convert_to_tensor(theta, dtype=tf.float64)
+    if theta.shape.rank != 1:
+        raise ValueError("SSL-LSTM theta must be a rank-one vector")
+    if theta.shape[0] is not None and int(theta.shape[0]) != config.parameter_dim:
+        raise ValueError("SSL-LSTM theta length does not match static config")
+    std_floor = float(std_floor)
+    fixed_manifest = manifest or SSLLSTMZhaoCuiFixedManifest()
+    protocol = build_expected_ssl_lstm_adapter_protocol(
         config,
+        filter_name="zhaocui_fixed",
         evidence_path=evidence_path,
-        manifest=manifest,
-        std_floor=std_floor,
+        target_scope="ssl_lstm_filter_hmc:zhaocui_fixed:phase2",
+        nonclaims=fixed_manifest.nonclaims,
     )
-    result = _fixed_replay_value_and_score(
-        tf.convert_to_tensor(observations, dtype=tf.float64),
-        components.parameters,
-        components.manifest,
+    observations = tf.convert_to_tensor(observations, dtype=tf.float64)
+    observed_horizon = _validate_observations(observations, config)
+    enclosing_xla = in_xla_context()
+    # Validate seed configuration before cache lookup: float and integer tuples
+    # compare equal in Python, but TensorFlow rejects float-valued int32 seeds.
+    tf.make_tensor_proto(fixed_manifest.initial_seed, dtype=tf.int32)
+    tf.make_tensor_proto(fixed_manifest.process_seed, dtype=tf.int32)
+    numerical_manifest = SSLLSTMZhaoCuiFixedManifest(
+        reference_sample_count=int(fixed_manifest.reference_sample_count),
+        initial_seed=tuple(fixed_manifest.initial_seed),
+        process_seed=tuple(fixed_manifest.process_seed),
+        recenter_ridge=float(fixed_manifest.recenter_ridge),
+    )
+    program = _fixed_replay_program(
+        config, numerical_manifest, observed_horizon, std_floor,
+        bool(jit_compile), enclosing_xla,
+    )
+    numerical, diagnostics, parameter_values = program(observations, theta)
+    parameters = SSLLSTMConstrainedParameters(
+        config=config, slices=ssl_lstm_parameter_slices(config),
+        std_floor=std_floor, **parameter_values,
+    )
+    components = SSLLSTMZhaoCuiFixedComponents(parameters, protocol, fixed_manifest)
+    result = SSLLSTMZhaoCuiFixedScoreResult(
+        **numerical,
+        diagnostics={
+            **diagnostics,
+            "derivative_method": "analytic_first_order_fixed_replay",
+            "reference_sample_count": int(fixed_manifest.reference_sample_count),
+            "manifest": fixed_manifest.as_dict(),
+            "execution": {
+                "jit_compile": bool(jit_compile or enclosing_xla),
+                "rng_stream": ("original_xla_stateless_normal" if enclosing_xla
+                               else "original_tf_philox_normal"),
+            },
+        },
     )
     return result, components
+
+
+@lru_cache(maxsize=16)
+def _fixed_replay_program(config, manifest, observed_horizon, std_floor,
+                          jit_compile, enclosing_xla):
+    """Bounded specialization; observations and theta remain tensor operands."""
+    def evaluate(observations, theta):
+        parameters = unpack_ssl_lstm_parameters(theta, config, std_floor=std_floor)
+        initial_noise = None
+        process_noise = None
+        if not enclosing_xla:
+            initial_noise = philox_normal_float64(
+                [manifest.reference_sample_count, config.augmented_state_dim],
+                tf.constant(manifest.initial_seed, tf.int32),
+            )
+            process_noise = philox_normal_float64(
+                [observed_horizon - 1, manifest.reference_sample_count, config.latent_dim],
+                tf.constant(manifest.process_seed, tf.int32),
+            )
+        result = _fixed_replay_value_and_score(
+            observations, parameters, manifest,
+            initial_noise=initial_noise, process_noise=process_noise,
+        )
+        return (
+            {name: getattr(result, name) for name in _RESULT_TENSOR_FIELDS},
+            {name: result.diagnostics[name] for name in _NUMERICAL_DIAGNOSTIC_FIELDS},
+            {name: getattr(parameters, name) for name in _PARAMETER_TENSOR_FIELDS},
+        )
+
+    signature = (
+        tf.TensorSpec([observed_horizon, config.observation_dim], tf.float64),
+        tf.TensorSpec([config.parameter_dim], tf.float64),
+    )
+    return tensor_program(evaluate, signature, jit_compile=jit_compile)
 
 
 def build_ssl_lstm_zhaocui_fixed_value_score_artifact(
@@ -221,39 +316,49 @@ def build_ssl_lstm_zhaocui_fixed_value_score_artifact(
     return validate_ssl_lstm_value_score_artifact(artifact, protocol=protocol)
 
 
-def _fixed_replay_value_and_score(
-    observations: tf.Tensor,
-    params: SSLLSTMConstrainedParameters,
-    manifest: SSLLSTMZhaoCuiFixedManifest,
-) -> SSLLSTMZhaoCuiFixedScoreResult:
+def _validate_observations(observations, config):
     if observations.shape.rank != 2:
         raise ValueError("observations must be a rank-two tensor")
     if observations.shape[0] is None:
         raise ValueError("observations must have a statically known horizon")
     observed_horizon = int(observations.shape[0])
-    if observed_horizon <= 0 or observed_horizon > params.config.horizon:
+    if observed_horizon <= 0 or observed_horizon > config.horizon:
         raise ValueError("observation horizon must be between one and the SSL-LSTM config horizon")
-    if observations.shape[1] is not None and int(observations.shape[1]) != params.config.observation_dim:
+    if observations.shape[1] is not None and int(observations.shape[1]) != config.observation_dim:
         raise ValueError("observation dimension does not match SSL-LSTM config")
+    return observed_horizon
+
+
+def _fixed_replay_value_and_score(
+    observations: tf.Tensor,
+    params: SSLLSTMConstrainedParameters,
+    manifest: SSLLSTMZhaoCuiFixedManifest,
+    *,
+    initial_noise: tf.Tensor | None = None,
+    process_noise: tf.Tensor | None = None,
+) -> SSLLSTMZhaoCuiFixedScoreResult:
+    observed_horizon = _validate_observations(observations, params.config)
 
     sample_count = int(manifest.reference_sample_count)
     parameter_dim = int(params.config.parameter_dim)
     state_dim = int(params.config.augmented_state_dim)
     latent_dim = int(params.config.latent_dim)
-    initial_noise = _fixed_initial_noise(manifest, sample_count, state_dim)
-    process_noise = _fixed_process_noise(
-        manifest,
-        max(observed_horizon - 1, 0),
-        sample_count,
-        latent_dim,
-    )
+    if initial_noise is None:
+        initial_noise = _fixed_initial_noise(manifest, sample_count, state_dim)
+    if process_noise is None:
+        process_noise = _fixed_process_noise(
+            manifest, max(observed_horizon - 1, 0), sample_count, latent_dim,
+        )
     state = params.initial_mean[tf.newaxis, :] + initial_noise * params.initial_std[tf.newaxis, :]
     state_score = _initial_state_score(params, initial_noise)
     particle_log_values = tf.zeros([sample_count], dtype=tf.float64)
     particle_scores = tf.zeros([sample_count, parameter_dim], dtype=tf.float64)
-    filtered_means: list[tf.Tensor] = []
+    filtered_means = tf.TensorArray(
+        tf.float64, size=observed_horizon, element_shape=[state_dim],
+    )
 
-    for step in range(observed_horizon):
+    def observe(step, state, state_score, particle_log_values,
+                particle_scores, filtered_means):
         log_value, log_score = _observation_logpdf_and_score(
             observations[step],
             params,
@@ -263,14 +368,33 @@ def _fixed_replay_value_and_score(
         particle_log_values = particle_log_values + log_value
         particle_scores = particle_scores + log_score
         step_weights = tf.nn.softmax(particle_log_values)
-        filtered_means.append(tf.reduce_sum(step_weights[:, tf.newaxis] * state, axis=0))
-        if step + 1 < observed_horizon:
-            state, state_score = _transition_replay_step(
-                params,
-                state,
-                state_score,
-                process_noise[step],
-            )
+        filtered_means = filtered_means.write(
+            step, tf.reduce_sum(step_weights[:, tf.newaxis] * state, axis=0),
+        )
+        return particle_log_values, particle_scores, filtered_means
+
+    def step_body(step, state, state_score, particle_log_values,
+                  particle_scores, filtered_means):
+        particle_log_values, particle_scores, filtered_means = observe(
+            step, state, state_score, particle_log_values, particle_scores, filtered_means,
+        )
+        state, state_score = _transition_replay_step(
+            params, state, state_score, process_noise[step],
+        )
+        return (step + 1, state, state_score, particle_log_values,
+                particle_scores, filtered_means)
+
+    if observed_horizon > 1:
+        _, state, state_score, particle_log_values, particle_scores, filtered_means = tf.while_loop(
+            lambda step, *_: step < observed_horizon - 1, step_body,
+            (tf.constant(0), state, state_score, particle_log_values,
+             particle_scores, filtered_means),
+            maximum_iterations=observed_horizon - 1, parallel_iterations=1,
+        )
+    particle_log_values, particle_scores, filtered_means = observe(
+        observed_horizon - 1, state, state_score, particle_log_values,
+        particle_scores, filtered_means,
+    )
 
     log_likelihood = (
         tf.reduce_logsumexp(particle_log_values)
@@ -293,7 +417,7 @@ def _fixed_replay_value_and_score(
         score=score,
         particle_log_likelihoods=particle_log_values,
         normalized_particle_weights=normalized_weights,
-        filtered_means=tf.stack(filtered_means, axis=0),
+        filtered_means=filtered_means.stack(),
         final_particles=state,
         diagnostics=diagnostics,
     )

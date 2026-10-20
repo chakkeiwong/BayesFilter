@@ -1,0 +1,39 @@
+{
+  "schema": "bayesfilter.hmc_release_resource_observations.v1",
+  "scope": "trusted descriptive observations during the active source-23 pricing queue; no causal attribution or runtime guarantee",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "price_root": "gpu-price-source23-qr-funnel-grant-02",
+  "observations": [
+    {
+      "time_precision": "prelaunch tool observation; exact observation timestamp was not separately captured",
+      "free_mib": 32212,
+      "gpu_utilization_percent": 0,
+      "observed_before_utc": "2026-10-04T10:02:29.954539+00:00"
+    },
+    {
+      "utc": "2026-10-04T10:39:12+00:00",
+      "free_mib": 29351,
+      "gpu_utilization_percent": 100,
+      "owned_worker": {
+        "pid": 2052203,
+        "gpu_memory_mib": 366,
+        "elapsed": "29:32",
+        "cpu_percent": 82.7,
+        "rss_kib": 8189792
+      },
+      "other_gpu_processes": [
+        {
+          "pid": 2053870,
+          "gpu_memory_mib": 2484
+        }
+      ],
+      "cpu_load_average": [
+        55.39,
+        55.47,
+        54.98
+      ],
+      "cpu_pressure_some_average_10_seconds": 38.91
+    }
+  ],
+  "interpretation": "An additional process is present on the initially idle selected GPU during QR replay. Its causal share of elapsed cost is not measured. Neither memory availability alone nor the initial idle observation proves subsequent runtime readiness. Do not interrupt another process or reclassify a timeout as complete delivery."
+}

@@ -1,0 +1,318 @@
+........................................................................ [ 36%]
+........................................................................ [ 72%]
+.............EEEEEEEE.................................                   [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'serial', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[serial] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'serial', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'batched', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[batched] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'batched', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial_dynamic] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial_dynamic]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'serial', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[serial_dynamic] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial_dynamic]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'serial', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched_dynamic] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched_dynamic]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'batched', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+_ ERROR at setup of test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[batched_dynamic] _
+
+request = <SubRequest 'tuned' for <Function test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched_dynamic]>>
+
+    @pytest.fixture(scope="module", params=("serial", "batched", "serial_dynamic", "batched_dynamic"))
+    def tuned(request):
+>       binding = make_binding(config=execution_config(chain_mode=request.param.split("_")[0],
+            reuse_leapfrog_graphs=request.param.endswith("_dynamic")))
+
+tests/test_hmc_candidate_set_execution.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_hmc_candidate_set_execution.py:83: in make_binding
+    return bind_hmc_candidate_set_execution(**(values | overrides))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:774: in bind_hmc_candidate_set_execution
+    return _issue_binding(adapter=adapter, layers=layers, initial_active_state=tf.convert_to_tensor(starts, tf.float64),
+bayesfilter/inference/hmc_candidate_set_execution.py:740: in _issue_binding
+    return HMCCandidateExecutionBinding(_ISSUER, adapter=adapter, spec=spec)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_candidate_set_execution.py:294: in __init__
+    self.config = HMCCandidateExecutionConfig.from_payload(spec["config"])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+cls = <class 'bayesfilter.inference.hmc_candidate_set_execution.HMCCandidateExecutionConfig'>
+payload = {'acceptance_policy': {'allowed_cost_stop_reasons': (), 'block_count': 4, 'chain_count': 4, 'confidence_level': 0.9, ...}, 'chain_mode': 'batched', 'chunk_max_results': 256, 'measurement_num_results': 128, ...}
+
+    @classmethod
+    def from_payload(cls, payload: Mapping[str, Any]) -> "HMCCandidateExecutionConfig":
+        values = dict(payload)
+        policy = values.pop("acceptance_policy")
+        values["acceptance_policy"] = HMCAcceptancePolicy(**{
+>           f.name: policy[f.name] for f in fields(HMCAcceptancePolicy)
+                    ^^^^^^^^^^^^^^
+        })
+E       KeyError: 'temporal_conflict_method'
+
+bayesfilter/inference/hmc_candidate_set_execution.py:171: KeyError
+=========================== short test summary info ============================
+ERROR tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial]
+ERROR tests/test_hmc_candidate_set_execution.py::test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[serial]
+ERROR tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched]
+ERROR tests/test_hmc_candidate_set_execution.py::test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[batched]
+ERROR tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[serial_dynamic]
+ERROR tests/test_hmc_candidate_set_execution.py::test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[serial_dynamic]
+ERROR tests/test_hmc_candidate_set_execution.py::test_real_tune_uses_all_pairs_and_fresh_candidate_specific_evidence[batched_dynamic]
+ERROR tests/test_hmc_candidate_set_execution.py::test_bad_rhat_is_persisted_without_changing_numerical_tuning_decision[batched_dynamic]
+190 passed, 7904 warnings, 8 errors in 86.79s (0:01:26)

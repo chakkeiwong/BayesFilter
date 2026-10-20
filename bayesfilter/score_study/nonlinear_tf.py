@@ -10,6 +10,7 @@ from functools import lru_cache
 import tensorflow as tf
 from .gaussian_tf import parameterized_model, gaussian_log_density_and_tangent
 from .canonical_adapter_tf import gaussian_direction_inputs, make_canonical_kernel
+from .direction_assembly_tf import make_direction_kernel
 
 
 def direction_inputs(theta,direction,initial_noise,transition_curve,observation_curve):
@@ -96,7 +97,7 @@ def make_grid_reference(T,points,radius,c,b,dtype_name="float64",jit_compile=Tru
 
 @lru_cache(maxsize=32)
 def make_ledh_kernel(N,T,controls_tuple,c,b,provider="ledh",provider_control=1.,dtype_name="float64",jit_compile=True,
-                     return_diagnostics=False):
+                     return_diagnostics=False,*,all_directions=False):
     from bayesfilter.highdim.ledh_canonical_score_tf import _value_and_analytical_score_impl
     from .mixture_covariance_tf import mixture_schedule,gaussian_mixture_initial
     from .covariance_adapter_tf import SGQFCovarianceProvider
@@ -124,11 +125,11 @@ def make_ledh_kernel(N,T,controls_tuple,c,b,provider="ledh",provider_control=1.,
             from .control_diagnostics_tf import compact_control_diagnostics
             return value,score[0],compact_control_diagnostics(result[2])
         return value,score[0]
-    return kernel
+    return make_direction_kernel(kernel,jit_compile=jit_compile) if all_directions else kernel
 
 
 @lru_cache(maxsize=24)
-def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True):
+def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True,*,all_directions=False):
     """EKF/UKF Gaussian likelihood approximations with total derivatives.
 
     UKF uses the same alpha=1,beta=2,kappa=0 quadrature as the shared LEDH.
@@ -144,7 +145,12 @@ def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True)
     def kernel(theta,direction,observations):
         model,*_=direction_inputs(theta,direction,tf.zeros([1,1],dtype),c,b)
         A,dA,H,dH,m,dm,P,dP,Q,dQ,R,dR=parameterized_model(theta,1,1)
-        dA,dH,dm,dP,dQ,dR=[tf.tensordot(direction,x,1) for x in (dA,dH,dm,dP,dQ,dR)]
+        dA=tf.tensordot(direction,dA,1)
+        dH=tf.tensordot(direction,dH,1)
+        dm=tf.tensordot(direction,dm,1)
+        dP=tf.tensordot(direction,dP,1)
+        dQ=tf.tensordot(direction,dQ,1)
+        dR=tf.tensordot(direction,dR,1)
         def step(t,m,P,dm,dP,value,score,margin,healthy):
             if method=="ukf":
                 pred=quadrature_predict_with_parameter_tangent(m,P,dm,dP,
@@ -183,7 +189,7 @@ def make_moment_filter(T,c,b,method="ukf",dtype_name="float64",jit_compile=True)
             tf.zeros([],dtype),tf.zeros([],dtype),tf.reduce_min(P),tf.constant(True)),parallel_iterations=1)
         valid=out[8]&tf.math.is_finite(out[5])&tf.math.is_finite(out[6])&(out[7]>0)
         return tf.where(valid,out[5],tf.cast(float("nan"),dtype)),tf.where(valid,out[6],tf.cast(float("nan"),dtype)),out[7]
-    return kernel
+    return make_direction_kernel(kernel,jit_compile=jit_compile) if all_directions else kernel
 
 
 @lru_cache(maxsize=24)

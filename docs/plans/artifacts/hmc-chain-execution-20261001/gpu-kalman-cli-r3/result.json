@@ -1,0 +1,589 @@
+{
+  "schema": "bayesfilter.hmc_chain_benchmark.v1",
+  "status": "completed",
+  "target": {
+    "factory": "bayesfilter.testing.hmc_chain_benchmark_targets:kalman_target",
+    "kwargs": {}
+  },
+  "kernel": {
+    "num_results": 6,
+    "step_size": 0.03,
+    "num_leapfrog_steps": 2,
+    "seed": [
+      20261001,
+      17
+    ],
+    "dtype": "float64",
+    "jit_compile": true,
+    "non_xla_reason": null,
+    "target_scope": "hmc-chain-benchmark-fixture-v1",
+    "target_status_trace_policy": "auto"
+  },
+  "layouts": [
+    {
+      "chains_per_batch": 2,
+      "workers": 1,
+      "cores_per_worker": 2,
+      "device": "GPU",
+      "gpu_devices": [
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+      ],
+      "pin_cpu": true,
+      "tf32": true
+    },
+    {
+      "chains_per_batch": 1,
+      "workers": 2,
+      "cores_per_worker": 1,
+      "device": "GPU",
+      "gpu_devices": [
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+      ],
+      "pin_cpu": true,
+      "tf32": true
+    }
+  ],
+  "chain_count": 2,
+  "initial_state": [
+    [
+      0.2,
+      -1.05
+    ],
+    [
+      0.21000000000000002,
+      -1.04
+    ]
+  ],
+  "repetitions": 1,
+  "warm_calls": 2,
+  "command": [
+    "/home/ubuntu/workspace/BayesFilter/bayesfilter/inference/chain_benchmark.py",
+    "--chains",
+    "2",
+    "--layout",
+    "2:1:2",
+    "--layout",
+    "1:2:1",
+    "--gpu",
+    "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+    "--draws",
+    "6",
+    "--leapfrog-steps",
+    "2",
+    "--step-size",
+    "0.03",
+    "--repetitions",
+    "1",
+    "--warm-calls",
+    "2",
+    "--timeout-seconds",
+    "90",
+    "--output-dir",
+    "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r3"
+  ],
+  "python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+  "git_commit": "88297ad29043746381b961d7c849e7101ca59ae2",
+  "atol": 1e-10,
+  "rtol": 1e-10,
+  "max_energy_error": 100.0,
+  "cells": [
+    {
+      "repetition": 0,
+      "layout": 0,
+      "path": "/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r3/repetition-00-layout-00",
+      "status": "passed",
+      "startup_seconds": 3.7783538280054927,
+      "target_first_seconds": 4.363130272133276,
+      "target_warm_seconds": [
+        0.011456678155809641,
+        0.011264658998697996
+      ],
+      "maximum_value_score_error": 4.440892098500626e-16,
+      "hmc_first_seconds": 6.3611619039438665,
+      "hmc_warm_seconds": [
+        0.02875688811764121,
+        0.02543009095825255
+      ],
+      "hmc_worker_call_seconds": [
+        [
+          6.351225731894374
+        ],
+        [
+          0.023319359868764877
+        ],
+        [
+          0.02021807082928717
+        ]
+      ],
+      "memory": [
+        [
+          {
+            "host_rss_bytes": 1262505984,
+            "host_peak_rss_bytes": 1257844736,
+            "process_cpu_seconds": 13.715793000000001,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 25600
+            }
+          }
+        ],
+        [
+          {
+            "host_rss_bytes": 1262505984,
+            "host_peak_rss_bytes": 1257844736,
+            "process_cpu_seconds": 13.746759,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39424
+            }
+          }
+        ],
+        [
+          {
+            "host_rss_bytes": 1262505984,
+            "host_peak_rss_bytes": 1257844736,
+            "process_cpu_seconds": 13.774432000000001,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39424
+            }
+          }
+        ]
+      ],
+      "worker_provenance": [
+        {
+          "kind": "ready",
+          "pid": 2233668,
+          "worker": 0,
+          "tensorflow": "2.19.1",
+          "tensorflow_probability": "0.25.0",
+          "python": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+          "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+          "python_executable": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+          "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+          "execution_source_sha256": {
+            "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+            "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+            "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+            "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+          },
+          "target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+          "factory_path": "/home/ubuntu/workspace/BayesFilter/bayesfilter/testing/hmc_chain_benchmark_targets.py",
+          "factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+          "cpu_affinity": [
+            0,
+            1
+          ],
+          "intra_op_threads": 2,
+          "inter_op_threads": 1,
+          "cuda_visible_devices": "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "target_status_trace_policy": "none",
+          "gpu_intentionally_hidden": false,
+          "tf32": true,
+          "gpu_memory_policy": {
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4090"
+                },
+                "memory_growth": true
+              }
+            ],
+            "all_physical_devices_memory_growth": true,
+            "full_device_preallocation_disabled": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "configured_before_logical_device_initialization": true,
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "memory": {
+            "host_rss_bytes": 889425920,
+            "host_peak_rss_bytes": 884998144,
+            "process_cpu_seconds": 3.7309479999999997,
+            "gpu_allocator": {
+              "current": 3072,
+              "peak": 3328
+            }
+          }
+        }
+      ],
+      "health": [
+        {
+          "finite": true,
+          "chain_moved": [
+            true,
+            true
+          ],
+          "native_divergence": null,
+          "status": {
+            "target_status_telemetry": {
+              "available": false,
+              "valid": null
+            },
+            "proposed_target_status_telemetry": {
+              "available": false,
+              "valid": null
+            }
+          },
+          "valid": true,
+          "acceptance_rate": [
+            1.0,
+            1.0
+          ],
+          "maximum_absolute_log_accept_ratio": 0.0001570284033318714
+        }
+      ]
+    },
+    {
+      "repetition": 0,
+      "layout": 1,
+      "path": "/home/ubuntu/workspace/BayesFilter/docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r3/repetition-00-layout-01",
+      "status": "passed",
+      "startup_seconds": 4.056666895048693,
+      "target_first_seconds": 4.522760486928746,
+      "target_warm_seconds": [
+        0.005019434029236436,
+        0.004672993207350373
+      ],
+      "maximum_value_score_error": 0.0,
+      "hmc_first_seconds": 6.568087578052655,
+      "hmc_warm_seconds": [
+        0.03852755203843117,
+        0.03743689181283116
+      ],
+      "hmc_worker_call_seconds": [
+        [
+          6.491844261996448,
+          6.558270270936191
+        ],
+        [
+          0.03209135681390762,
+          0.032404728000983596
+        ],
+        [
+          0.030648265965282917,
+          0.03133285301737487
+        ]
+      ],
+      "memory": [
+        [
+          {
+            "host_rss_bytes": 1258831872,
+            "host_peak_rss_bytes": 1253916672,
+            "process_cpu_seconds": 13.588906999999999,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 25344
+            }
+          },
+          {
+            "host_rss_bytes": 1260056576,
+            "host_peak_rss_bytes": 1254096896,
+            "process_cpu_seconds": 13.488161999999999,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 25344
+            }
+          }
+        ],
+        [
+          {
+            "host_rss_bytes": 1258831872,
+            "host_peak_rss_bytes": 1253916672,
+            "process_cpu_seconds": 13.626252,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39168
+            }
+          },
+          {
+            "host_rss_bytes": 1260064768,
+            "host_peak_rss_bytes": 1254096896,
+            "process_cpu_seconds": 13.525751,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39168
+            }
+          }
+        ],
+        [
+          {
+            "host_rss_bytes": 1258831872,
+            "host_peak_rss_bytes": 1253916672,
+            "process_cpu_seconds": 13.661996,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39168
+            }
+          },
+          {
+            "host_rss_bytes": 1260064768,
+            "host_peak_rss_bytes": 1254096896,
+            "process_cpu_seconds": 13.562121000000001,
+            "gpu_allocator": {
+              "current": 18176,
+              "peak": 39168
+            }
+          }
+        ]
+      ],
+      "worker_provenance": [
+        {
+          "kind": "ready",
+          "pid": 2233953,
+          "worker": 0,
+          "tensorflow": "2.19.1",
+          "tensorflow_probability": "0.25.0",
+          "python": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+          "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+          "python_executable": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+          "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+          "execution_source_sha256": {
+            "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+            "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+            "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+            "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+          },
+          "target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+          "factory_path": "/home/ubuntu/workspace/BayesFilter/bayesfilter/testing/hmc_chain_benchmark_targets.py",
+          "factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+          "cpu_affinity": [
+            0
+          ],
+          "intra_op_threads": 1,
+          "inter_op_threads": 1,
+          "cuda_visible_devices": "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "target_status_trace_policy": "none",
+          "gpu_intentionally_hidden": false,
+          "tf32": true,
+          "gpu_memory_policy": {
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4090"
+                },
+                "memory_growth": true
+              }
+            ],
+            "all_physical_devices_memory_growth": true,
+            "full_device_preallocation_disabled": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "configured_before_logical_device_initialization": true,
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "memory": {
+            "host_rss_bytes": 875560960,
+            "host_peak_rss_bytes": 870318080,
+            "process_cpu_seconds": 3.95117,
+            "gpu_allocator": {
+              "current": 3072,
+              "peak": 3328
+            }
+          }
+        },
+        {
+          "kind": "ready",
+          "pid": 2233954,
+          "worker": 1,
+          "tensorflow": "2.19.1",
+          "tensorflow_probability": "0.25.0",
+          "python": "3.11.15 | packaged by conda-forge | (main, Aug 11 2026, 10:26:29) [GCC 14.4.0]",
+          "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
+          "python_executable": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+          "cpu_model": "AMD EPYC 7773X 64-Core Processor",
+          "execution_source_sha256": {
+            "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+            "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+            "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+            "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+          },
+          "target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+          "factory_path": "/home/ubuntu/workspace/BayesFilter/bayesfilter/testing/hmc_chain_benchmark_targets.py",
+          "factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+          "cpu_affinity": [
+            1
+          ],
+          "intra_op_threads": 1,
+          "inter_op_threads": 1,
+          "cuda_visible_devices": "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+          "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+          "jit_compile": true,
+          "target_status_trace_policy": "none",
+          "gpu_intentionally_hidden": false,
+          "tf32": true,
+          "gpu_memory_policy": {
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4090"
+                },
+                "memory_growth": true
+              }
+            ],
+            "all_physical_devices_memory_growth": true,
+            "full_device_preallocation_disabled": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "configured_before_logical_device_initialization": true,
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "memory": {
+            "host_rss_bytes": 875905024,
+            "host_peak_rss_bytes": 870318080,
+            "process_cpu_seconds": 3.9307969999999997,
+            "gpu_allocator": {
+              "current": 3072,
+              "peak": 3328
+            }
+          }
+        }
+      ],
+      "health": [
+        {
+          "finite": true,
+          "chain_moved": [
+            true
+          ],
+          "native_divergence": null,
+          "status": {
+            "target_status_telemetry": {
+              "available": false,
+              "valid": null
+            },
+            "proposed_target_status_telemetry": {
+              "available": false,
+              "valid": null
+            }
+          },
+          "valid": true,
+          "acceptance_rate": [
+            1.0
+          ],
+          "maximum_absolute_log_accept_ratio": 0.0001150464826780162
+        },
+        {
+          "finite": true,
+          "chain_moved": [
+            true
+          ],
+          "native_divergence": null,
+          "status": {
+            "target_status_telemetry": {
+              "available": false,
+              "valid": null
+            },
+            "proposed_target_status_telemetry": {
+              "available": false,
+              "valid": null
+            }
+          },
+          "valid": true,
+          "acceptance_rate": [
+            1.0
+          ],
+          "maximum_absolute_log_accept_ratio": 0.00021781714674196095
+        }
+      ]
+    }
+  ],
+  "nonclaims": [
+    "Fixed-kernel hardware diagnostic, not posterior samples or tuning authority.",
+    "Fastest observed is descriptive; no statistical superiority or universal recommendation.",
+    "Changing chain batch size changes random streams; worker count alone does not.",
+    "First-call time includes tracing, compilation and execution; it is not compiler-only time.",
+    "Host RSS and TF live/peak allocator bytes are distinct from GPU process reservation."
+  ],
+  "reference_target_signature": "0311a45b46fb398986dc5ba84788b7c9ced4c5ccdbb789fe0245ceaa364c5fa3",
+  "reference_factory_sha256": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+  "reference_execution_source_sha256": {
+    "chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+    "chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+    "hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+    "batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c"
+  },
+  "summaries": [
+    {
+      "layout": 0,
+      "configuration": {
+        "chains_per_batch": 2,
+        "workers": 1,
+        "cores_per_worker": 2,
+        "device": "GPU",
+        "gpu_devices": [
+          "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+        ],
+        "pin_cpu": true,
+        "tf32": true
+      },
+      "eligible": true,
+      "hmc_warm_median_seconds": 0.02709348953794688,
+      "process_repetition_medians": [
+        0.02709348953794688
+      ],
+      "hmc_warm_min_seconds": 0.02709348953794688,
+      "hmc_warm_max_seconds": 0.02709348953794688,
+      "transitions_per_second": 442.91083225705995,
+      "target_warm_median_seconds": 0.011360668577253819,
+      "startup_median_seconds": 3.7783538280054927,
+      "hmc_first_median_seconds": 6.3611619039438665,
+      "host_peak_rss_sum_max_bytes": 1257844736,
+      "gpu_allocator_peak_sum_max_bytes": 39424
+    },
+    {
+      "layout": 1,
+      "configuration": {
+        "chains_per_batch": 1,
+        "workers": 2,
+        "cores_per_worker": 1,
+        "device": "GPU",
+        "gpu_devices": [
+          "GPU-b8045e28-4433-ec7a-77a5-db0636748322"
+        ],
+        "pin_cpu": true,
+        "tf32": true
+      },
+      "eligible": true,
+      "hmc_warm_median_seconds": 0.037982221925631166,
+      "process_repetition_medians": [
+        0.037982221925631166
+      ],
+      "hmc_warm_min_seconds": 0.037982221925631166,
+      "hmc_warm_max_seconds": 0.037982221925631166,
+      "transitions_per_second": 315.9372830661641,
+      "target_warm_median_seconds": 0.004846213618293405,
+      "startup_median_seconds": 4.056666895048693,
+      "hmc_first_median_seconds": 6.568087578052655,
+      "host_peak_rss_sum_max_bytes": 2508013568,
+      "gpu_allocator_peak_sum_max_bytes": 78336
+    }
+  ],
+  "elapsed_seconds": 40.17767785908654,
+  "fastest_observed_layout": 0
+}

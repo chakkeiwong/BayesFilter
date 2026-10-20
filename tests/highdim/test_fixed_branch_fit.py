@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import numpy as np
 import tensorflow as tf
 
 import bayesfilter.highdim as highdim
@@ -1002,7 +1003,7 @@ def test_fixed_fit_records_scaled_augmented_diagnostics_for_imbalanced_design():
     record = result.core_update_statuses[0]
     assert result.status is highdim.HighDimStatus.OK
     assert record["solver_mode"] == "objective_preserving_column_scaled_augmented_ridge"
-    assert record["solver_backend"] == "tensorflow.linalg.lstsq(fast=False)"
+    assert record["solver_backend"] == "tensorflow_native_complete_orthogonal_decomposition"
     assert record["condition_number_semantics"] == "scaled_augmented_solve_condition"
     assert record["stabilization_policy_id"] == fitting._STABILIZATION_POLICY_ID
     assert record["objective_preserving_column_scaling"] is True
@@ -1062,7 +1063,7 @@ def test_fixed_fit_manifest_records_stable_solver_policy():
 
     payload = result.branch_identity.manifest.payload
     record = payload["per_core_update_statuses"][0]
-    assert payload["solver_backend"] == "tensorflow.linalg.lstsq(fast=False)"
+    assert payload["solver_backend"] == "tensorflow_native_complete_orthogonal_decomposition"
     assert payload["stabilization_policy_id"] == fitting._STABILIZATION_POLICY_ID
     assert payload["objective_preserving_column_scaling"] is True
     assert payload["column_scale_floor"] == fitting._DEFAULT_COLUMN_SCALE_FLOOR
@@ -1080,6 +1081,40 @@ def test_fixed_fit_manifest_records_stable_solver_policy():
     assert record["scale_floor_rule"] == fitting._SCALE_FLOOR_RULE
     assert record["scaled_augmented_condition_number"] == record["condition_number"]
     assert "stable solve is not a Phase 6 diagnostic pass" in record["nonclaims"]
+
+
+@pytest.mark.parametrize("jit", [False, True])
+def test_public_native_fit_matches_original_als_and_reuses_signature(jit):
+    from bayesfilter.highdim.fixed_tt_native_fit_tf import _FIT_CACHE
+
+    product = _product_basis((1, 2))
+    points = _grid2()
+    targets = 1.0 + .2*points[:, 0] + .3*points[:, 1]**2
+    samples = highdim.FixedTTFitSampleBatch(points, targets, tf.ones_like(targets))
+    config = _config((1, 2, 1), ridge=1e-5, max_sweeps=2)
+    cores = (
+        highdim.TTCore(tf.constant([[[1.0, .3], [.2, .4]]], tf.float64)),
+        highdim.TTCore(tf.constant([[[.9], [.4], [.2]], [[.6], [.1], [.5]]], tf.float64)),
+    )
+    fitter = highdim.FixedTTFitter()
+    arguments = dict(product_basis=product, samples=samples, config=config,
+        initial_cores=cores, branch_seed="fresh-native-parity-20260917", measure_convention=_convention())
+    expected = fitter.fit_reference(**arguments)
+    actual = fitter.fit(**arguments, jit_compile=jit)
+    np.testing.assert_allclose(actual.fitted_tt.evaluate(points), expected.fitted_tt.evaluate(points), rtol=1e-10, atol=1e-10)
+    assert actual.status == expected.status
+    assert [row["status"] for row in actual.core_update_statuses] == [row["status"] for row in expected.core_update_statuses]
+    _, program, _ = next(reversed(_FIT_CACHE.values()))
+    assert program.experimental_get_tracing_count() == 1
+    repeated = fitter.fit(**arguments, jit_compile=jit)
+    assert actual.branch_hash == repeated.branch_hash
+    assert next(reversed(_FIT_CACHE.values()))[1] is program
+    assert program.experimental_get_tracing_count() == 1
+    replacement = highdim.FixedTTFitSampleBatch(tf.identity(points), targets+.1, tf.identity(samples.weights))
+    changed = fitter.fit(**{**arguments, "samples": replacement}, jit_compile=jit)
+    assert next(reversed(_FIT_CACHE.values()))[1] is program
+    assert program.experimental_get_tracing_count() == 1
+    assert not np.allclose(changed.fitted_tt.evaluate(points), actual.fitted_tt.evaluate(points))
 
 
 def test_fixed_fit_branch_hash_changes_for_stabilization_policy_fields():

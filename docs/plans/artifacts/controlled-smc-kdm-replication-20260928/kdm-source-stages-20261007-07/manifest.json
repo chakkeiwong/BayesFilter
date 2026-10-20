@@ -1,0 +1,73 @@
+{
+  "schema": "kdm_source_stages_manifest_v1",
+  "resource": "gpu",
+  "mode": "epoch",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-07/diagnostic",
+    "--mode",
+    "epoch",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+    "--verification",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-05/diagnostic/result.json"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_source_stages.py",
+    "--mode",
+    "epoch",
+    "--reference",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+    "--verification",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-05/diagnostic/result.json",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-07"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-source-stages-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-source-stages-result-20261007.md",
+  "timeout_seconds": 3341,
+  "status": "COMPLETED",
+  "seeds": [
+    20261007,
+    20261008,
+    811,
+    731
+  ],
+  "data": "source saved train5000/validation1000",
+  "cpu_gpu_status": "trusted GPU/XLA",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "LD_LIBRARY_PATH": null,
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "hashes": {
+    "scripts/run_kdm_source_stages.py": "ff11d4aee130702055b45d613fe0b05e0ae9d25059e2eff49f0ff88528333cd8",
+    "docs/benchmarks/diagnose_kdm_source_stages_tf.py": "e85f74255a0ad9ba109418d0d3b099120dcd0094d940c757b4fa29d14b149a6f",
+    "docs/plans/controlled-smc-kdm-source-stages-20261007.md": "fa5f7681bccb0de199c1c1102d25b8f37ad90c9ca62c1b4b887f69533e53ece5",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "159cb6ed3bb1610410d1f185a9d28225d592d0d94efaf644db14cfc5147644e3",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/reference_kdm_neural.py": "907fcf70d98c42ca393f301f5b0ef327ef8a90741af90ddeb93598f665af338d",
+    "docs/benchmarks/reference_kdm_stage_transfer.py": "b476ba6cd587e160a667469ff5c41e59dfc07fd644d799947044a0c351246bbc"
+  },
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+  "reference_sha256": "1609a9bd199b077329de9348a3a2d82b9edeb3bae1c30c065687f0dda183e38e",
+  "returncode": 0,
+  "wall_seconds": 215.34000945696607,
+  "result_sha256": "aed21cf10a8001a91331f7cf73dcc9b67861238049ac0063cc65f3f30ffdda4d"
+}

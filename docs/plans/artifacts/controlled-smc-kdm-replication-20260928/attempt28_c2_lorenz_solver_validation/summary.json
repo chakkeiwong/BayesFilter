@@ -1,0 +1,62 @@
+{
+  "status": "FAIL",
+  "error": "ValueError(\"{'name': 'independent_svd_b', 'passed': False, 'max_absolute_error': 2.946861059172079e-06, 'atol': 1e-07, 'rtol': 1e-09}\")",
+  "checks": [
+    {
+      "name": "fit_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "independent_svd_A",
+      "passed": true,
+      "max_absolute_error": 1.3758017303189263e-07,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_svd_b",
+      "passed": false,
+      "max_absolute_error": 2.946861059172079e-06,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    }
+  ],
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "wall_seconds": 6.779832903004717
+}

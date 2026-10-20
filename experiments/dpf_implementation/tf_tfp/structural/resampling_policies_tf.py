@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.ops.stateless_random_tf import stateless_categorical_cpu_stream
+
 from experiments.dpf_implementation.tf_tfp.resampling.sinkhorn_tf import sinkhorn_resample_tf
 from experiments.dpf_implementation.tf_tfp.structural.contracts_tf import DTYPE, StructuralSSMModelTF
 from experiments.dpf_implementation.tf_tfp.structural.particle_state_tf import (
@@ -54,12 +56,9 @@ def apply_structural_resampling_policy_tf(
             },
         )
     if policy_id == CATEGORICAL_ANCESTOR:
-        indices = tf.random.stateless_categorical(
-            tf.reshape(tf.math.log(tf.maximum(weights, tf.constant(1e-300, DTYPE))), [1, -1]),
-            count,
-            seed=_seed_pair(seed, 8000 + time_index),
-            dtype=tf.int32,
-        )[0]
+        indices = stateless_categorical_cpu_stream(
+            tf.math.log(tf.maximum(weights, tf.constant(1e-300, DTYPE))),
+            count, _seed_pair(seed, 8000 + time_index))
         previous_z = tf.gather(state.previous_z, indices)
         previous_s = tf.gather(state.previous_s, indices)
         current_z = tf.gather(state.current_z, indices)
@@ -74,8 +73,8 @@ def apply_structural_resampling_policy_tf(
                 "resampled": True,
                 "context_semantics": "categorical_ancestor_rows_gathered_without_relaxing_deterministic_block",
                 "max_completion_residual_after_policy": _float(tf.reduce_max(tf.abs(residual))),
-                "ancestor_index_min": int(tf.reduce_min(indices).numpy()),
-                "ancestor_index_max": int(tf.reduce_max(indices).numpy()),
+                "ancestor_index_min": _host_scalar(tf.reduce_min(indices)),
+                "ancestor_index_max": _host_scalar(tf.reduce_max(indices)),
             },
         )
     if policy_id == SINKHORN_CURRENT_Z:
@@ -142,6 +141,7 @@ def _sinkhorn_diagnostics(diagnostics: dict) -> dict:
         "min_coupling": diagnostics["min_coupling"],
         "finite_coupling": diagnostics["finite_coupling"],
         "finite_particles": diagnostics["finite_particles"],
+        "valid": diagnostics["valid"],
     }
 
 
@@ -150,8 +150,12 @@ def _uniform_log_weights(count: int) -> tf.Tensor:
 
 
 def _seed_pair(seed: int, salt: int) -> tf.Tensor:
-    return tf.constant([int(seed) % 2147483647, int(salt) % 2147483647], dtype=tf.int32)
+    return tf.stack((tf.cast(seed % 2147483647, tf.int32), tf.cast(salt % 2147483647, tf.int32)))
 
 
 def _float(value: tf.Tensor) -> float:
-    return float(tf.cast(value, DTYPE).numpy())
+    return _host_scalar(tf.cast(value, DTYPE))
+
+
+def _host_scalar(value):
+    return value.numpy().tolist() if tf.executing_eagerly() else value

@@ -1,0 +1,35 @@
+[
+  {
+    "command": [
+      "taskset",
+      "-c",
+      "24-27",
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--disable-warnings",
+      "tests/test_hmc_tuning_documentation_contract.py",
+      "--junitxml=/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/docs-01/tests.xml"
+    ],
+    "cwd": "/home/ubuntu/python/BayesFilter",
+    "exit_code": 0,
+    "wall_seconds": 4.376218429999426,
+    "resource": "cpu_reference",
+    "gpu_intentionally_hidden": true
+  },
+  {
+    "command": [
+      "latexmk",
+      "-pdf",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "main.tex"
+    ],
+    "cwd": "/home/ubuntu/python/BayesFilter/docs",
+    "exit_code": 0,
+    "wall_seconds": 14.347911195131019,
+    "resource": "cpu_reference",
+    "gpu_intentionally_hidden": true
+  }
+]

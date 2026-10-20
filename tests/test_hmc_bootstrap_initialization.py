@@ -166,7 +166,7 @@ def test_initializer_precedes_fresh_bootstrap_with_exact_pair(monkeypatch):
 
 @pytest.mark.parametrize("consumer", ["pricing", "classical_tuning"])
 def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
-    from bayesfilter.inference import hmc_kernel_tuning, q20_production_hmc, q20_master_stages
+    from bayesfilter.inference import hmc_preparation, q20_production_hmc, q20_master_stages
     from tests.test_q20_production_repair import tiny_protocol, four_dimensional_bridge
     class ReachedPreparation(Exception):
         pass
@@ -177,7 +177,7 @@ def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
         assert callable(kwargs["progress_callback"])
         assert kwargs["initial_position"].shape == (4,)
         raise ReachedPreparation
-    monkeypatch.setattr(hmc_kernel_tuning, "prepare_operational_windowed_mass_handoff", prepare)
+    monkeypatch.setattr(hmc_preparation, "prepare_operational_windowed_mass_handoff", prepare)
     with pytest.raises(ReachedPreparation):
         if consumer == "pricing":
             q20_master_stages.price_preparation(tiny_protocol(), four_dimensional_bridge(),

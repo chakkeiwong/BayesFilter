@@ -20,7 +20,14 @@ StreamingBlockProgram = Callable[
 
 
 def _dtype_epsilon(dtype: tf.dtypes.DType) -> tf.Tensor:
-    return tf.cast(tf.experimental.numpy.finfo(dtype.as_numpy_dtype).eps, dtype)
+    dtype = tf.as_dtype(dtype)
+    if dtype == tf.float64:
+        return tf.constant(2.0**-52, dtype)
+    if dtype == tf.float32:
+        return tf.constant(2.0**-23, dtype)
+    if dtype == tf.float16:
+        return tf.constant(2.0**-10, dtype)
+    raise TypeError(f"Unsupported Contract E--TP floating dtype: {dtype.name}")
 
 
 def _as_indices(active_indices: tf.Tensor | tuple[int, ...]) -> tf.Tensor:

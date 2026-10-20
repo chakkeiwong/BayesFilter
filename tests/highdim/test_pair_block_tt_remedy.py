@@ -1,6 +1,6 @@
 """Focused identities for the paired current/previous TT extension."""
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import tensorflow as tf
 

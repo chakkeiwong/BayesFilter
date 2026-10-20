@@ -24,3 +24,23 @@ env CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true \
 The successful run took 5.42 seconds. GPU devices were intentionally hidden.
 Logs: `/tmp/bayesfilter-sir-integration-tests-20261020.log` and
 `/tmp/bayesfilter-sir-integration-tests-20261020-r2.log`.
+
+## Remote integration
+
+Merged remote main `023247142` into campaign commit `0318dc6f2`. Conflicts
+retained the modern transition profiles, v8 acceptance rule, duration-preserving
+repairs, supervised timing and progress reporting, and NUTS exclusion. Remote
+chain-execution exports and its independent numerical/manuscript changes remain.
+The bibliography preserves remote corrections and all modern-HMC citation keys.
+
+Post-merge checks expanded the seven files above with acceptance protocol,
+statistics and independent trials; duration-preserving repair; modern contracts;
+route and documentation contracts; and timeout-policy tests. All **356 passed**
+in 80.64 seconds. The 2,292 warnings are dependency deprecations. GPU devices
+were intentionally hidden, using the same environment and native-op directory.
+The log is `/tmp/bayesfilter-merged-regressions-20261020.log`.
+
+The partial clone retrieved missing historical objects during the merge and
+reported stale reflog/automatic-GC warnings. No history was reset, no raw data
+was pruned by this task, and no force push is used. The shared dirty checkout
+is preserved; integration occurs in its isolated worktree.

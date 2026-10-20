@@ -516,14 +516,16 @@ def structural_residual_jacobian_tf(
 ) -> dict[str, tf.Tensor]:
     """Check completion value and total tangent for a parameterized fixture."""
 
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         candidates = parameterized_transition(parents, innovations, theta)
         residual = parameterized_residual(parents, innovations, candidates, theta)
+    jacobian = tape.jacobian(residual, theta, experimental_use_pfor=False)
+    del tape
     return {
         "candidates": candidates,
         "residual": residual,
-        "residual_jacobian": tape.jacobian(residual, theta),
+        "residual_jacobian": jacobian,
     }
 
 

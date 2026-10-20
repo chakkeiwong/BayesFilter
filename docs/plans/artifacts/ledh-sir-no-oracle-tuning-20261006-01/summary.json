@@ -1,0 +1,2738 @@
+{
+  "10": {
+    "selection": {
+      "selected": "baseline_marginal",
+      "decisions": {
+        "baseline_marginal": {
+          "passes": true,
+          "variance_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "reset_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "objective": 4.0
+        },
+        "flow4": {
+          "passes": false,
+          "variance_ratios": [
+            0.8074915169221153,
+            0.9945916072193292,
+            0.5898672977215855,
+            1.2547017251985038
+          ],
+          "reset_ratios": [
+            1.0001354349155165,
+            0.49987836012909354,
+            0.4161839747467634,
+            0.8428840871347313
+          ],
+          "objective": 3.6466521470615336
+        },
+        "epsilon51": {
+          "passes": false,
+          "variance_ratios": [
+            1.0212850781842624,
+            0.25160281276138946,
+            0.230133839222178,
+            0.2390748857413772
+          ],
+          "reset_ratios": [
+            0.9997055266177126,
+            0.9277367914141692,
+            0.9663879901745082,
+            1.1434856324733111
+          ],
+          "objective": 1.7420966159092068
+        },
+        "weak_correction": {
+          "passes": false,
+          "variance_ratios": [
+            0.9773037466240329,
+            2.2272134172362628,
+            0.8568724793414454,
+            0.08932245983843898
+          ],
+          "reset_ratios": [
+            1.07940303982415,
+            1.0194267433652198,
+            0.6215127573062402,
+            1.665455500084252
+          ],
+          "objective": 4.1507121030401795
+        },
+        "epsilon204": {
+          "passes": false,
+          "variance_ratios": [
+            0.9758507553167401,
+            2.088829824021647,
+            2.3111166390738758,
+            2.840259628971839
+          ],
+          "reset_ratios": [
+            0.9999623413787592,
+            1.0041750786095633,
+            0.9941438000904722,
+            0.9783341886965449
+          ],
+          "objective": 8.216056847384102
+        },
+        "flow16_weak": {
+          "passes": false,
+          "variance_ratios": [
+            1.0067178751926746,
+            3.402928794104265,
+            2.0433957187812215,
+            4.89165340228009
+          ],
+          "reset_ratios": [
+            1.0743315649960805,
+            1.7808816314437301,
+            1.1404454660114602,
+            3.435290076438447
+          ],
+          "objective": 11.344695790358251
+        }
+      },
+      "calibration_output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/calibration-T10-01",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "moment_safety": true,
+        "coordinate_cap_identity_radius": 8.0,
+        "importance_weight_policy": "marginal_mixture"
+      },
+      "scope": {
+        "model": "sir_d18",
+        "horizon": 10,
+        "particles": 1008,
+        "dtype": "float64",
+        "jit_compile": true,
+        "device": "gpu",
+        "route": "iid_dual_cap",
+        "reset_design": "normal_quantiles"
+      },
+      "diagnostic_only": true
+    },
+    "validation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 4,
+          "valid_n": 4,
+          "mean": [
+            -512.5766446729554,
+            4581.747018457019,
+            -2430.7425595434215,
+            -42.026902461463166
+          ],
+          "variance": [
+            1844.982455199786,
+            6602284738.942959,
+            987730983.3935974,
+            290608257.8077109
+          ],
+          "reset_rmse": [
+            0.042784575577464734,
+            12.962303855361803,
+            4.97195811426987,
+            2.9263933492049556
+          ]
+        }
+      },
+      "finite_differences": [],
+      "wall_seconds": 76.19799729902297,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 4,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/validation-T10-01"
+    },
+    "confirmation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 8,
+          "valid_n": 8,
+          "mean": [
+            -482.5370140222745,
+            -499.8243121380401,
+            144.92756240041774,
+            694.4331135069693
+          ],
+          "variance": [
+            1095.0804713837367,
+            34769903.41675649,
+            6670750.50496107,
+            3919347.2834449476
+          ],
+          "reset_rmse": [
+            0.03504025710243906,
+            11.184813810842584,
+            4.299152781513374,
+            3.5772223130493312
+          ]
+        },
+        "ancestor_guarded": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -585.294462538227,
+            -1568.322721402376,
+            799.0508590682589,
+            329.58716294601487
+          ],
+          "variance": [
+            3628.2222742383424,
+            982330.2718076543,
+            247501.47889390826,
+            15891.807148353417
+          ],
+          "reset_rmse": [
+            0.0353251388886522,
+            3.9344240711513105,
+            1.661128102079292,
+            0.5238043326666095
+          ]
+        },
+        "covariance_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -487.7693217069568,
+            -5688.975524794456,
+            2214.7886614712106,
+            1705.1497056784347
+          ],
+          "variance": [
+            23.32155075260528,
+            15300645.743462801,
+            2581896.3125298824,
+            3938189.553513042
+          ],
+          "reset_rmse": [
+            0.037342878768112285,
+            4.533250403120039,
+            1.873440399134347,
+            2.004142010413653
+          ]
+        },
+        "diagonal_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -487.53806044010355,
+            44971.76058845349,
+            -16594.219885011124,
+            -12049.814318825856
+          ],
+          "variance": [
+            205.62730147654827,
+            5464023616.489823,
+            786292116.6439577,
+            30246642.36203928
+          ],
+          "reset_rmse": [
+            0.03528392555280584,
+            13.681865054713654,
+            5.497584335953471,
+            6.857042921765623
+          ]
+        }
+      },
+      "finite_differences": [
+        {
+          "candidate": "baseline_marginal",
+          "horizon": 10,
+          "value": -484.67042888619704,
+          "records": [
+            {
+              "coordinate": 0,
+              "analytical": -10739.75129066921,
+              "fd": [
+                -7196.842563670884,
+                -4837.4432010655255
+              ],
+              "relative_errors": [
+                0.3298566954134902,
+                0.5495246961663831
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 1,
+              "analytical": 4774.539565214568,
+              "fd": [
+                1882.1619752981178,
+                5232.673514194062
+              ],
+              "relative_errors": [
+                0.6056650877703479,
+                0.0959334422264198
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 2,
+              "analytical": -2097.1232413471675,
+              "fd": [
+                -2526.4135778209607,
+                -2096.871004484342
+              ],
+              "relative_errors": [
+                0.2046068257640354,
+                0.00012022023199345285
+              ],
+              "passes": true
+            }
+          ],
+          "valid": false
+        }
+      ],
+      "wall_seconds": 563.4037709420081,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 8,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T10-01",
+      "mean_mcse": [
+        11.699788840956366,
+        2084.7632784310454,
+        913.1504876635252,
+        699.9417193099854
+      ]
+    },
+    "heuristic_screen": {
+      "comparisons": {
+        "ancestor_guarded": {
+          "passes": false,
+          "variance_ratios": [
+            0.021987205207205377,
+            164.56341276812978,
+            134.83358175401455,
+            9.579800712197349
+          ],
+          "reset_ratios": [
+            0.7413408464191517,
+            1.16679786057676,
+            1.140253774289116,
+            10.122854703392003
+          ],
+          "objective": 308.9987824395489
+        },
+        "covariance_only": {
+          "passes": false,
+          "variance_ratios": [
+            3.4206330671265555,
+            10.565281015226399,
+            12.925194062492023,
+            0.03865744484088983
+          ],
+          "reset_ratios": [
+            0.7012841330794738,
+            1.0126679932927356,
+            1.0110316767209842,
+            2.6457182799620513
+          ],
+          "objective": 26.949765589685867
+        },
+        "diagonal_only": {
+          "passes": true,
+          "variance_ratios": [
+            0.38795659481107414,
+            0.029585454481977937,
+            0.042441619574054935,
+            0.005033297369527752
+          ],
+          "reset_ratios": [
+            0.7422067684729315,
+            0.33553010283780593,
+            0.3445345213872239,
+            0.7732772294250102
+          ],
+          "objective": 0.46501696623663474
+        }
+      },
+      "verdict": "promotion_veto",
+      "role": "falsification only; two seeds do not establish a ranking"
+    },
+    "heuristic_paired_intervals": {
+      "ancestor_guarded": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": -94.3083995713919,
+            "mcse": 36.27674947697912,
+            "t_interval95": [
+              -555.2482151595314,
+              366.6314160167476
+            ]
+          },
+          {
+            "mean_difference": 180.99971425351714,
+            "mcse": 8289.597109225622,
+            "t_interval95": [
+              -105148.32052297464,
+              105510.31995148167
+            ]
+          },
+          {
+            "mean_difference": 109.33141771969076,
+            "mcse": 3733.0378908766766,
+            "t_interval95": [
+              -47323.413296527,
+              47542.07613196637
+            ]
+          },
+          {
+            "mean_difference": 2150.8115592087033,
+            "mcse": 365.0386430098543,
+            "t_interval95": [
+              -2487.444271796323,
+              6789.06739021373
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            45.48099636020554,
+            45.48099636020554
+          ],
+          [
+            0.006076684866817889,
+            0.006076684866817889
+          ],
+          [
+            0.007416549994380209,
+            0.007416549994380209
+          ],
+          [
+            0.10438630510619745,
+            0.10438630510619745
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "covariance_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.2167412598782334,
+            "mcse": 9.730421830455327,
+            "t_interval95": [
+              -120.41999325436241,
+              126.85347577411888
+            ]
+          },
+          {
+            "mean_difference": -3939.653089138563,
+            "mcse": 11756.350558845766,
+            "t_interval95": [
+              -153318.25334169745,
+              145438.94716342032
+            ]
+          },
+          {
+            "mean_difference": 1525.0692201226423,
+            "mcse": 5221.019118877411,
+            "t_interval95": [
+              -64814.27001325311,
+              67864.4084534984
+            ]
+          },
+          {
+            "mean_difference": 3526.3741019411227,
+            "mcse": 1679.1432203650363,
+            "t_interval95": [
+              -17809.163880377208,
+              24861.91208425945
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            0.29234354588053874,
+            0.29234354588053874
+          ],
+          [
+            0.0946496357795715,
+            0.0946496357795715
+          ],
+          [
+            0.07736827742508931,
+            0.07736827742508931
+          ],
+          [
+            25.868238423824955,
+            25.868238423824955
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "diagonal_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.4480025267314716,
+            "mcse": 3.824072559017537,
+            "t_interval95": [
+              -45.141447343019955,
+              52.0374523964829
+            ]
+          },
+          {
+            "mean_difference": 46721.083024109386,
+            "mcse": 61259.07919386281,
+            "t_interval95": [
+              -731649.3353243463,
+              825091.501372565
+            ]
+          },
+          {
+            "mean_difference": -17283.939326359694,
+            "mcse": 23912.731217119843,
+            "t_interval95": [
+              -321124.00428098394,
+              286556.1256282645
+            ]
+          },
+          {
+            "mean_difference": -10228.589922563167,
+            "mcse": 3612.9726083091186,
+            "t_interval95": [
+              -56135.760543123535,
+              35678.580697997204
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            2.577607942164192,
+            2.577607942164192
+          ],
+          [
+            33.80039338618756,
+            33.80039338618756
+          ],
+          [
+            23.561777567303576,
+            23.561777567303576
+          ],
+          [
+            198.6769162605278,
+            198.6769162605278
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      }
+    }
+  },
+  "20": {
+    "selection": {
+      "selected": "baseline_marginal",
+      "decisions": {
+        "baseline_marginal": {
+          "passes": true,
+          "variance_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "reset_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "objective": 4.0
+        },
+        "flow4": {
+          "passes": false,
+          "variance_ratios": [
+            0.8145319918203248,
+            1.0282015206635553,
+            0.608188962140713,
+            1.2917526532045125
+          ],
+          "reset_ratios": [
+            1.0001234539178827,
+            0.4993041303037892,
+            0.4174676004928478,
+            0.8451004141511061
+          ],
+          "objective": 3.7426751278291057
+        },
+        "epsilon51": {
+          "passes": false,
+          "variance_ratios": [
+            1.0214321004096696,
+            0.24638493828118216,
+            0.23050931278573042,
+            0.23589936895825356
+          ],
+          "reset_ratios": [
+            0.999714357532617,
+            0.9269515355481271,
+            0.9664680753975541,
+            1.1423192059312737
+          ],
+          "objective": 1.734225720434836
+        },
+        "weak_correction": {
+          "passes": false,
+          "variance_ratios": [
+            0.9720392265035358,
+            2.2607866539320436,
+            0.8515827925473638,
+            0.08817376512958913
+          ],
+          "reset_ratios": [
+            1.0800064419431095,
+            1.0211743034505074,
+            0.6234921551393798,
+            1.6822109836331995
+          ],
+          "objective": 4.172582438112533
+        },
+        "epsilon204": {
+          "passes": false,
+          "variance_ratios": [
+            0.9759386798203302,
+            2.1015185346525835,
+            2.3104293462638203,
+            2.8516968713131603
+          ],
+          "reset_ratios": [
+            0.9999541744731028,
+            1.0053240744411935,
+            0.9949642276778632,
+            0.9798056675233608
+          ],
+          "objective": 8.239583432049894
+        },
+        "flow16_weak": {
+          "passes": false,
+          "variance_ratios": [
+            0.9967666400529672,
+            3.458507130987257,
+            2.1035369187214563,
+            5.216332035857101
+          ],
+          "reset_ratios": [
+            1.0756416503890356,
+            1.78614677398208,
+            1.1447872035837086,
+            3.4489676495616717
+          ],
+          "objective": 11.775142725618782
+        }
+      },
+      "calibration_output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/calibration-T20-01",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "moment_safety": true,
+        "coordinate_cap_identity_radius": 8.0,
+        "importance_weight_policy": "marginal_mixture"
+      },
+      "scope": {
+        "model": "sir_d18",
+        "horizon": 20,
+        "particles": 1008,
+        "dtype": "float64",
+        "jit_compile": true,
+        "device": "gpu",
+        "route": "iid_dual_cap",
+        "reset_design": "normal_quantiles"
+      },
+      "diagnostic_only": true
+    },
+    "validation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 4,
+          "valid_n": 4,
+          "mean": [
+            -848.9984003215371,
+            2308.988083374486,
+            -1393.2488972556012,
+            550.0491508632334
+          ],
+          "variance": [
+            1823.563489117026,
+            5918073387.849872,
+            884114007.0188917,
+            254342054.30338532
+          ],
+          "reset_rmse": [
+            0.029504814215750647,
+            9.65012190430185,
+            3.6946236582884993,
+            2.1889553474557486
+          ]
+        }
+      },
+      "finite_differences": [],
+      "wall_seconds": 101.53856566012837,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 4,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/validation-T20-01"
+    },
+    "confirmation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 8,
+          "valid_n": 8,
+          "mean": [
+            -825.8250808969607,
+            -619.6435709877366,
+            165.85883672342237,
+            973.7001085991575
+          ],
+          "variance": [
+            1096.3150488669062,
+            32251387.58951329,
+            6326520.802913714,
+            4656781.532257445
+          ],
+          "reset_rmse": [
+            0.024143401674693934,
+            7.77201211895967,
+            2.990734815729092,
+            2.475348242782335
+          ]
+        },
+        "ancestor_guarded": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -928.3138675677935,
+            -1600.299156288894,
+            816.6686420848483,
+            343.7752220720065
+          ],
+          "variance": [
+            3701.4735180155762,
+            920821.3798711514,
+            202639.34505219283,
+            14935.013999493396
+          ],
+          "reset_rmse": [
+            0.0243231661701232,
+            2.7160359740932427,
+            1.16708226806311,
+            0.36059584196228905
+          ]
+        },
+        "covariance_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -831.1185725967348,
+            -5665.2361439001415,
+            2244.688900130065,
+            1677.0916690600861
+          ],
+          "variance": [
+            38.80968002936243,
+            20974515.01289894,
+            3539508.7714652363,
+            3255450.63297758
+          ],
+          "reset_rmse": [
+            0.025735660504431684,
+            3.1304425547880257,
+            1.3048751448441718,
+            1.3918464652212856
+          ]
+        },
+        "diagonal_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -831.3165919143962,
+            43892.794840410206,
+            -16174.11248344357,
+            -11780.512420780282
+          ],
+          "variance": [
+            192.7129972256881,
+            5206260293.578761,
+            752323648.4853365,
+            26908979.572919946
+          ],
+          "reset_rmse": [
+            0.02434442481230492,
+            9.474442693683603,
+            3.806258874175297,
+            4.753616279929783
+          ]
+        }
+      },
+      "finite_differences": [
+        {
+          "candidate": "baseline_marginal",
+          "horizon": 20,
+          "value": -828.7920587932878,
+          "records": [
+            {
+              "coordinate": 0,
+              "analytical": -10426.737176220891,
+              "fd": [
+                -7086.927718960396,
+                -5084.630030124799
+              ],
+              "relative_errors": [
+                0.320281322862308,
+                0.512297831813222
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 1,
+              "analytical": 4627.845893830786,
+              "fd": [
+                2015.3726793512305,
+                4973.054979111566
+              ],
+              "relative_errors": [
+                0.564389758138502,
+                0.07457778746552501
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 2,
+              "analytical": -1917.2379447889173,
+              "fd": [
+                -2275.843539878224,
+                -1916.9289076467066
+              ],
+              "relative_errors": [
+                0.1869453140907228,
+                0.00016110469665671934
+              ],
+              "passes": true
+            }
+          ],
+          "valid": false
+        }
+      ],
+      "wall_seconds": 703.4022598399315,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 8,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T20-01",
+      "mean_mcse": [
+        11.706382067417895,
+        2007.8404938363908,
+        889.2778532968277,
+        762.9532695599257
+      ]
+    },
+    "heuristic_screen": {
+      "comparisons": {
+        "ancestor_guarded": {
+          "passes": false,
+          "variance_ratios": [
+            0.01687135955786802,
+            174.87947474552976,
+            162.73983119271236,
+            3.6675787939413884
+          ],
+          "reset_ratios": [
+            0.7432176411644608,
+            1.165694969775203,
+            1.1188811707773072,
+            10.123113258431154
+          ],
+          "objective": 341.30375609174143
+        },
+        "covariance_only": {
+          "passes": false,
+          "variance_ratios": [
+            1.6091060418204994,
+            7.677543873948395,
+            9.316968804443475,
+            0.016825732227940367
+          ],
+          "reset_ratios": [
+            0.702426354415782,
+            1.011380792752919,
+            1.0007289813462035,
+            2.6226689796013054
+          ],
+          "objective": 18.620444452440307
+        },
+        "diagonal_only": {
+          "passes": true,
+          "variance_ratios": [
+            0.3240512654329845,
+            0.030930600885425125,
+            0.043834183430481934,
+            0.002035578513236649
+          ],
+          "reset_ratios": [
+            0.7425686302299871,
+            0.3341694678083528,
+            0.3430734528709168,
+            0.7679106460729122
+          ],
+          "objective": 0.4008516282621283
+        }
+      },
+      "verdict": "promotion_veto",
+      "role": "falsification only; two seeds do not establish a ranking"
+    },
+    "heuristic_paired_intervals": {
+      "ancestor_guarded": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": -93.9339249793482,
+            "mcse": 37.43230633700938,
+            "t_interval95": [
+              -569.5564829201885,
+              381.6886329614921
+            ]
+          },
+          {
+            "mean_difference": -146.65395676996104,
+            "mcse": 8294.556281344283,
+            "t_interval95": [
+              -105538.98645156811,
+              105245.67853802818
+            ]
+          },
+          {
+            "mean_difference": 249.45649231546417,
+            "mcse": 3742.326231540789,
+            "t_interval95": [
+              -47301.307782519274,
+              47800.2207671502
+            ]
+          },
+          {
+            "mean_difference": 2095.5209606462013,
+            "mcse": 251.9069445336897,
+            "t_interval95": [
+              -1105.26031752249,
+              5296.302238814893
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            59.272046012062276,
+            59.272046012062276
+          ],
+          [
+            0.005718223945120591,
+            0.005718223945120591
+          ],
+          [
+            0.00614477717391648,
+            0.00614477717391648
+          ],
+          [
+            0.27265944542266896,
+            0.27265944542266896
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "covariance_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.261369991710467,
+            "mcse": 9.992976304365582,
+            "t_interval95": [
+              -123.71143549170102,
+              130.23417547512196
+            ]
+          },
+          {
+            "mean_difference": -4211.590944381209,
+            "mcse": 12211.49551961332,
+            "t_interval95": [
+              -159373.35637316958,
+              150950.17448440718
+            ]
+          },
+          {
+            "mean_difference": 1677.4767503606809,
+            "mcse": 5390.954902928158,
+            "t_interval95": [
+              -66821.10139199959,
+              70176.05489272096
+            ]
+          },
+          {
+            "mean_difference": 3428.837407634281,
+            "mcse": 1441.3155938643854,
+            "t_interval95": [
+              -14884.813997703342,
+              21742.488812971904
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            0.6214630819909338,
+            0.6214630819909338
+          ],
+          [
+            0.1302499883319744,
+            0.1302499883319744
+          ],
+          [
+            0.10733104521323258,
+            0.10733104521323258
+          ],
+          [
+            59.43277751320839,
+            59.43277751320839
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "diagonal_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.0633506740490475,
+            "mcse": 4.228250811338285,
+            "t_interval95": [
+              -50.66167092623152,
+              56.78837227432962
+            ]
+          },
+          {
+            "mean_difference": 45346.44003992915,
+            "mcse": 59993.971494738216,
+            "t_interval95": [
+              -716949.2605363711,
+              807642.1406162294
+            ]
+          },
+          {
+            "mean_difference": -16741.324633212957,
+            "mcse": 23455.525448904962,
+            "t_interval95": [
+              -314772.0393697164,
+              281289.39010329056
+            ]
+          },
+          {
+            "mean_difference": -10028.766682206087,
+            "mcse": 3502.5440240456724,
+            "t_interval95": [
+              -54532.80907325533,
+              34475.27570884316
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            3.0859314765021497,
+            3.0859314765021497
+          ],
+          [
+            32.33044206623261,
+            32.33044206623261
+          ],
+          [
+            22.81324577623153,
+            22.81324577623153
+          ],
+          [
+            491.2608349407074,
+            491.2608349407074
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      }
+    }
+  },
+  "40": {
+    "selection": {
+      "selected": "baseline_marginal",
+      "decisions": {
+        "baseline_marginal": {
+          "passes": true,
+          "variance_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "reset_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "objective": 4.0
+        },
+        "flow4": {
+          "passes": false,
+          "variance_ratios": [
+            0.8143975199670264,
+            1.029922126123789,
+            0.609056850188875,
+            1.2931640413731895
+          ],
+          "reset_ratios": [
+            1.000126213791588,
+            0.49930425904660686,
+            0.4174683517418403,
+            0.8451107925821298
+          ],
+          "objective": 3.74654053765288
+        },
+        "epsilon51": {
+          "passes": false,
+          "variance_ratios": [
+            1.0214719580543226,
+            0.24624736226395635,
+            0.23046656920871117,
+            0.23559920441514776
+          ],
+          "reset_ratios": [
+            0.999714713378616,
+            0.9269516165523181,
+            0.9664680674897902,
+            1.1423173493763903
+          ],
+          "objective": 1.7337850939421378
+        },
+        "weak_correction": {
+          "passes": false,
+          "variance_ratios": [
+            0.9710512963353204,
+            2.2607345734606725,
+            0.8512334999138483,
+            0.08839439011544822
+          ],
+          "reset_ratios": [
+            1.080023953801923,
+            1.021174373186136,
+            0.6234922205973251,
+            1.682198763594614
+          ],
+          "objective": 4.17141375982529
+        },
+        "epsilon204": {
+          "passes": false,
+          "variance_ratios": [
+            0.9759123834108191,
+            2.1014768562928476,
+            2.310127182361048,
+            2.852210926623677
+          ],
+          "reset_ratios": [
+            0.9999541615725911,
+            1.0053240738934381,
+            0.994964197454259,
+            0.9798061627120871
+          ],
+          "objective": 8.239727348688392
+        },
+        "flow16_weak": {
+          "passes": false,
+          "variance_ratios": [
+            0.9957097576408275,
+            3.4370298244049198,
+            2.104289496265016,
+            5.241252210727004
+          ],
+          "reset_ratios": [
+            1.0756724721753614,
+            1.7861468165257615,
+            1.144787132542049,
+            3.448934368603937
+          ],
+          "objective": 11.778281289037768
+        }
+      },
+      "calibration_output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/calibration-T40-01",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "moment_safety": true,
+        "coordinate_cap_identity_radius": 8.0,
+        "importance_weight_policy": "marginal_mixture"
+      },
+      "scope": {
+        "model": "sir_d18",
+        "horizon": 40,
+        "particles": 1008,
+        "dtype": "float64",
+        "jit_compile": true,
+        "device": "gpu",
+        "route": "iid_dual_cap",
+        "reset_design": "normal_quantiles"
+      },
+      "diagnostic_only": true
+    },
+    "validation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 4,
+          "valid_n": 4,
+          "mean": [
+            -1514.396312470684,
+            2296.1170782281565,
+            -1381.5449954911244,
+            540.4373226135774
+          ],
+          "variance": [
+            1825.0968017649398,
+            5918282120.192977,
+            884171293.185432,
+            254419235.48684138
+          ],
+          "reset_rmse": [
+            0.02059687667740053,
+            6.7356269969320515,
+            2.5787867261046955,
+            1.5278576553788805
+          ]
+        }
+      },
+      "finite_differences": [],
+      "wall_seconds": 150.87758992705494,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 4,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/validation-T40-01"
+    },
+    "confirmation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 8,
+          "valid_n": 8,
+          "mean": [
+            -1505.9405875450598,
+            -604.4986909442391,
+            156.67279351926,
+            975.3474129193955
+          ],
+          "variance": [
+            1091.9225993615157,
+            32354227.534417063,
+            6340154.90829367,
+            4580810.397795254
+          ],
+          "reset_rmse": [
+            0.016856729129178006,
+            5.424728731375033,
+            2.087480837413021,
+            1.727764301462471
+          ]
+        },
+        "ancestor_guarded": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1608.4603727964982,
+            -1601.5817792799653,
+            811.8495191685226,
+            358.5109219645037
+          ],
+          "variance": [
+            3681.4433621760563,
+            921358.5235598832,
+            203056.7963320878,
+            15044.504157363619
+          ],
+          "reset_rmse": [
+            0.016984109675168835,
+            1.895745925700721,
+            0.814603237260481,
+            0.2517227976125374
+          ]
+        },
+        "covariance_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1511.1825131997948,
+            -5678.810777248743,
+            2245.2607720625106,
+            1691.423632298799
+          ],
+          "variance": [
+            42.03354405104394,
+            21115753.328280497,
+            3558076.8365656747,
+            3231980.3409982068
+          ],
+          "reset_rmse": [
+            0.01797091395759157,
+            2.1849947793038504,
+            0.9107801587420201,
+            0.9714973573693425
+          ]
+        },
+        "diagonal_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1511.3866266328141,
+            43964.11803615825,
+            -16208.595657217009,
+            -11718.43782534203
+          ],
+          "variance": [
+            186.74159212231697,
+            5200967720.715263,
+            751355666.8998511,
+            27662562.377996877
+          ],
+          "reset_rmse": [
+            0.016999736696514736,
+            6.612998303922662,
+            2.6567037912016156,
+            3.3179459103046263
+          ]
+        }
+      },
+      "finite_differences": [
+        {
+          "candidate": "baseline_marginal",
+          "horizon": 40,
+          "value": -1509.0785867230875,
+          "records": [
+            {
+              "coordinate": 0,
+              "analytical": -10425.2550461993,
+              "fd": [
+                -7093.184923529634,
+                -5105.058450458273
+              ],
+              "relative_errors": [
+                0.3195845591638688,
+                0.5102691783547351
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 1,
+              "analytical": 4621.985411102926,
+              "fd": [
+                2020.3200176217706,
+                4965.312422762054
+              ],
+              "relative_errors": [
+                0.5627673812754829,
+                0.07426521633284117
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 2,
+              "analytical": -1898.1684467116293,
+              "fd": [
+                -2255.723724025529,
+                -1897.856191228584
+              ],
+              "relative_errors": [
+                0.18826938596889564,
+                0.00016441694973705765
+              ],
+              "passes": true
+            }
+          ],
+          "valid": false
+        }
+      ],
+      "wall_seconds": 1457.519629240036,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 8,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T40-01",
+      "mean_mcse": [
+        11.682907383018556,
+        2011.0391447712132,
+        890.2355663175387,
+        756.704235302279
+      ]
+    },
+    "heuristic_screen": {
+      "comparisons": {
+        "ancestor_guarded": {
+          "passes": false,
+          "variance_ratios": [
+            0.01587565627070047,
+            174.33223908752257,
+            162.1837990308781,
+            3.78123416336142
+          ],
+          "reset_ratios": [
+            0.743492465890652,
+            1.1656948499981423,
+            1.1188811493089212,
+            10.121789326177169
+          ],
+          "objective": 340.3131479380328
+        },
+        "covariance_only": {
+          "passes": false,
+          "variance_ratios": [
+            1.3904449581264227,
+            7.606761261008168,
+            9.255708676590691,
+            0.017601218784977685
+          ],
+          "reset_ratios": [
+            0.7026664093516634,
+            1.0113805686979094,
+            1.0007290975636447,
+            2.6226372173870827
+          ],
+          "objective": 18.27051611451026
+        },
+        "diagonal_only": {
+          "passes": true,
+          "variance_ratios": [
+            0.31297435527740847,
+            0.030883193866944197,
+            0.04383080357144213,
+            0.0020564542182796718
+          ],
+          "reset_ratios": [
+            0.742809009855867,
+            0.334169337558042,
+            0.3430733261853527,
+            0.7679103863981046
+          ],
+          "objective": 0.3897448069340745
+        }
+      },
+      "verdict": "promotion_veto",
+      "role": "falsification only; two seeds do not establish a ranking"
+    },
+    "heuristic_paired_intervals": {
+      "ancestor_guarded": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": -93.97598690039479,
+            "mcse": 37.49783331990977,
+            "t_interval95": [
+              -570.431144118999,
+              382.4791703182094
+            ]
+          },
+          {
+            "mean_difference": -137.98100037289987,
+            "mcse": 8282.920695322482,
+            "t_interval95": [
+              -105382.46935388292,
+              105106.5073531371
+            ]
+          },
+          {
+            "mean_difference": 247.72824133827567,
+            "mcse": 3739.2289215226256,
+            "t_interval95": [
+              -47263.680977457116,
+              47759.13746013367
+            ]
+          },
+          {
+            "mean_difference": 2088.027666795313,
+            "mcse": 255.3826195380736,
+            "t_interval95": [
+              -1156.9162504924557,
+              5332.971584083081
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            62.98952200455255,
+            62.98952200455255
+          ],
+          [
+            0.005736173671801206,
+            0.005736173671801206
+          ],
+          [
+            0.006165843974400984,
+            0.006165843974400984
+          ],
+          [
+            0.2644639175456475,
+            0.2644639175456475
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "covariance_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.301872696308692,
+            "mcse": 9.990204480743614,
+            "t_interval95": [
+              -123.63571342793823,
+              130.23945882055563
+            ]
+          },
+          {
+            "mean_difference": -4215.209998341677,
+            "mcse": 12210.942907045997,
+            "t_interval95": [
+              -159369.95381856407,
+              150939.5338218807
+            ]
+          },
+          {
+            "mean_difference": 1681.1394942322634,
+            "mcse": 5391.670123017375,
+            "t_interval95": [
+              -66826.52638120172,
+              70188.80536966625
+            ]
+          },
+          {
+            "mean_difference": 3420.940377129608,
+            "mcse": 1439.8677222661292,
+            "t_interval95": [
+              -14874.314074866897,
+              21716.194829126114
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            0.7191942364604392,
+            0.7191942364604392
+          ],
+          [
+            0.13146199357221108,
+            0.13146199357221108
+          ],
+          [
+            0.10804142988307044,
+            0.10804142988307044
+          ],
+          [
+            56.81424748003709,
+            56.81424748003709
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "diagonal_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.0977592632892765,
+            "mcse": 4.257057343623387,
+            "t_interval95": [
+              -50.993284041544925,
+              57.18880256812348
+            ]
+          },
+          {
+            "mean_difference": 45427.718815065324,
+            "mcse": 59956.59382370532,
+            "t_interval95": [
+              -716393.0534106684,
+              807248.4910407991
+            ]
+          },
+          {
+            "mean_difference": -16772.716935047254,
+            "mcse": 23440.274547095498,
+            "t_interval95": [
+              -314609.6505867248,
+              281064.2167166303
+            ]
+          },
+          {
+            "mean_difference": -9988.92108051122,
+            "mcse": 3550.391345603553,
+            "t_interval95": [
+              -55100.92134797582,
+              35123.07918695337
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            3.1951499640078764,
+            3.1951499640078764
+          ],
+          [
+            32.38007067236492,
+            32.38007067236492
+          ],
+          [
+            22.815004939848922,
+            22.815004939848922
+          ],
+          [
+            486.273893729835,
+            486.273893729835
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      }
+    }
+  },
+  "50": {
+    "selection": {
+      "selected": "baseline_marginal",
+      "decisions": {
+        "baseline_marginal": {
+          "passes": true,
+          "variance_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "reset_ratios": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "objective": 4.0
+        },
+        "flow4": {
+          "passes": false,
+          "variance_ratios": [
+            0.8144911332236641,
+            1.0298832789965175,
+            0.6090433980163771,
+            1.2932186432237955
+          ],
+          "reset_ratios": [
+            1.000126407380964,
+            0.49930426966411484,
+            0.41746837957170946,
+            0.8451116429826373
+          ],
+          "objective": 3.7466364534603542
+        },
+        "epsilon51": {
+          "passes": false,
+          "variance_ratios": [
+            1.021472621896925,
+            0.24624879622711235,
+            0.23047216617634247,
+            0.23560026621454525
+          ],
+          "reset_ratios": [
+            0.9997148073364834,
+            0.9269516223623988,
+            0.96646807020852,
+            1.1423170210465936
+          ],
+          "objective": 1.733793850514925
+        },
+        "weak_correction": {
+          "passes": false,
+          "variance_ratios": [
+            0.9711665357518567,
+            2.260642646131309,
+            0.8511716327417519,
+            0.08838878108521293
+          ],
+          "reset_ratios": [
+            1.0800557256851127,
+            1.0211743714490058,
+            0.6234922335919756,
+            1.6821977187160215
+          ],
+          "objective": 4.17136959571013
+        },
+        "epsilon204": {
+          "passes": false,
+          "variance_ratios": [
+            0.9759095920900608,
+            2.1014719232568093,
+            2.3101134601689868,
+            2.8522261414623813
+          ],
+          "reset_ratios": [
+            0.9999541599759147,
+            1.0053240727016963,
+            0.9949641970249162,
+            0.9798062303545788
+          ],
+          "objective": 8.239721116978238
+        },
+        "flow16_weak": {
+          "passes": false,
+          "variance_ratios": [
+            0.9957759180481021,
+            3.436952094527975,
+            2.1042845769923813,
+            5.241406887633447
+          ],
+          "reset_ratios": [
+            1.0757093794626122,
+            1.7861468106958531,
+            1.1447871368808016,
+            3.448931354293612
+          ],
+          "objective": 11.778419477201906
+        }
+      },
+      "calibration_output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/calibration-T50-02",
+      "controls": {
+        "flow_substeps": 8,
+        "reset_epsilon": 102.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 4,
+        "correction_strength": 0.12,
+        "pairwise_steps": 4,
+        "pairwise_strength": 0.03,
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "moment_safety": true,
+        "coordinate_cap_identity_radius": 8.0,
+        "importance_weight_policy": "marginal_mixture"
+      },
+      "scope": {
+        "model": "sir_d18",
+        "horizon": 50,
+        "particles": 1008,
+        "dtype": "float64",
+        "jit_compile": true,
+        "device": "gpu",
+        "route": "iid_dual_cap",
+        "reset_design": "normal_quantiles"
+      },
+      "diagnostic_only": true
+    },
+    "validation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 4,
+          "valid_n": 4,
+          "mean": [
+            -1857.9327778789032,
+            2294.965726562794,
+            -1381.0296340208056,
+            555.8792404607847
+          ],
+          "variance": [
+            1819.0834445706853,
+            5917975653.235124,
+            884125495.6979557,
+            254404720.76785666
+          ],
+          "reset_rmse": [
+            0.0183769939571581,
+            6.009140175265702,
+            2.300645714832401,
+            1.3630699961673316
+          ]
+        }
+      },
+      "finite_differences": [],
+      "wall_seconds": 291.0833103079349,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 4,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/validation-T50-01"
+    },
+    "confirmation": {
+      "summary": {
+        "baseline_marginal": {
+          "n": 8,
+          "valid_n": 8,
+          "mean": [
+            -1845.160397802758,
+            -604.5230282456039,
+            156.63404194320412,
+            981.950036512127
+          ],
+          "variance": [
+            1092.1669942100477,
+            32355233.262904454,
+            6340445.226561453,
+            4580757.0784430085
+          ],
+          "reset_rmse": [
+            0.01504038457476106,
+            4.839631472397666,
+            1.8623305596807982,
+            1.5414154055155045
+          ]
+        },
+        "ancestor_guarded": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1947.713579738005,
+            -1601.5315160862142,
+            811.7839087009515,
+            365.2311903454967
+          ],
+          "variance": [
+            3664.5279938082,
+            921241.50833918,
+            203096.54716609803,
+            15123.967473866282
+          ],
+          "reset_rmse": [
+            0.015153079953975319,
+            1.6912756680377308,
+            0.7267422821606063,
+            0.22457593015468372
+          ]
+        },
+        "covariance_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1850.436191461596,
+            -5678.870756901638,
+            2245.235647958121,
+            1698.2370149267717
+          ],
+          "variance": [
+            43.92251778688415,
+            21116151.34649612,
+            3557897.147573097,
+            3233483.2664129124
+          ],
+          "reset_rmse": [
+            0.016034031327573646,
+            1.9493269905445754,
+            0.8125457883351951,
+            0.8667156667555046
+          ]
+        },
+        "diagonal_only": {
+          "n": 2,
+          "valid_n": 2,
+          "mean": [
+            -1850.640192051037,
+            43964.42104537588,
+            -16208.758140695265,
+            -11711.601685054386
+          ],
+          "variance": [
+            182.81670585149365,
+            5200969774.110778,
+            751351198.0989403,
+            27661647.560502287
+          ],
+          "reset_rmse": [
+            0.015167548574488703,
+            5.899737402685664,
+            2.3701586068094147,
+            2.9600811023810953
+          ]
+        }
+      },
+      "finite_differences": [
+        {
+          "candidate": "baseline_marginal",
+          "horizon": 50,
+          "value": -1848.430246066678,
+          "records": [
+            {
+              "coordinate": 0,
+              "analytical": -10425.382559836606,
+              "fd": [
+                -7093.076353116885,
+                -5104.621517059513
+              ],
+              "relative_errors": [
+                0.3196032936251614,
+                0.5103170742337
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 1,
+              "analytical": 4622.05804830755,
+              "fd": [
+                2020.1130887051022,
+                4965.425953291742
+              ],
+              "relative_errors": [
+                0.5628190112289398,
+                0.07427289499639644
+              ],
+              "passes": false
+            },
+            {
+              "coordinate": 2,
+              "analytical": -1891.3496100896423,
+              "fd": [
+                -2248.9360992153706,
+                -1891.0374121423956
+              ],
+              "relative_errors": [
+                0.18896428398808884,
+                0.0001649790004881128
+              ],
+              "passes": true
+            }
+          ],
+          "valid": false
+        }
+      ],
+      "wall_seconds": 1827.4473135650624,
+      "complete": true,
+      "screen": {
+        "passes": true,
+        "variance_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "reset_ratios": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "objective": 4.0
+      },
+      "paired": {
+        "n": 8,
+        "value_then_score": [
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "mean_difference": 0.0,
+            "mcse": 0.0,
+            "t_interval95": [
+              0.0,
+              0.0
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T50-01",
+      "mean_mcse": [
+        11.68421474795187,
+        2011.0704010210723,
+        890.2559482082564,
+        756.6998313766007
+      ]
+    },
+    "heuristic_screen": {
+      "comparisons": {
+        "ancestor_guarded": {
+          "passes": false,
+          "variance_ratios": [
+            0.015366727224783135,
+            174.3559373883069,
+            162.15754229579062,
+            3.7531223746707942
+          ],
+          "reset_ratios": [
+            0.7435243756232559,
+            1.165694844691483,
+            1.1188810850750293,
+            10.121641388211241
+          ],
+          "objective": 340.2819687859931
+        },
+        "covariance_only": {
+          "passes": false,
+          "variance_ratios": [
+            1.2820713594257531,
+            7.606685712363412,
+            9.256489316921423,
+            0.01755447486293328
+          ],
+          "reset_ratios": [
+            0.7026732130785794,
+            1.011380510682281,
+            1.000729072634517,
+            2.62263290792793
+          ],
+          "objective": 18.162800863573523
+        },
+        "diagonal_only": {
+          "passes": true,
+          "variance_ratios": [
+            0.3080232839015041,
+            0.030883457071226247,
+            0.04383254731015784,
+            0.0020520144577726
+          ],
+          "reset_ratios": [
+            0.742815113214732,
+            0.334169335449788,
+            0.34307332467018614,
+            0.7679103885434815
+          ],
+          "objective": 0.38479130274066076
+        }
+      },
+      "verdict": "promotion_veto",
+      "role": "falsification only; two seeds do not establish a ranking"
+    },
+    "heuristic_paired_intervals": {
+      "ancestor_guarded": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": -93.97712023383542,
+            "mcse": 37.498739510784155,
+            "t_interval95": [
+              -570.4437916994586,
+              382.4895512317878
+            ]
+          },
+          {
+            "mean_difference": -137.84318072193764,
+            "mcse": 8283.003754443118,
+            "t_interval95": [
+              -105383.38690044585,
+              105107.70053900199
+            ]
+          },
+          {
+            "mean_difference": 247.65864305749756,
+            "mcse": 3739.2663840840037,
+            "t_interval95": [
+              -47264.22658272259,
+              47759.54386883759
+            ]
+          },
+          {
+            "mean_difference": 2088.114037060439,
+            "mcse": 255.4264306688999,
+            "t_interval95": [
+              -1157.3865534368906,
+              5333.6146275577685
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            65.07566545381381,
+            65.07566545381381
+          ],
+          [
+            0.005735394016281229,
+            0.005735394016281229
+          ],
+          [
+            0.0061668423549236205,
+            0.0061668423549236205
+          ],
+          [
+            0.2664448158548827,
+            0.2664448158548827
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "covariance_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.3002680425732933,
+            "mcse": 9.992497561767662,
+            "t_interval95": [
+              -123.66645443924679,
+              130.26699052439338
+            ]
+          },
+          {
+            "mean_difference": -4215.182421537361,
+            "mcse": 12211.013487570475,
+            "t_interval95": [
+              -159370.82305237275,
+              150940.45820929806
+            ]
+          },
+          {
+            "mean_difference": 1681.1103823146668,
+            "mcse": 5391.705092236663,
+            "t_interval95": [
+              -66826.99981918829,
+              70189.22058381763
+            ]
+          },
+          {
+            "mean_difference": 3421.119861641714,
+            "mcse": 1439.9783178607818,
+            "t_interval95": [
+              -14875.539840652542,
+              21717.77956393597
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            0.7799877851166611,
+            0.7799877851166611
+          ],
+          [
+            0.13146329923617917,
+            0.13146329923617917
+          ],
+          [
+            0.10803231827556259,
+            0.10803231827556259
+          ],
+          [
+            56.96553202576998,
+            56.96553202576998
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      },
+      "diagonal_only": {
+        "n": 2,
+        "value_then_score": [
+          {
+            "mean_difference": 3.0962674531323273,
+            "mcse": 4.254558127907671,
+            "t_interval95": [
+              -50.96302030447877,
+              57.15555521074342
+            ]
+          },
+          {
+            "mean_difference": 45428.109380740156,
+            "mcse": 59956.643847547566,
+            "t_interval95": [
+              -716393.298458188,
+              807249.5172196684
+            ]
+          },
+          {
+            "mean_difference": -16772.88340633872,
+            "mcse": 23440.28555649968,
+            "t_interval95": [
+              -314609.95694576274,
+              281064.19013308524
+            ]
+          },
+          {
+            "mean_difference": -9988.718838339442,
+            "mcse": 3550.514788111481,
+            "t_interval95": [
+              -55102.28759161549,
+              35124.849914936596
+            ]
+          }
+        ],
+        "variance_ratio_bootstrap95": [
+          [
+            3.246507820232732,
+            3.246507820232732
+          ],
+          [
+            32.37979471319253,
+            32.37979471319253
+          ],
+          [
+            22.814097317320595,
+            22.814097317320595
+          ],
+          [
+            487.32600114595186,
+            487.32600114595186
+          ]
+        ],
+        "interpretation": "conditional on this dataset; small-sample intervals, not oracle error bounds"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+\chapter{UKF-Guided Particle Proposals and Covariance-Preserving Resets}
+\label{ch:bf-ukf-covariance-proposal}
+\chaptermark{UKF Proposals and Covariance Resets}
+
+Chapter~\ref{ch:bf-ledh-pfpf-ot-custom-gradient} requires the reset to preserve
+importance-weighted moments and the score to differentiate the same finite
+filtering computation. We now examine how a UKF covariance can guide the
+proposal while respecting those requirements. The distinction is between
+uncertainty conditional on one ancestor, uncertainty across the predictive
+mixture, and uncertainty represented by the importance-weighted posterior.
+Each covariance has a different role in the algorithm.
+
+The construction below is a candidate extension: it combines a common UKF
+guide, conditional local flows, one marginal importance correction, an exact
+first-two-moment reset under stated assumptions, and a bounded optional
+correction of selected higher moments. Its likelihood and score accuracy
+across models remain to be established. The derivations do not change the
+canonical runtime or certify the combined filter for HMC. Particle matrices in
+this chapter have particles as columns, \(X\in\R^{d\times N}\); this transposes
+the row-particle storage convention in the preceding chapter without changing
+the covariance or derivative identities.
+
+\begingroup
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
+keepspaces=true,breaklines=true,showstringspaces=false,
+frame=single,rulecolor=\color{black!25},xleftmargin=3pt,xrightmargin=3pt}
+\setlength{\emergencystretch}{2em}
+\input{chapters/ledh_covariance_proposal_body}
+\endgroup

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -95,7 +96,19 @@ def configure_worker(design):
             "visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES"), **placement}
 
 
-def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
+def cell_execution_deadline(started, budget):
+    """Use the parent's clock, including process startup, when supervised."""
+    import math
+    inherited = os.environ.get("BAYESFILTER_VALIDATION_CELL_DEADLINE")
+    if inherited is None:
+        return started + budget
+    deadline = float(inherited)
+    if not math.isfinite(deadline):
+        raise ValueError("invalid inherited cell deadline")
+    return min(started + budget, deadline)
+
+
+def worker(design_file,root,budget,attempt=1,*,profile_execution=False,reuse_leapfrog_graphs=False):
     root=Path(root); design=ValidationDesign.from_payload(read_json(design_file))
     started=time.monotonic()
     profile = None
@@ -111,12 +124,13 @@ def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
             "environment":sys.executable,"data_version":design.options.get("data_version", "declared synthetic law"),
             "plan_file":design.options.get("plan_file","docs/plans/bayesfilter-inference-validation-execution-2026-09-15.md"),
             "result_file":str(root/f"attempt-{attempt:03d}-result.json"),
+            "reuse_leapfrog_graphs":reuse_leapfrog_graphs or design.engine=="reference_mean",
             "profiling":{"requested":requested,
                 "scope":"isolated_numerical_children" if isolated else "numerical_worker",
                 "status_files":"replication-*/process-attempt-*-profile.json" if isolated
                     else f"attempt-{attempt:03d}-profile.json"}}
         write_json(root/f"attempt-{attempt:03d}-manifest.json",manifest)
-        deadline=started+budget
+        deadline=cell_execution_deadline(started, budget)
         if requested and not isolated:
             from .profiling import HostProfile
             profile = HostProfile(root/f"attempt-{attempt:03d}", requested=True,
@@ -124,8 +138,13 @@ def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
             profile.start()
         if isolated:
             from .fit_process import run_isolated_replications
-            assessment = run_isolated_replications(design, root, deadline=deadline,
-                                                   profile_execution=requested)
+            from .timeout_policy import TimeoutPolicy
+            # Final assessment, receipts and clean coordinator shutdown must
+            # happen inside the same outer allocation as the numerical work.
+            reserve = min(TimeoutPolicy.from_options(design.options).shutdown_grace_seconds, budget/10)
+            assessment = run_isolated_replications(design, root, deadline=deadline-reserve,
+                                                   profile_execution=requested,
+                                                   reuse_leapfrog_graphs=reuse_leapfrog_graphs)
         elif design.scenario.route=="external":
             from .references.external import load_reference
             from .engines.statistics import accuracy_assessment
@@ -158,7 +177,8 @@ def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
             assessment=run(design,root,deadline)
         else:
             from .engines.pipeline import run
-            assessment=run(design,root,deadline)
+            assessment=run(design,root,deadline,**({"reuse_leapfrog_graphs":True}
+                                                  if reuse_leapfrog_graphs else {}))
         result={"schema":"bayesfilter.inference_validation_result.v1","design_identity":design.identity,
                 "execution_status":("failed" if isolated and assessment.get("execution_failures") else "complete"),
                 "assessment":assessment,"runtime":runtime,
@@ -178,7 +198,8 @@ def worker(design_file,root,budget,attempt=1,*,profile_execution=False):
             profile.finish()
 
 
-def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
+def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False,
+              reuse_leapfrog_graphs=False,share_unused_budget=False):
     """One ordinary advisory lock prevents accidental concurrent budget writers."""
     import fcntl
     root=Path(root).resolve()
@@ -192,25 +213,50 @@ def run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_exec
         raise ValueError("max_workers must be an integer in [1,32]")
     if type(profile_execution) is not bool:
         raise ValueError("profile_execution execution flag must be a boolean")
+    if type(reuse_leapfrog_graphs) is not bool or type(share_unused_budget) is not bool:
+        raise ValueError("execution policy flags must be boolean")
+    if share_unused_budget and max_workers != 1:
+        raise ValueError("shared unused budget requires sequential execution")
+    if reuse_leapfrog_graphs and any(
+            d.scenario.route not in {"ordinary","prepared","fixed_transport"}
+            or d.engine not in {"search","accuracy","stopping","reference_mean"}
+            for d in resolve_suite(suite)):
+        raise ValueError("graph reuse requires a supported exact-score pipeline")
     root.mkdir(parents=True,exist_ok=True)
     with (root/".coordinator.lock").open("a+b") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return _run_suite(suite,root,resume=resume,max_jobs=max_jobs,max_workers=max_workers,
-                          profile_execution=profile_execution)
+                          profile_execution=profile_execution,reuse_leapfrog_graphs=reuse_leapfrog_graphs,
+                          share_unused_budget=share_unused_budget)
 
 
-def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False):
+def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_execution=False,
+               reuse_leapfrog_graphs=False,share_unused_budget=False):
     from .profiling import profile_report
     root=Path(root).resolve(); plan=plan_suite(suite); sources=source_state()
     index_path=root/"run_index.json"
+    execution_options={"reuse_leapfrog_graphs":reuse_leapfrog_graphs,
+                       "share_unused_budget":share_unused_budget}
     if index_path.exists():
         index=read_json(index_path)
         if index["suite_identity"]!=plan["suite_identity"] or index["source"]["identity"]!=sources["identity"]:
             raise ValueError("resume requires identical design and numerical source state")
+        if index.get("execution_options", {"reuse_leapfrog_graphs":False,
+                "share_unused_budget":False}) != execution_options:
+            raise ValueError("resume requires identical execution options")
     else:
         index={"schema":"bayesfilter.inference_validation_run.v1","suite_identity":plan["suite_identity"],
                "source":sources,"plan":plan,"jobs":{},"command":sys.argv}
+    index["execution_options"]=execution_options
     write_json(root/"resolved_plan.json",plan)
+    # Settle every interrupted reservation before max_jobs or availability
+    # can truncate the dispatch scan. A later interrupted cell may already
+    # have spent credit that an earlier retry would otherwise reclaim.
+    for key,prior in list(index["jobs"].items()):
+        if prior.get("status")=="running":
+            index["jobs"][key]={**prior,"status":"interrupted","attempts":[*prior["attempts"],
+                {"status":"coordinator_interrupted","elapsed_seconds":prior["reserved_seconds"],
+                 "accounting":"full reservation charged; worker completion unknown"}]}
     pending=[]
     for job in plan["jobs"]:
         d=ValidationDesign.from_payload(job["design"]); key=d.design_id
@@ -220,25 +266,22 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_exe
                 prior["profiling"] = profile_report(root/key,
                     isolated=d.options.get("isolate_fits", False), requested=True)
             continue
-        if prior.get("status")=="running":
-            # The previous coordinator died without recording worker exit. We
-            # cannot assume unused time or safely launch a duplicate worker.
-            prior={**prior,"status":"interrupted","attempts":[*prior["attempts"],
-                {"status":"coordinator_interrupted","elapsed_seconds":prior["reserved_seconds"],
-                 "accounting":"full reservation charged; worker completion unknown"}]}
         if job["availability"]!="ready":
             index["jobs"][key]={**prior,"status":"unavailable","reason":job["reason"]}; continue
         if max_jobs is not None and len(pending)>=max_jobs: break
         consumed=sum(a["elapsed_seconds"] for a in prior["attempts"])
         remaining=d.budget_seconds-consumed
-        if remaining<=0:
+        if remaining<=0 and not share_unused_budget:
             index["jobs"][key]={**prior,"status":"unfunded","reason":"design budget exhausted"}; continue
+        index["jobs"][key]=prior
         job_root=root/key; job_root.mkdir(exist_ok=True)
         design_path=job_root/"design.json"; write_json(design_path,d.payload())
         attempt=len(prior["attempts"])+1; log=job_root/f"attempt-{attempt:03d}.log"
         command=[sys.executable,"-m","bayesfilter.testing.inference_validation","_worker",str(design_path),str(job_root),str(remaining),str(attempt)]
         if profile_execution:
             command.append("--profile-execution")
+        if reuse_leapfrog_graphs:
+            command.append("--reuse-leapfrog-graphs")
         pending.append((d,prior,remaining,attempt,log,command,job_root))
     index["max_workers"]=max_workers
     # Only this coordinator writes the index. Threads supervise independent
@@ -250,6 +293,16 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_exe
             while cursor<len(pending) and len(running)<max_workers:
                 item=pending[cursor]; cursor+=1
                 d,prior,remaining,attempt,log,command,job_root=item
+                if share_unused_budget:
+                    remaining=shared_remaining_seconds(d,plan,index)
+                    if remaining<=0:
+                        index["jobs"][d.design_id]={**prior,"status":"unfunded",
+                            "reason":"shared cumulative allocation exhausted"}
+                        write_json(index_path,index)
+                        continue
+                    command=list(command)
+                    command[6]=str(remaining)
+                    item=(d,prior,remaining,attempt,log,command,job_root)
                 index["jobs"][d.design_id]={**prior,"status":"running","started_at":time.time(),
                     "log":str(log),"reserved_seconds":remaining}
                 write_json(index_path,index)
@@ -278,22 +331,58 @@ def _run_suite(suite,root,*,resume=False,max_jobs=None,max_workers=1,profile_exe
     return index
 
 
+def shared_remaining_seconds(design,plan,index):
+    """Carry settled predecessor time forward once, including all retries.
+
+    A later unstarted cell keeps its allocation. Cumulative spending in an
+    earlier cell already includes any credit it borrowed from predecessors.
+    Interrupted reservations count as spent before this function is called.
+    """
+    allowance=0.
+    consumed=0.
+    prefix_remaining=None
+    for job in plan["jobs"]:
+        payload=job["design"]
+        key=payload["design_id"]
+        row=index["jobs"].get(key,{})
+        if key==design.design_id or row.get("status") in {"complete","failed","timed_out","unfunded","interrupted"}:
+            allowance+=payload["budget_seconds"]
+            for attempt in row.get("attempts",[]):
+                cost=attempt["elapsed_seconds"]
+                if type(cost) not in (int,float) or not math.isfinite(cost) or cost<0:
+                    raise ValueError("invalid cumulative execution receipt")
+                consumed+=cost
+        if key==design.design_id:
+            prefix_remaining=allowance-consumed
+    if prefix_remaining is None:
+        raise ValueError("design absent from suite plan")
+    # A resumed earlier cell cannot reclaim credit already spent by a later
+    # settled cell. Unstarted cells never donate their own allocations.
+    return max(0.,min(prefix_remaining,allowance-consumed))
+
+
 def _execute_job(design,command,log,remaining,attempt):
     start=time.monotonic()
     with log.open("w") as handle:
-        env=dict(os.environ, TF_FORCE_GPU_ALLOW_GROWTH="true", BAYESFILTER_PRELOAD_CUSTOM_OP="0")
+        env=dict(os.environ, TF_FORCE_GPU_ALLOW_GROWTH="true", BAYESFILTER_PRELOAD_CUSTOM_OP="0",
+                 BAYESFILTER_VALIDATION_CELL_DEADLINE=str(start+remaining))
         if design.device=="cpu_reference": env["CUDA_VISIBLE_DEVICES"]="-1"
         process=subprocess.Popen(command,cwd=REPO,stdout=handle,stderr=subprocess.STDOUT,
                                  env=env,start_new_session=True)
         try:
-            code=process.wait(timeout=remaining)
+            code=process.wait(timeout=max(0., start+remaining-time.monotonic()))
             status="complete" if code==0 else "failed"
         except subprocess.TimeoutExpired:
             import signal
             os.killpg(process.pid,signal.SIGTERM)
-            try: process.wait(timeout=5)
+            try: process.wait(timeout=max(0., start+remaining-time.monotonic()))
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid,signal.SIGKILL); process.wait()
             code=None; status="timed_out"
+        finally:
+            if process.poll() is None:
+                import signal
+                os.killpg(process.pid,signal.SIGKILL)
+                process.wait()
     return {"attempt":attempt,"elapsed_seconds":time.monotonic()-start,"exit_code":code,
             "log":str(log),"status":status,"command":command}

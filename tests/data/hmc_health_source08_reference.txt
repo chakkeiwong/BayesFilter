@@ -1,0 +1,378 @@
+def _evaluate_hmc_health_context(
+    *,
+    samples: Any,
+    log_accept_ratio: Any,
+    is_accepted: Any,
+    policy: HMCAcceptancePolicy,
+    target_log_prob: Any | None = None,
+    native_divergence_status: str = "not_exposed_by_kernel",
+    native_divergence_count: int | None = None,
+    candidate_local_health_failures: tuple[str, ...] = (),
+    shared_invalidity_reasons: tuple[str, ...] = (),
+    cost_stop_reasons: tuple[str, ...] = (),
+) -> HMCAcceptanceEvidence | _AcceptanceHealthContext:
+    """Validate one trajectory without an acceptance interval or decision."""
+
+    import tensorflow as tf
+
+    if not isinstance(policy, HMCAcceptancePolicy):
+        raise TypeError("policy must be HMCAcceptancePolicy")
+    sample_array = _float64_tensor(samples)
+    log_accept = _float64_tensor(log_accept_ratio)
+    accepted = tf.convert_to_tensor(is_accepted)
+    if accepted.dtype != tf.bool:
+        raise TypeError("is_accepted must be boolean")
+    target_value = None if target_log_prob is None else _float64_tensor(target_log_prob)
+    if sample_array.shape.rank == 2:
+        sample_array = sample_array[:, None, :]
+    if log_accept.shape.rank == 1:
+        log_accept = log_accept[:, None]
+    if accepted.shape.rank == 1:
+        accepted = accepted[:, None]
+    if target_value is not None and target_value.shape.rank == 1:
+        target_value = target_value[:, None]
+    if (
+        sample_array.shape.rank != 3
+        or log_accept.shape.rank != 2
+        or accepted.shape.rank != 2
+        or sample_array.shape[:2] != log_accept.shape
+        or log_accept.shape != accepted.shape
+        or (target_value is not None and target_value.shape != log_accept.shape)
+    ):
+        raise ValueError("samples and acceptance traces must have aligned draw/chain shapes")
+    draw_count, chain_count = log_accept.shape
+    status, divergence_count, divergence_provenance_valid = (
+        _normalize_native_divergence_provenance(
+            native_divergence_status,
+            native_divergence_count,
+        )
+    )
+
+    declared_shared = _sanitize_reason_codes(
+        shared_invalidity_reasons,
+        allowed=_SHARED_INVALIDITY_REASON_CODES,
+    )
+    if draw_count == 0 or chain_count == 0 or sample_array.shape[2] == 0:
+        declared_shared += ("shared_schema_invalid",)
+    legacy_failures = tuple(
+        dict.fromkeys(str(item) for item in candidate_local_health_failures)
+    )
+    # This input is explicitly candidate-local. Shared scope is admitted only
+    # through shared_invalidity_reasons or state-dependency checks below.
+    shared_from_provenance: tuple[str, ...] = ()
+    local_from_provenance = _sanitize_reason_codes(
+        (
+            item
+            for item in legacy_failures
+            if item not in _LEGACY_ROLE_ONLY_REASON_CODES
+        ),
+        allowed=_CANDIDATE_DATA_INVALIDITY_REASON_CODES,
+    )
+    if not _all_finite(sample_array):
+        shared_from_provenance += ("nonfinite_retained_samples",)
+    candidate_invalidity = list(local_from_provenance)
+    if not divergence_provenance_valid:
+        candidate_invalidity.append("native_divergence_provenance_inconsistent")
+    if not _all_finite(log_accept):
+        candidate_invalidity.append("nonfinite_log_accept_ratio")
+    if target_value is not None and not _all_finite(target_value):
+        candidate_invalidity.append("nonfinite_target_log_prob")
+    shared = tuple(dict.fromkeys((*declared_shared, *shared_from_provenance)))
+    if shared:
+        return _empty_acceptance_evidence(
+            evidence_validity="shared_execution_invalid",
+            native_divergence_status=status,
+            native_divergence_count=divergence_count,
+            policy=policy,
+            engineering_invalidity_reasons=shared,
+        )
+    if candidate_invalidity:
+        return _empty_acceptance_evidence(
+            evidence_validity="candidate_data_invalid",
+            native_divergence_status=status,
+            native_divergence_count=divergence_count,
+            policy=policy,
+            engineering_invalidity_reasons=tuple(dict.fromkeys(candidate_invalidity)),
+        )
+
+    summary = _acceptance_summary_function()(
+        sample_array, log_accept, accepted,
+        tf.constant(policy.block_count, tf.int32),
+        tf.constant(policy.min_decisions_per_chain, tf.int32),
+        tf.constant(policy.chain_count, tf.int32),
+        tf.constant(policy.max_abs_log_accept_energy_proxy, tf.float64),
+    )
+    realized_acceptance_rate_by_chain = summary["realized_by_chain"]
+    realized_acceptance_rate = float(summary["realized"])
+    movement, repeated, normalized_return, path_return = summary["movement"]
+    proxy = _signed_proxy_summary(log_accept, policy, summary=summary["proxy"])
+    proxy_exceeded = (
+        proxy["max_abs_log_accept_energy_proxy"]
+        > policy.max_abs_log_accept_energy_proxy
+    )
+    alerts = (("log_accept_energy_proxy_exceeded",) if proxy_exceeded else ())
+    followups = (
+        ("inspect_exact_hamiltonian_and_signed_log_accept_tails",)
+        if alerts
+        else ()
+    )
+    promotion_vetoes = (
+        ("native_divergence_positive",)
+        if status == "available" and divergence_count is not None and divergence_count > 0
+        else ()
+    )
+    movement_failed, path_return_failed = _trajectory_pathology_flags(
+        policy=policy,
+        movement=movement,
+        repeated=repeated,
+        normalized_return=normalized_return,
+        path_return=path_return,
+    )
+    if movement_failed:
+        promotion_vetoes = tuple(
+            dict.fromkeys((*promotion_vetoes, "movement_gate_failed"))
+        )
+    if path_return_failed:
+        promotion_vetoes = tuple(
+            dict.fromkeys((*promotion_vetoes, "path_return_resonance_detected"))
+        )
+    if "native_divergence_positive" in legacy_failures and not promotion_vetoes:
+        return _empty_acceptance_evidence(
+            evidence_validity="candidate_data_invalid",
+            native_divergence_status=status,
+            native_divergence_count=divergence_count,
+            policy=policy,
+            engineering_invalidity_reasons=(
+                "native_divergence_provenance_inconsistent",
+            ),
+        )
+    if "log_accept_energy_proxy_exceeded" in legacy_failures and not proxy_exceeded:
+        return _empty_acceptance_evidence(
+            evidence_validity="candidate_data_invalid",
+            native_divergence_status=status,
+            native_divergence_count=divergence_count,
+            policy=policy,
+            engineering_invalidity_reasons=(
+                "log_accept_proxy_provenance_inconsistent",
+            ),
+        )
+    requested_cost_stops = tuple(dict.fromkeys(str(item) for item in cost_stop_reasons))
+    unauthorized_cost_stops = set(requested_cost_stops).difference(
+        policy.allowed_cost_stop_reasons
+    )
+    if unauthorized_cost_stops:
+        raise ValueError("cost stop reason is not predeclared by the acceptance policy")
+    if requested_cost_stops and (
+        chain_count != policy.chain_count
+        or draw_count < policy.min_decisions_per_chain
+    ):
+        raise ValueError("cost stop requires the minimum acceptance evidence")
+    health = HMCAcceptanceEvidence(
+        evidence_validity="valid",
+        acceptance_decision="inconclusive_evidence",
+        pooled_mean=float(summary["pooled"]),
+        chain_mean_uncertainty_interval=None,
+        chain_mean_uncertainty_method=None,
+        chain_mean_uncertainty_level=None,
+        chain_means=tuple(float(item) for item in summary["chain_means"]),
+        block_means_by_chain=(),
+        realized_acceptance_rate=realized_acceptance_rate,
+        realized_acceptance_rate_by_chain=tuple(
+            float(item) for item in realized_acceptance_rate_by_chain
+        ),
+        movement_rate_by_chain=tuple(float(item) for item in movement),
+        repeated_state_fraction_by_chain=tuple(float(item) for item in repeated),
+        normalized_return_displacement_by_chain=tuple(
+            float(item) for item in normalized_return
+        ),
+        path_return_fraction_by_chain=tuple(
+            float(item) for item in path_return
+        ),
+        usable_decisions_per_chain=0,
+        excluded_remainder_per_chain=draw_count,
+        native_divergence_status=status,
+        native_divergence_count=divergence_count,
+        **proxy,
+        policy=policy,
+        candidate_promotion_vetoes=promotion_vetoes,
+        candidate_health_alerts=alerts,
+        diagnostic_followups=followups,
+        cost_stop_reasons=requested_cost_stops,
+        explanatory_notes=("health_only_no_acceptance_decision",),
+    )
+    return _AcceptanceHealthContext(health, summary, draw_count, chain_count, path_return_failed)
+
+def _signed_proxy_summary(
+    log_accept_ratio: Any,
+    policy: HMCAcceptancePolicy,
+    *,
+    summary: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    if summary is None:
+        summary = _signed_proxy_tensors(
+            _float64_tensor(log_accept_ratio), policy.max_abs_log_accept_energy_proxy
+        )
+    negative_counts = summary["negative"]
+    positive_counts = summary["positive"]
+    draw_count = int(log_accept_ratio.shape[0])
+    denominator = float(draw_count)
+    return {
+        "min_log_accept_ratio": float(summary["minimum"]),
+        "max_log_accept_ratio": float(summary["maximum"]),
+        "max_abs_log_accept_energy_proxy": float(summary["max_abs"]),
+        "negative_proxy_exceedance_count_by_chain": tuple(
+            int(item) for item in negative_counts
+        ),
+        "positive_proxy_exceedance_count_by_chain": tuple(
+            int(item) for item in positive_counts
+        ),
+        "negative_proxy_exceedance_rate_by_chain": tuple(
+            float(item) / denominator for item in negative_counts
+        ),
+        "positive_proxy_exceedance_rate_by_chain": tuple(
+            float(item) / denominator for item in positive_counts
+        ),
+    }
+
+def _trajectory_pathology_flags(
+    *,
+    policy: HMCAcceptancePolicy,
+    movement: Any,
+    repeated: Any,
+    normalized_return: Any,
+    path_return: Any,
+) -> tuple[bool, bool]:
+    import tensorflow as tf
+
+    movement = _float64_tensor(movement)
+    repeated = _float64_tensor(repeated)
+    normalized_return = _float64_tensor(normalized_return)
+    path_return = _float64_tensor(path_return)
+    movement_failed = bool(
+        tf.reduce_any(movement < policy.min_movement_rate)
+        or tf.reduce_any(repeated > policy.max_repeated_state_fraction)
+        or tf.reduce_any(normalized_return < policy.min_normalized_return_displacement)
+    )
+    # A stuck chain is trivially equal to itself at every lag. Reserve the
+    # resonance label for recurrent paths that make real adjacent-state moves.
+    moving_chain = (
+        (movement >= policy.min_movement_rate)
+        & (repeated <= policy.max_repeated_state_fraction)
+    )
+    path_return_failed = bool(
+        int(tf.size(path_return))
+        and tf.reduce_any(
+            (path_return > _PATH_RETURN_MAX_FRACTION)
+            & moving_chain
+        )
+    )
+    return movement_failed, path_return_failed
+
+def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
+        import tensorflow as tf
+        from bayesfilter.inference.hmc_verification import target_status_telemetry_has_failure
+
+        shape = tuple(samples.shape[:2])
+        if samples.dtype != tf.float64 or samples.shape.rank != 3 or tuple(samples.shape[1:]) != tuple(self.initial_active_state.shape):
+            raise ValueError("candidate sample shape/dtype mismatch")
+        failures = []
+        for key in ("is_accepted", "log_accept_ratio", "target_log_prob", "proposed_target_log_prob", "target_score_finite"):
+            if key not in trace or tuple(trace[key].shape) != shape:
+                raise ValueError(f"missing or misaligned health trace: {key}")
+        if trace["is_accepted"].dtype != tf.bool or trace["target_score_finite"].dtype != tf.bool:
+            raise ValueError("health and acceptance bits must be boolean")
+        if "proposed_state" not in trace or trace["proposed_state"].shape != samples.shape:
+            raise ValueError("missing or misaligned proposed states")
+        previous = tf.concat([initial[None], samples[:-1]], axis=0)
+        arrays = {"state": samples, "initial_state": initial, "proposal": trace["proposed_state"],
+                  "proposal_displacement": trace["proposed_state"] - previous,
+                  **{key: trace[key] for key in ("log_accept_ratio", "target_log_prob", "proposed_target_log_prob")}}
+        for key in ("initial_momentum", "final_momentum"):
+            if key not in trace or trace[key].shape != samples.shape:
+                raise ValueError("missing or misaligned momentum health trace")
+            arrays[key] = trace[key]
+        if "log_acceptance_correction" in trace:
+            arrays["log_acceptance_correction"] = trace["log_acceptance_correction"]
+        for key, array in arrays.items():
+            if not bool(tf.reduce_all(tf.math.is_finite(array))):
+                failures.append("nonfinite_" + key)
+        if not bool(tf.reduce_all(trace["target_score_finite"])):
+            failures.append("nonfinite_target_score")
+        # This invariant also checks the first transition and rejected proposals.
+        expected = tf.where(trace["is_accepted"][..., None], trace["proposed_state"], previous)
+        if not bool(tf.reduce_all(tf.equal(expected, samples))):
+            failures.append("metropolis_state_mismatch")
+        if "divergence" in trace:
+            if tuple(trace["divergence"].shape) != shape or trace["divergence"].dtype != tf.bool:
+                raise ValueError("invalid native divergence trace")
+            if bool(tf.reduce_any(trace["divergence"])):
+                failures.append("native_divergence_positive")
+        if self.config.target_status_trace_policy == "per_chain_step":
+            for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
+                if target_status_telemetry_has_failure(trace.get(key, {}), expected_shape=shape):
+                    failures.append(key + "_failed")
+        return tuple(failures)
+
+
+# Source-16 retained the source-08 target-status implementation unchanged.
+def target_status_telemetry_has_failure(
+    telemetry: Mapping[str, Any],
+    *,
+    expected_shape: tuple[int, ...],
+) -> bool:
+    """Validate one per-chain-step target-status trace and return its veto bit."""
+
+    if not isinstance(telemetry, Mapping):
+        raise TypeError("target_status_telemetry trace must be a mapping")
+    missing = tuple(
+        key for key in TARGET_STATUS_TELEMETRY_CORE_FIELDS if key not in telemetry
+    )
+    if missing:
+        raise ValueError(
+            "target_status_telemetry missing required fields: " + ", ".join(missing)
+        )
+    optional_present = tuple(
+        key in telemetry for key in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS
+    )
+    if any(optional_present) and not all(optional_present):
+        raise ValueError(
+            "target_status_telemetry conditioning fields must be both present or both absent"
+        )
+    active_fields = (
+        TARGET_STATUS_TELEMETRY_FIELDS
+        if all(optional_present)
+        else TARGET_STATUS_TELEMETRY_CORE_FIELDS
+    )
+    import tensorflow as tf
+
+    tensors = {key: tf.convert_to_tensor(telemetry[key]) for key in active_fields}
+    expected_tensor_shape = tf.TensorShape(expected_shape)
+    if any(value.shape != expected_tensor_shape for value in tensors.values()):
+        raise ValueError("target_status_telemetry fields must match the chain-step shape")
+    status = tensors["status_code"]
+    valid = tensors["valid_pre_regularized_score"]
+    floors = tensors["floor_count_value"]
+    if not status.dtype.is_integer or status.dtype.is_bool:
+        raise ValueError("target status_code must be integer-valued")
+    if not valid.dtype.is_bool:
+        raise ValueError("target valid_pre_regularized_score must be boolean")
+    if not floors.dtype.is_integer or floors.dtype.is_bool:
+        raise ValueError("target floor_count_value must be integer-valued")
+    status_nonvalid = (status != 0) | (~valid)
+    if bool(
+        tf.reduce_any(tf.logical_and(~status_nonvalid, floors < 0)).numpy()
+    ):
+        raise ValueError("valid target floor_count_value must be nonnegative")
+    for name in TARGET_STATUS_TELEMETRY_OPTIONAL_CONDITIONING_FIELDS:
+        if name not in tensors:
+            continue
+        value = tensors[name]
+        if not value.dtype.is_numeric:
+            raise ValueError(f"target {name} must be numeric")
+        finite = _finite_tensor_mask(value)
+        if bool(
+            tf.reduce_any(tf.logical_and(~status_nonvalid, ~finite)).numpy()
+        ):
+            raise ValueError(f"valid target {name} must be finite")
+    return bool(tf.reduce_any(status_nonvalid).numpy())
+

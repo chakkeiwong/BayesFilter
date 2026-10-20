@@ -53,3 +53,29 @@ def test_interval_assessment_uses_actual_controller_quantities(real_member):
     assert not assessed["sequential_coverage_established"]
     if member["posterior"]["retained_checks"]:
         assert {r["kind"] for r in assessed["quantities"]}=={"mean","quantile"}
+
+
+def test_budget_stopped_posterior_resumes_exact_committed_chunks(real_member, tmp_path, monkeypatch):
+    from bayesfilter.runtime.execution_budget import execution_budget, ExecutionBudgetExceeded
+    from bayesfilter.runtime.durable_tensor_checkpoint import DurableTensorCheckpoint
+    d, _, baseline = real_member
+    allowed = True
+    original = DurableTensorCheckpoint.run
+    def stop_after_first_chunk(self, *args, **kwargs):
+        nonlocal allowed
+        value = original(self, *args, **kwargs)
+        allowed = False
+        return value
+    monkeypatch.setattr(DurableTensorCheckpoint, "run", stop_after_first_chunk)
+    with execution_budget(check=lambda: allowed), pytest.raises(ExecutionBudgetExceeded):
+        execute_pipeline(d, tmp_path)
+    assert list(tmp_path.glob("members/*/posterior_chunks/committed/*/bundle.json"))
+    assert list(tmp_path.glob("members/*/budget_pauses/pause-*.json"))
+    assert not list(tmp_path.glob("members/*/result.json"))
+    assert not list(tmp_path.glob("members/*/draws.tensor"))
+    monkeypatch.setattr(DurableTensorCheckpoint, "run", original)
+    resumed = execute_pipeline(d, tmp_path)
+    assert resumed["verified_candidate_ids"] == baseline["verified_candidate_ids"]
+    for expected, actual in zip(baseline["members"], resumed["members"]):
+        np.testing.assert_array_equal(read_tensor(expected["draws_path"]), read_tensor(actual["draws_path"]))
+        np.testing.assert_array_equal(read_tensor(expected["warmup_path"]), read_tensor(actual["warmup_path"]))

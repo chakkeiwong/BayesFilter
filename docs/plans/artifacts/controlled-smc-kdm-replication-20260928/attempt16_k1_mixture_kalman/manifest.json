@@ -1,0 +1,121 @@
+{
+  "schema": "controlled_smc_kdm_attempt_v1",
+  "phase": "k1_mixture_kalman",
+  "status": "COMPLETE",
+  "resource": "gpu",
+  "cpu_only": false,
+  "gpu_intentionally_hidden": false,
+  "started_utc": "2026-09-28T20:56:46.160065+00:00",
+  "started_epoch": 1790629006.1600885,
+  "timeout_seconds": 90,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt16_k1_mixture_kalman/sources/diagnose_kdm_mixture_kalman.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt16_k1_mixture_kalman"
+  ],
+  "plan": "docs/plans/kdm-mixture-kalman-validation-20260929.md",
+  "master": "docs/plans/controlled-smc-kdm-replication-master-program-20260928.md",
+  "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt16_k1_mixture_kalman/summary.json",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt16_k1_mixture_kalman",
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "source_sha256": {
+    "docs/benchmarks/diagnose_kdm_mixture_kalman.py": "238503f6de396bfc66e980a2fb61eb142c2812e1bffda0123b28726255caaf0d",
+    "scripts/run_controlled_smc_kdm.py": "02723fd12c7d19a7e8915fbc9538ad451a8d2f764cce62eff8614f6d1ca59866",
+    "scripts/run_replication_master.py": "cf8a7210efe5b0b3ea6bebca5cb42dd96746355eab3bd5e60cae29cf83a79929",
+    "docs/plans/controlled-smc-kdm-execution-20260929.md": "cce2f7be0c5bd2a9c712c48171694e4e2f8f7b8c8ad34cd26294a291eb16dd5d",
+    "docs/plans/controlled-smc-kdm-replication-master-program-20260928.md": "a0f081f6392d46116bceaf5db6544599133878d7e33fcc62d5c9e424685ac14f",
+    "docs/benchmarks/diagnose_controlled_smc_reference.py": "51d8859e35d0539158480e82162264cbc63ee6cf564e556707d8f30da0c26a75",
+    "docs/benchmarks/reference_controlled_smc.m": "e28dde174cf7fb5230510f335c2eb116b6d9c63a7a78d0e7d03ac8f317e9b024",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/NeuroScience/cSMC_Resample.m": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/NeuroScience/Model_NeuroScience.m": "db7850612ec25e366a9101083628742e065936986a02c81bcd08ea649fa9950a",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/NeuroScience/Systematic_Resampling.m": "abdc8359f62809d1c606334ed73c862cbfd1fd7d1d1119b498c01850624a6e23",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/replication/mixture_kalman_reference_tf.py": "4574010aa31541b31676c7b343e82c40980146c6b979557d50428669a99f3ab0",
+    "docs/plans/kdm-mixture-kalman-validation-20260929.md": "7219b86b473f1d86e227dff8bf9c05809ac233ad135af27758f5eb804c965525"
+  },
+  "input_artifacts_sha256": {},
+  "data_sha256": "N/A: constructed identity fixture, preserved in diagnostic source and summary",
+  "seeds": "N/A: deterministic constructed fixture",
+  "author_commit": "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18",
+  "statistics_commit": "N/A: TensorFlow/PyTorch phase",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": null,
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "supervisor_pid": 1493126,
+  "supervisor_identity": "46222672",
+  "pid": 1664174,
+  "process_identity": "46937072",
+  "artifact_error": null,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "jit_compile": true,
+  "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "ended_utc": "2026-09-28T20:56:51.444329+00:00",
+  "returncode": 0,
+  "wall_seconds": 5.278257910977118,
+  "charged_seconds": 5.278257910977118,
+  "decision": {
+    "status": "PASS",
+    "scope": "APPENDIX_B_EQUATIONS_EXACT_REFERENCE_AND_GRADIENT_CONTROLS_ONLY",
+    "replication": "INCOMPLETE"
+  },
+  "output_sha256": {
+    "fixture.json": "d96ac948048f5f65dac43c81a9096b8c384b51677df50ae2547267f7d69579b4",
+    "checks.json": "0916a345a40c5deb3c4879196ff9e182446b1060ad05b72e80d9a94fd6f119f9",
+    "summary.json": "fe50b2b71d160b24c889883021bb62f73a1659f09f34a10edf1879602182fea9",
+    "command.log": "a948389b21eae7c351eadb7654653a3072774c1a64fea26604a9e220977a5fb1",
+    "sources/reference_controlled_smc.m": "e28dde174cf7fb5230510f335c2eb116b6d9c63a7a78d0e7d03ac8f317e9b024",
+    "sources/Model_NeuroScience.m": "db7850612ec25e366a9101083628742e065936986a02c81bcd08ea649fa9950a",
+    "sources/cSMC_Resample.m": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+    "sources/run_controlled_smc_kdm.py": "02723fd12c7d19a7e8915fbc9538ad451a8d2f764cce62eff8614f6d1ca59866",
+    "sources/diagnose_kdm_mixture_kalman.py": "238503f6de396bfc66e980a2fb61eb142c2812e1bffda0123b28726255caaf0d",
+    "sources/Systematic_Resampling.m": "abdc8359f62809d1c606334ed73c862cbfd1fd7d1d1119b498c01850624a6e23",
+    "sources/controlled-smc-kdm-execution-20260929.md": "cce2f7be0c5bd2a9c712c48171694e4e2f8f7b8c8ad34cd26294a291eb16dd5d",
+    "sources/mixture_kalman_reference_tf.py": "4574010aa31541b31676c7b343e82c40980146c6b979557d50428669a99f3ab0",
+    "sources/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "sources/diagnose_controlled_smc_reference.py": "51d8859e35d0539158480e82162264cbc63ee6cf564e556707d8f30da0c26a75",
+    "sources/run_replication_master.py": "cf8a7210efe5b0b3ea6bebca5cb42dd96746355eab3bd5e60cae29cf83a79929",
+    "sources/controlled-smc-kdm-replication-master-program-20260928.md": "a0f081f6392d46116bceaf5db6544599133878d7e33fcc62d5c9e424685ac14f",
+    "sources/kdm-mixture-kalman-validation-20260929.md": "7219b86b473f1d86e227dff8bf9c05809ac233ad135af27758f5eb804c965525"
+  }
+}

@@ -1,0 +1,78 @@
+2026-09-17 01:46:14.017906: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1789580774.034382  149391 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1789580774.039501  149391 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789580774.053487  149391 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580774.053513  149391 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580774.053517  149391 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580774.053521  149391 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-17 01:46:14.057362: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/h5py/__init__.py:36: UserWarning: h5py is running against HDF5 2.2.0 when it was built against 2.1.0, this may cause problems
+  _warn(("h5py is running against HDF5 {0} when it was built against {1}, "
+I0000 00:00:1789580776.907526  149391 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 46565 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4090, pci bus id: 0000:81:00.0, compute capability: 8.9
+I0000 00:00:1789580778.459795  149456 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x598bffec4820
+{
+  "fixture_name": "covariance",
+  "jit_compile": false,
+  "wall_seconds": 7.909421617001499,
+  "finite": true,
+  "trace_count": 1,
+  "stages": {
+    "before_tf_import": {
+      "VmHWM_kib": 18980,
+      "VmRSS_kib": 18980,
+      "resource_ru_maxrss_kib": 18432
+    },
+    "after_tf_import_before_fixture": {
+      "VmHWM_kib": 708884,
+      "VmRSS_kib": 708884,
+      "resource_ru_maxrss_kib": 704512
+    },
+    "after_fixture_and_inputs": {
+      "VmHWM_kib": 898352,
+      "VmRSS_kib": 898352,
+      "resource_ru_maxrss_kib": 872448,
+      "gpu_allocator_bytes": {
+        "current": 178688,
+        "peak": 398080
+      }
+    },
+    "after_trace": {
+      "VmHWM_kib": 902312,
+      "VmRSS_kib": 902312,
+      "resource_ru_maxrss_kib": 878592,
+      "gpu_allocator_bytes": {
+        "current": 178688,
+        "peak": 178688
+      }
+    },
+    "after_cold_outputs_live": {
+      "VmHWM_kib": 1023840,
+      "VmRSS_kib": 1023840,
+      "resource_ru_maxrss_kib": 995328,
+      "gpu_allocator_bytes": {
+        "current": 2927616,
+        "peak": 16328960
+      }
+    },
+    "after_cold_outputs_released": {
+      "VmHWM_kib": 1023840,
+      "VmRSS_kib": 1023840,
+      "resource_ru_maxrss_kib": 995328,
+      "gpu_allocator_bytes": {
+        "current": 2925312,
+        "peak": 16328960
+      }
+    },
+    "after_warm_outputs_released": {
+      "VmHWM_kib": 1023876,
+      "VmRSS_kib": 1023876,
+      "resource_ru_maxrss_kib": 995328,
+      "gpu_allocator_bytes": {
+        "current": 2925312,
+        "peak": 16328960
+      }
+    }
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "status": "completed_reference_comparison",
+  "comparisons": [
+    {
+      "jit_compile": true,
+      "cases": 218,
+      "mismatches": [],
+      "boundary_parity": true,
+      "wall_seconds": 0.4214959000237286,
+      "trace_count": 1,
+      "assembly_seconds": 0.6122269220650196,
+      "full_record_parity": true
+    },
+    {
+      "jit_compile": false,
+      "cases": 218,
+      "mismatches": [],
+      "boundary_parity": true,
+      "wall_seconds": 0.13698925799690187,
+      "trace_count": 1,
+      "assembly_seconds": 0.52318334300071,
+      "full_record_parity": true
+    }
+  ],
+  "source_manifest_sha256": "358b840848d2b4ad07772f3a0bb326c42dde268bb8dd2d9a226df9ad5cd9a72f",
+  "evidence_sha256": "dfabe1ece09a43fda6b9bd7909a57e5a08f046c61e6b83cfe1f80dcfddbcbc3e",
+  "input_evidence": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-serial-restored-01/nonlinear/model/tuning/numerical_evidence/dffcf9facf94780181a2009c8cd37a2eecac2d71c9d9cdff43d531eb95a06a57.json",
+  "trial_count": 32,
+  "baseline_assembly_seconds": 0.651465066941455,
+  "gpu_intentionally_hidden": false,
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "graph_devices": {
+    "True": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "False": "/job:localhost/replica:0/task:0/device:GPU:0"
+  },
+  "placement_comparisons": [
+    {
+      "placement": "archive_decoded",
+      "input_device": "/job:localhost/replica:0/task:0/device:CPU:0",
+      "timings": [
+        {
+          "variant": "baseline",
+          "seconds": 0.665969979017973,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.7731889770366251,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.8206497398205101,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.692502676974982,
+          "full_record_parity": true
+        },
+        {
+          "variant": "baseline",
+          "seconds": 0.6088980019558221,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.6763355820439756,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.6854260130785406,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.5647305119782686,
+          "full_record_parity": true
+        },
+        {
+          "variant": "baseline",
+          "seconds": 0.6863304928410798,
+          "full_record_parity": true
+        }
+      ]
+    },
+    {
+      "placement": "native_device",
+      "input_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "timings": [
+        {
+          "variant": "baseline",
+          "seconds": 0.6960151179227978,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.5827651179861277,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.5974135568831116,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.674197630956769,
+          "full_record_parity": true
+        },
+        {
+          "variant": "baseline",
+          "seconds": 0.814443145878613,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.6168925641104579,
+          "full_record_parity": true
+        },
+        {
+          "variant": "True",
+          "seconds": 0.5688828791026026,
+          "full_record_parity": true
+        },
+        {
+          "variant": "False",
+          "seconds": 0.579707674914971,
+          "full_record_parity": true
+        },
+        {
+          "variant": "baseline",
+          "seconds": 0.5661051541101187,
+          "full_record_parity": true
+        }
+      ]
+    }
+  ],
+  "tf32": true,
+  "numerical_sampling": false,
+  "runtime_changed": false,
+  "release_ready": false,
+  "interpretation": "Metadata-predicate and saved-record comparison on the recorded placements. Graph-only arm is diagnostic; no cross-placement equivalence, full-price saving or runtime adoption.",
+  "plan": "docs/plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md"
+}

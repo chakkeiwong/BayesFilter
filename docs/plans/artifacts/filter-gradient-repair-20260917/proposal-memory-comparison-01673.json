@@ -1,0 +1,215 @@
+{
+  "schema": "filter_repair_proposal_memory_comparison.v1",
+  "provenance": [
+    {
+      "run": 1668,
+      "arm": "before",
+      "dimension": 3,
+      "sha256": "8ae48992e367497f9e6cbfc69fc780897250605e5d8cb9e6212476ec6839aaac",
+      "gpu_index": "2"
+    },
+    {
+      "run": 1669,
+      "arm": "before",
+      "dimension": 5,
+      "sha256": "c5a4b09a21db69dd6ef9862398577585e9135becf41633d2b0af057c40ea13db",
+      "gpu_index": "2"
+    },
+    {
+      "run": 1670,
+      "arm": "graph",
+      "dimension": 3,
+      "sha256": "923297919316a346021d523c92fd5e80c13c409a8aedd694a7721e6fd0a86525",
+      "gpu_index": "2"
+    },
+    {
+      "run": 1671,
+      "arm": "graph",
+      "dimension": 5,
+      "sha256": "da8dbe9abc3a8273d880c403da16621baf3dc178e193c10eaa19c5f23cef7503",
+      "gpu_index": "2"
+    },
+    {
+      "run": 1672,
+      "arm": "xla",
+      "dimension": 3,
+      "sha256": "b19a0678f939685ef8a765d386ef80128f42b58eafb24115faf33c220f57a495",
+      "gpu_index": "2"
+    },
+    {
+      "run": 1673,
+      "arm": "xla",
+      "dimension": 5,
+      "sha256": "6f22d04d25769813a50a44f1f567b8e994468353c1cd63f50a5af14b10873275",
+      "gpu_index": "2"
+    }
+  ],
+  "comparisons": [
+    {
+      "dimension": 3,
+      "before_arm": "before",
+      "after_arm": "xla",
+      "before": {
+        "cold_seconds": 0.9941774519975297,
+        "warm_median_seconds": 0.0038754460110794753,
+        "host_peak_bytes": 1062907904,
+        "gpu_peak_bytes": 15104,
+        "warm_host_growth_bytes": 24576,
+        "warm_gpu_current_bytes": [
+          8960
+        ],
+        "graph_nodes": null,
+        "trace_count": null
+      },
+      "after": {
+        "cold_seconds": 0.7406411390402354,
+        "warm_median_seconds": 0.001819782512029633,
+        "host_peak_bytes": 1050812416,
+        "gpu_peak_bytes": 21504,
+        "warm_host_growth_bytes": 12288,
+        "warm_gpu_current_bytes": [
+          12032
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "maximum_absolute_error": 0.0,
+      "host_peak_delta_bytes": -12095488,
+      "gpu_peak_ratio": 1.423728813559322,
+      "cold_ratio": 0.744978813945255,
+      "warm_ratio": 0.4695672464090776,
+      "triggers": {
+        "host_over_256MiB": false,
+        "gpu_at_least_2x": false,
+        "cold_at_least_2x": false,
+        "warm_over_20percent": false
+      }
+    },
+    {
+      "dimension": 3,
+      "before_arm": "graph",
+      "after_arm": "xla",
+      "before": {
+        "cold_seconds": 1.3324077230063267,
+        "warm_median_seconds": 0.020106729032704607,
+        "host_peak_bytes": 1112080384,
+        "gpu_peak_bytes": 560896,
+        "warm_host_growth_bytes": 8192,
+        "warm_gpu_current_bytes": [
+          16128
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "after": {
+        "cold_seconds": 0.7406411390402354,
+        "warm_median_seconds": 0.001819782512029633,
+        "host_peak_bytes": 1050812416,
+        "gpu_peak_bytes": 21504,
+        "warm_host_growth_bytes": 12288,
+        "warm_gpu_current_bytes": [
+          12032
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "maximum_absolute_error": 2.220446049250313e-16,
+      "host_peak_delta_bytes": -61267968,
+      "gpu_peak_ratio": 0.038338658146964855,
+      "cold_ratio": 0.555866741277301,
+      "warm_ratio": 0.09050614394164586,
+      "triggers": {
+        "host_over_256MiB": false,
+        "gpu_at_least_2x": false,
+        "cold_at_least_2x": false,
+        "warm_over_20percent": false
+      }
+    },
+    {
+      "dimension": 5,
+      "before_arm": "before",
+      "after_arm": "xla",
+      "before": {
+        "cold_seconds": 1.1014529580133967,
+        "warm_median_seconds": 0.004126251471461728,
+        "host_peak_bytes": 1063264256,
+        "gpu_peak_bytes": 15104,
+        "warm_host_growth_bytes": 24576,
+        "warm_gpu_current_bytes": [
+          8960
+        ],
+        "graph_nodes": null,
+        "trace_count": null
+      },
+      "after": {
+        "cold_seconds": 0.8241334490012378,
+        "warm_median_seconds": 0.0016852825065143406,
+        "host_peak_bytes": 1050648576,
+        "gpu_peak_bytes": 21504,
+        "warm_host_growth_bytes": 16384,
+        "warm_gpu_current_bytes": [
+          12032
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "maximum_absolute_error": 0.0,
+      "host_peak_delta_bytes": -12615680,
+      "gpu_peak_ratio": 1.423728813559322,
+      "cold_ratio": 0.7482239191473614,
+      "warm_ratio": 0.4084294227267074,
+      "triggers": {
+        "host_over_256MiB": false,
+        "gpu_at_least_2x": false,
+        "cold_at_least_2x": false,
+        "warm_over_20percent": false
+      }
+    },
+    {
+      "dimension": 5,
+      "before_arm": "graph",
+      "after_arm": "xla",
+      "before": {
+        "cold_seconds": 1.3160415340098552,
+        "warm_median_seconds": 0.022494532488053665,
+        "host_peak_bytes": 1111506944,
+        "gpu_peak_bytes": 574208,
+        "warm_host_growth_bytes": 8192,
+        "warm_gpu_current_bytes": [
+          16128
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "after": {
+        "cold_seconds": 0.8241334490012378,
+        "warm_median_seconds": 0.0016852825065143406,
+        "host_peak_bytes": 1050648576,
+        "gpu_peak_bytes": 21504,
+        "warm_host_growth_bytes": 16384,
+        "warm_gpu_current_bytes": [
+          12032
+        ],
+        "graph_nodes": 264,
+        "trace_count": 1
+      },
+      "maximum_absolute_error": 2.220446049250313e-16,
+      "host_peak_delta_bytes": -60858368,
+      "gpu_peak_ratio": 0.03744984395898351,
+      "cold_ratio": 0.6262214585965082,
+      "warm_ratio": 0.0749196502487596,
+      "triggers": {
+        "host_over_256MiB": false,
+        "gpu_at_least_2x": false,
+        "cold_at_least_2x": false,
+        "warm_over_20percent": false
+      }
+    }
+  ],
+  "analysis_sha256": "697a456f214de9a0aa122d2b8974861a92b643cc166ea88d7a384ed59ff72095",
+  "nonclaims": [
+    "Single fresh process per arm; no statistically supported ranking or terminal repeats.",
+    "Before uses its original mixed host/XLA-trust route; candidate graph is explicitly non-default.",
+    "The enclosing outer refinement, factor escalation and broader controllers remain open."
+  ]
+}

@@ -1,0 +1,356 @@
+{
+  "schema": "ledh.sir_no_oracle_tuning.v2",
+  "git_commit": "b98366bc92bfa7ff7b6c6737236b7e9096a4bfd7",
+  "source_sha256": {
+    "docs/benchmarks/run_ledh_sir_no_oracle_tuning.py": "b669d805c7cb351fe1d6039ad44e1a711bcf689a4e631caad3279682c106c07f",
+    "docs/plans/ledh-sir-no-oracle-tuning-20261006.md": "2b1379f6f665475f646b4a27b0478c9db4b7eaf5b3c5a9b0f32c9f2c1ba0cf45",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b"
+  },
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_sir_no_oracle_tuning.py",
+    "_worker",
+    "--phase",
+    "confirmation",
+    "--horizon",
+    "10",
+    "--candidate",
+    "baseline_marginal",
+    "--device",
+    "gpu",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T10-01",
+    "--budget-seconds",
+    "28800"
+  ],
+  "created_utc": "2026-10-06T15:44:39.028987+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "gpu",
+  "cpu_only": false,
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "route": "iid_dual_cap",
+  "particles": 1008,
+  "horizons": [
+    10,
+    20,
+    40,
+    50
+  ],
+  "reset_design": "normal_quantiles",
+  "candidates": {
+    "baseline_marginal": {
+      "flow_substeps": 8,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    },
+    "flow4": {
+      "flow_substeps": 4,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    },
+    "epsilon51": {
+      "flow_substeps": 8,
+      "reset_epsilon": 51.2,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    },
+    "weak_correction": {
+      "flow_substeps": 8,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.06,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.015,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    },
+    "epsilon204": {
+      "flow_substeps": 8,
+      "reset_epsilon": 204.8,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    },
+    "flow16_weak": {
+      "flow_substeps": 16,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.06,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.015,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12,
+      "moment_safety": true,
+      "coordinate_cap_identity_radius": 8.0,
+      "importance_weight_policy": "marginal_mixture"
+    }
+  },
+  "seeds": {
+    "calibration": [
+      261006211,
+      261006212,
+      261006213,
+      261006214
+    ],
+    "validation": [
+      261006311,
+      261006312,
+      261006313,
+      261006314
+    ],
+    "confirmation": [
+      261006411,
+      261006412,
+      261006413,
+      261006414,
+      261006415,
+      261006416,
+      261006417,
+      261006418
+    ]
+  },
+  "data_seeds": {
+    "calibration": 26100611,
+    "validation": 26100612,
+    "confirmation": 26100613
+  },
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-sir-no-oracle-tuning-20261006.md",
+  "results": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T10-01/results.md",
+  "output": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-sir-no-oracle-tuning-20261006-01/attempts/confirmation-T10-01",
+  "budget_seconds": 28800.0,
+  "evidence_role": "scope_tuning_diagnostic_only",
+  "default_promoted": false,
+  "phase": "confirmation",
+  "horizon": 10,
+  "observation_sha256": "cce4ae1db204bb3ad7d7af8351fc8dec4e4c1f4fbbd211f346de750449d8f3a3",
+  "observations": [
+    [
+      15.82317726398071,
+      21.886811480204376,
+      23.823037028844038,
+      24.451509779208624,
+      35.04123442525537,
+      9.38388007298524,
+      8.759563902981068,
+      14.556895102132872,
+      8.583850630138013
+    ],
+    [
+      48.86052649681542,
+      31.392060503283577,
+      23.642362712677933,
+      27.375396754513055,
+      32.195798444244204,
+      31.2114808942247,
+      22.74183697032527,
+      31.980202485915484,
+      18.67003973382242
+    ],
+    [
+      63.756127915830085,
+      61.824132242341065,
+      48.68594905272216,
+      68.24576974374813,
+      62.8935752498675,
+      69.11659672816447,
+      27.086732007048063,
+      48.012356489346715,
+      44.299922651367375
+    ],
+    [
+      101.37516173183911,
+      85.22865350523053,
+      91.74274497706585,
+      98.11317334045623,
+      79.4083038901092,
+      58.65702701915852,
+      67.3300657372748,
+      70.75767472202263,
+      62.74482916786743
+    ],
+    [
+      135.10765913551583,
+      115.78484090383236,
+      135.05468083750904,
+      124.71665034324232,
+      130.04522543722243,
+      110.33103726870284,
+      78.66219790886275,
+      79.38743083248444,
+      85.76667163627357
+    ],
+    [
+      115.02275974797463,
+      146.9896153738086,
+      125.40995871684113,
+      148.92826121247177,
+      130.58760402554748,
+      139.51035717131825,
+      108.07439120531302,
+      115.3973543952125,
+      118.45122636800315
+    ],
+    [
+      154.70926300022347,
+      134.07989044584508,
+      141.63954508044156,
+      145.18938572452748,
+      141.54866226763167,
+      133.54732788180135,
+      142.16399637727199,
+      154.83205522909913,
+      112.54695893413705
+    ],
+    [
+      123.39138303231258,
+      123.78597967010212,
+      151.07800744935975,
+      138.8002261835258,
+      142.89709377519367,
+      124.85755138020217,
+      156.8407612713149,
+      145.4317157991912,
+      136.3811326277789
+    ],
+    [
+      110.57633050940349,
+      112.06979708903677,
+      105.68325896999755,
+      143.3981066339336,
+      109.53542670981926,
+      107.98709075182612,
+      127.33723023161895,
+      124.54553835459666,
+      140.92546467245606
+    ],
+    [
+      86.41484381496706,
+      118.09269981263576,
+      116.31628424904886,
+      89.80095198897072,
+      119.1265513065703,
+      107.36144221416572,
+      113.65520688819504,
+      98.83982148371031,
+      113.22231948488664
+    ]
+  ]
+}

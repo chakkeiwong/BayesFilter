@@ -1,0 +1,520 @@
+"""Focused integration checks for the bounded replication dispatcher."""
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+import types
+import unittest
+from unittest import mock
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+runner = load("replication_master", ROOT / "scripts/run_replication_master.py")
+worker = load("replication_diagnostic", ROOT / "docs/benchmarks/diagnose_replication_stage0.py")
+training = load("replication_training", ROOT / "docs/benchmarks/diagnose_replication_training.py")
+evaluation = load("replication_evaluation", ROOT / "docs/benchmarks/diagnose_replication_evaluation.py")
+
+
+class MasterTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.base = Path(self.temp.name)
+
+    def campaign(self):
+        return runner.Campaign(self.base / "campaign")
+
+    def complete_recovery_fixture(self):
+        campaign = self.campaign()
+        output = campaign.output / 'trial'
+        output.mkdir()
+        phases = {label: {'status': 'PASS', 'epochs_completed': 1, 'epoch_cap': cap,
+                          'termination': 'SOURCE_EARLY_STOP', 'source_skipped_gradients': 0}
+                  for label, cap in [('pretraining', 400), ('full_training', 800)]}
+        epochs = [{'phase': label, 'function': function, 'epoch': 0, 'loss': 1.0}
+                  for label in phases for function in ['do_training_epoch', 'do_validation_epoch']]
+        checkpoints = {}
+        for label in phases:
+            path = output / label / 'models' / 'fixture_best.pt'
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'fixture checkpoint: byte integrity only')
+            checkpoints[str(path.relative_to(output))] = runner.digest(path)
+        result = {'check': 'PASS', 'mode': 'source_trial', 'source_training_protocol_complete': True,
+                  'full_source_training_call_chain': 'PASS_ON_COMPLETE_SOURCE_TRIAL',
+                  'phases': phases, 'optimizer_gradient_checks': 2, 'checkpoints_reloaded': 2}
+        runner.write_json(output / 'result.json', result)
+        runner.write_json(output / 'progress.json', {'terminal': True, 'phases': phases})
+        runner.write_json(output / 'completed-phases.json', {'phases': phases, 'epochs': epochs})
+        runner.write_json(output / 'source-training-wiring.json',
+                          {'checkpoint_sha256': checkpoints, 'optimizer_gradient_checks': 2})
+        return campaign, output, result
+
+    def recovery_args(self):
+        return types.SimpleNamespace(after_attempt=1, lost_supervisor_pid=999999999,
+                                     continuation_plan=self.base / 'plan.md', repair_note='CPU test')
+
+    def recovery_target(self, campaign, output, pid=999999998):
+        target = {'index': 1, 'name': 'mdpf_source_trial', 'resource': 'gpu',
+                  'status': 'RUNNING', 'started_at': runner.now(), 'timeout_seconds': 60,
+                  'pid': pid, 'command': ['fixture'], 'output': str(output)}
+        campaign.state['attempts'].append(target)
+        campaign.save()
+        return target
+
+    def test_recovery_accepts_complete_records_and_rejects_corrupted_checkpoint(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        self.assertEqual(runner.recovered_source_artifacts(output), result)
+        checkpoint = output / 'full_training/models/fixture_best.pt'
+        checkpoint.write_bytes(b'corrupted')
+        with self.assertRaisesRegex(RuntimeError, 'checkpoint'):
+            runner.recovered_source_artifacts(output)
+
+    def test_recovery_rejects_partial_epoch_evidence_even_with_pass_label(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        path = output / 'completed-phases.json'
+        value = json.loads(path.read_text())
+        value['epochs'].pop()
+        runner.write_json(path, value)
+        with self.assertRaisesRegex(RuntimeError, 'epoch coverage'):
+            runner.recovered_source_artifacts(output)
+
+    def test_recovery_rejects_short_trial_and_nonterminal_progress(self):
+        for field, value in [('mode', 'trial_smoke'), ('source_training_protocol_complete', False)]:
+            with self.subTest(field=field):
+                campaign, output, result = self.complete_recovery_fixture()
+                result[field] = value
+                runner.write_json(output / 'result.json', result)
+                with self.assertRaises(RuntimeError):
+                    runner.recovered_source_artifacts(output)
+                # Reuse the test root for the next independently named fixture.
+                self.base = self.base / 'next'
+                self.base.mkdir()
+
+    def test_recovery_never_fabricates_exit_code_or_restarts_training(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        target = self.recovery_target(campaign, output)
+        identity = {'state': 'S', 'group': target['pid'], 'start_ticks': 1, 'command': ['fixture']}
+        with mock.patch.object(runner, 'process_record', side_effect=[None, identity, None]), \
+             mock.patch.object(runner.os, 'killpg'), \
+             mock.patch.object(runner.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as followup:
+            self.assertEqual(runner.supervise_existing(self.recovery_args(), campaign.output, self.base), 0)
+        saved = json.loads(campaign.state_path.read_text())['attempts'][0]
+        self.assertEqual(saved['status'], 'RECOVERED_ARTIFACTS')
+        self.assertIsNone(saved['returncode'])
+        self.assertEqual(saved['exit_status'], 'UNKNOWN_NONCHILD')
+        followup.assert_called_once()
+        self.assertIn('followup-evaluation', followup.call_args.args[0])
+        self.assertNotIn('mdpf_source_trial', followup.call_args.args[0])
+
+    def test_recovery_observed_failure_vetoes_pass_artifacts(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        target = self.recovery_target(campaign, output)
+        identity = {'state': 'S', 'group': target['pid'], 'start_ticks': 1, 'command': ['fixture']}
+        zombie = {**identity, 'state': 'Z', 'exit_status': 42 << 8}
+        with mock.patch.object(runner, 'process_record', side_effect=[None, identity, zombie]), \
+             mock.patch.object(runner.os, 'killpg'), mock.patch.object(runner.subprocess, 'run') as followup:
+            self.assertEqual(runner.supervise_existing(self.recovery_args(), campaign.output, self.base), 2)
+        saved = json.loads(campaign.state_path.read_text())['attempts'][0]
+        self.assertEqual((saved['status'], saved['returncode']), ('FAILED', 42))
+        followup.assert_not_called()
+
+    def test_recovery_enforces_original_deadline_and_charges_original_start(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        command = [sys.executable, '-c', 'import time; time.sleep(60)']
+        child = subprocess.Popen(command, start_new_session=True)
+        try:
+            target = self.recovery_target(campaign, output, child.pid)
+            target.update(command=command, timeout_seconds=1,
+                          started_at=runner.datetime.fromtimestamp(time.time()-60, runner.timezone.utc).isoformat())
+            campaign.save()
+            with mock.patch.object(runner.subprocess, 'run') as followup:
+                self.assertEqual(runner.supervise_existing(self.recovery_args(), campaign.output, self.base), 2)
+            child.wait(timeout=5)
+            self.assertEqual(child.returncode, -9)
+            saved = json.loads(campaign.state_path.read_text())['attempts'][0]
+            self.assertEqual(saved['status'], 'TIMEOUT')
+            self.assertGreaterEqual(saved['charged_seconds'], 60)
+            self.assertLess(saved['charged_seconds'], 65)
+            followup.assert_not_called()
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=5)
+
+    def test_recovery_refuses_live_supervisor_and_wrong_worker(self):
+        for original_alive in (True, False):
+            with self.subTest(original_alive=original_alive):
+                campaign, output, result = self.complete_recovery_fixture()
+                target = self.recovery_target(campaign, output)
+                wrong = {'state': 'S', 'group': target['pid'], 'start_ticks': 1, 'command': ['different']}
+                with mock.patch.object(runner, 'process_running', return_value=original_alive), \
+                     mock.patch.object(runner, 'process_record', return_value=wrong), \
+                     mock.patch.object(runner.os, 'killpg') as kill:
+                    with self.assertRaises(RuntimeError):
+                        runner.supervise_existing(self.recovery_args(), campaign.output, self.base)
+                    kill.assert_not_called()
+                self.base = self.base / 'next'
+                self.base.mkdir()
+
+    def test_detached_supervisor_has_own_session_and_file_output(self):
+        command = [sys.executable, '-c',
+                   'import os,time; print(os.getsid(0)==os.getpid(), flush=True); time.sleep(0.2)']
+        record = runner.detach_master(command, self.base, 'cpu-test')
+        os.waitpid(record['pid'], 0)
+        self.assertTrue(record['detached'])
+        self.assertEqual(Path(record['log']).read_text().strip(), 'True')
+
+    def test_recovery_can_collect_training_that_finished_before_attachment(self):
+        campaign, output, result = self.complete_recovery_fixture()
+        target = self.recovery_target(campaign, output)
+        progress = json.loads((output / 'progress.json').read_text())
+        progress['updated_unix_seconds'] = time.time()
+        runner.write_json(output / 'progress.json', progress)
+        with mock.patch.object(runner, 'process_record', return_value=None), \
+             mock.patch.object(runner.os, 'killpg', side_effect=ProcessLookupError), \
+             mock.patch.object(runner.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)):
+            self.assertEqual(runner.supervise_existing(self.recovery_args(), campaign.output, self.base), 0)
+        saved = json.loads(campaign.state_path.read_text())['attempts'][0]
+        self.assertEqual(saved['status'], 'RECOVERED_ARTIFACTS')
+        self.assertIsNone(saved['returncode'])
+
+    def test_existing_evidence_is_preserved(self):
+        output = self.base / "evidence"
+        output.mkdir()
+        sentinel = output / "result.json"
+        sentinel.write_text("prior evidence")
+        with self.assertRaises(FileExistsError):
+            runner.Campaign(output)
+        self.assertEqual(sentinel.read_text(), "prior evidence")
+
+    def test_timeout_stops_descendant_and_is_charged(self):
+        campaign = self.campaign()
+        pidfile = self.base / "child.pid"
+        source = ("import subprocess,sys,time,pathlib; "
+                  "p=subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)']); "
+                  "pathlib.Path(sys.argv[1]).write_text(str(p.pid)); time.sleep(60)")
+        attempt = campaign.launch("timeout", "cpu",
+                                  lambda out: [sys.executable, "-c", source, str(pidfile)],
+                                  cwd=ROOT, timeout=1.0)
+        self.assertEqual(attempt["status"], "TIMEOUT")
+        self.assertGreater(attempt["charged_seconds"], .9)
+        pid = int(pidfile.read_text())
+        proc = Path("/proc") / str(pid) / "stat"
+        # A killed child may remain a zombie until the system reaps it.
+        for _ in range(100):
+            if not proc.exists() or proc.read_text().split()[2] == "Z":
+                break
+            import time
+            time.sleep(.01)
+        self.assertTrue(not proc.exists() or proc.read_text().split()[2] == "Z")
+        restored = runner.Campaign(campaign.output, resume=True)
+        self.assertEqual(len(restored.state["attempts"]), 1)
+        self.assertLess(restored.remaining("cpu"), runner.LIMITS["cpu_seconds"])
+
+    def test_budget_and_attempt_limit_refuse_launch(self):
+        campaign = self.campaign()
+        campaign.state["attempts"] = [
+            {"resource": "cpu", "charged_seconds": 300., "timeout_seconds": 300.,
+             "status": "FAILED"} for _ in range(6)]
+        with self.assertRaisesRegex(RuntimeError, "budget"):
+            campaign.launch("too_expensive", "cpu", lambda out: ["should-not-run"], cwd=ROOT)
+        campaign.state["attempts"] *= 2
+        with self.assertRaisesRegex(RuntimeError, "Attempt"):
+            campaign.launch("too_many", "gpu", lambda out: ["should-not-run"], cwd=ROOT)
+        self.assertFalse((campaign.output / "stage0").exists())
+
+    def test_authorized_budget_extension_preserves_charges_and_limits(self):
+        campaign = self.campaign()
+        campaign.state["attempts"] = [{
+            "name": "prior", "index": 1, "status": "COMPLETED", "resource": "gpu",
+            "timeout_seconds": 300., "charged_seconds": 155.,
+            "outcome": {"check": "PASS"}}]
+        before = campaign.state["limits"].copy()
+        after = dict(before, gpu_seconds=before["gpu_seconds"] + 48 * 3600, attempts=60)
+        campaign.state["budget_revisions"] = [{
+            "before": before, "after": after,
+            "authorization": "Fixture: owner grants 48 additional GPU hours"}]
+        campaign.state["limits"] = after
+        campaign.save()
+        restored = runner.Campaign(campaign.output, resume=True)
+        self.assertEqual(restored.remaining("gpu"), after["gpu_seconds"] - 155.)
+        self.assertEqual(restored.remaining("cpu"), before["cpu_seconds"])
+        result = runner.report(restored)
+        self.assertEqual(result["attempts_remaining"], 59)
+        self.assertIn("Attempts: 1 / 60.", (campaign.output / "result.md").read_text())
+        self.assertEqual(runner.LIMITS["gpu_seconds"], 900.)
+
+    def test_unrecorded_or_invalid_budget_change_fails_closed(self):
+        campaign = self.campaign()
+        campaign.state["limits"]["gpu_seconds"] += 1
+        campaign.save()
+        with self.assertRaisesRegex(ValueError, "recorded budget revision"):
+            runner.Campaign(campaign.output, resume=True)
+        campaign.state["limits"]["gpu_seconds"] = float("inf")
+        campaign.save()
+        with self.assertRaisesRegex(ValueError, "Invalid campaign limits"):
+            runner.Campaign(campaign.output, resume=True)
+
+    def test_zero_exit_does_not_promote_incomplete_science(self):
+        campaign = self.campaign()
+        source = ("import json,pathlib,sys; "
+                  "pathlib.Path(sys.argv[1]).write_text(json.dumps("
+                  "{'check':'INCOMPLETE','blockers':['missing pretrained models']}))")
+        attempt = campaign.launch("mdpf_source_configuration", "cpu",
+                                  lambda out: [sys.executable, "-c", source, str(out / "result.json")],
+                                  cwd=ROOT, timeout=5.)
+        attempt["outcome"] = runner.inspect_attempt(attempt)
+        result = runner.report(campaign)
+        self.assertEqual(attempt["status"], "COMPLETED")
+        self.assertEqual(attempt["outcome"]["check"], "INCOMPLETE")
+        self.assertEqual(result["mdpf_replication"], "INCOMPLETE")
+
+    def test_interrupted_attempt_is_conservatively_charged(self):
+        campaign = self.campaign()
+        done = subprocess.Popen([sys.executable, "-c", "pass"], start_new_session=True)
+        done.wait()
+        campaign.state["attempts"] = [
+            {"resource": "gpu", "status": "RUNNING", "timeout_seconds": 300., "pid": done.pid}]
+        campaign.save()
+        restored = runner.Campaign(campaign.output, resume=True)
+        self.assertEqual(restored.state["attempts"][0]["status"], "INTERRUPTED")
+        self.assertEqual(restored.remaining("gpu"), 600.)
+
+    def test_unbudgeted_stage_cannot_start(self):
+        output = self.base / "forbidden"
+        result = subprocess.run([sys.executable, str(ROOT / "scripts/run_replication_master.py"),
+                                 "run", "--stage", "K3", "--output", str(output)],
+                                capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(output.exists())
+
+    def test_reuse_requires_unchanged_dependencies(self):
+        dependencies = {"source": "v1", "interpreter": "environment1"}
+        fingerprint = runner.content_identity(dependencies)
+        attempt = {"dependency_fingerprint": fingerprint, "outcome": {"check": "PASS"}}
+        self.assertTrue(runner.reusable(attempt, fingerprint))
+        for key in dependencies:
+            changed = dict(dependencies)
+            changed[key] += "-changed"
+            self.assertFalse(runner.reusable(attempt, runner.content_identity(changed)))
+        self.assertFalse(runner.reusable({"outcome": {"check": "PASS"}}, fingerprint))
+        self.assertFalse(runner.reusable(attempt, None))
+        attempt["outcome"]["check"] = "INCOMPLETE"
+        self.assertTrue(runner.reusable(attempt, fingerprint))
+        self.assertFalse(runner.reusable(attempt, fingerprint, retry_incomplete=True))
+
+    def test_report_does_not_promote_legacy_pass(self):
+        campaign = self.campaign()
+        campaign.state["attempts"] = [{
+            "name": "legacy", "index": 1, "status": "COMPLETED", "resource": "cpu",
+            "timeout_seconds": 1., "charged_seconds": .1, "outcome": {"check": "PASS"}}]
+        result = runner.report(campaign)
+        self.assertEqual(result["checks"]["legacy"]["current_check"], "NOT_CHECKED")
+        self.assertEqual(result["checks"]["legacy"]["outcome"]["check"], "PASS")
+        self.assertEqual(result["prerequisite_checks"], "INCOMPLETE")
+
+    def test_independent_selected_job_runs_after_failed_child(self):
+        output = self.base / "independent"
+        def prepare(campaign, evidence_root, **kwargs):
+            manifest = {"author_python": sys.executable,
+                        "job_fingerprints": {"broken": "a", "healthy": "b"}}
+            runner.write_json(campaign.output / "manifest.json", manifest)
+            campaign.state["active_manifest"] = "manifest.json"
+            campaign.save()
+            return manifest
+        success = "import json,pathlib,sys; pathlib.Path(sys.argv[1]).write_text(json.dumps({'check':'PASS'}))"
+        builders = {
+            "broken": lambda out: [sys.executable, "-I", "-B", "-c", "raise RuntimeError('fixture')"],
+            "healthy": lambda out: [sys.executable, "-I", "-B", "-c", success, str(out / "result.json")]}
+        argv = ["master", "run", "--output", str(output), "--evidence-root", str(ROOT),
+                "--jobs", "broken", "healthy"]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(runner, "JOBS", (("broken", "cpu"), ("healthy", "cpu"))), \
+             mock.patch.object(runner, "prepare", prepare), mock.patch.object(runner, "dependency_inputs", return_value={}), \
+             mock.patch.object(runner, "job_fingerprints", return_value={"broken": "a", "healthy": "b"}), \
+             mock.patch.object(runner, "build_jobs", return_value=builders):
+            self.assertEqual(runner.main(), 2)
+        ledger = json.loads((output / "ledger.json").read_text())
+        self.assertEqual([a["outcome"]["check"] for a in ledger["attempts"]], ["FAILED", "PASS"])
+
+    def test_reference_library_selection_is_process_local(self):
+        manifest = {"author_python": "/reference/bin/python", "dependencies": {"interpreters": {
+            "/reference/bin/python": {"base_prefix": "/reference-base"}}}}
+        with mock.patch.dict(os.environ, {"LD_LIBRARY_PATH": "/existing"}):
+            self.assertEqual(runner.reference_environment(manifest, "mdpf_source_training"),
+                             {"LD_LIBRARY_PATH": "/reference-base/lib:/existing"})
+            self.assertEqual(runner.reference_environment(manifest, "iapf_eq15_local_solver"), {})
+            self.assertEqual(runner.reference_environment(manifest, "tensorflow_gpu_xla_environment"), {})
+            self.assertEqual(os.environ["LD_LIBRARY_PATH"], "/existing")
+
+    def test_evaluation_rejects_short_or_incomplete_source_trial(self):
+        evaluation.validate_training_result({"check": "PASS", "mode": "cost"}, "cost")
+        evaluation.validate_training_result({"check": "PASS", "mode": "source_trial",
+                                             "source_training_protocol_complete": True}, "source_trial")
+        for prior in ({"check": "PASS", "mode": "cost"},
+                      {"check": "PASS", "mode": "source_trial", "source_training_protocol_complete": False},
+                      {"check": "FAILED", "mode": "source_trial", "source_training_protocol_complete": True}):
+            with self.subTest(prior=prior), self.assertRaises(RuntimeError):
+                evaluation.validate_training_result(prior, "source_trial")
+
+    def test_followup_never_evaluates_a_failed_training_trial(self):
+        output = self.base / "followup"
+        output.mkdir()
+        runner.write_json(output / "ledger.json", {"attempts": [{
+            "index": 1, "name": "mdpf_source_trial", "status": "FAILED", "outcome": {"check": "FAILED"}}]})
+        args = ["master", "followup-evaluation", "--output", str(output), "--evidence-root", str(self.base),
+                "--resume", "--after-attempt", "1", "--continuation-plan", str(self.base / "plan.md")]
+        with mock.patch.object(sys, "argv", args), mock.patch.object(runner.subprocess, "run") as launch:
+            with self.assertRaises(RuntimeError):
+                runner.main()
+            launch.assert_not_called()
+        self.assertEqual(json.loads((output / "followup-after-attempt01.json").read_text())["status"], "BLOCKED")
+
+    def test_followup_binds_complete_training_output_to_evaluation(self):
+        output = self.base / "followup"
+        output.mkdir()
+        training_output = self.base / "trial"
+        training_output.mkdir()
+        runner.write_json(training_output / "result.json", {
+            "check": "PASS", "mode": "source_trial", "source_training_protocol_complete": True})
+        runner.write_json(output / "ledger.json", {"attempts": [{
+            "index": 1, "name": "mdpf_source_trial", "status": "COMPLETED",
+            "outcome": {"check": "PASS"}, "output": str(training_output)}]})
+        args = ["master", "followup-evaluation", "--output", str(output), "--evidence-root", str(self.base),
+                "--resume", "--after-attempt", "1", "--continuation-plan", str(self.base / "plan.md")]
+        def execute(command, **kwargs):
+            self.assertEqual(command[command.index("--training-artifact")+1], str(training_output))
+            self.assertEqual(command[-1], "mdpf_trial_evaluation")
+            self.assertIn("--repair-note", command)
+            runner.write_json(output / "ledger.json", {"attempts": [{
+                "index": 2, "name": "mdpf_trial_evaluation", "status": "COMPLETED", "outcome": {"check": "PASS"}}]})
+            return subprocess.CompletedProcess(command, 2)
+        with mock.patch.object(sys, "argv", args), mock.patch.object(runner.time, "sleep"), \
+             mock.patch.object(runner.subprocess, "run", side_effect=execute):
+            self.assertEqual(runner.main(), 0)
+        self.assertEqual(json.loads((output / "followup-after-attempt01.json").read_text())["status"], "PASS")
+
+    def test_source_trial_uses_original_caps_and_explicit_selection(self):
+        caps = {"pretraining": 400, "full_training": 800}
+        sizes = {"training": 5000, "validation": 1000}
+        trial = training.execution_protocol("source_trial", caps, sizes)
+        smoke = training.execution_protocol("trial_smoke", caps, sizes)
+        self.assertEqual(trial["epochs"], caps)
+        self.assertTrue(trial["complete_trial_eligible"])
+        self.assertFalse(smoke["complete_trial_eligible"])
+        self.assertEqual(smoke["epochs"], {"pretraining": 1, "full_training": 2})
+        self.assertEqual(trial["data_seed"], 925201)
+        self.assertNotIn("mdpf_source_trial", runner.selected_jobs(None))
+        self.assertEqual(runner.selected_jobs(["mdpf_source_trial"]), ["mdpf_source_trial"])
+        self.assertEqual(runner.LONG_JOB_TIMEOUTS["mdpf_source_trial"], 43200.)
+        with self.assertRaises(ValueError):
+            training.execution_protocol("source_trial", {**caps, "pretraining": 1}, sizes)
+        with self.assertRaises(ValueError):
+            training.execution_protocol("source_trial", caps, {"training": 128, "validation": 256})
+
+    def test_source_trial_requires_complete_paired_epochs_or_source_early_stop(self):
+        records = [{"phase": "full_training", "function": function, "epoch": epoch}
+                   for epoch in range(2) for function in ("do_training_epoch", "do_validation_epoch")]
+        complete = training.verify_epoch_completion(records, "full_training", 2, False)
+        self.assertEqual(complete["termination"], "SOURCE_EPOCH_CAP")
+        stopped = training.verify_epoch_completion(records, "full_training", 800, True)
+        self.assertEqual(stopped["termination"], "SOURCE_EARLY_STOP")
+        with self.assertRaises(RuntimeError):
+            training.verify_epoch_completion(records, "full_training", 800, False)
+        with self.assertRaises(RuntimeError):
+            training.verify_epoch_completion(records[:-1], "full_training", 2, False)
+        with self.assertRaises(RuntimeError):
+            training.verify_epoch_completion([], "full_training", 2, True)
+
+    def test_every_author_dispatch_uses_its_reference_libraries(self):
+        manifest = {"snapshot_root": str(ROOT), "author_root": "/author",
+                    "failure_root": "/failures", "training_configuration": "/config.json",
+                    "training_artifact": "/training", "author_python": "/reference/bin/python",
+                    "dependencies": {"interpreters": {
+                        "/reference/bin/python": {"base_prefix": "/reference-base"}}}}
+        builders = runner.build_jobs(self.campaign(), manifest)
+        self.assertEqual(set(builders), {name for name, _ in runner.JOBS})
+        for name, _ in runner.JOBS:
+            command = builders[name](self.base / "output")
+            if command[0] == manifest["author_python"]:
+                with self.subTest(name=name):
+                    environment = runner.reference_environment(manifest, name)
+                    self.assertTrue(environment["LD_LIBRARY_PATH"].startswith("/reference-base/lib"))
+            else:
+                self.assertEqual(runner.reference_environment(manifest, name), {})
+
+    def test_failed_child_retains_environment_failure_classification(self):
+        (self.base / "result.json").write_text(json.dumps({
+            "check": "FAILED", "classification": "reference_environment_failure",
+            "error": "CXXABI mismatch"}))
+        result = runner.inspect_attempt({"output": str(self.base), "status": "FAILED"})
+        self.assertEqual(result["classification"], "reference_environment_failure")
+        self.assertEqual(result["check"], "FAILED")
+
+    def test_failed_process_cannot_promote_child_pass(self):
+        (self.base / "result.json").write_text(json.dumps({"check": "PASS"}))
+        result = runner.inspect_attempt({"output": str(self.base), "status": "TIMEOUT"})
+        self.assertEqual(result["check"], "FAILED")
+
+    def test_shared_environment_failure_stops_dependent_probes(self):
+        output = self.base / "common_failure"
+        def prepare(campaign, evidence_root, **kwargs):
+            manifest = {"author_python": sys.executable,
+                        "job_fingerprints": {"broken": "a", "dependent": "b"}}
+            runner.write_json(campaign.output / "manifest.json", manifest)
+            campaign.state["active_manifest"] = "manifest.json"
+            campaign.save()
+            return manifest
+        failure = ("import json,pathlib,sys; "
+                   "pathlib.Path(sys.argv[1]).write_text(json.dumps({"
+                   "'check':'FAILED','classification':'reference_environment_failure'})); sys.exit(1)")
+        builders = {
+            "broken": lambda out: [sys.executable, "-c", failure, out / "result.json"],
+            "dependent": lambda out: [sys.executable, "-c", "raise RuntimeError('must not launch')"]}
+        argv = ["runner", "run", "--output", str(output), "--evidence-root", str(ROOT)]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(runner, "prepare", prepare), \
+             mock.patch.object(runner, "JOBS", (("broken", "cpu"), ("dependent", "cpu"))), \
+             mock.patch.object(runner, "dependency_inputs", return_value={}), \
+             mock.patch.object(runner, "job_fingerprints", return_value={"broken": "a", "dependent": "b"}), \
+             mock.patch.object(runner, "build_jobs", return_value=builders):
+            self.assertEqual(runner.main(), 2)
+        ledger = json.loads((output / "ledger.json").read_text())
+        self.assertEqual(len(ledger["attempts"]), 1)
+        self.assertEqual(ledger["attempts"][0]["outcome"]["classification"], "reference_environment_failure")
+
+    def test_source_yaml_dimension_keys_survive_json(self):
+        original = {"kde": {"dims": {0: {"distribution_type": "Normal"},
+                                   2: {"distribution_type": "Von_Mises"}}},
+                    "names": {"000": "keep string"}}
+        restored = training.restore_yaml_dimensions(json.loads(json.dumps(original)))
+        self.assertEqual(restored, original)
+
+    def test_discrete_comparator_cannot_qualify_as_mdpf(self):
+        model = {
+            "type": "KDEParticleFilter", "use_differentiable_resampling": True,
+            "differentiable_resampling_method": "ImportanceSampling",
+            "decouple_weights_for_resampling": False,
+            "decouple_bandwidths_for_resampling": False,
+            "kde": {"dims": {0: {"distribution_type": "Normal"},
+                             1: {"distribution_type": "Normal"},
+                             2: {"distribution_type": "Von_Mises"}}}}
+        worker.check_method(model)
+        model["type"] = "ImportanceSamplingParticleFilterLearnedBand"
+        with self.assertRaisesRegex(ValueError, "Wrong base"):
+            worker.check_method(model)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

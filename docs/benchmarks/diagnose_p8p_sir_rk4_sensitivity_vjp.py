@@ -207,8 +207,8 @@ def _rhs_autodiff(
         per_batch_loss = _loss_per_batch(rhs, upstream)
         total_loss = tf.reduce_sum(per_batch_loss)
     bar_state = tape.gradient(total_loss, points)
-    bar_kappa = tape.jacobian(per_batch_loss, kappa)
-    bar_nu = tape.jacobian(per_batch_loss, nu)
+    bar_kappa = tape.jacobian(per_batch_loss, kappa, experimental_use_pfor=False)
+    bar_nu = tape.jacobian(per_batch_loss, nu, experimental_use_pfor=False)
     del tape
     if bar_state is None or bar_kappa is None or bar_nu is None:
         raise RuntimeError("RHS autodiff comparator produced a disconnected gradient")
@@ -243,8 +243,8 @@ def _transition_autodiff(
         per_batch_loss = _loss_per_batch(transition_mean, upstream)
         total_loss = tf.reduce_sum(per_batch_loss)
     bar_state = tape.gradient(total_loss, points)
-    bar_kappa = tape.jacobian(per_batch_loss, kappa)
-    bar_nu = tape.jacobian(per_batch_loss, nu)
+    bar_kappa = tape.jacobian(per_batch_loss, kappa, experimental_use_pfor=False)
+    bar_nu = tape.jacobian(per_batch_loss, nu, experimental_use_pfor=False)
     del tape
     if bar_state is None or bar_kappa is None or bar_nu is None:
         raise RuntimeError("transition autodiff comparator produced a disconnected gradient")
@@ -273,7 +273,7 @@ def _regional_log_autodiff(
         int(p8p._SIR_RK4_SUBSTEPS),  # noqa: SLF001
         p8p.DTYPE,
     )
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(log_values)
         if parameter == "kappa":
             kappa = base_kappa * tf.exp(log_values)
@@ -293,7 +293,8 @@ def _regional_log_autodiff(
             step_size=step_size,
         )
         per_batch_loss = _loss_per_batch(transition_mean, upstream)
-    jacobian = tape.jacobian(per_batch_loss, log_values)
+    jacobian = tape.jacobian(per_batch_loss, log_values, experimental_use_pfor=False)
+    del tape
     if jacobian is None:
         raise RuntimeError(f"regional log-{parameter} comparator is disconnected")
     return tf.convert_to_tensor(jacobian, dtype=p8p.DTYPE)

@@ -1,9 +1,12 @@
-"""Persistent CPU process pool for scalar value/score target evaluations.
+"""Persistent CPU process pool for batch-native XLA value/score evaluations.
 
 The pool is the execution boundary used by the DSGE-HMC-style NeuTra training
 route.  Spawned workers hide CUDA before importing TensorFlow, construct one
-target, and evaluate scalar rows eagerly.  The parent process owns the
+target, and evaluate complete tensor shards. The parent process owns the
 transport, optimizer, and custom-gradient bridge.
+
+Scalar mapping is available only with an explicit diagnostic-only configuration
+and must not feed a NeuTra optimizer. The default requires real batched shards.
 """
 
 from __future__ import annotations
@@ -19,8 +22,6 @@ import time
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-import numpy as np
-
 
 _WORKER_TARGET: Any | None = None
 _WORKER_VALUE: Any | None = None
@@ -29,6 +30,20 @@ _WORKER_STARTUP_BARRIER: Any | None = None
 _WORKER_BATCH_TARGETS: dict[int, Any] = {}
 _WORKER_BATCH_VALUES: dict[int, Any] = {}
 _CPU_WORKER_ENV = "BAYESFILTER_CPU_VALUE_SCORE_WORKER"
+
+
+def training_shard_sizes(row_counts, worker_count):
+    """Bind the finite signature inventory for declared training/probe batches."""
+    if int(worker_count) < 1:
+        raise ValueError("worker_count must be positive")
+    sizes = set()
+    for rows in row_counts:
+        rows = int(rows)
+        workers = min(int(worker_count), rows // 2)
+        if workers < 1:
+            raise ValueError("training batches and shards require more than one row")
+        sizes.update((rows // workers, (rows + workers - 1) // workers))
+    return tuple(sorted(sizes))
 
 
 def _cpu_worker_environment(cores: int) -> dict[str, str]:
@@ -46,9 +61,18 @@ def _cpu_worker_environment(cores: int) -> dict[str, str]:
     }
 
 
-def _array_hash(rows: np.ndarray) -> str:
-    contiguous = np.ascontiguousarray(rows, dtype=np.float64)
-    return hashlib.sha256(contiguous.tobytes()).hexdigest()
+def _serialize_tensor(value: Any) -> bytes:
+    import tensorflow as tf
+    return bytes(tf.io.serialize_tensor(tf.convert_to_tensor(value, tf.float64)).numpy())
+
+
+def _parse_tensor(value: bytes) -> Any:
+    import tensorflow as tf
+    return tf.io.parse_tensor(value, out_type=tf.float64)
+
+
+def _array_hash(rows: Any) -> str:
+    return hashlib.sha256(_serialize_tensor(rows)).hexdigest()
 
 
 def _worker_init(
@@ -58,6 +82,8 @@ def _worker_init(
     startup_barrier: Any,
     evaluation_mode: str,
     batch_sizes: tuple[int, ...],
+    jit_compile: bool,
+    diagnostic_only: bool,
 ) -> None:
     """Initialize a worker with fail-closed CPU visibility."""
 
@@ -93,6 +119,9 @@ def _worker_init(
     batch_value_scores: dict[int, Any] = {}
     batch_values: dict[int, Any] = {}
     if evaluation_mode == "batch_native":
+        from bayesfilter.inference.tf_batch_value_score_pool import _ADMITTED_EVALUATION_POLICIES
+        if getattr(target, "evaluation_policy", None) not in _ADMITTED_EVALUATION_POLICIES:
+            raise RuntimeError("CPU pool requires an admitted batch-native target; scalar row mapping is not training")
         if not batch_sizes:
             raise ValueError("batch_native workers require static batch sizes")
 
@@ -103,7 +132,7 @@ def _worker_init(
                 input_signature=(
                     tf.TensorSpec([static_size, int(target.parameter_dim)], tf.float64),
                 ),
-                jit_compile=False,
+                jit_compile=jit_compile,
                 reduce_retracing=False,
             )
             def batch_value_score_fn(rows: Any) -> tuple[Any, Any]:
@@ -113,7 +142,7 @@ def _worker_init(
                 input_signature=(
                     tf.TensorSpec([static_size, int(target.parameter_dim)], tf.float64),
                 ),
-                jit_compile=False,
+                jit_compile=jit_compile,
                 reduce_retracing=False,
             )
             def batch_value_fn(rows: Any) -> Any:
@@ -132,7 +161,7 @@ def _worker_init(
 
         @tf.function(
             input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
-            jit_compile=False,
+            jit_compile=jit_compile,
             reduce_retracing=True,
         )
         def scalar_value_score(row: Any) -> tuple[Any, Any]:
@@ -144,7 +173,7 @@ def _worker_init(
 
         @tf.function(
             input_signature=(tf.TensorSpec([int(target.parameter_dim)], tf.float64),),
-            jit_compile=False,
+            jit_compile=jit_compile,
             reduce_retracing=True,
         )
         def scalar_value(row: Any) -> Any:
@@ -167,12 +196,13 @@ def _worker_init(
     _WORKER_METADATA = {
         "pid": int(os.getpid()),
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
-        "jit_compile": False,
+        "jit_compile": jit_compile,
+        "diagnostic_only": diagnostic_only,
         "tensorflow_gpu_devices": [],
         "worker_backend": (
             "batch_native_value_score"
             if evaluation_mode == "batch_native"
-            else "scalar_eager_value_score"
+            else "scalar_reference_value_score"
         ),
         "evaluation_mode": str(evaluation_mode),
         "compiled_batch_sizes": [int(size) for size in batch_sizes],
@@ -214,18 +244,13 @@ def _worker_eval(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         raise RuntimeError("CPU value/score worker was not initialized")
     import tensorflow as tf
 
-    rows = np.asarray(payload["rows"], dtype=np.float64)
+    rows = _parse_tensor(payload["rows"])
     started = time.perf_counter()
-    values: list[float] = []
-    scores: list[np.ndarray] = []
-    for row in rows:
-        value, score = _WORKER_TARGET(tf.convert_to_tensor(row, tf.float64))
-        value_np = float(tf.convert_to_tensor(value, tf.float64).numpy())
-        score_np = np.asarray(tf.convert_to_tensor(score, tf.float64).numpy(), dtype=np.float64)
-        values.append(value_np)
-        scores.append(score_np)
-    values_np = np.asarray(values, dtype=np.float64)
-    scores_np = np.asarray(scores, dtype=np.float64)
+    values, scores = tf.map_fn(
+        _WORKER_TARGET, rows,
+        fn_output_signature=(tf.TensorSpec([], tf.float64), tf.TensorSpec(rows.shape[1:], tf.float64)),
+        parallel_iterations=1,
+    )
     return {
         "worker_index": int(payload["worker_index"]),
         "item_start": int(payload["item_start"]),
@@ -233,8 +258,8 @@ def _worker_eval(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "request_id": str(payload["request_id"]),
         "input_hash": str(payload["input_hash"]),
         "shard_hash": _array_hash(rows),
-        "values": values_np,
-        "scores": scores_np,
+        "values": _serialize_tensor(values),
+        "scores": _serialize_tensor(scores),
         "runtime_seconds": float(time.perf_counter() - started),
         "ru_maxrss_bytes": int(
             resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
@@ -248,20 +273,9 @@ def _worker_eval_value(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         raise RuntimeError("CPU value worker was not initialized")
     import tensorflow as tf
 
-    rows = np.asarray(payload["rows"], dtype=np.float64)
+    rows = _parse_tensor(payload["rows"])
     started = time.perf_counter()
-    values = np.asarray(
-        [
-            float(
-                tf.convert_to_tensor(
-                    _WORKER_VALUE(tf.convert_to_tensor(row, tf.float64)),
-                    tf.float64,
-                ).numpy()
-            )
-            for row in rows
-        ],
-        dtype=np.float64,
-    )
+    values = tf.map_fn(_WORKER_VALUE, rows, fn_output_signature=tf.float64, parallel_iterations=1)
     return {
         "worker_index": int(payload["worker_index"]),
         "item_start": int(payload["item_start"]),
@@ -269,7 +283,7 @@ def _worker_eval_value(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "request_id": str(payload["request_id"]),
         "input_hash": str(payload["input_hash"]),
         "shard_hash": _array_hash(rows),
-        "values": values,
+        "values": _serialize_tensor(values),
         "runtime_seconds": float(time.perf_counter() - started),
         "ru_maxrss_bytes": int(
             resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
@@ -283,7 +297,7 @@ def _worker_eval_batch(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         raise RuntimeError("batch-native CPU value/score worker was not initialized")
     import tensorflow as tf
 
-    rows = np.asarray(payload["rows"], dtype=np.float64)
+    rows = _parse_tensor(payload["rows"])
     started = time.perf_counter()
     batch_target = _WORKER_BATCH_TARGETS.get(int(rows.shape[0]))
     if batch_target is None:
@@ -296,8 +310,8 @@ def _worker_eval_batch(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "request_id": str(payload["request_id"]),
         "input_hash": str(payload["input_hash"]),
         "shard_hash": _array_hash(rows),
-        "values": np.asarray(values.numpy(), dtype=np.float64),
-        "scores": np.asarray(scores.numpy(), dtype=np.float64),
+        "values": _serialize_tensor(values),
+        "scores": _serialize_tensor(scores),
         "runtime_seconds": float(time.perf_counter() - started),
         "ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024),
         "worker_metadata": dict(_WORKER_METADATA),
@@ -309,7 +323,7 @@ def _worker_eval_value_batch(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         raise RuntimeError("batch-native CPU value worker was not initialized")
     import tensorflow as tf
 
-    rows = np.asarray(payload["rows"], dtype=np.float64)
+    rows = _parse_tensor(payload["rows"])
     started = time.perf_counter()
     batch_value = _WORKER_BATCH_VALUES.get(int(rows.shape[0]))
     if batch_value is None:
@@ -322,7 +336,7 @@ def _worker_eval_value_batch(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         "request_id": str(payload["request_id"]),
         "input_hash": str(payload["input_hash"]),
         "shard_hash": _array_hash(rows),
-        "values": np.asarray(values.numpy(), dtype=np.float64),
+        "values": _serialize_tensor(values),
         "runtime_seconds": float(time.perf_counter() - started),
         "ru_maxrss_bytes": int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024),
         "worker_metadata": dict(_WORKER_METADATA),
@@ -337,8 +351,10 @@ class CPUValueScorePoolConfig:
     worker_count: int = 4
     cores_per_worker: int = 1
     timeout_seconds: float = 600.0
-    evaluation_mode: str = "scalar"
-    batch_sizes: tuple[int, ...] = ()
+    evaluation_mode: str = "batch_native"
+    batch_sizes: tuple[int, ...] = (2, 4, 8, 16, 32)
+    jit_compile: bool = True
+    diagnostic_only: bool = False
 
     def __post_init__(self) -> None:
         if ":" not in str(self.worker_factory_path):
@@ -349,14 +365,18 @@ class CPUValueScorePoolConfig:
             raise ValueError("cores_per_worker and timeout_seconds must be positive")
         if self.evaluation_mode not in {"scalar", "batch_native"}:
             raise ValueError("evaluation_mode must be scalar or batch_native")
+        if (self.evaluation_mode == "scalar" or not self.jit_compile) and not self.diagnostic_only:
+            raise ValueError("scalar or non-XLA evaluation requires diagnostic_only=True; forbidden for training")
         if self.evaluation_mode == "batch_native" and not self.batch_sizes:
             raise ValueError("batch_native mode requires batch_sizes")
         if any(int(size) <= 0 for size in self.batch_sizes):
             raise ValueError("batch_sizes must be positive")
+        if not self.diagnostic_only and any(int(size) < 2 for size in self.batch_sizes):
+            raise ValueError("training worker shards must contain more than one row")
 
 
 class CPUValueScorePool:
-    """Persistent spawn pool returning ordered scalar target values and scores."""
+    """Persistent spawn pool returning ordered TensorFlow values and scores."""
 
     def __init__(self, config: CPUValueScorePoolConfig) -> None:
         self.config = config
@@ -371,7 +391,8 @@ class CPUValueScorePool:
         self._opened = True
         return self
 
-    def evaluate(self, rows: Any, *, request_id: str) -> tuple[np.ndarray, np.ndarray, Mapping[str, Any]]:
+    def evaluate(self, rows: Any, *, request_id: str) -> tuple[Any, Any, Mapping[str, Any]]:
+        import tensorflow as tf
         results, matrix, request, input_hash = self._submit(
             rows,
             request_id=request_id,
@@ -381,11 +402,11 @@ class CPUValueScorePool:
                 else _worker_eval
             ),
         )
-        values = np.concatenate([np.asarray(result["values"], dtype=np.float64) for result in results])
-        scores = np.concatenate([np.asarray(result["scores"], dtype=np.float64) for result in results], axis=0)
+        values = tf.concat([_parse_tensor(result["values"]) for result in results], axis=0)
+        scores = tf.concat([_parse_tensor(result["scores"]) for result in results], axis=0)
         if values.shape != (matrix.shape[0],) or scores.shape != matrix.shape:
             raise RuntimeError("worker value/score shape mismatch")
-        if not np.all(np.isfinite(values)) or not np.all(np.isfinite(scores)):
+        if not bool(tf.reduce_all(tf.math.is_finite(values))) or not bool(tf.reduce_all(tf.math.is_finite(scores))):
             raise FloatingPointError("worker returned nonfinite values or scores")
         return values, scores, self._metadata(
             results, request=request, input_hash=input_hash, mode="value_score"
@@ -393,8 +414,10 @@ class CPUValueScorePool:
 
     def evaluate_values(
         self, rows: Any, *, request_id: str
-    ) -> tuple[np.ndarray, Mapping[str, Any]]:
+    ) -> tuple[Any, Mapping[str, Any]]:
         """Evaluate target values without analytic derivative propagation."""
+
+        import tensorflow as tf
 
         results, matrix, request, input_hash = self._submit(
             rows,
@@ -405,10 +428,8 @@ class CPUValueScorePool:
                 else _worker_eval_value
             ),
         )
-        values = np.concatenate(
-            [np.asarray(result["values"], dtype=np.float64) for result in results]
-        )
-        if values.shape != (matrix.shape[0],) or not np.all(np.isfinite(values)):
+        values = tf.concat([_parse_tensor(result["values"]) for result in results], axis=0)
+        if values.shape != (matrix.shape[0],) or not bool(tf.reduce_all(tf.math.is_finite(values))):
             raise FloatingPointError("worker returned invalid target values")
         return values, self._metadata(
             results, request=request, input_hash=input_hash, mode="value_only"
@@ -420,13 +441,14 @@ class CPUValueScorePool:
         *,
         request_id: str,
         worker_function: Any,
-    ) -> tuple[list[Mapping[str, Any]], np.ndarray, str, str]:
+    ) -> tuple[list[Mapping[str, Any]], Any, str, str]:
+        import tensorflow as tf
         if not self._opened:
             raise RuntimeError("CPU value/score pool must be opened as a context manager")
-        matrix = np.asarray(rows, dtype=np.float64)
-        if matrix.ndim != 2 or matrix.shape[1] != int(self.config.dimension):
+        matrix = tf.convert_to_tensor(rows, dtype=tf.float64)
+        if matrix.shape.rank != 2 or matrix.shape[1] != int(self.config.dimension):
             raise ValueError("rows must have shape [batch, dimension]")
-        if matrix.shape[0] == 0 or not np.all(np.isfinite(matrix)):
+        if matrix.shape[0] is None or matrix.shape[0] == 0 or not bool(tf.reduce_all(tf.math.is_finite(matrix))):
             raise ValueError("rows must be nonempty and finite")
         request = str(request_id)
         if not request:
@@ -434,15 +456,16 @@ class CPUValueScorePool:
         input_hash = _array_hash(matrix)
         worker_count = min(int(self.config.worker_count), int(matrix.shape[0]))
         if self.config.evaluation_mode == "batch_native":
-            if matrix.shape[0] % int(self.config.worker_count) != 0:
+            minimum = 1 if self.config.diagnostic_only else 2
+            worker_count = min(int(self.config.worker_count), int(matrix.shape[0]) // minimum)
+            if worker_count == 0:
+                raise ValueError("training worker shards must contain more than one row")
+            sizes = {int(matrix.shape[0]) * (index + 1) // worker_count
+                     - int(matrix.shape[0]) * index // worker_count
+                     for index in range(worker_count)}
+            if not sizes <= set(self.config.batch_sizes):
                 raise ValueError(
-                    "batch_native evaluation requires batch size divisible by worker_count"
-                )
-            worker_count = int(self.config.worker_count)
-            shard_size = matrix.shape[0] // worker_count
-            if shard_size not in {int(size) for size in self.config.batch_sizes}:
-                raise ValueError(
-                    f"batch_native worker shard size {shard_size} is not declared"
+                    f"batch_native worker shard sizes {sorted(sizes)} are not declared"
                 )
         # Keep the fail-closed CPU environment in place until the executor has
         # submitted its first tasks.  Spawn inherits the environment at that
@@ -471,6 +494,8 @@ class CPUValueScorePool:
                             self._startup_barrier,
                             str(self.config.evaluation_mode),
                             tuple(int(size) for size in self.config.batch_sizes),
+                            bool(self.config.jit_compile),
+                            bool(self.config.diagnostic_only),
                         ),
                     )
                     readiness_futures = [
@@ -509,7 +534,7 @@ class CPUValueScorePool:
                         "item_stop": stop,
                         "request_id": request,
                         "input_hash": input_hash,
-                        "rows": matrix[start:stop],
+                        "rows": _serialize_tensor(matrix[start:stop]),
                     }))
             except BaseException:
                 # Readiness failures and interrupts can happen before the
@@ -590,7 +615,9 @@ class CPUValueScorePool:
                 int(result["item_stop"]) - int(result["item_start"])
                 for result in results
             ],
-            "jit_compile": False,
+            "jit_compile": bool(self.config.jit_compile),
+            "diagnostic_only": bool(self.config.diagnostic_only),
+            "input_hash_encoding": "tensorflow_serialized_tensor_v1",
             **dict(self._startup_metadata),
         }
 

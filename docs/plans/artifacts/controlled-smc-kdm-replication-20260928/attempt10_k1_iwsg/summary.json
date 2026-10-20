@@ -1,0 +1,142 @@
+{
+  "status": "PASS",
+  "scope": "BATCHED_GAUSSIAN_KDM_IWSG_SOURCE_ENDPOINT_PRIMITIVE_PARITY",
+  "replication": "INCOMPLETE",
+  "ranking": "NOT_TESTED",
+  "checks": [
+    {
+      "name": "log_density",
+      "pass_check": true,
+      "maximum_absolute_error": 4.440892098500626e-16
+    },
+    {
+      "name": "iwsg",
+      "pass_check": true,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "name": "raw_loss",
+      "pass_check": true,
+      "maximum_absolute_error": 3.552713678800501e-15
+    },
+    {
+      "name": "normalized_loss",
+      "pass_check": true,
+      "maximum_absolute_error": 0.0
+    },
+    {
+      "name": "raw_gradient:locations",
+      "pass_check": true,
+      "maximum_absolute_error": 3.552713678800501e-15
+    },
+    {
+      "name": "raw_gradient:weights",
+      "pass_check": true,
+      "maximum_absolute_error": 3.552713678800501e-15
+    },
+    {
+      "name": "raw_gradient:bandwidth",
+      "pass_check": true,
+      "maximum_absolute_error": 2.220446049250313e-15
+    },
+    {
+      "name": "normalized_gradient:locations",
+      "pass_check": true,
+      "maximum_absolute_error": 4.440892098500626e-16
+    },
+    {
+      "name": "normalized_gradient:weights",
+      "pass_check": true,
+      "maximum_absolute_error": 8.881784197001252e-16
+    },
+    {
+      "name": "normalized_gradient:bandwidth",
+      "pass_check": true,
+      "maximum_absolute_error": 3.3306690738754696e-16
+    },
+    {
+      "name": "sample_gradient_stopped",
+      "pass_check": true
+    },
+    {
+      "name": "valid",
+      "pass_check": true
+    },
+    {
+      "name": "density_normalization",
+      "pass_check": true,
+      "maximum_absolute_error": 2.071676163950542e-13
+    },
+    {
+      "name": "negative_bandwidth_rejected",
+      "pass_check": true
+    },
+    {
+      "name": "one_trace",
+      "pass_check": true
+    }
+  ],
+  "batch_size": 2,
+  "scalar_sample_loop": false,
+  "pfor": false,
+  "numpy_runtime": false,
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "trace_count": 1,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_allocator": {
+    "current": 1129728,
+    "peak": 2409728
+  },
+  "source_command": [
+    "/home/chakwong/BayesFilter/.localresources/envs/mdpf-reference-20260924/bin/python",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt10_k1_iwsg/sources/reference_kdm_iwsg.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt10_k1_iwsg/author-fixture.json"
+  ],
+  "source_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+  },
+  "limitations": [
+    "Gaussian primitive only",
+    "Appendix B coefficients and initialization unrecovered",
+    "full learning, circular bearings, normalized density baselines and independent training repetitions open"
+  ]
+}

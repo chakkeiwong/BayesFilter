@@ -1,21 +1,21 @@
-"""Canonical LGSSM particle filter with an independent TT moment teacher.
+"""Diagnostic LGSSM particle filter with an independent TT moment teacher.
 
 The particle lane owns the finite likelihood.  The squared-TT lane supplies
 only explicit standardized shape targets for the bounded post-reset
 correction.  Both lanes carry their complete manual directional derivatives.
+These are finite-program JVPs, not admitted canonical recursive LEDH scores.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 import hashlib
 import json
+from dataclasses import asdict, dataclass, field
+from functools import lru_cache
 from typing import Any, Mapping
 
 import tensorflow as tf
 
-from bayesfilter.highdim.bases import BoundedInterval, LegendreBasis1D
-from bayesfilter.highdim.diagnostics import MassMeasure
 from bayesfilter.highdim.higher_moment_contract_e import higher_moment_shape_jvp
 from bayesfilter.highdim.ledh_contract_e_canonical_lgssm_tf import (
     OBSERVATION_DIMENSION,
@@ -28,24 +28,26 @@ from bayesfilter.highdim.ledh_contract_e_canonical_lgssm_tf import (
     _physical_chart,
 )
 from bayesfilter.highdim.ledh_tuning_scope import LEDHTuningScope, require_scope_match
+from bayesfilter.highdim.moment_teacher_native_tf import (
+    freeze_scale_shift_core,
+    operator_power_program,
+    teacher_directions,
+    teacher_normal,
+)
 from bayesfilter.highdim.transport_chunk_policy import (
     TRANSPORT_CHUNK_POLICY_ID,
     select_transport_chunks,
     validate_transport_chunks,
 )
-from bayesfilter.highdim.zhao_cui_moment_teacher import (
-    legendre_monomial_operator_matrix,
-)
-from bayesfilter.highdim.zhao_cui_moment_teacher_xla import (
-    padded_fixed_teacher_recursion_shape_xla,
-)
-
+from bayesfilter.ops.stateless_random_tf import philox_uniform_float64
 
 ROUTE_ID = "zhao_cui_moment_teacher_contract_e_chol_lgssm_v1"
 ROUTE_SPECIFICATION_ID = "contract_e_chol_zhao_cui_moment_teacher_lgssm_v1"
 CONTROL_FAMILY_ID = "zhao_cui_moment_teacher_lgssm_controls_v1"
 TUNING_ARTIFACT_SCHEMA = "bayesfilter.zhao_cui_moment_teacher_tuning.v1"
 RESET_CONTRACT_ID = "contract_e_chol_v1"
+CANONICAL_LEDH_ADMITTED = False
+SCORE_PROVENANCE = "finite_program_manual_jvp_diagnostic_only"
 PAIR_INDICES = ((0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1))
 
 _TUNING_CONSTRUCTION_KEY = object()
@@ -188,21 +190,27 @@ def _legendre_basis_values(points: tf.Tensor, basis_size: int) -> tf.Tensor:
     points = tf.convert_to_tensor(points)
     if basis_size < 1:
         raise ValueError("basis_size must be positive")
-    values = [tf.ones_like(points)]
+    flat = tf.reshape(points, [-1])
+    values = tf.TensorArray(points.dtype, size=basis_size, element_shape=flat.shape).write(0, tf.ones_like(flat))
     if basis_size > 1:
-        previous = values[0]
-        current = points
-        values.append(tf.sqrt(tf.cast(3.0, points.dtype)) * current)
-        for degree in range(1, basis_size - 1):
+        values = values.write(1, tf.sqrt(tf.cast(3.0, points.dtype)) * flat)
+
+        def step(degree, previous, current, values):
             following = (
-                tf.cast(2 * degree + 1, points.dtype) * points * current
+                tf.cast(2 * degree + 1, points.dtype) * flat * current
                 - tf.cast(degree, points.dtype) * previous
             ) / tf.cast(degree + 1, points.dtype)
-            values.append(
+            values = values.write(degree + 1,
                 tf.sqrt(tf.cast(2 * (degree + 1) + 1, points.dtype)) * following
             )
-            previous, current = current, following
-    return tf.stack(values, axis=-1)
+            return degree + 1, current, following, values
+
+        _, _, _, values = tf.while_loop(
+            lambda degree, *_: degree < basis_size - 1, step,
+            (tf.constant(1), tf.ones_like(flat), flat, values),
+            maximum_iterations=basis_size - 2, parallel_iterations=1,
+        )
+    return tf.reshape(tf.transpose(values.stack()), tf.concat([tf.shape(points), [basis_size]], 0))
 
 
 def _active_mask(dimension: int, rank: int, basis_size: int, dtype: tf.dtypes.DType) -> tf.Tensor:
@@ -229,6 +237,7 @@ def prepare_lgssm_teacher_inputs(
     root_seed: int,
     dtype: tf.dtypes.DType,
     center_theta: tf.Tensor,
+    jit_compile: bool = True,
 ) -> dict[str, tf.Tensor]:
     """Create deterministic fixed rows, bases, operators, and branch choices."""
 
@@ -240,57 +249,49 @@ def prepare_lgssm_teacher_inputs(
     observations = tf.convert_to_tensor(observations, dtype)
     if observations.shape != (time_steps, OBSERVATION_DIMENSION):
         raise ValueError("teacher observations must match the declared LGSSM horizon")
+    return _lgssm_preparation_program(
+        time_steps, fit_rows, basis_size, rank, sweeps, dtype, bool(jit_compile),
+    )(observations, tf.convert_to_tensor(center_theta, dtype),
+      tf.cast(chart_scale, dtype), tf.cast(defensive_weight, dtype),
+      tf.convert_to_tensor(root_seed, tf.int32))
+
+
+@lru_cache(maxsize=16)
+def _lgssm_preparation_program(time_steps, fit_rows, basis_size, rank, sweeps, dtype, jit_compile):
+    operators = operator_power_program(basis_size, jit_compile=jit_compile)()
+
+    @tf.function(input_signature=[tf.TensorSpec([time_steps, OBSERVATION_DIMENSION], dtype),
+        tf.TensorSpec([PARAMETER_COUNT], dtype), tf.TensorSpec([], dtype),
+        tf.TensorSpec([], dtype), tf.TensorSpec([], tf.int32)],
+        jit_compile=jit_compile, autograph=False)
+    def prepare(observations, center_theta, chart_scale, defensive_weight, root_seed):
+        return _prepare_lgssm_teacher_inputs_core(
+            observations, center_theta, chart_scale, defensive_weight, root_seed,
+            time_steps=time_steps, fit_rows=fit_rows, basis_size=basis_size,
+            rank=rank, sweeps=sweeps, operators=operators,
+        )
+
+    return prepare
+
+
+def _prepare_lgssm_teacher_inputs_core(observations, center_theta, chart_scale,
+    defensive_weight, root_seed, *, time_steps, fit_rows, basis_size, rank, sweeps, operators):
+    dtype = observations.dtype
     dimension = 2 * STATE_DIMENSION
-    reference_points64 = tf.random.stateless_uniform(
-        [fit_rows, dimension],
-        seed=[int(root_seed), 3107],
-        minval=-0.95,
-        maxval=0.95,
-        dtype=tf.float64,
-    )
+    reference_points64 = (tf.constant(-0.95, tf.float64) + tf.constant(1.9, tf.float64)
+        * philox_uniform_float64([fit_rows, dimension], tf.stack([root_seed, 3107])))
     reference_points = tf.cast(reference_points64, dtype)
-    basis_values = tf.stack(
-        [_legendre_basis_values(reference_points[:, axis], basis_size) for axis in range(dimension)]
-    )
-    query_basis_values = tf.stack(
-        [
-            _legendre_basis_values(
-                reference_points[:, axis + STATE_DIMENSION]
-                if axis < STATE_DIMENSION
-                else reference_points[:, axis],
-                basis_size,
-            )
-            for axis in range(dimension)
-        ]
-    )
+    basis_values = _legendre_basis_values(tf.transpose(reference_points), basis_size)
+    query_basis_values = tf.concat([basis_values[STATE_DIMENSION:], basis_values[STATE_DIMENSION:]], axis=0)
     mask = _active_mask(dimension, rank, basis_size, dtype)
-    raw_cores = tf.random.stateless_normal(
-        [dimension, rank, basis_size, rank],
-        seed=[int(root_seed), 3119],
-        stddev=tf.cast(0.03, dtype),
-        dtype=dtype,
-    )
+    raw_cores = tf.cast(0.03, dtype) * teacher_normal(
+        [dimension, rank, basis_size, rank], tf.stack([root_seed, 3119]), dtype)
     initial_cores = raw_cores * mask
-    constant_path = tf.constant(
-        [[axis, 0, 0, 0] for axis in range(dimension)], tf.int32
-    )
+    constant_path = tf.concat([tf.range(dimension)[:, None], tf.zeros([dimension, 3], tf.int32)], axis=1)
     initial_cores = tf.tensor_scatter_nd_update(
         initial_cores, constant_path, tf.ones([dimension], dtype)
     )
-    basis = LegendreBasis1D(BoundedInterval(-1.0, 1.0), basis_size - 1)
-    operator_powers64 = tf.stack(
-        [
-            tf.stack(
-                [
-                    legendre_monomial_operator_matrix(
-                        basis, power, MassMeasure.REFERENCE_MEASURE
-                    )
-                    for power in range(5)
-                ]
-            )
-            for _ in range(dimension)
-        ]
-    )
+    operator_powers64 = tf.broadcast_to(operators, [dimension, 5, basis_size, basis_size])
     defensive_moments = tf.constant(
         [1.0, 0.0, 1.0 / 3.0, 0.0, 1.0 / 5.0], dtype
     )
@@ -358,41 +359,34 @@ def _teacher_base_log_targets(
         [1, tf.shape(current)[0], OBSERVATION_DIMENSION, PARAMETER_COUNT],
         dtype,
     )
-    per_time_values = []
-    per_time_tangents = []
-    for time_index in range(int(prepared["observations"].shape[0])):
-        observation = _gaussian_log_density_jvp_core(
-            (predicted - prepared["observations"][time_index])[None, :, :],
-            components["observation_covariance"],
-            zero_residual_tangent,
-            tangents["d_observation_covariance"],
-        )
-        per_time_values.append(transition["value"][0] + observation["value"][0])
-        per_time_tangents.append(
-            transition["tangent"][0] + observation["tangent"][0]
-        )
+    horizon = prepared["observations"].shape[0]
+    observation = _gaussian_log_density_jvp_core(
+        predicted[None] - prepared["observations"][:, None],
+        tf.broadcast_to(components["observation_covariance"], [horizon, OBSERVATION_DIMENSION, OBSERVATION_DIMENSION]),
+        tf.broadcast_to(zero_residual_tangent, [horizon, tf.shape(current)[0], OBSERVATION_DIMENSION, PARAMETER_COUNT]),
+        tf.broadcast_to(tangents["d_observation_covariance"], [horizon, OBSERVATION_DIMENSION, OBSERVATION_DIMENSION, PARAMETER_COUNT]),
+    )
+    per_time_values = transition["value"] + observation["value"]
+    per_time_tangents = transition["tangent"] + observation["tangent"]
     initial_covariance = tf.linalg.diag(tf.square(components["initial_std"]))[None, :, :]
-    initial_covariance_tangent = tf.stack(
-        [
-            tf.linalg.diag(2.0 * components["initial_std"] * tangents["d_initial_std"][:, index])
-            for index in range(PARAMETER_COUNT)
-        ],
-        axis=-1,
-    )[None, :, :, :]
+    initial_covariance_tangent = tf.einsum(
+        "ij,ip->ijp", tf.eye(STATE_DIMENSION, dtype=dtype),
+        2.0 * components["initial_std"][:, None] * tangents["d_initial_std"],
+    )[None]
     initial = _gaussian_log_density_jvp_core(
         previous[None, :, :],
         initial_covariance,
         tf.zeros([1, tf.shape(previous)[0], STATE_DIMENSION, PARAMETER_COUNT], dtype),
         initial_covariance_tangent,
     )
-    per_time_values[0] = per_time_values[0] + initial["value"][0]
-    per_time_tangents[0] = per_time_tangents[0] + initial["tangent"][0]
+    per_time_values = tf.tensor_scatter_nd_add(per_time_values, [[0]], initial["value"])
+    per_time_tangents = tf.tensor_scatter_nd_add(per_time_tangents, [[0]], initial["tangent"])
     # Uniform reference density and the affine chart contribute this fixed factor.
     chart_log_factor = tf.cast(2 * STATE_DIMENSION, dtype) * tf.math.log(
         2.0 * scale
     )
-    values = tf.stack(per_time_values) + chart_log_factor
-    tangent_values = tf.stack(per_time_tangents)
+    values = per_time_values + chart_log_factor
+    tangent_values = per_time_tangents
     return values, tangent_values, _physical_chart(theta)
 
 
@@ -404,62 +398,8 @@ def _teacher_targets(
     setup_static: bool = False,
 ) -> dict[str, tf.Tensor]:
     base, base_tangents, physical_valid = _teacher_base_log_targets(theta, prepared)
-    dtype = base.dtype
-    direction_results = []
-    recursion = (
-        padded_fixed_teacher_recursion_shape_xla.python_function
-        if setup_static
-        else padded_fixed_teacher_recursion_shape_xla
-    )
-    for parameter_index in range(PARAMETER_COUNT):
-        direction_results.append(
-            recursion(
-                prepared["basis_values"],
-                prepared["active_mask"],
-                prepared["schedule"],
-                base,
-                base_tangents[:, :, parameter_index],
-                prepared["weights"],
-                tf.zeros_like(prepared["weights"]),
-                prepared["initial_cores"],
-                tf.zeros_like(prepared["initial_cores"]),
-                prepared["scale_shift_indices"],
-                prepared["defensive_weights"],
-                tf.zeros_like(prepared["defensive_weights"]),
-                prepared["query_basis_values"],
-                prepared["keep_mask"],
-                prepared["mass_operators"],
-                prepared["defensive_marginal_values"],
-                tf.zeros_like(prepared["defensive_marginal_values"]),
-                prepared["defensive_mass"],
-                tf.zeros([], dtype),
-                prepared["operator_powers"],
-                prepared["defensive_power_moments"],
-                prepared["state_offset"],
-                tf.zeros_like(prepared["state_offset"]),
-                prepared["state_matrix"],
-                tf.zeros_like(prepared["state_matrix"]),
-                prepared["pair_indices"],
-                tf.cast(controls.tt_ridge, dtype),
-                tf.cast(controls.column_scale_floor, dtype),
-                tf.cast(controls.condition_number_veto, dtype),
-                tf.cast(controls.fit_residual_veto, dtype),
-            )
-        )
-    first = direction_results[0]
-    return {
-        "marginal_values": first[2],
-        "normalizers": first[4],
-        "skew": first[5],
-        "kurtosis": first[6],
-        "co_skew": first[7],
-        "co_kurtosis": first[8],
-        "skew_tangent": tf.stack([item[9] for item in direction_results], axis=-1),
-        "kurtosis_tangent": tf.stack([item[10] for item in direction_results], axis=-1),
-        "co_skew_tangent": tf.stack([item[11] for item in direction_results], axis=-1),
-        "co_kurtosis_tangent": tf.stack([item[12] for item in direction_results], axis=-1),
-        "valid": physical_valid & tf.reduce_all(tf.stack([item[-1] for item in direction_results])),
-    }
+    return teacher_directions(base, base_tangents, physical_valid, prepared, controls,
+                              setup_static=setup_static)
 
 
 def freeze_teacher_scale_shift_indices(
@@ -467,38 +407,39 @@ def freeze_teacher_scale_shift_indices(
     controls: MomentTeacherControls,
     *,
     maximum_iterations: int = 8,
+    jit_compile: bool = True,
 ) -> dict[str, tf.Tensor]:
     """Freeze center-parameter maximizing rows including carried marginals."""
 
     if maximum_iterations <= 0:
         raise ValueError("scale-shift fixed-point iterations must be positive")
     prepared = dict(teacher_prepared)
-    theta = prepared["center_theta"]
-    base, _, _ = _teacher_base_log_targets(theta, prepared)
-    indices = tf.convert_to_tensor(prepared["scale_shift_indices"], tf.int32)
-    for _ in range(maximum_iterations):
-        prepared["scale_shift_indices"] = indices
-        targets = _teacher_targets(theta, prepared, controls, setup_static=True)
-        if not bool(targets["valid"].numpy()):
-            raise ValueError("teacher scale-shift freeze encountered an invalid TT fit")
-        previous = tf.concat(
-            [
-                tf.ones_like(targets["marginal_values"][:1]),
-                targets["marginal_values"][:-1],
-            ],
-            axis=0,
-        )
-        augmented = base + tf.where(
-            tf.range(tf.shape(base)[0])[:, None] > 0,
-            tf.math.log(tf.maximum(previous, tf.cast(1.0e-30, base.dtype))),
-            tf.zeros_like(base),
-        )
-        next_indices = tf.argmax(augmented, axis=1, output_type=tf.int32)
-        if bool(tf.reduce_all(next_indices == indices).numpy()):
-            prepared["scale_shift_indices"] = next_indices
-            return prepared
-        indices = next_indices
-    raise ValueError("teacher scale-shift maximizing-row fixed point did not stabilize")
+    specification = tuple((name, tf.TensorSpec(value.shape, value.dtype))
+                          for name, value in prepared.items())
+    indices, valid, stable = _lgssm_freeze_program(
+        specification, controls, maximum_iterations, bool(jit_compile))(prepared)
+    if not bool(valid):
+        raise ValueError("teacher scale-shift freeze encountered an invalid TT fit")
+    if not bool(stable):
+        raise ValueError("teacher scale-shift maximizing-row fixed point did not stabilize")
+    prepared["scale_shift_indices"] = indices
+    return prepared
+
+
+@lru_cache(maxsize=16)
+def _lgssm_freeze_program(specification, controls, maximum_iterations, jit_compile):
+    @tf.function(input_signature=[dict(specification)], jit_compile=jit_compile, autograph=False)
+    def freeze(prepared):
+        theta = prepared["center_theta"]
+        base, _, _ = _teacher_base_log_targets(theta, prepared)
+
+        def targets(indices):
+            current = dict(prepared, scale_shift_indices=indices)
+            return _teacher_targets(theta, current, controls, setup_static=True)
+
+        return freeze_scale_shift_core(base, prepared["scale_shift_indices"], targets, maximum_iterations)
+
+    return freeze
 
 
 def _scatter_pair_values(values: tf.Tensor, pair_indices: tf.Tensor) -> tf.Tensor:

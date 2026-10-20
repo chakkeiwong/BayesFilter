@@ -1,0 +1,185 @@
+{
+  "schema": "kdm_native_evaluation_diagnostic_v1",
+  "status": "COMPLETED",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_kdm_native_evaluation_diagnostic.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/native-evaluation-20261011/native-evaluation-01"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan_file": "docs/plans/controlled-smc-kdm-native-evaluation-20261011.md",
+  "result_file": "docs/plans/controlled-smc-kdm-mechanism-result-20261011.md",
+  "started_utc": "2026-10-11T11:12:03.507949+00:00",
+  "supervisor_pid": 3178004,
+  "source_pin": "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18",
+  "source_hashes": {
+    "docs/benchmarks/run_kdm_native_evaluation_diagnostic.py": "35439143323308043830a8b6ee38fde1f5954c049706276ce5d8934e4aa0f2d8",
+    "docs/plans/controlled-smc-kdm-native-evaluation-20261011.md": "5c0eb82a1c63c772590955b7438c02f68ef8a4efcfdc3957c8a837a10a0e8b4e",
+    "docs/benchmarks/reference_kdm_native_evaluation.py": "08b9d068685bdfc42248a662301403d0c5744a07fd583ee933df6226e91dfff3",
+    "docs/benchmarks/diagnose_kdm_native_evaluation_tf.py": "e0ff3152987c1775b96d3b442a30c93953f342ac88b59b8b6c30ab335fd1418a",
+    "docs/benchmarks/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "docs/benchmarks/run_replication_training_pilot_full.py": "64cf844297405a81f3db363730f9fa9415f5965b6d3128e1082c838102adacbe",
+    "docs/benchmarks/run_replication_gap_localization.py": "a1f3b8a26b71cd336eb489cba50e50be306b2502bedfc3b56ab6820481b8eecb",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "23e4155a644837b77cbe680668e28e5530a99cd6b4b76ccaefde44b8dbbcefa0",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a"
+  },
+  "input_hashes": {
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/repaired-training-20261011/training-pilot-02/manifest.json": "9a8e0a823c018bc82d2eae360afd7ae90ec9fe0874728d73857719b829c148a4",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/repaired-training-20261011/training-pilot-02/decision.json": "d0373bfedcf1f063875342b906a005bbe78a10ca6975f9d98e141261f04902fa",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/repaired-training-20261011/training-pilot-02/audit.json": "6818c0f2bf3470ecf5ae8ed14f578f35e706cdd68426d22c59ec9f7c15eb0765",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/repaired-training-20261011/training-pilot-02/evaluation/diagnostic/result.json": "23b72b5fe642fa26ddfb584314a190b41c49c02588f34bac31296f0bb2481a87"
+  },
+  "phase_cap_seconds": {
+    "gpu": 1800.0,
+    "cpu": 300.0
+  },
+  "prior_phase_seconds": {
+    "gpu": 0.0,
+    "cpu": 0.0
+  },
+  "campaign_remaining_before": {
+    "gpu": 107589.27195838251,
+    "cpu": 220746.5756521668
+  },
+  "resource_wall_seconds": {
+    "gpu": 55.83892470714636,
+    "cpu": 7.149969422025606
+  },
+  "steps": [
+    {
+      "label": "prepare",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_native_evaluation.py",
+        "--mode",
+        "prepare",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/native-evaluation-20261011/native-evaluation-01"
+      ],
+      "resource": "cpu",
+      "status": "COMPLETED",
+      "timeout_seconds": 300.0,
+      "log": "prepare.log",
+      "pid": 3178006,
+      "returncode": 0,
+      "wall_seconds": 4.0730335710104555
+    },
+    {
+      "label": "nvidia",
+      "command": [
+        "nvidia-smi",
+        "--query-gpu=uuid,name,memory.used,memory.total",
+        "--format=csv"
+      ],
+      "resource": "gpu",
+      "status": "COMPLETED",
+      "timeout_seconds": 1800.0,
+      "log": "nvidia.log",
+      "pid": 3178128,
+      "returncode": 0,
+      "wall_seconds": 0.06537411408498883
+    },
+    {
+      "label": "native",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_native_evaluation_tf.py",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/native-evaluation-20261011/native-evaluation-01"
+      ],
+      "resource": "gpu",
+      "status": "COMPLETED",
+      "timeout_seconds": 1799.934625885915,
+      "log": "native.log",
+      "pid": 3178133,
+      "elapsed_seconds": 30.000614495947957,
+      "returncode": 0,
+      "wall_seconds": 55.77355059306137
+    },
+    {
+      "label": "metrics",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_native_evaluation.py",
+        "--mode",
+        "metrics",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/native-evaluation-20261011/native-evaluation-01"
+      ],
+      "resource": "cpu",
+      "status": "COMPLETED",
+      "timeout_seconds": 295.92696642898954,
+      "log": "metrics.log",
+      "pid": 3179368,
+      "returncode": 0,
+      "wall_seconds": 3.0769358510151505
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "seeds": {
+    "evaluation_data": 202610081,
+    "filter": [
+      202610082,
+      202610083
+    ]
+  },
+  "cpu_gpu_status": "Native TF GPU/XLA escalated RTX5080; source preparation/metric replay deliberately CPU only",
+  "environment_gpu": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "environment_cpu": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "dataset_sha256": "79decc6d4f389ed17ab840b8d8869d6683c82a0052cd27fa72e624b2aec8a893",
+  "native_inputs_sha256": "45018f66f0501df50cdc41782d3a8dfff419fea5fbe7160fafaddd1546a2930a",
+  "native_result_sha256": "149fe9c5d0cc8cb0ea31e3be8c3b57071aaab0eb523f9dbed84e573fe0a9c651",
+  "metric_audit_sha256": "a37807f17efc7e99e0cbe46b6dcbcee9c2a7c44975740dbad6cd4f819b56c27c",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "decision_sha256": "c4ffaea072ae73c97dc334a6bd9af9ae18965ce6019d8ec3d50480026c916701",
+  "finished_utc": "2026-10-11T11:13:10.877777+00:00"
+}

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Execution-mode matrix for one LEDH value+score evaluation.
+"""HISTORICAL — retired pfor exploration; do not execute or use as current evidence.
+
+Execution-mode matrix for one LEDH value+score evaluation.
 
 Question: how much of the 39.3 s/call plan-scale cost is launch latency rather
 than arithmetic, and which compilation lever removes it?
@@ -21,6 +23,13 @@ NOT concluded here: numerical equivalence under XLA. That is a separate gate
 (ledh_k_batch_parity_and_timing.py covers sequential-vs-pfor parity; an XLA cell
 that wins on time still owes a parity check before promotion).
 """
+
+# Historical source retained; executable retirement precedes device/framework import.
+raise RuntimeError(
+    "HISTORICAL pfor exploration is retired: no applicable written approval. "
+    "See docs/plans/filter_gradient_ledh_pfor_disposition_20260929.md."
+)
+
 import os
 os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")

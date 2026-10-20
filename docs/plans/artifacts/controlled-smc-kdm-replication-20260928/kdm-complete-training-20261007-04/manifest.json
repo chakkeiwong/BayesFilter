@@ -1,0 +1,108 @@
+{
+  "schema": "kdm_complete_training_manifest_v1",
+  "resource": "gpu",
+  "mode": "tf",
+  "epoch_mode": "full",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-complete-training-20261007-04/diagnostic",
+    "--epochs",
+    "full",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_complete_training.py",
+    "--mode",
+    "tf",
+    "--epochs",
+    "full",
+    "--reference",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-complete-training-20261007-04"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-complete-training-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-complete-training-result-20261007.md",
+  "timeout_seconds": 57414,
+  "status": "COMPLETED",
+  "started_unix_seconds": 1791356829.9635057,
+  "seeds": {
+    "data": 202610071,
+    "constructors": [
+      202610072,
+      202610073,
+      202610074
+    ],
+    "tf_noise_base": 202610082
+  },
+  "data": "fresh source development train5000/validation1000",
+  "cpu_gpu_status": "trusted GPU/XLA",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "LD_LIBRARY_PATH": null,
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "hashes": {
+    "scripts/run_kdm_complete_training.py": "a73cc2f0dfa19c1afdef024d1bf12b88819529b4333221ff5dd0b57a48bbf61d",
+    "docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py": "4f8c2b450034b3d364c604e577582ed6c69181aa2416c9f13d16fede1920f88d",
+    "docs/plans/controlled-smc-kdm-complete-training-20261007.md": "6d13b04afe3f868141de6681f7853e13643c4d60488736bfd98ae1d0f68c8a1c",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "e10d0ae17c3068dff931c7dc61b4659771dafe07c43be2f1b2551227e31841c9"
+  },
+  "supervisor_pid": 1190176,
+  "heartbeat_timeout_seconds": 1800,
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-fresh-training-cost-20261007-01/diagnostic/result.json",
+  "reference_sha256": "862e93de14bad587a7e8650d6089a6e060235a3bf77e3686a683d4c4bbae8374",
+  "child_pid": 1190178,
+  "elapsed_running_seconds": 11880.371285425965,
+  "last_progress_unix_seconds": 1791369539.501305,
+  "returncode": 0,
+  "wall_seconds": 11892.008100037929,
+  "result_sha256": "e7f92a4a0336b014d87cb74e1eb8f29eb6f7cbc48cd4e2d348c9a12c0e4dbece",
+  "result_status": "PASS",
+  "result_source_training_protocol_complete": true,
+  "result_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "result_visible_device": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+  "result_jit_compile": true,
+  "result_tf32": false
+}

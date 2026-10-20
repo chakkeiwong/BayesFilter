@@ -1,0 +1,393 @@
+{
+  "schema": "iapf_replication_gap_audit_v1",
+  "plan": "docs/plans/iapf-r-replication-gap-audit-2026-09-21.md",
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "source_hashes": {
+    "docs/plans/iapf-r-replication-gap-audit-2026-09-21.md": "8618586a8f30befcbab670ee3b3ad2327d2d16f0f4d4938005a46a54a4ea44fa",
+    "docs/benchmarks/compare_iapf_r_plausible_choices.R": "d6b8900e84789e2c42167db8bb5a8643038a487976534877784a145fb21e26ff",
+    "docs/benchmarks/diagnose_iapf_r_replication_gaps.R": "ac617e9f2f3db167eef3416c0b45db9198505ee7c714836227f71d539cf5ddf0",
+    "docs/benchmarks/reference_iapf_paper.R": "c7152fea96d917bf90218bbbbc2bb31c01b0831b439625ff922454b01d748fd0",
+    "docs/benchmarks/reference_iapf_plausible_choices.R": "a341997902378df7aed276ab5dcd662aaaf2ceac5c07c89d49cf63dd1ff9f3e2",
+    "docs/benchmarks/diagnose_iapf_r_validation_tails.R": "35f872e7e9d6ef94df0e828cb1e537dda69a20b34e9412a79dbbc616462f10a0",
+    "docs/benchmarks/run_iapf_r_replication.py": "f957d09f9bdd15f43ef55420727f202a5c2b2b8d557fc66d85ac0e89a3876339",
+    "docs/benchmarks/run_iapf_r_plausible_choices.py": "fe298554241d45e99a7b93a49d28d0c0bc849a22474945fc0efe9e2899feba08",
+    "docs/benchmarks/run_iapf_r_replication_gap_audit.py": "11bcd7d3f1b28040033a69b1973982492375efb309b932e5e03db46550dd91b6",
+    "tests/reference_iapf_replication_gaps.R": "8017374871f1bae22f261321a8efa9223636a543c20dcc916562a8bb0d19412a",
+    "tests/reference_iapf_plausible_choices.R": "6de0926eaeedc6ef8eb4b77105fbab566a95f96219e42f7bf97b50f201cbc6c5",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/observations.csv": "9c7107a5b63b09cc0f7000f4edf2545266f91931ccc8e37e9bffd8a419c43227",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/settings.R": "0c889a7342090ed682f275fcacd49254a1805ca1ac16b372a7fd8a04983aee2f",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1401.rds": "ece720f28759847ee9b7e4fcacb5519f7fe60bbd9bc991f028f12452411465c9",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1402.rds": "ac820dcaa878beea08e2376c1999eed151393a621847bde420f7d8f6e1fa691b",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1403.rds": "2cab662a86f762de5a52760dda5b67bfe8ded1366ec227d707687b6327ca523f",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1404.rds": "5987c8f55b510f185dfac7445af322622699b78e7f0714b2936c11a46b23c0fa"
+  },
+  "budget_seconds": 2400,
+  "mechanics_budget_seconds": 300,
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "maximum_workers": 2,
+  "environment": "R scripting front-end version 4.1.2 (2021-11-01)",
+  "thread_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "driver_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter/docs/benchmarks/run_iapf_r_replication_gap_audit.py"
+  ],
+  "started_utc": "2026-09-20T17:54:30.004231+00:00",
+  "attempts": [
+    {
+      "name": "attempt01-fit-sensitivity",
+      "mode": "fit",
+      "timeout_seconds": 120,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/diagnose_iapf_r_replication_gaps.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt01-fit-sensitivity/results",
+        "fit"
+      ],
+      "started_utc": "2026-09-20T17:54:30.006136+00:00",
+      "exit_code": 0,
+      "worker_seconds": 1.2685149460448883,
+      "completed_utc": "2026-09-20T17:54:31.274924+00:00"
+    },
+    {
+      "name": "attempt02-validation-d20-a",
+      "dimension": 20,
+      "data_seed": 87000020,
+      "first": 1601,
+      "repeats": 32,
+      "timeout_seconds": 400,
+      "stage": "validation",
+      "arm": "delayed",
+      "baselines": true,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_plausible_choices.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt02-validation-d20-a/results",
+        "delayed",
+        "20",
+        "32",
+        "1601",
+        "87000020",
+        "yes"
+      ],
+      "started_utc": "2026-09-20T17:54:30.006312+00:00",
+      "exit_code": 0,
+      "worker_seconds": 249.55413929000497,
+      "completed_utc": "2026-09-20T17:58:39.560641+00:00"
+    },
+    {
+      "name": "attempt03-validation-d20-b",
+      "dimension": 20,
+      "data_seed": 88000020,
+      "first": 1701,
+      "repeats": 32,
+      "timeout_seconds": 400,
+      "stage": "validation",
+      "arm": "delayed",
+      "baselines": true,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_plausible_choices.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt03-validation-d20-b/results",
+        "delayed",
+        "20",
+        "32",
+        "1701",
+        "88000020",
+        "yes"
+      ],
+      "started_utc": "2026-09-20T17:54:31.276015+00:00",
+      "exit_code": 0,
+      "worker_seconds": 248.8596782120294,
+      "completed_utc": "2026-09-20T17:58:40.136033+00:00"
+    },
+    {
+      "name": "attempt05-fixed-guides",
+      "mode": "fixed",
+      "timeout_seconds": 500,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/diagnose_iapf_r_replication_gaps.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt05-fixed-guides/results",
+        "fixed"
+      ],
+      "started_utc": "2026-09-20T17:58:40.147137+00:00",
+      "exit_code": 0,
+      "worker_seconds": 262.0708087370149,
+      "completed_utc": "2026-09-20T18:03:02.244125+00:00"
+    },
+    {
+      "name": "attempt04-validation-d40",
+      "dimension": 40,
+      "data_seed": 87000040,
+      "first": 1801,
+      "repeats": 32,
+      "timeout_seconds": 500,
+      "stage": "validation",
+      "arm": "delayed",
+      "baselines": true,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/compare_iapf_r_plausible_choices.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt04-validation-d40/results",
+        "delayed",
+        "40",
+        "32",
+        "1801",
+        "87000040",
+        "yes"
+      ],
+      "started_utc": "2026-09-20T17:58:39.561569+00:00",
+      "exit_code": 124,
+      "failure_class": "bounded_worker_timeout",
+      "worker_seconds": 500.06713786604814,
+      "completed_utc": "2026-09-20T18:06:59.652056+00:00"
+    },
+    {
+      "name": "attempt06-constrained-pilot",
+      "mode": "pilot",
+      "timeout_seconds": 180,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot/docs/benchmarks/diagnose_iapf_r_replication_gaps.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt06-constrained-pilot/results",
+        "pilot"
+      ],
+      "started_utc": "2026-09-20T18:06:59.773118+00:00",
+      "exit_code": 0,
+      "worker_seconds": 15.121884307009168,
+      "completed_utc": "2026-09-20T18:07:14.895285+00:00"
+    },
+    {
+      "name": "attempt07-fit-sensitivity-fixed-scale",
+      "mode": "fit",
+      "timeout_seconds": 120,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot/docs/benchmarks/diagnose_iapf_r_replication_gaps.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt07-fit-sensitivity-fixed-scale/results",
+        "fit"
+      ],
+      "source_snapshot": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+      "started_utc": "2026-09-20T18:09:44.166024+00:00",
+      "exit_code": 0,
+      "worker_seconds": 1.4202346780220978,
+      "completed_utc": "2026-09-20T18:09:45.586540+00:00"
+    },
+    {
+      "name": "attempt09-validation-d40-completion",
+      "dimension": 40,
+      "first": 1828,
+      "repeats": 5,
+      "data_seed": 87000040,
+      "baselines": true,
+      "timeout_seconds": 200,
+      "stage": "validation",
+      "arm": "delayed",
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot/docs/benchmarks/compare_iapf_r_plausible_choices.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt09-validation-d40-completion/results",
+        "delayed",
+        "40",
+        "5",
+        "1828",
+        "87000040",
+        "yes"
+      ],
+      "source_snapshot": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+      "started_utc": "2026-09-20T18:09:45.587198+00:00",
+      "exit_code": 0,
+      "worker_seconds": 89.13323802500963,
+      "completed_utc": "2026-09-20T18:11:14.720741+00:00"
+    },
+    {
+      "name": "attempt08-pre-doubling-guides",
+      "mode": "pre",
+      "timeout_seconds": 400,
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot/docs/benchmarks/diagnose_iapf_r_replication_gaps.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt08-pre-doubling-guides/results",
+        "pre"
+      ],
+      "source_snapshot": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+      "started_utc": "2026-09-20T18:09:44.166360+00:00",
+      "exit_code": 0,
+      "worker_seconds": 169.96888214797946,
+      "completed_utc": "2026-09-20T18:12:34.135744+00:00"
+    },
+    {
+      "name": "attempt10-d20-mean-confirmation",
+      "dimension": 20,
+      "first": 1901,
+      "repeats": 64,
+      "data_seed": 87000020,
+      "baselines": false,
+      "timeout_seconds": 400,
+      "stage": "validation",
+      "arm": "delayed",
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot/docs/benchmarks/compare_iapf_r_plausible_choices.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt10-d20-mean-confirmation/results",
+        "delayed",
+        "20",
+        "64",
+        "1901",
+        "87000020",
+        "no"
+      ],
+      "source_snapshot": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-source-snapshot",
+      "started_utc": "2026-09-20T18:11:14.721413+00:00",
+      "exit_code": 0,
+      "worker_seconds": 313.3369115500245,
+      "completed_utc": "2026-09-20T18:16:28.058507+00:00"
+    }
+  ],
+  "result_file": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/result.md",
+  "original_author_settings_or_data": false,
+  "paper_sha256": "41d751f9698c17550477563ed2bde3ca89ca9918d868ab496b44cb6f7304c975",
+  "status": "complete_bounded_audit; broader replication remains open",
+  "worker_seconds": 1850.8014297591872,
+  "remaining_worker_seconds": 549.1985702408128,
+  "report_seconds": 4.818008553003892,
+  "finished_utc": "2026-09-20T18:16:28.059587+00:00",
+  "repair_source_hashes": {
+    "docs/plans/iapf-r-replication-gap-audit-2026-09-21.md": "751cbfa6776bf8b4f4f501c56f3802df3072b13222daa938f4074ba3820f5b94",
+    "docs/benchmarks/compare_iapf_r_plausible_choices.R": "d6b8900e84789e2c42167db8bb5a8643038a487976534877784a145fb21e26ff",
+    "docs/benchmarks/diagnose_iapf_r_replication_gaps.R": "fa3016b187952ca975f4f1848f74e8b9b76550d6da62e05498d17d67833be50d",
+    "docs/benchmarks/reference_iapf_paper.R": "c7152fea96d917bf90218bbbbc2bb31c01b0831b439625ff922454b01d748fd0",
+    "docs/benchmarks/reference_iapf_plausible_choices.R": "6438ef634c15af85c25754bb0bad9d3836e9169a18f64d172c63598af41972d9",
+    "docs/benchmarks/diagnose_iapf_r_validation_tails.R": "35f872e7e9d6ef94df0e828cb1e537dda69a20b34e9412a79dbbc616462f10a0",
+    "docs/benchmarks/run_iapf_r_replication.py": "f957d09f9bdd15f43ef55420727f202a5c2b2b8d557fc66d85ac0e89a3876339",
+    "docs/benchmarks/run_iapf_r_plausible_choices.py": "fe298554241d45e99a7b93a49d28d0c0bc849a22474945fc0efe9e2899feba08",
+    "docs/benchmarks/run_iapf_r_replication_gap_audit.py": "11bcd7d3f1b28040033a69b1973982492375efb309b932e5e03db46550dd91b6",
+    "tests/reference_iapf_replication_gaps.R": "8017374871f1bae22f261321a8efa9223636a543c20dcc916562a8bb0d19412a",
+    "tests/reference_iapf_plausible_choices.R": "6de0926eaeedc6ef8eb4b77105fbab566a95f96219e42f7bf97b50f201cbc6c5",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/observations.csv": "9c7107a5b63b09cc0f7000f4edf2545266f91931ccc8e37e9bffd8a419c43227",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/settings.R": "0c889a7342090ed682f275fcacd49254a1805ca1ac16b372a7fd8a04983aee2f",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1401.rds": "ece720f28759847ee9b7e4fcacb5519f7fe60bbd9bc991f028f12452411465c9",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1402.rds": "ac820dcaa878beea08e2376c1999eed151393a621847bde420f7d8f6e1fa691b",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1403.rds": "2cab662a86f762de5a52760dda5b67bfe8ded1366ec227d707687b6327ca523f",
+    "docs/plans/artifacts/iapf-r-plausible-reconstruction-20260921-01/attempt08-validation-delayed-d80/results/iapf-1404.rds": "5987c8f55b510f185dfac7445af322622699b78e7f0714b2936c11a46b23c0fa",
+    "docs/benchmarks/continue_iapf_r_replication_gap_audit.py": "62a11ab78fd51d001c0d7e4ead1dddf30328cb7cd4ef63d64dd3f5c9183dd0a1",
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/repair-note.md": "f3594ce6e9080a191009fe45c011bd224a5c4c522d03e341a7f41e1b1cebcc4d"
+  },
+  "repair_driver_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter/docs/benchmarks/continue_iapf_r_replication_gap_audit.py"
+  ],
+  "repair_started_utc": "2026-09-20T18:09:44.164411+00:00",
+  "terminal_analysis_seconds": 10.161045057990123,
+  "terminal_analysis_source_sha256": "2151ffba563a89b6f5618275d7fabdca153b4f723d1b53b87de59c72cc69b35f",
+  "terminal_summary": "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/terminal-analysis/summary.json",
+  "terminal_review": "Skeptical self-review complete; see result.md. No external reviewer used.",
+  "closed_utc": "2026-09-20T18:26:39.813257+00:00",
+  "python_environment": {
+    "executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "version": "3.11.15 (main, Jun 11 2026, 15:20:16) [GCC 14.3.0]"
+  },
+  "repair_ledger": [
+    {
+      "attempt": "attempt01-fit-sensitivity",
+      "classification": "scientific comparison confounded by optimizer scaling",
+      "repair": "attempt07-fit-sensitivity-fixed-scale",
+      "focused_check": "tests/reference_iapf_replication_gaps.R"
+    },
+    {
+      "attempt": "attempt04-validation-d40",
+      "classification": "bounded resource timeout after27 complete replicates",
+      "repair": "attempt09-validation-d40-completion",
+      "focused_check": "Exact data/reference equality, duplicate and complete-record checks before derived32 assembly"
+    },
+    {
+      "diagnostic": "final-guide replay alone cannot identify pre-doubling quality",
+      "repair": "attempt08-pre-doubling-guides",
+      "focused_check": "Four learning histories and final likelihoods reproduced exactly"
+    }
+  ],
+  "validation": {
+    "existing_tests": {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/highdim/test_iapf_r_paper_reference.py",
+        "tests/highdim/test_iapf_r_plausible_reference.py"
+      ],
+      "exit_code": 0,
+      "passed": 12,
+      "pytest_reported_seconds": 4.44,
+      "log": "iapf-gap-regression.log"
+    },
+    "identity_suite": {
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "tests/reference_iapf_replication_gaps.R"
+      ],
+      "exit_code": 0,
+      "post_repair_wall_seconds": 0.370551589,
+      "log": "iapf-gap-identities-after-repair.log"
+    },
+    "git_diff_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    "captured_source_hashes": "pass",
+    "new_file_whitespace": "pass",
+    "artifact_links": "pass",
+    "data_and_record_completeness": "pass"
+  },
+  "promotion_decision": {
+    "reference_role": "independent CPU R debugging reference",
+    "paper_replication_complete": false,
+    "production_promotion": false,
+    "heuristic_veto": "d20-B large-innovation observed loss to FA; interval spans zero",
+    "next_question": "Fresh full-filter constrained Equation15 versus QR; controller extension tested separately"
+  },
+  "documentation_only_postrun_edit": "reference_iapf_plausible_choices.R header now says shared independent-reference core; executed source snapshots are preserved.",
+  "data_artifact_sha256": {
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt04-validation-d40/results/observations.csv": "ff05c33ec5990d462e3f0547dd162ba96e8949e5cdc1d2f2f4a03d6025eee54e",
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt10-d20-mean-confirmation/results/observations.csv": "9e0bcd7812792f0732ef4cccf157041634c9640f844b8eb428c86a35193ae873",
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt02-validation-d20-a/results/observations.csv": "9e0bcd7812792f0732ef4cccf157041634c9640f844b8eb428c86a35193ae873",
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt09-validation-d40-completion/results/observations.csv": "ff05c33ec5990d462e3f0547dd162ba96e8949e5cdc1d2f2f4a03d6025eee54e",
+    "docs/plans/artifacts/iapf-r-replication-gap-audit-20260921-01/attempt03-validation-d20-b/results/observations.csv": "3927b524e0420435c398a73f02b02b131d11bc24ffd52c10fdeffc21ba93c7eb"
+  },
+  "terminal_artifact_sha256": {
+    "result.md": "aaeae90a94bf6d35233f582dd843387dc62760fc6d43de8a6e4d5cd1c22c9d96",
+    "source-and-math-audit.md": "f38e160bad1681b67a3a8ae5b452a09be3fd2d9a68f5aaa56daec55f6d999436",
+    "terminal-analysis/summary.json": "d4e3dec893f20caae170b2b23eb203de64586ea77bd763e58d9189fd3087b1d3",
+    "terminal-analysis/d40-complete/provenance.json": "9e4bf5b0cad4afff794b84d34f5636306552203be34f5d2a5b23abc229fbab2d"
+  }
+}

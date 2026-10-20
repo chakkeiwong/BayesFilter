@@ -17,6 +17,7 @@ recorded by the caller; the Phase 0 fixture uses zero jitter.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import math
 from typing import Callable, Mapping, Sequence
 
@@ -558,7 +559,13 @@ def compile_k1_apf_proposal(
     log_parent_weights: tf.Tensor,
     seed: Sequence[int] = (20260903, 1),
 ) -> Mapping[str, tf.Tensor]:
-    """Compile one K=1 APF draw from a UKF-conditioned Gaussian bank."""
+    """Independent Phase 0 reference draw from a UKF-conditioned Gaussian bank.
+
+    This diagnostic combines a compiled UKF with ordinary TensorFlow random
+    draws and host validation. The complete draw is not XLA compiled. Serious
+    C2 preparation uses ``compile_c2_per_ancestor_ukf_apf_k1`` in the adapter;
+    this helper preserves the independent, device-specific reference stream.
+    """
 
     prior_means = tf.convert_to_tensor(prior_means, DTYPE)
     if prior_means.shape.rank != 2 or prior_means.shape[0] is None:
@@ -1340,10 +1347,8 @@ def sample_k1_apf_step(
     seed_tuple = tuple(int(value) for value in seed)
     if len(seed_tuple) != 2:
         raise ValueError("stateless APF seed must contain two integers")
-    sampler = make_k1_apf_sampler(
-        batch_size=int(means.shape[0]),
-        state_dim=int(means.shape[1]),
-        jit_compile=bool(jit_compile),
+    sampler = _retained_k1_apf_sampler(
+        int(means.shape[0]), int(means.shape[1]), bool(jit_compile)
     )
     result = sampler(
         means,
@@ -1380,3 +1385,10 @@ __all__ = [
     "sample_k1_apf_step",
     "student_log_density",
 ]
+
+
+@lru_cache(maxsize=4)
+def _retained_k1_apf_sampler(batch_size: int, state_dim: int, jit_compile: bool):
+    """Bound ownership for repeated calls through the public convenience API."""
+    return make_k1_apf_sampler(batch_size=batch_size, state_dim=state_dim,
+                               jit_compile=jit_compile)

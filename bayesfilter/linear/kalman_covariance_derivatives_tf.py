@@ -17,6 +17,8 @@ import math
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+
 
 def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
@@ -178,7 +180,9 @@ def _batched_cholesky_solve(chol: tf.Tensor, rhs: tf.Tensor) -> tf.Tensor:
     return tf.linalg.cholesky_solve(chol, rhs)
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(
+    static_parameters=("jitter_updates_filtered_covariance",), floating_dtype=tf.float64,
+)
 def tf_batched_covariance_kalman_value_and_score(
     observations: tf.Tensor,
     transition_offset: tf.Tensor,

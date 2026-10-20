@@ -1,0 +1,79 @@
+{
+  "status": "FAILED",
+  "supervisor_pid": 983677,
+  "plan_file": "docs/plans/controlled-smc-kdm-stage-isolation-plan-20261013.md",
+  "result_file": "docs/plans/controlled-smc-kdm-stage-isolation-result-20261013.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/run_kdm_stage_isolation.py"
+  ],
+  "start_utc": "2026-10-13T03:03:37.947531+00:00",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "git_dirty": " M bayesfilter/highdim/observation_robust_guide_tf.py\n M bayesfilter/highdim/sgqf_joint_consumer_tf.py\n M docs/benchmarks/reference_iapf_paper.R\n M docs/benchmarks/run_observation_aware_tt_complete.py\n M docs/plans/artifacts/ledh-graceful-failure-revised-program-20260917-01/checkpoint.md\n M docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md\n M docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.tex\n M docs/plans/observation-aware-tt-active-checkpoint.md\n M docs/plans/observation-aware-tt-master-amendment-11-protected-fitting-20260917.md\n M docs/plans/observation-aware-tt-repair-complete-program-20260913.md\n M docs/plans/younis-kdm-score-master-program-2026-09-14.md\n",
+  "source_hashes": {
+    "docs/benchmarks/run_kdm_stage_isolation.py": "cdd5fdf1975fbb3c791a0158f198c24d09c14ae822f2e7a784c22db252185d19",
+    "docs/plans/controlled-smc-kdm-stage-isolation-plan-20261013.md": "0e8cbaa68bb6929ef28c63aa97a903f467fbb5705ec9b62abe56c36f287e420d",
+    "docs/benchmarks/reference_kdm_stage_isolation.py": "863b89fc6aa04b35da01a50ad3b2675a68d7eb2509a55ec2be9fb608ee858c8b",
+    "docs/benchmarks/diagnose_kdm_stage_isolation_tf.py": "152c50453362161767cac6ba72a598391528c268613ac69a9187aa2549dfdbb9",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "e0ddb0c488402d97791559a6197c9c00ee0fd7a87046c8a9e43f952bce5ed619",
+    "docs/benchmarks/reference_kdm_source_stages.py": "7f8513ee19af87e6eca0c9b9c044a239fb0fe2b1835e2ab28f7f738825a9bf5d",
+    "docs/benchmarks/reference_kdm_neural.py": "907fcf70d98c42ca393f301f5b0ef327ef8a90741af90ddeb93598f665af338d",
+    "docs/benchmarks/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "9767a178b7705d7d40a9144973b9dc81c80d77984b9cfd483771ddb3947fffad",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "79aed1402ff3c0b3a3c4819e20bf97bdfacc2a61f859bc54565d182c96dcf0c9",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7"
+  },
+  "resource_wall_seconds": {
+    "cpu": 10.001016556983814,
+    "gpu": 0.0
+  },
+  "campaign_remaining_before": {
+    "cpu": 216933.2708486594,
+    "gpu": 201291.2102468608
+  },
+  "phase_remaining_before": {
+    "cpu": 16200.0,
+    "gpu": 14400.0
+  },
+  "attempt_cap": 3,
+  "phase_caps": {
+    "cpu": 16200.0,
+    "gpu": 14400.0
+  },
+  "stages": [
+    {
+      "name": "source-audit",
+      "status": "FAILED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_stage_isolation.py",
+        "--mode",
+        "audit",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt01/source-audit/diagnostic"
+      ],
+      "gpu": false,
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "timeout_seconds": 1800,
+      "environment": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+      "pid": 983709,
+      "exit_code": 1,
+      "wall_seconds": 10.001016556983814
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "data_version": "unit01/02 fixed source datasets and repaired saved checkpoints; input SHA256 in each stage",
+  "seed_policy": "original TF base1100000000; CPU draw seeds in stage artifacts",
+  "gpu_trust_basis": "escalated_local_gpu_access",
+  "current_stage": "source-audit",
+  "end_utc": "2026-10-13T03:03:49.082174+00:00"
+}

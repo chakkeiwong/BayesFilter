@@ -1,0 +1,612 @@
+{
+  "baseline": "3582b4ac",
+  "original_source_sha256": {
+    "bayesfilter/inference/posterior_curvature_refinement.py": "01cb6f5626ad289a87675cfae38c05efe47df0682534e822f36394dc62bde0f9",
+    "bayesfilter/inference/score_curvature_tf.py": "b8d005fb61aece006f44cb81a9b2d45d0e5cacd9190ba672b704317c86c420e6"
+  },
+  "original": {
+    "schema": "bayesfilter.posterior_curvature_refinement.v1",
+    "accepted": false,
+    "status": "ineligible_target_row",
+    "center": [
+      0.0,
+      0.03,
+      0.06
+    ],
+    "pilot_factor": [
+      [
+        0.9500000000000001,
+        0.0,
+        0.0
+      ],
+      [
+        0.05,
+        0.9500000000000001,
+        0.0
+      ],
+      [
+        0.05,
+        0.05,
+        0.9500000000000001
+      ]
+    ],
+    "refined_factor": null,
+    "refined_covariance": null,
+    "precision_z": null,
+    "diagnostics": {
+      "physical_rows": 176,
+      "logical_rows": 141,
+      "padded_rows": 35,
+      "eligibility_batches": 22,
+      "callback_batches": 21,
+      "target_rows": 168,
+      "target_logical_rows": 133,
+      "completed_logical_rows": 133,
+      "logical_rows_per_partition": 33,
+      "physical_rows_per_partition": 40,
+      "planned_physical_rows": 248,
+      "batch_size": 8,
+      "max_physical_rows": 10000,
+      "seed": -73,
+      "partitions": [
+        {
+          "role": "center",
+          "seed": null,
+          "physical_rows": 8,
+          "logical_rows": 1,
+          "padded_rows": 7,
+          "eligibility_batches": 1,
+          "callback_batches": 1,
+          "target_rows": 8,
+          "target_logical_rows": 1,
+          "completed_logical_rows": 1
+        },
+        {
+          "role": "training_0",
+          "seed": [
+            656671451,
+            0
+          ],
+          "physical_rows": 40,
+          "logical_rows": 33,
+          "padded_rows": 7,
+          "eligibility_batches": 5,
+          "callback_batches": 5,
+          "target_rows": 40,
+          "target_logical_rows": 33,
+          "completed_logical_rows": 33
+        },
+        {
+          "role": "training_1",
+          "seed": [
+            656671451,
+            1
+          ],
+          "physical_rows": 40,
+          "logical_rows": 33,
+          "padded_rows": 7,
+          "eligibility_batches": 5,
+          "callback_batches": 5,
+          "target_rows": 40,
+          "target_logical_rows": 33,
+          "completed_logical_rows": 33
+        },
+        {
+          "role": "selection_0",
+          "seed": [
+            656671451,
+            2
+          ],
+          "physical_rows": 40,
+          "logical_rows": 33,
+          "padded_rows": 7,
+          "eligibility_batches": 5,
+          "callback_batches": 5,
+          "target_rows": 40,
+          "target_logical_rows": 33,
+          "completed_logical_rows": 33
+        },
+        {
+          "role": "selection_1",
+          "seed": [
+            656671451,
+            3
+          ],
+          "physical_rows": 40,
+          "logical_rows": 33,
+          "padded_rows": 7,
+          "eligibility_batches": 5,
+          "callback_batches": 5,
+          "target_rows": 40,
+          "target_logical_rows": 33,
+          "completed_logical_rows": 33
+        },
+        {
+          "role": "audit",
+          "seed": [
+            656671451,
+            4
+          ],
+          "physical_rows": 8,
+          "logical_rows": 8,
+          "padded_rows": 0,
+          "eligibility_batches": 1
+        }
+      ],
+      "failure_partition": "audit",
+      "center_held_fixed": true,
+      "fit_design": "uniform_box",
+      "pilot_coordinate_half_width": 1.0,
+      "proposal_distribution": "standard_normal_in_refined_factor_coordinates",
+      "lineage": {
+        "fixture": "ineligible_audit",
+        "frozen": "3582b4ac"
+      },
+      "replicates": [
+        {
+          "precision_z": [
+            [
+              0.9701249999999999,
+              0.15500000000000003,
+              0.19237500000000002
+            ],
+            [
+              0.15500000000000003,
+              1.8624999999999996,
+              0.19
+            ],
+            [
+              0.19237500000000002,
+              0.19,
+              2.752625000000001
+            ]
+          ],
+          "design_condition": 1.2344959465340968,
+          "precision_condition": 3.030259746560074,
+          "selection_relative_rmse": 2.8146219374325296e-16,
+          "raw_spd": true,
+          "design_rank": 3,
+          "accepted": true
+        },
+        {
+          "precision_z": [
+            [
+              0.9701250000000003,
+              0.15500000000000008,
+              0.19237500000000002
+            ],
+            [
+              0.15500000000000008,
+              1.8624999999999998,
+              0.1900000000000001
+            ],
+            [
+              0.19237500000000002,
+              0.1900000000000001,
+              2.752625
+            ]
+          ],
+          "design_condition": 1.4121551791281324,
+          "precision_condition": 3.0302597465600716,
+          "selection_relative_rmse": 1.6649847024583538e-16,
+          "raw_spd": true,
+          "design_rank": 3,
+          "accepted": true
+        }
+      ],
+      "replicate_generalized_eigenvalue_spread": 1.0000000000000004
+    },
+    "nonclaims": [
+      "fixed-center regional score-curvature initializer only",
+      "the supplied center is not optimized or certified as a MAP",
+      "not a posterior covariance correctness claim",
+      "not an HMC mass matrix or HMC readiness result",
+      "not NeuTra training or whitening evidence",
+      "not convergence or default-readiness evidence"
+    ]
+  },
+  "candidate": {
+    "False": {
+      "schema": "bayesfilter.posterior_curvature_refinement.v1",
+      "accepted": false,
+      "status": "ineligible_target_row",
+      "center": [
+        0.0,
+        0.03,
+        0.06
+      ],
+      "pilot_factor": [
+        [
+          0.9500000000000001,
+          0.0,
+          0.0
+        ],
+        [
+          0.05,
+          0.9500000000000001,
+          0.0
+        ],
+        [
+          0.05,
+          0.05,
+          0.9500000000000001
+        ]
+      ],
+      "refined_factor": null,
+      "refined_covariance": null,
+      "precision_z": null,
+      "diagnostics": {
+        "physical_rows": 176,
+        "logical_rows": 141,
+        "padded_rows": 35,
+        "eligibility_batches": 22,
+        "callback_batches": 21,
+        "target_rows": 168,
+        "target_logical_rows": 133,
+        "completed_logical_rows": 133,
+        "logical_rows_per_partition": 33,
+        "physical_rows_per_partition": 40,
+        "planned_physical_rows": 248,
+        "batch_size": 8,
+        "max_physical_rows": 10000,
+        "seed": -73,
+        "partitions": [
+          {
+            "role": "center",
+            "seed": null,
+            "physical_rows": 8,
+            "logical_rows": 1,
+            "padded_rows": 7,
+            "eligibility_batches": 1,
+            "callback_batches": 1,
+            "target_rows": 8,
+            "target_logical_rows": 1,
+            "completed_logical_rows": 1
+          },
+          {
+            "role": "training_0",
+            "seed": [
+              656671451,
+              0
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "training_1",
+            "seed": [
+              656671451,
+              1
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "selection_0",
+            "seed": [
+              656671451,
+              2
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "selection_1",
+            "seed": [
+              656671451,
+              3
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "audit",
+            "seed": [
+              656671451,
+              4
+            ],
+            "physical_rows": 8,
+            "logical_rows": 8,
+            "padded_rows": 0,
+            "eligibility_batches": 1
+          }
+        ],
+        "failure_partition": "audit",
+        "center_held_fixed": true,
+        "fit_design": "uniform_box",
+        "pilot_coordinate_half_width": 1.0,
+        "proposal_distribution": "standard_normal_in_refined_factor_coordinates",
+        "lineage": {
+          "fixture": "ineligible_audit",
+          "frozen": "3582b4ac"
+        },
+        "replicates": [
+          {
+            "precision_z": [
+              [
+                0.9701250000000001,
+                0.15500000000000003,
+                0.19237500000000005
+              ],
+              [
+                0.15500000000000003,
+                1.8625,
+                0.19
+              ],
+              [
+                0.19237500000000005,
+                0.19,
+                2.752625000000001
+              ]
+            ],
+            "design_condition": 1.2344959465340968,
+            "precision_condition": 3.030259746560073,
+            "selection_relative_rmse": 2.397918455800661e-16,
+            "raw_spd": true,
+            "design_rank": 3,
+            "accepted": true
+          },
+          {
+            "precision_z": [
+              [
+                0.9701250000000001,
+                0.15499999999999994,
+                0.19237500000000002
+              ],
+              [
+                0.15499999999999994,
+                1.8624999999999998,
+                0.1900000000000001
+              ],
+              [
+                0.19237500000000002,
+                0.1900000000000001,
+                2.752625
+              ]
+            ],
+            "design_condition": 1.4121551791281324,
+            "precision_condition": 3.030259746560072,
+            "selection_relative_rmse": 1.746711809469713e-16,
+            "raw_spd": true,
+            "design_rank": 3,
+            "accepted": true
+          }
+        ],
+        "replicate_generalized_eigenvalue_spread": 1.0000000000000007
+      },
+      "nonclaims": [
+        "fixed-center regional score-curvature initializer only",
+        "the supplied center is not optimized or certified as a MAP",
+        "not a posterior covariance correctness claim",
+        "not an HMC mass matrix or HMC readiness result",
+        "not NeuTra training or whitening evidence",
+        "not convergence or default-readiness evidence"
+      ]
+    },
+    "True": {
+      "schema": "bayesfilter.posterior_curvature_refinement.v1",
+      "accepted": false,
+      "status": "ineligible_target_row",
+      "center": [
+        0.0,
+        0.03,
+        0.06
+      ],
+      "pilot_factor": [
+        [
+          0.9500000000000001,
+          0.0,
+          0.0
+        ],
+        [
+          0.05,
+          0.9500000000000001,
+          0.0
+        ],
+        [
+          0.05,
+          0.05,
+          0.9500000000000001
+        ]
+      ],
+      "refined_factor": null,
+      "refined_covariance": null,
+      "precision_z": null,
+      "diagnostics": {
+        "physical_rows": 176,
+        "logical_rows": 141,
+        "padded_rows": 35,
+        "eligibility_batches": 22,
+        "callback_batches": 21,
+        "target_rows": 168,
+        "target_logical_rows": 133,
+        "completed_logical_rows": 133,
+        "logical_rows_per_partition": 33,
+        "physical_rows_per_partition": 40,
+        "planned_physical_rows": 248,
+        "batch_size": 8,
+        "max_physical_rows": 10000,
+        "seed": -73,
+        "partitions": [
+          {
+            "role": "center",
+            "seed": null,
+            "physical_rows": 8,
+            "logical_rows": 1,
+            "padded_rows": 7,
+            "eligibility_batches": 1,
+            "callback_batches": 1,
+            "target_rows": 8,
+            "target_logical_rows": 1,
+            "completed_logical_rows": 1
+          },
+          {
+            "role": "training_0",
+            "seed": [
+              656671451,
+              0
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "training_1",
+            "seed": [
+              656671451,
+              1
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "selection_0",
+            "seed": [
+              656671451,
+              2
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "selection_1",
+            "seed": [
+              656671451,
+              3
+            ],
+            "physical_rows": 40,
+            "logical_rows": 33,
+            "padded_rows": 7,
+            "eligibility_batches": 5,
+            "callback_batches": 5,
+            "target_rows": 40,
+            "target_logical_rows": 33,
+            "completed_logical_rows": 33
+          },
+          {
+            "role": "audit",
+            "seed": [
+              656671451,
+              4
+            ],
+            "physical_rows": 8,
+            "logical_rows": 8,
+            "padded_rows": 0,
+            "eligibility_batches": 1
+          }
+        ],
+        "failure_partition": "audit",
+        "center_held_fixed": true,
+        "fit_design": "uniform_box",
+        "pilot_coordinate_half_width": 1.0,
+        "proposal_distribution": "standard_normal_in_refined_factor_coordinates",
+        "lineage": {
+          "fixture": "ineligible_audit",
+          "frozen": "3582b4ac"
+        },
+        "replicates": [
+          {
+            "precision_z": [
+              [
+                0.9701250000000003,
+                0.15499999999999997,
+                0.19237500000000002
+              ],
+              [
+                0.15499999999999997,
+                1.8625,
+                0.1899999999999999
+              ],
+              [
+                0.19237500000000002,
+                0.1899999999999999,
+                2.752625
+              ]
+            ],
+            "design_condition": 1.2344959465340972,
+            "precision_condition": 3.030259746560069,
+            "selection_relative_rmse": 1.5083526480477282e-16,
+            "raw_spd": true,
+            "design_rank": 3,
+            "accepted": true
+          },
+          {
+            "precision_z": [
+              [
+                0.9701250000000005,
+                0.15499999999999997,
+                0.19237500000000007
+              ],
+              [
+                0.15499999999999997,
+                1.8624999999999998,
+                0.18999999999999995
+              ],
+              [
+                0.19237500000000007,
+                0.18999999999999995,
+                2.7526250000000005
+              ]
+            ],
+            "design_condition": 1.4121551791281322,
+            "precision_condition": 3.030259746560069,
+            "selection_relative_rmse": 1.7151277036245012e-16,
+            "raw_spd": true,
+            "design_rank": 3,
+            "accepted": true
+          }
+        ],
+        "replicate_generalized_eigenvalue_spread": 1.0000000000000004
+      },
+      "nonclaims": [
+        "fixed-center regional score-curvature initializer only",
+        "the supplied center is not optimized or certified as a MAP",
+        "not a posterior covariance correctness claim",
+        "not an HMC mass matrix or HMC readiness result",
+        "not NeuTra training or whitening evidence",
+        "not convergence or default-readiness evidence"
+      ]
+    }
+  }
+}

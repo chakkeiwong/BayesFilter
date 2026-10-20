@@ -1,16 +1,9 @@
-"""XLA-compiled adapted (triangular + truncation-corrected) value filter.
+"""Complete native adapted-map TT value recurrence.
 
-attempt04 engine (plan: bayesfilter-p1b-attempt04-plan-2026-08-21.md).
-Program identical to `run_value_filter_branch_axis_adapted` (design note
-Sections 9-13); execution identical in structure to the P3.3 XLA engine:
-host filter loop + one jit-compiled transition step per branch-count
-signature, CholeskyQR2 solve backend, eigvalsh conditioning. Parity is a
-MEASURED gate vs the eager adapted engine (1e-12 target on the n=2
-fixture) — same discipline as P3.3, not a bit-identity claim.
-
-Map/moment/correction work (joint Cholesky, containment shrink, retained
-moments telemetry, truncation-mass MC) is cheap host-side setup per step;
-only the fit + retention tensors compile.
+Preserves the triangular containment and truncation-mass formulas in the
+August 20 design note, Sections 9--13. Frozen designs are prepared once;
+initial fitting, maps, recurrent fitting and mass correction compile together.
+This mechanical execution repair makes no new source-faithfulness claim.
 """
 
 from __future__ import annotations
@@ -21,48 +14,44 @@ from typing import Callable
 import tensorflow as tf
 
 from bayesfilter.highdim.bases import ProductBasis
-from bayesfilter.highdim.filtering import AffineCoordinateMap
 from bayesfilter.highdim.fitting import FixedTTFitter
-from bayesfilter.highdim.retained_moments_tf import retained_reference_moments
 from bayesfilter.highdim.retained_quadratic_form_tf import (
-    RetainedQuadraticForm,
     prefix_gram_matrix,
     prefix_row_vectors,
-    retained_quadratic_form_from_squared_tt,
     suffix_gram_matrix,
 )
 from bayesfilter.highdim.squared_tt_engine_xla_tf import _fit_als_graph
-from bayesfilter.highdim.squared_tt_engine_adapted_tf import _check_hint
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
     DiscreteIndicatorBasis1D,
     EngineConfig,
-    _design_rows,
-    _fixed_als_fit,
     _initial_tt_cores,
     _product_basis,
 )
 from bayesfilter.highdim.tt import TTCore
+from bayesfilter.highdim.tt_preparation_tf import frozen_design_rows
 
 DTYPE = tf.float64
 _STEP_CACHE: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
 
 
-def run_value_filter_branch_axis_adapted_xla(
+def make_value_filter_branch_axis_adapted_xla(
     adapter,
-    observations: tf.Tensor,
+    observation_shape,
     config: EngineConfig,
     *,
-    predictive_moment_hint: Callable[[int, tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     map_kappa_prev: float = 3.0,
     map_kappa_current: float = 4.0,
-) -> tuple[tf.Tensor, list[dict]]:
+    jit_compile: bool = True,
+):
     if config.quadrature_order is not None:
         raise ValueError("adapted maps are defined for scattered rows only")
 
     n = adapter.state_dim
-    observations = tf.convert_to_tensor(observations, DTYPE)
-    horizon = int(observations.shape[0])
+    horizon = int(observation_shape[0])
+    if horizon < 1:
+        raise ValueError("positive observation horizon required")
     current_basis = _product_basis(n, config.basis_degree)
+    extended_basis = _product_basis(n+1, config.basis_degree)
     basis_dim = int(current_basis.bases[0].basis_dim)
     hw = tf.constant(config.coordinate_half_width, DTYPE)
     kappa_p_const = tf.constant(map_kappa_prev, DTYPE)
@@ -72,10 +61,11 @@ def run_value_filter_branch_axis_adapted_xla(
     ridge = tf.constant(config.ridge, DTYPE)
     fitter = FixedTTFitter()
     per_adapter = _STEP_CACHE.setdefault(adapter, {})
-    step_cache = per_adapter.setdefault((config, map_kappa_prev, map_kappa_current), {})
+    cache_key = (config, tuple(observation_shape), map_kappa_prev, map_kappa_current, jit_compile)
+    if cache_key in per_adapter:
+        return per_adapter[cache_key]
 
     def _make_transition_fit(mixed_basis, mixed_shapes, prefix_shapes):
-        @tf.function(jit_compile=True)
         def transition_fit(
             prefix_values, gram, zc_prev, z_rows, z_weights, core0_values,
             y, m_c, l_cc, m_p_base, l_pc, l_pp, l_old, m_old,
@@ -160,204 +150,141 @@ def run_value_filter_branch_axis_adapted_xla(
 
         return transition_fit
 
-    log_likelihood = tf.constant(0.0, DTYPE)
-    retained: RetainedQuadraticForm | None = None
-    diagnostics: list[dict] = []
-    prefix_values = None
-    gram = None
-    zc = None
+    initial = tuple(c.values for c in _initial_tt_cores(n, basis_dim, config.rank))
+    initial_shapes = tuple(tuple(v.shape) for v in initial)
+    initial_rows = frozen_design_rows(config, config.row_count, n, tf.constant([0]), 17,
+        jit_compile=jit_compile)[0]
+    weights = tf.fill([config.row_count], tf.constant(1. / config.row_count, DTYPE))
+    dates = tf.range(1, max(2, horizon))
+    rows = frozen_design_rows(config, config.row_count, 2 * n, dates, 100, jit_compile=jit_compile)
+    correction_rows = frozen_design_rows(config, config.row_count, 2 * n, dates, 500, jit_compile=jit_compile)
 
-    for t in range(horizon):
-        if t == 0:
-            # t=0: global box, eager (cheap n-axis fit; XLA gain negligible)
-            rows = _design_rows(config, config.row_count, n, (config.seed, 17))
-            weights = tf.fill(
-                [int(rows.shape[0])], tf.constant(1.0 / int(rows.shape[0]), DTYPE)
-            )
-            map_c = AffineCoordinateMap(
-                offset=tf.zeros([n], DTYPE), matrix=tf.eye(n, dtype=DTYPE) * hw
-            )
-            x0 = rows * hw
-            conversion = tf.cast(n, DTYPE) * (tf.math.log(hw) + log2)
-            log_f = (
-                adapter.initial_log_density(x0)
-                + adapter.observation_log_density(x0, observations[t])
-                + conversion
-            )
-            shift = tf.reduce_logsumexp(log_f) - tf.math.log(
-                tf.cast(tf.shape(log_f)[0], DTYPE)
-            )
-            sqrt_target = tf.exp(0.5 * (log_f - shift))
-            cores, fit_diag = _fixed_als_fit(
-                current_basis, rows, sqrt_target, weights,
-                _initial_tt_cores(n, basis_dim, config.rank), config,
-            )
-            suffix_core = tf.zeros([int(cores[-1].right_rank), basis_dim, 1], DTYPE)
-            suffix_core = tf.tensor_scatter_nd_update(suffix_core, [[0, 0, 0]], [1.0])
-            extended = tuple(cores) + (TTCore(suffix_core),)
-            extended_basis = _product_basis(n + 1, config.basis_degree)
-            base = retained_quadratic_form_from_squared_tt(
-                extended, extended_basis, split_index=n, tau=0.0,
-                prefix_basis=current_basis, coordinate_map=map_c,
-            )
-            z_h_new = base.z_complete_ref
-            retained = RetainedQuadraticForm(
-                prefix_cores=base.prefix_cores, suffix_gram=base.suffix_gram,
-                tau=tau * z_h_new, z_complete_ref=(1.0 + tau) * z_h_new,
-                prefix_basis=base.prefix_basis, coordinate_map=base.coordinate_map,
-            )
-            prefix_values = [c.values for c in base.prefix_cores]
-            gram = base.suffix_gram
-            zc = retained.z_complete_ref
-            log_likelihood += shift + tf.math.log(retained.z_complete_ref)
-            diagnostics.append(
-                {"time_index": 0, "log_increment": float(
-                    (shift + tf.math.log(retained.z_complete_ref)).numpy()),
-                 "tie_flag": False, **fit_diag}
-            )
-            continue
+    def phase(previous_shapes, dates):
+        from bayesfilter.highdim.tt_native_control_tf import random_core_starts
+        branch_count = previous_shapes[-1][-1] + 1
+        mixed_basis = ProductBasis(list(current_basis.bases) + [DiscreteIndicatorBasis1D(branch_count)]
+            + list(current_basis.bases), current_basis.convention)
+        dims = (basis_dim,) * n + (branch_count,) + (basis_dim,) * n
+        shapes = tuple((1 if axis == 0 else config.rank, dim,
+            1 if axis == 2*n else config.rank) for axis, dim in enumerate(dims))
+        starts = random_core_starts(shapes, dates, config.seed, jit_compile=jit_compile)
+        fit = _make_transition_fit(mixed_basis, shapes, previous_shapes)
 
-        # ---- host-side map construction (triangular; Sections 9-11) ----
-        map_old = retained.coordinate_map
-        l_old = tf.convert_to_tensor(map_old.matrix, DTYPE)
-        m_old = tf.convert_to_tensor(map_old.offset, DTYPE)
-        joint_mean, joint_chol = _check_hint(
-            *predictive_moment_hint(t, observations[t]), 2 * n
-        )
-        m_c = joint_mean[:n]
-        m_p_base = joint_mean[n:]
-        l_cc = joint_chol[:n, :n] * kappa_c_const
-        l_pc = joint_chol[n:, :n] * kappa_c_const
-        l_pp = joint_chol[n:, n:] * kappa_p_const
-        center = tf.linalg.triangular_solve(
-            l_old, (m_p_base - m_old)[:, None], lower=True
-        )[:, 0]
-        if bool(tf.reduce_any(tf.abs(center) >= 1.0).numpy()):
-            raise ValueError(
-                "adapted-map containment: hint previous mean outside previous box"
-            )
-        transfer = tf.linalg.triangular_solve(
-            l_old, tf.concat([l_pc, l_pp], axis=1), lower=True
-        )
-        rowsum = tf.reduce_sum(tf.abs(transfer), axis=1)
-        slack = 1.0 - tf.constant(1e-9, DTYPE) - tf.abs(center)
-        shrink = tf.minimum(
-            tf.reduce_min(
-                tf.where(rowsum > 0.0, slack / tf.maximum(rowsum, 1e-300),
-                         tf.ones_like(rowsum))
-            ),
-            tf.constant(1.0, DTYPE),
-        )
-        l_pc = l_pc * shrink
-        l_pp = l_pp * shrink
-        map_c_new = AffineCoordinateMap(offset=m_c, matrix=l_cc)
+        def step(t, state, y, joint_mean, joint_cov, core_starts):
+            prefix, gram, zc, m_old, l_old = state
+            joint_chol = tf.linalg.cholesky(joint_cov)
+            m_c, m_p = joint_mean[:n], joint_mean[n:]
+            l_cc = joint_chol[:n, :n] * kappa_c_const
+            l_pc = joint_chol[n:, :n] * kappa_c_const
+            l_pp = joint_chol[n:, n:] * kappa_p_const
+            center = tf.linalg.triangular_solve(l_old, (m_p-m_old)[:, None], lower=True)[:, 0]
+            transfer = tf.linalg.triangular_solve(l_old, tf.concat((l_pc, l_pp), axis=1), lower=True)
+            rowsum = tf.reduce_sum(tf.abs(transfer), axis=1)
+            slack = 1. - tf.constant(1e-9, DTYPE) - tf.abs(center)
+            shrink = tf.minimum(tf.reduce_min(tf.where(rowsum > 0.,
+                slack / tf.maximum(rowsum, 1e-300), tf.ones_like(rowsum))), tf.constant(1., DTYPE))
+            l_pc, l_pp = l_pc * shrink, l_pp * shrink
+            new_prefix, new_gram, new_zc, increment_in, worst, rms, excess = fit(
+                prefix, gram, zc, rows[t-1], weights, core_starts,
+                y, m_c, l_cc, m_p, l_pc, l_pp, l_old, m_old)
+            corr = correction_rows[t-1]
+            xc = m_c[None] + tf.einsum("ij,nj->ni", l_cc, corr[:, :n])
+            xp = m_old[None] + tf.einsum("ij,nj->ni", l_old, corr[:, n:])
+            zp = tf.transpose(tf.linalg.triangular_solve(l_pp,
+                tf.transpose(xp-m_p[None]-tf.einsum("ij,nj->ni", l_pc, corr[:, :n])), lower=True))
+            outside = tf.cast(tf.reduce_max(tf.abs(zp), axis=1) > 1., DTYPE)
+            kernel = adapter.transition_log_density(xc, xp) + adapter.observation_log_density(xc, y)
+            old_reference = tf.transpose(tf.linalg.solve(l_old,tf.transpose(xp-m_old[None])))
+            vectors = prefix_row_vectors(tuple(TTCore(v) for v in prefix),current_basis,old_reference)
+            density = (tf.einsum("na,ab,nb->n",vectors,gram,vectors) + tau*(zc/(1.+tau))) / zc
+            # Every map here is lower triangular with a positive diagonal.
+            density *= tf.exp(-tf.cast(n,DTYPE)*log2-tf.reduce_sum(tf.math.log(tf.linalg.diag_part(l_old))))
+            integrand = outside * density * tf.exp(kernel)
+            logdet_c = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(l_cc))))
+            logdet_old = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(l_old))))
+            volume = tf.exp(tf.cast(2*n, DTYPE) * log2 + logdet_c + logdet_old)
+            log_out = tf.math.log(tf.maximum(volume * tf.reduce_mean(integrand), tf.constant(1e-300, DTYPE)))
+            increment = tf.reduce_logsumexp(tf.stack((increment_in, log_out)))
+            valid = (tf.reduce_all(tf.math.is_finite(joint_chol)) & tf.reduce_all(tf.abs(center) < 1.)
+                & _retained_valid(new_gram,new_zc,tau))
+            report = tf.stack((increment, worst, rms, shrink, excess,
+                tf.exp(log_out - increment_in), tf.cast(valid, DTYPE)))
+            return (tuple(new_prefix), new_gram, new_zc, m_c, l_cc), report
+        return step, starts, shapes[:n]
 
-        branch_count = int(prefix_values[-1].shape[-1]) + 1
-        z_rows = _design_rows(config, config.row_count, 2 * n, (config.seed, 100 + t))
-        z_weights = tf.fill(
-            [int(z_rows.shape[0])], tf.constant(1.0 / int(z_rows.shape[0]), DTYPE)
-        )
-        mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-        cores0_values = [
-            0.3
-            * tf.random.stateless_normal(
-                [1 if a == 0 else config.rank, mixed_dims[a],
-                 1 if a == 2 * n else config.rank],
-                tf.constant((config.seed, 7000 + 31 * t + a), tf.int32),
-                dtype=DTYPE,
-            )
-            for a in range(2 * n + 1)
-        ]
-        if branch_count not in step_cache:
-            mixed_basis = ProductBasis(
-                list(current_basis.bases)
-                + [DiscreteIndicatorBasis1D(branch_count)]
-                + list(_product_basis(n, config.basis_degree).bases),
-                current_basis.convention,
-            )
-            step_cache[branch_count] = _make_transition_fit(
-                mixed_basis,
-                [tuple(v.shape.as_list()) for v in cores0_values],
-                [tuple(v.shape.as_list()) for v in prefix_values],
-            )
-        step_fn = step_cache[branch_count]
-        (
-            prefix_values, gram, zc_new, log_increment_in, worst, rms, max_excess_t,
-        ) = step_fn(
-            prefix_values, gram, zc, z_rows, z_weights, cores0_values,
-            observations[t], m_c, l_cc, m_p_base, l_pc, l_pp, l_old, m_old,
-        )
-        max_excess = float(max_excess_t.numpy())
-        if max_excess > 1.0 + 1e-12:
-            raise ValueError(
-                f"adapted-map containment violated post-shrink ({max_excess})"
-            )
-        if float(worst.numpy()) > config.condition_number_veto:
-            raise ValueError("condition number veto in fixed ALS fit")
+    first_step, first_starts, prefix_shapes = phase(initial_shapes, tf.constant([1], tf.int32))
+    later_step, later_starts, _ = phase(prefix_shapes, tf.range(2, max(3, horizon)))
 
-        # ---- truncation-mass correction (host-side; Section 12) ----
-        corr_rows = _design_rows(config, config.row_count, 2 * n, (config.seed, 500 + t))
-        xc_corr = m_c[None, :] + tf.einsum("ij,nj->ni", l_cc, corr_rows[:, :n])
-        xp_corr = m_old[None, :] + tf.einsum("ij,nj->ni", l_old, corr_rows[:, n:])
-        zp_new = tf.transpose(
-            tf.linalg.triangular_solve(
-                l_pp,
-                tf.transpose(
-                    xp_corr - m_p_base[None, :]
-                    - tf.einsum("ij,nj->ni", l_pc, corr_rows[:, :n])
-                ),
-                lower=True,
-            )
-        )
-        outside = tf.cast(tf.reduce_max(tf.abs(zp_new), axis=1) > 1.0, DTYPE)
-        log_kernel_corr = (
-            adapter.transition_log_density(xc_corr, xp_corr)
-            + adapter.observation_log_density(xc_corr, observations[t])
-        )
-        integrand = (
-            outside
-            * retained.evaluate_physical_density(xp_corr)
-            * tf.exp(log_kernel_corr)
-        )
-        logdet_c = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(l_cc))))
-        logdet_old = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(l_old))))
-        volume = tf.exp(tf.cast(2 * n, DTYPE) * log2 + logdet_c + logdet_old)
-        m_out = volume * tf.reduce_mean(integrand)
-        log_m_out = tf.math.log(tf.maximum(m_out, tf.constant(1e-300, DTYPE)))
-        log_increment = tf.reduce_logsumexp(
-            tf.stack([log_increment_in, log_m_out])
-        )
-        increment_value = float(log_increment.numpy())
-        import math as _math
-        if not _math.isfinite(increment_value):
-            raise ValueError("non-finite step increment (fail-closed)")
-
-        # rebuild the typed retained object for the next step's host-side work
-        retained = RetainedQuadraticForm(
-            prefix_cores=tuple(TTCore(v) for v in prefix_values),
-            suffix_gram=gram,
-            tau=tau * (zc_new / (1.0 + tau)),
-            z_complete_ref=zc_new,
-            prefix_basis=current_basis,
-            coordinate_map=map_c_new,
-        )
-        zc = zc_new
-        log_likelihood += log_increment
-        diagnostics.append(
-            {
-                "time_index": t,
-                "log_increment": increment_value,
-                "tie_flag": False,
-                "worst_condition": float(worst.numpy()),
-                "weighted_fit_rms": float(rms.numpy()),
-                "map_shrink": float(shrink.numpy()),
-                "z_old_max": max_excess,
-                "truncation_mass_ratio": float(
-                    tf.exp(log_m_out - log_increment_in).numpy()
-                ),
-            }
-        )
-    return log_likelihood, diagnostics
+    def evaluate(observations, joint_means, joint_covariances):
+        x0 = initial_rows * hw
+        log_f = (adapter.initial_log_density(x0) + adapter.observation_log_density(x0, observations[0])
+            + tf.cast(n, DTYPE) * (tf.math.log(hw) + log2))
+        shift = tf.reduce_logsumexp(log_f) - tf.math.log(tf.cast(tf.shape(log_f)[0], DTYPE))
+        cores, worst, rms = _fit_als_graph(fitter, current_basis, initial_rows,
+            tf.exp(.5*(log_f-shift)), weights, initial, initial_shapes, config.sweeps, ridge)
+        suffix = tf.tensor_scatter_nd_update(tf.zeros([cores[-1].right_rank, basis_dim, 1], DTYPE), [[0,0,0]], [1.])
+        gram = suffix_gram_matrix((TTCore(suffix),),extended_basis,axis_offset=n)
+        zc = (1.+tau)*tf.einsum("ab,ab->",prefix_gram_matrix(tuple(cores),current_basis),gram)
+        total = shift + tf.math.log(zc)
+        history = tf.TensorArray(DTYPE, size=horizon, element_shape=[7])
+        history = history.write(0, tf.stack((total, worst, rms, tf.constant(1.,DTYPE),
+            tf.constant(0.,DTYPE), tf.constant(0.,DTYPE), tf.cast(_retained_valid(gram,zc,tau),DTYPE))))
+        if horizon > 1:
+            state = (tuple(c.values for c in cores), gram, zc, tf.zeros([n],DTYPE), tf.eye(n,dtype=DTYPE)*hw)
+            state, report = first_step(tf.constant(1), state, observations[1], joint_means[0], joint_covariances[0],
+                tuple(v[0] for v in first_starts))
+            total, history = total + report[0], history.write(1, report)
+            def advance(t, state, total, history):
+                state, report = later_step(t, state, observations[t], joint_means[t-1], joint_covariances[t-1],
+                    tuple(v[t-2] for v in later_starts))
+                return t+1, state, total+report[0], history.write(t, report)
+            if horizon > 2:
+                _, _, total, history = tf.while_loop(lambda t,*_: t < horizon, advance,
+                    (tf.constant(2), state, total, history), maximum_iterations=horizon-2, parallel_iterations=1)
+        return total, history.stack()
+    call = tf.function(evaluate, input_signature=[tf.TensorSpec(observation_shape, DTYPE),
+        tf.TensorSpec([horizon-1,2*n], DTYPE), tf.TensorSpec([horizon-1,2*n,2*n], DTYPE)],
+        jit_compile=jit_compile, autograph=False)
+    per_adapter[cache_key] = call
+    return call
 
 
-__all__ = ["run_value_filter_branch_axis_adapted_xla"]
+def run_value_filter_branch_axis_adapted_xla(adapter, observations, config, *,
+    predictive_moment_hint: Callable, map_kappa_prev=3., map_kappa_current=4., jit_compile=True):
+    """Evaluate tensor-native frozen hints, then one compiled numerical filter.
+
+    Hints must accept a tensor date. Stateful Python/NumPy hint generators are
+    reference-only and must prepare their frozen arrays before this endpoint.
+    """
+    observations = tf.convert_to_tensor(observations, DTYPE)
+    n, horizon = adapter.state_dim, observations.shape[0]
+    means, covariances = tf.map_fn(lambda t: predictive_moment_hint(t, observations[t]),
+        tf.range(1,horizon), fn_output_signature=(tf.TensorSpec([2*n],DTYPE),
+            tf.TensorSpec([2*n,2*n],DTYPE)), parallel_iterations=1)
+    call = make_value_filter_branch_axis_adapted_xla(adapter, observations.shape, config,
+        map_kappa_prev=map_kappa_prev, map_kappa_current=map_kappa_current, jit_compile=jit_compile)
+    value, history = call(observations, means, covariances)
+    finite = tf.reduce_all(tf.math.is_finite(history[:,0]))
+    if not bool(finite.numpy()):
+        raise ValueError("non-finite step increment or moment hint (fail-closed)")
+    if bool(tf.reduce_any(history[:,1] > config.condition_number_veto).numpy()):
+        raise ValueError("condition number veto in fixed ALS fit")
+    if bool(tf.reduce_any((history[:,4] > 1.+1e-12) | (history[:,6] != 1.)).numpy()):
+        raise ValueError("adapted-map containment violated or invalid moment hint")
+    diagnostics = []
+    for t,row in enumerate(history.numpy().tolist()):
+        report = dict(time_index=t, log_increment=row[0], tie_flag=False,
+            worst_condition=row[1], weighted_fit_rms=row[2])
+        if t:
+            report.update(map_shrink=row[3], z_old_max=row[4], truncation_mass_ratio=row[5])
+        diagnostics.append(report)
+    return value, diagnostics
+
+
+__all__ = ["make_value_filter_branch_axis_adapted_xla", "run_value_filter_branch_axis_adapted_xla"]
+
+
+def _retained_valid(gram,zc,tau):
+    scale = tf.maximum(tf.reduce_max(tf.abs(gram)),tf.constant(1.,DTYPE))
+    return ((tf.reduce_max(tf.abs(gram-tf.transpose(gram))) <= tf.constant(1e-12,DTYPE)*scale)
+        & (tau >= 0.) & (zc > 0.) & tf.math.is_finite(zc))

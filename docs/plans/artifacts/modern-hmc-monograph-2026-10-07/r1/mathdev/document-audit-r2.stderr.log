@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/anaconda3/envs/tfgpu/bin/mathdevmcp", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/ubuntu/python/MathDevMCP/src/mathdevmcp/cli.py", line 1733, in main
+    return args.func(args)
+           ~~~~~~~~~^^^^^^
+  File "/home/ubuntu/python/MathDevMCP/src/mathdevmcp/cli.py", line 482, in _cmd_audit_math_document_rigor
+    result = high_level_audit_math_document_rigor(
+        args.tex_path,
+    ...<9 lines>...
+        obligation_metadata=obligation_metadata,
+    )
+  File "/home/ubuntu/python/MathDevMCP/src/mathdevmcp/math_document_rigor.py", line 824, in audit_math_document_rigor
+    exposition = build_exposition_projection(plan["target_selection"]["targets"], raw_gaps)
+  File "/home/ubuntu/python/MathDevMCP/src/mathdevmcp/document_exposition.py", line 621, in build_exposition_projection
+    "evidence_refs": issue["evidence_refs"],
+                     ~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'evidence_refs'

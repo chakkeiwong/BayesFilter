@@ -135,20 +135,18 @@ def test_padding_and_exact_batch_accounting():
 @pytest.mark.parametrize("kind", ["value", "score", "eligibility"])
 def test_replay_checks_even_padded_duplicate_rows(kind):
     base = gaussian([0., 0.], np.eye(2))
-    calls = 0
+    calls = tf.Variable(0, dtype=tf.int64)
 
     def callback(points):
-        nonlocal calls
-        calls += 1
+        call = calls.assign_add(1)
         values, scores, eligible = base(points)
-        if calls == 2:
+        def alter():
             if kind == "value":
-                values = tf.tensor_scatter_nd_add(values, [[3]], tf.constant([1.], tf.float64))
-            elif kind == "score":
-                scores = tf.tensor_scatter_nd_add(scores, [[3, 0]], tf.constant([1.], tf.float64))
-            else:
-                eligible = tf.tensor_scatter_nd_update(eligible, [[3]], [False])
-        return values, scores, eligible
+                return tf.tensor_scatter_nd_add(values, [[3]], tf.constant([1.], tf.float64)), scores, eligible
+            if kind == "score":
+                return values, tf.tensor_scatter_nd_add(scores, [[3, 0]], tf.constant([1.], tf.float64)), eligible
+            return values, scores, tf.tensor_scatter_nd_update(eligible, [[3]], [False])
+        return tf.cond(call == 2, alter, lambda: (values, scores, eligible))
 
     result = refine_batched_quadratic_center(callback, [0., 0.], [1., 1.])
     assert not result.accepted
@@ -187,7 +185,7 @@ def test_new_incumbent_at_last_round_cannot_reuse_old_factor():
     assert not result.accepted and result.pilot_factor is None
     assert float(result.center_value) > -2.5
     report = result.diagnostics["rounds"][0]
-    assert np.any(result.center.numpy() != report["anchor"].numpy())
+    assert np.any(result.center.numpy() != report["anchor"])
 
 
 def test_composed_initializer_and_cap_veto():
@@ -249,7 +247,10 @@ def test_malformed_callback_is_programming_error(defect):
 
 
 def test_rank_deficient_probe_design_rejects(monkeypatch):
-    monkeypatch.setattr(tf.random, "stateless_uniform", lambda shape, seed, **kwargs: tf.zeros(shape, tf.float64))
+    import bayesfilter.inference.quadratic_probe_evaluation_tf as probes
+
+    monkeypatch.setattr(probes, "philox_uniform_float64",
+                        lambda shape, seed: tf.fill(shape, tf.constant(.5, tf.float64)))
     result = refine_batched_quadratic_center(gaussian([0., 0.], np.eye(2)), [0., 0.], [1., 1.])
     assert not result.accepted and result.pilot_factor is None
 
