@@ -76,6 +76,14 @@ stop. No replacement/default validated; stationary starts give no burn-in
 evidence. Audit did not independently replay full TF ESS/R-hat. Documentation
 passed 15 checks, PDF build and changed-page inspection.
 
+The 20 October integration merged the completed campaign into remote main
+(`0318dc6f2`, merge `6d9e036c2`) in an isolated checkout, preserving the shared
+directory. All 356 post-merge regressions passed. The official LaTeX algorithm,
+cohort results and diagnostic limitations now match this checkpoint; see
+`docs/validation/modern-hmc-20261020/documentation-audit.md` for writing,
+preservation and PDF review. The numerical source and remaining phases are
+unchanged.
+
 ## Exact next actions
 
 1. Review the twenty-cell inventory and measured all-member costs against the

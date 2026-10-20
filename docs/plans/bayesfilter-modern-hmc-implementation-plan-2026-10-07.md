@@ -58,6 +58,14 @@ no burn-in evidence. The
 [documentation closeout](bayesfilter-mcse-interval-documentation-result-2026-10-18.md)
 passed 15 contract checks, a diagnostics PDF build and changed-page inspection.
 
+The 20 October documentation integration updates the official monograph's
+modern-HMC algorithm, SGQF/SIR tables and interval-study conclusions, together
+with the tuning/diagnostics chapters and API reference. The
+[documentation audit](../validation/modern-hmc-20261020/documentation-audit.md)
+records policy checks, preserved mathematics/citations, builds and rendered-page
+review. Campaign changes were merged with remote main and passed 356 regressions.
+This documentation closeout leaves the remaining scientific phases unchanged.
+
 **Next N5 phase:** scope and price a predeclared multi-model/independent-fit
 confirmation from measured all-member costs, with full failure/censoring
 denominators and uncertainty analysis. Do not selectively retry failed members

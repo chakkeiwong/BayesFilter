@@ -1,6 +1,6 @@
 # HMC Tuning Interface
 
-Last checked: 2026-10-12. This reference describes the common candidate-set
+Last checked: 2026-10-20 (completed cohorts and monograph consistency). This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
@@ -206,6 +206,45 @@ uses the declared precision settings and never changes tuning membership.
 Resource stops retain completed outcomes and unstarted members. This driver
 is a research consumer, with no additional tuning or release authority.
 
+The current comparison inventory has five core nonlinear targets and four
+methods: fixed HMC, randomized HMC, SNAPER-proposed randomized HMC and fully
+refreshed MAMS. Its **20 planned cells are validation obligations**, not a
+record of completed replicated comparisons. Adapter availability has the following scope:
+
+| Target | Current research consumer | Qualification still required |
+| --- | --- | --- |
+| `NL-ACC` | Generic nonlinear accumulation adapter; separate from the full-model frozen-design driver. | Target/method posterior and reference validation. |
+| `NL-PP-UKF`, `NL-PP-SGQF` | Two full-data predator–prey adapters in the frozen-design driver. | Per-method, per-scope validation and independent fit replication. |
+| `NL-SIR`, `NL-STR` | Full-data SIR and structural-filter adapters in the same driver. | Per-method, per-scope validation and independent fit replication. |
+| `NL-GROWTH` | No current parameter-posterior adapter in this inventory. | Build and check that adapter, score, geometry and reference before admission. |
+| `NL-SV` | An actual-SV adapter factory exists; its inventory disposition is `source_route_eligibility_needed`. | Check the eligible Zhao–Cui source route, score, geometry and independent reference before admission. Factory existence does not establish eligibility. |
+
+The four full-data adapters cover the two predator–prey filters, SIR and the
+structural filter. Growth and volatility are additional dispositions outside
+the core 20-cell denominator. A completed SGQF cohort establishes only its
+declared target/seed feasibility; it does not complete that matrix, calibrate
+sequential stopping or support a method ranking. Finite-filter reference
+agreement assesses the declared finite-filter posterior, with its recorded
+reference error. Actual MacroFinance and `dsge_hmc`/BGS consumers still need
+their own target, score, geometry, public-tuner wiring and posterior/reference
+qualification. Generic structural or predator–prey models do not supply it.
+The [modern-method master](../plans/bayesfilter-modern-hmc-implementation-plan-2026-10-07.md)
+tracks these remaining obligations. Posterior failures never remove a
+tuning-qualified member.
+
+The completed October SGQF cohorts delivered 7/8 fixed-HMC, 5/8 randomized-HMC,
+5/6 SNAPER-proposed and 4/4 MAMS members under the frozen posterior and
+finite-filter reference criteria. The subsequent SIR cohort verified all 24
+candidates; 23 passed posterior checks and 21 also passed reference screening.
+Two posterior-passing members failed the reference screen and one fixed-HMC member remained
+resource-censored. Every verified member remains retained. The
+[SIR result](../plans/bayesfilter-modern-hmc-sir-result-2026-10-20.md) and
+[compact evidence](../validation/modern-hmc-20261020/README.md) preserve the
+counts and costs. The official monograph's modern-HMC chapter gives the
+algorithm and comparison tables. Unequal candidate sets and absent independent
+fit replication prevent a method ranking; these results do not validate
+nominal MCSE coverage or release readiness.
+
 The analytic validation consumer also records original model quantities,
 moderate-tail probabilities and approximate lugsail reference intervals via
 `mams_analytic_diagnostics`. Its exact and partially whitened funnel controls
@@ -226,7 +265,7 @@ work are tracked in the [implementation execution record](../plans/bayesfilter-m
 Short CPU/XLA versus GPU/XLA checks now pass for randomized HMC and MAMS
 on LGSSM and nonlinear accumulation. A GPU/XLA LGSSM run through the public
 tuner also verified, exported and reloaded both declared members. These are
-scoped engineering checks; the nonlinear posterior comparison remains open.
+scoped engineering checks; broader nonlinear posterior validation remains open.
 In the tested TensorFlow environment, the same seed produces different draws
 in non-XLA and XLA execution, even with an explicit Philox algorithm. Preserve
 backend and compilation mode in replay identity. Arithmetic parity checks
@@ -1064,6 +1103,15 @@ checkpoint under the new policy identity. Independent NumPy/SciPy order
 statistics and official TFP ESS tests cover IID, persistent, antithetic, skew,
 tied, constant, odd-length and unobserved-event cases.
 
+The named TFP positive-pairs estimator can return a negative finite ESS on
+strongly antithetic finite chains: positive pair truncation does not ensure
+that its lag-weighted variance denominator is positive. BayesFilter preserves
+the estimator's identity and reports the resulting mean MCSE as unavailable;
+it must not take an absolute value, clip it to a passing value or silently
+substitute the distinct monotone estimator. The October 18 source-parity
+diagnostic reproduces this behavior in the installed TFP implementation and
+independent arithmetic; it is not a real-FFT translation error.
+
 The approximate quantile MCSE and its symmetric `estimate +/- 1.96*MCSE`
 diagnostic interval differ from a direct 95% order-statistic interval at finite
 counts. The September 24 saved-array comparison did not justify promoting a
@@ -1082,6 +1130,31 @@ development evidence and do not change the default estimator.
 Repeated MCSE checks provide an operational accuracy screen, not anytime-valid
 confidence coverage. Finite-chain calibration does not justify a universal new
 stopping default. Declared target-specific posterior checks remain necessary.
+
+The [completed strong-dependence/skewness calibration](../plans/bayesfilter-mcse-stationary-stress-result-2026-10-18.md)
+contains 128 replications in each of six stationary conditions. It finds
+12 multiplicity-adjusted fixed-interval undercoverage flags, including
+lognormal-square failures for original lugsail, the optional maximum and
+autocorrelation. Original lugsail is unavailable for all 128 strongly
+antithetic Gaussian coordinate cases; autocorrelation is unavailable for 72.
+Most dependent conditions never pass the declared stopping screen, so their
+stopped coverage is unmeasured. The optional maximum is not a general coverage
+repair. These findings motivate separate variance/interval calibration; they
+do not change tuning membership, frozen HMC comparisons or numerical defaults.
+
+The [completed variance-scale/interval follow-up](../plans/bayesfilter-mcse-dependence-interval-result-2026-10-18.md)
+uses a separate seed and six arms, including two longer-batch hypotheses.
+All 768 condition records completed; paired laws share 384 independent latent
+four-chain units. The independent audit regenerated streams, means and
+batch/control arithmetic; it did not independently repeat all TensorFlow ESS
+and R-hat calculations. In its 231-screen family, 22/108
+fixed method screens and 3/108 conditional stopped method screens flagged
+undercoverage. The stopped flags concern IID lognormal squares. None of the
+15 fixed exact-variance/Student controls flagged, which does not establish
+calibration. Most strongly dependent cells never stopped; longer batches
+still left undercoverage and some unavailable estimates. No replacement or
+default was selected. Stationary starts provide no burn-in evidence, and
+these results leave acceptance/health tuning membership unchanged.
 
 The [October 12 fixed and stopped reference study](../plans/bayesfilter-mcse-stopping-calibration-result-2026-10-12.md)
 completed 128 replications for each stationary Gaussian/Student-t condition at

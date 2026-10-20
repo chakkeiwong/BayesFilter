@@ -47,3 +47,12 @@ rendered pages, and a recorded prose/source-preservation review. Use versioned
 outputs under `/tmp` for build logs and PDFs; preserve compact findings under
 `docs/validation/modern-hmc-20261020/`. No raw-chain deletion or environment
 mutation is part of this task.
+
+Execution update: campaign commit `0318dc6f2` and merge `6d9e036c2` are on
+remote main. All 356 expanded post-merge regressions passed. The official
+modern-HMC chapter now includes the v8 algorithm, SGQF/SIR outcomes, exact
+reference-screen definition and completed interval-study limitations. The
+tuning and diagnostics chapters and API reference carry consistent results.
+Protected-baseline checks preserve every previous display, citation and label.
+Build and rendered-page review details are recorded in the adjacent validation
+directory. No scientific policy or campaign budget was changed.
