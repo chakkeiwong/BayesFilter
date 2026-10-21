@@ -960,9 +960,9 @@ class HMCAcceptanceEvidence:
             "excluded_remainder_per_chain": self.excluded_remainder_per_chain,
             "native_divergence_status": self.native_divergence_status,
             "native_divergence_count": self.native_divergence_count,
-            "min_log_accept_ratio": self.min_log_accept_ratio,
-            "max_log_accept_ratio": self.max_log_accept_ratio,
-            "max_abs_log_accept_energy_proxy": self.max_abs_log_accept_energy_proxy,
+            "min_log_accept_ratio": (self.min_log_accept_ratio if self.min_log_accept_ratio is None or math.isfinite(self.min_log_accept_ratio) else str(self.min_log_accept_ratio)),
+            "max_log_accept_ratio": (self.max_log_accept_ratio if self.max_log_accept_ratio is None or math.isfinite(self.max_log_accept_ratio) else str(self.max_log_accept_ratio)),
+            "max_abs_log_accept_energy_proxy": (self.max_abs_log_accept_energy_proxy if self.max_abs_log_accept_energy_proxy is None or math.isfinite(self.max_abs_log_accept_energy_proxy) else str(self.max_abs_log_accept_energy_proxy)),
             "negative_proxy_exceedance_count_by_chain": self.negative_proxy_exceedance_count_by_chain,
             "positive_proxy_exceedance_count_by_chain": self.positive_proxy_exceedance_count_by_chain,
             "negative_proxy_exceedance_rate_by_chain": self.negative_proxy_exceedance_rate_by_chain,
@@ -1897,11 +1897,12 @@ def _validate_signed_proxy_summary(evidence: HMCAcceptanceEvidence) -> None:
         raise ValueError("signed proxy extrema must be jointly available")
     if has_extrema:
         minimum, maximum, max_abs = (float(item) for item in extrema)
-        if not all(math.isfinite(item) for item in (minimum, maximum, max_abs)):
+        if (math.isnan(minimum) or minimum == float('inf') or math.isnan(maximum)
+                or maximum == float('inf') or math.isnan(max_abs) or max_abs < 0.):
             raise ValueError("signed proxy extrema must be finite")
         if minimum > maximum or max_abs < 0.0:
             raise ValueError("signed proxy extrema are inconsistent")
-        if not _all_close(max_abs, max(abs(minimum), abs(maximum)), rtol=1e-12, atol=1e-12):
+        if max_abs != max(abs(minimum), abs(maximum)) and not _all_close(max_abs, max(abs(minimum), abs(maximum)), rtol=1e-12, atol=1e-12):
             raise ValueError("absolute proxy maximum does not match signed extrema")
         object.__setattr__(evidence, "min_log_accept_ratio", minimum)
         object.__setattr__(evidence, "max_log_accept_ratio", maximum)

@@ -273,6 +273,8 @@ def run_shared_position_field_tuning(*, adapter, initial_position, config, outpu
                       max_work_items=max_work_items)
     if execution_config is not None and not isinstance(execution_config, HMCCandidateExecutionConfig):
         raise TypeError("execution_config must be HMCCandidateExecutionConfig")
+    if execution_config is not None and execution_config.transition_profile is not None:
+        raise ValueError("modern transition profiles require an exact-score target, not a position-field binding")
     if execution_config is not None and execution_config.reuse_leapfrog_graphs:
         raise ValueError("reuse_leapfrog_graphs requires the exact-score TFP execution binding")
     if execution_config is not None and execution_config.replicated_trial_batch_size > 1:

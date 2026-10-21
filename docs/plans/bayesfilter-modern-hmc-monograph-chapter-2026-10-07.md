@@ -11,8 +11,9 @@ tuning reference retain their roles; this is not a new operational tuning guide.
 Scientific intent: explain which mathematical mechanisms could lower the cost
 of accurate posterior estimation for structural state-space models, what they
 preserve, what they assume, and which improvements are plausible for the actual
-TensorFlow consumers. Comparator: current corrected fixed-metric/transport HMC
-and correctly configured NUTS on the same declared posterior. No local speed
+TensorFlow consumers. Local comparators: current corrected fixed-metric/transport
+HMC and randomized HMC on the same declared posterior. NUTS is excluded by the
+owner; it appears only as literature and author-benchmark context. No local speed
 ranking, backend migration, sampler implementation or default change follows.
 
 The chapter will derive the transformed target and total score; Hamiltonian

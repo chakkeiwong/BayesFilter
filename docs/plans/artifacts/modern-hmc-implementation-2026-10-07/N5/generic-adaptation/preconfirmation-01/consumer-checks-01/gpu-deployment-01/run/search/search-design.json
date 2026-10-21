@@ -1,0 +1,96 @@
+{
+  "search": {
+    "schema": "bayesfilter.hmc_controller_config.v2",
+    "replicated_acceptance_policy": {
+      "schema": "bayesfilter.hmc_replicated_acceptance_policy.v8",
+      "trial_num_results": 64,
+      "discarded_prefix": 0,
+      "base_repetitions": 8,
+      "max_repetitions": 8,
+      "max_candidates": 1,
+      "search_family_alpha": 0.05,
+      "verification_family_alpha": 0.05,
+      "diagnostic_family_alpha": 0.05,
+      "temporal_tolerance": 0.1,
+      "preferred_region": [
+        0.65,
+        0.75
+      ],
+      "qualification_region": [
+        0.1,
+        1.0
+      ],
+      "start_weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "qualification_mode": "lower_bound",
+      "method": "bounded_betting_mixture_v1",
+      "bet_fractions": [
+        1.0,
+        0.5,
+        0.25,
+        0.125
+      ],
+      "min_movement_rate": 0.05,
+      "max_repeated_state_fraction": 0.95,
+      "min_normalized_return_displacement": 0.0,
+      "max_abs_log_accept_energy_proxy": 1000.0,
+      "evidence_unit": "independent_fixed_horizon_trial",
+      "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+      "temporal_diagnostic_role": "preparation_investigation_not_admission",
+      "rhat_role": "reporting_only",
+      "independent_unit": "complete_start_bank_trial",
+      "default_promotion_status": "experimental_pending_validation"
+    },
+    "primary_l_grid": [
+      1
+    ],
+    "epsilon_by_l": [
+      [
+        1,
+        [
+          0.15
+        ]
+      ]
+    ],
+    "total_budget_units": 10,
+    "repair_reserve_units": 1,
+    "candidate_reserve_units": 3,
+    "allow_repair_from_free_pool": true,
+    "initial_epsilon": null,
+    "pilot_enabled": false,
+    "evidence_rungs": [
+      1
+    ],
+    "refinement_rounds": 0,
+    "epsilon_refinement_factors": [
+      0.8,
+      1.25
+    ],
+    "refinement_l_grid": [],
+    "expansion_l_grid": [],
+    "max_candidates": 1,
+    "max_gradient_work": null,
+    "max_wall_time_seconds": null,
+    "explore_failed_intervals": false
+  },
+  "binding_hash": "f1aede2ead48249d6c30a52dd585935b9832e04ea785f2fe7201d662e62fd2cb",
+  "requested_primary_pairs": [
+    [
+      1,
+      0.15
+    ]
+  ],
+  "proposal_count": 1,
+  "proposal_metadata": {
+    "role": "GPU/XLA CLI qualification and export/reload mechanics only; broad acceptance floor not a scientific default",
+    "provenance": "existing public pipeline regression with one short-count member and eight independent repetitions; broad .1 floor is a fixture, not scientific admission",
+    "adaptation_claim": false
+  },
+  "pilot_draws_reused_for_qualification": false,
+  "posterior_convergence_authority": false,
+  "no_nominee": true
+}

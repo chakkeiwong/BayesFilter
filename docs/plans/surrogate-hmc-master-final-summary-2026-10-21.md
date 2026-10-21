@@ -138,5 +138,8 @@ errors. The focused CPU-only suite passed 71 tests covering neural-force HMC,
 marginal weights, sequential assessment, the five-model master and literature
 priors. The command, log and result are preserved in
 [the closeout validation record](artifacts/surrogate-hmc-closeout-20261021-01/validation.json).
-The repository commit hook and any merge-specific regressions are recorded
-separately during integration.
+The branch and initial main-merge oracle hooks each passed all three tests.
+The initial main merge passed 103 distinct focused tests, including two new
+backward-guidance failure regressions; the remote integration passed 82 focused
+tests. The [integration record](surrogate-hmc-git-integration-2026-10-21.md)
+records the conflict resolutions, environment repair, commands and evidence.

@@ -75,6 +75,13 @@ class ValidationDesign:
     options: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
+        if "transition_profile" in self.options:
+            from bayesfilter.inference.hmc_transition_spec import HMCTransitionProfile
+            profile=HMCTransitionProfile.from_payload(self.options["transition_profile"])
+            if self.engine != "invariance":
+                raise ValueError("typed modern validation design currently supports the full-refresh invariance engine only")
+            if profile.family == "mams" and len(get_target(self.scenario.target).parameters)<=1:
+                raise ValueError("MAMS invariance requires dimension greater than one")
         if self.engine not in ENGINES or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*",self.design_id):
             raise ValueError("invalid design identity/engine")
         if self.device not in {"gpu", "cpu_reference"} or self.phase not in {"development", "confirmation"}:

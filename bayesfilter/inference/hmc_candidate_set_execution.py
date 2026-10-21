@@ -149,6 +149,7 @@ class HMCCandidateExecutionConfig:
     pilot_num_results: int | None = None
     reuse_leapfrog_graphs: bool = False
     replicated_trial_batch_size: int = 1
+    transition_profile: Any = None
 
     def __post_init__(self) -> None:
         from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy
@@ -184,6 +185,14 @@ class HMCCandidateExecutionConfig:
         if (type(self.replicated_trial_batch_size) is not int
                 or not 1 <= self.replicated_trial_batch_size <= 32):
             raise ValueError("replicated_trial_batch_size must be an integer in [1, 32]")
+        if self.transition_profile is not None:
+            from .hmc_transition_spec import HMCTransitionProfile
+            if not isinstance(self.transition_profile, HMCTransitionProfile):
+                raise TypeError("transition_profile must be HMCTransitionProfile")
+            if self.chain_mode != "batched" or self.replicated_trial_batch_size != 1:
+                raise ValueError("modern transitions currently require batched chains and one complete trial per call")
+            if not isinstance(self.acceptance_policy, HMCReplicatedAcceptancePolicy) or self.acceptance_policy.qualification_mode != "lower_bound":
+                raise ValueError("modern transition profiles require the explicit experimental one-sided policy")
         if self.replicated_trial_batch_size > 1 and (
                 not isinstance(self.acceptance_policy, HMCReplicatedAcceptancePolicy)
                 or self.chain_mode != "batched"
@@ -192,6 +201,10 @@ class HMCCandidateExecutionConfig:
 
     def payload(self) -> Mapping[str, Any]:
         payload = {**asdict(self), "acceptance_policy": self.acceptance_policy.payload()}
+        if self.transition_profile is None:
+            payload.pop("transition_profile")
+        else:
+            payload["transition_profile"] = self.transition_profile.payload()
         if self.pilot_num_results is None:
             payload.pop("pilot_num_results")
         if not self.reuse_leapfrog_graphs:
@@ -205,9 +218,12 @@ class HMCCandidateExecutionConfig:
         values = dict(payload)
         policy = values.pop("acceptance_policy")
         from .hmc_verification import _acceptance_policy_from_payload
-        from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy, PROTOCOL_SCHEMA
+        from .hmc_acceptance_protocol import HMCReplicatedAcceptancePolicy, SUPPORTED_PROTOCOL_SCHEMAS
         values["acceptance_policy"] = (HMCReplicatedAcceptancePolicy.from_payload(policy)
-            if policy.get("schema") == PROTOCOL_SCHEMA else _acceptance_policy_from_payload(policy))
+            if policy.get("schema") in SUPPORTED_PROTOCOL_SCHEMAS else _acceptance_policy_from_payload(policy))
+        if values.get("transition_profile") is not None:
+            from .hmc_transition_spec import HMCTransitionProfile
+            values["transition_profile"] = HMCTransitionProfile.from_payload(values["transition_profile"])
         result = cls(**values)
         if _json_copy(result.payload()) != _json_copy(payload):
             raise ValueError("execution policy metadata mismatch")
@@ -217,7 +233,7 @@ class HMCCandidateExecutionConfig:
 def _source_closure(adapter: Any, source_paths: Sequence[str | Path]) -> Mapping[str, str]:
     # Include numerical, coordinate, evidence and replay implementations. The
     # consumer must include data/preparation dependencies beyond its adapter file.
-    names = ("hmc", "hmc_status", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_geometry", "hmc_artifact_identity",
+    names = ("hmc_transition_spec", "hmc_trajectory_duration", "hmc_modern_kernels", "hmc", "hmc_status", "hmc_proposal_rejection", "hmc_budget_ladder", "hmc_kernel_tuning", "hmc_geometry", "hmc_artifact_identity",
              "hmc_bootstrap", "hmc_bootstrap_initialization", "hmc_bootstrap_checkpoint", "hmc_mass_adaptation", "hmc_configuration", "hmc_preparation_common", "hmc_preparation_recovery",
              "mass_matrix", "hmc_tuning", "fixed_l_finite_bracket", "hmc_coordinates",
              "hmc_warmup", "hmc_tuning_state", "hmc_kernel_selection", "hmc_diagnostics",
@@ -500,12 +516,22 @@ class HMCCandidateExecutionBinding:
                               for i in range(int(self.initial_active_state.shape[0]))))
 
     def _run(self, candidate: HMCTuningCandidateRecord, state: Any, count: int, seed: tuple[int, int]) -> Any:
+        HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
+        if self.config.transition_profile is not None:
+            from .hmc_modern_kernels import ReusableModernHMCRunner
+            key = ("modern", count)
+            if key not in self._runners:
+                self._runners[key] = ReusableModernHMCRunner(self._active_adapter,
+                    self.initial_active_state, profile=self.config.transition_profile,
+                    num_results=count, use_xla=self.config.use_xla,
+                    target_status_trace_policy=self.config.target_status_trace_policy)
+            return self._runners[key].run(current_state=state, seed=seed,
+                step_size=candidate.epsilon, num_leapfrog_steps=candidate.leapfrog_steps)
         from bayesfilter.inference.hmc import (
             FullChainHMCConfig, ReusableFullChainHMCRunner,
             build_independent_chain_tfp_hmc_runner,
         )
 
-        HMCTuningCandidateRecord.from_payload(self.scope, candidate.payload())
         key = self._runner_cache_key(candidate, count)
         if key not in self._runners:
             config = FullChainHMCConfig(
@@ -533,6 +559,8 @@ class HMCCandidateExecutionBinding:
 
     def _run_replicated_batch(self, candidate, count, seeds):
         """Return separately identified trials from one stream-preserving call."""
+        if self.config.transition_profile is not None:
+            raise ValueError("modern profiles do not support grouped replicated trials")
         import tensorflow as tf
         from types import SimpleNamespace
         from .hmc import FullChainHMCConfig
@@ -564,12 +592,32 @@ class HMCCandidateExecutionBinding:
             for index in range(batch)]
 
     def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
+        if 'proposal_failure_code' in trace:
+            from .hmc_proposal_rejection import guarded_health_failures
+            return guarded_health_failures(initial, samples, trace)
+
         import tensorflow as tf
         from bayesfilter.inference.hmc_verification import target_status_telemetry_has_failure
 
         shape = tuple(samples.shape[:2])
         if samples.dtype != tf.float64 or samples.shape.rank != 3 or tuple(samples.shape[1:]) != tuple(self.initial_active_state.shape):
             raise ValueError("candidate sample shape/dtype mismatch")
+        if self.config.transition_profile is not None:
+            # A legacy HMC trace must never validate under a modern label.
+            # These are native observations, not caller-supplied method names.
+            for name in ("trajectory_steps", "value_score_calls_per_chain", "target_status_calls_per_chain",
+                         "integration_work", "log_acceptance_correction"):
+                if name not in trace or tuple(trace[name].shape) != shape:
+                    raise ValueError("missing or misaligned modern transition trace: " + name)
+                expected_integer = name in {"trajectory_steps", "value_score_calls_per_chain", "target_status_calls_per_chain"}
+                if ((expected_integer and not trace[name].dtype.is_integer)
+                        or (not expected_integer and trace[name].dtype != tf.float64)):
+                    raise ValueError("invalid modern transition trace dtype: " + name)
+            calls, steps = trace["value_score_calls_per_chain"], trace["trajectory_steps"]
+            status_calls = trace["target_status_calls_per_chain"]
+            expected_status = calls if self.config.target_status_trace_policy == "per_chain_step" else tf.zeros_like(calls)
+            if not bool(tf.reduce_all((steps >= 1) & (calls >= steps + 1) & (status_calls == expected_status))):
+                raise ValueError("modern transition call accounting disagrees with realized steps")
         failures = []
         for key in ("is_accepted", "log_accept_ratio", "target_log_prob", "proposed_target_log_prob", "target_score_finite"):
             if key not in trace or tuple(trace[key].shape) != shape:
@@ -695,6 +743,8 @@ class HMCCandidateExecutionBinding:
                 self._analysis_cache[digest] = _json_copy(analysis)
                 return analysis
             analysis = evidence_analysis(self, numerical)
+            from bayesfilter.runtime.execution_budget import report_execution_progress
+            report_execution_progress("evidence_replay_complete", digest)
             self._analysis_cache[digest] = _json_copy(analysis)
             if shared is not None:
                 shared[key] = _json_copy(analysis)
@@ -747,6 +797,7 @@ class HMCCandidateExecutionBinding:
                 "draw_range": (0, 0), "seed_lineage": seed}
 
     def work_cost(self, work: HMCWorkItem, candidate: HMCTuningCandidateRecord, *, remaining=True) -> Mapping[str, Any]:
+        from .hmc_transition_spec import candidate_gradient_work
         if work.trial_range is not None:
             from .hmc_acceptance_trials import work_cost
             return work_cost(self, work, candidate, remaining=remaining)
@@ -754,7 +805,7 @@ class HMCCandidateExecutionBinding:
         if remaining:
             count -= sum(chunk["count"] for chunk in self._partial.get(work.work_item_id, ()))
         transitions = count * int(self.initial_active_state.shape[0])
-        return {"transitions": transitions, "gradient_work": transitions * (candidate.leapfrog_steps + 1),
+        return {"transitions": transitions, "gradient_work": transitions * candidate_gradient_work(candidate),
                 "cost_basis": "conservative_endpoint_gradient_work_estimate", "leapfrog_steps": candidate.leapfrog_steps,
                 "charge_mode": "chunk"}
 
@@ -875,6 +926,10 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
     numerical_policy.pop("reuse_leapfrog_graphs", None)
     runner_kind = ("batched_chain_tfp_fixed_hmc" if config.chain_mode == "batched"
                    else "independent_chain_tfp_fixed_hmc")
+    if config.transition_profile is not None:
+        runner_kind = "batched_modern_full_refresh_v1"
+        if config.transition_profile.family == "mams" and starts.shape[-1] <= 1:
+            raise ValueError("MAMS requires dimension greater than one")
     transition_identity = _sha256({"runner": runner_kind,
                                     "config": numerical_policy, "source": closure})
     scope = HMCCandidateSetScope(
@@ -884,7 +939,7 @@ def _issue_binding(*, adapter: Any, layers: Sequence[Mapping[str, Any]], initial
         adapter_signature=stable_adapter_signature(active), source_dependency_hash=_sha256(closure),
         target_preparation_identity=preparation_identity, transition_identity=transition_identity,
         epsilon_domain=epsilon_domain, repair_factor=repair_factor, max_repairs_per_family=max_repairs_per_family,
-        use_xla=config.use_xla)
+        use_xla=config.use_xla, transition_profile=config.transition_profile)
     spec = {"schema": EXECUTION_SCHEMA, "scope": scope.payload(), "config": config.payload(),
             "target_scope": target_scope, "target_lineage": target_lineage, "preparation": preparation,
             "adapter_kind": kind, "layers": layers, "initial_active_state": _tensor_payload(starts),

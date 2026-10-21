@@ -716,6 +716,7 @@ def sir_sgqf_likelihood_value_score_status(
     min_predictive = tf.fill([batch_size], tf.constant(float("inf"), tf.float64))
     min_innovation = tf.fill([batch_size], tf.constant(float("inf"), tf.float64))
     min_filtered = tf.fill([batch_size], tf.constant(float("inf"), tf.float64))
+    max_innovation_condition = tf.ones([batch_size], tf.float64)
 
     def condition(index, *_loop_values):
         return index < tf.shape(y)[0]
@@ -732,6 +733,7 @@ def sir_sgqf_likelihood_value_score_status(
         current_min_predictive,
         current_min_innovation,
         current_min_filtered,
+        current_max_innovation_condition,
     ):
         previous_factor = tf.linalg.cholesky(current_covariance)
         d_previous_factor = _cholesky_derivative(previous_factor, current_d_covariance)
@@ -889,9 +891,12 @@ def sir_sgqf_likelihood_value_score_status(
         predictive_eigenvalue = tf.reduce_min(
             tf.linalg.eigvalsh(predicted_covariance), axis=1
         )
-        innovation_eigenvalue = tf.reduce_min(
-            tf.linalg.eigvalsh(innovation_covariance), axis=1
-        )
+        innovation_spectrum = tf.linalg.eigvalsh(innovation_covariance)
+        innovation_eigenvalue = tf.reduce_min(innovation_spectrum, axis=1)
+        # For this symmetric positive-definite covariance, kappa_2(S) is
+        # lambda_max(S) / lambda_min(S). Preserve the worst step per chain.
+        # This reports conditioning without changing the value or score.
+        innovation_condition = tf.reduce_max(innovation_spectrum, axis=1) / innovation_eigenvalue
         filtered_eigenvalue = tf.reduce_min(
             tf.linalg.eigvalsh(filtered_covariance), axis=1
         )
@@ -921,6 +926,7 @@ def sir_sgqf_likelihood_value_score_status(
             tf.minimum(current_min_predictive, predictive_eigenvalue),
             tf.minimum(current_min_innovation, innovation_eigenvalue),
             tf.minimum(current_min_filtered, filtered_eigenvalue),
+            tf.maximum(current_max_innovation_condition, innovation_condition),
         )
 
     result = tf.while_loop(
@@ -938,6 +944,7 @@ def sir_sgqf_likelihood_value_score_status(
             min_predictive,
             min_innovation,
             min_filtered,
+            max_innovation_condition,
         ),
         parallel_iterations=1,
     )
@@ -948,6 +955,7 @@ def sir_sgqf_likelihood_value_score_status(
         "min_predictive_eigenvalue": result[8],
         "min_innovation_eigenvalue": result[9],
         "min_filtered_eigenvalue": result[10],
+        "innovation_condition_estimate": result[11],
     }
 
 

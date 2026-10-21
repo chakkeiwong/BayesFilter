@@ -24,10 +24,10 @@ exploit the state-space structure itself
 hoffman2022meads,robnik2025mams,robnik2026laps,hoffman2019neutra,
 zhang2022pathfinder,sarkka2020parallel,corenflos2024particlemala}.
 
-This chapter develops the mathematical constructions needed to assess these
-methods. The central arguments are given in full: the probability measure
+Assessing these methods requires specifying the probability measure
 being sampled, the integration and acceptance corrections, the quantities
-adapted, and the diagnostic assumptions. General ergodicity and optimal-scaling
+adapted, and the diagnostic assumptions. The derivations below make those
+choices explicit. General ergodicity and optimal-scaling
 theorems are cited with their conditions rather than asserted for arbitrary
 economic models. The discussion covers work published or revised during
 approximately 2016--2026, with older HMC and particle-MCMC foundations included
@@ -235,8 +235,9 @@ equipartition identities use the actual gradient of the declared potential.
 History-dependent, noisy or statefully changing forces also need an enlarged
 state and a new reversibility argument. The inspected BGS documentation in
 \code{dsge\_hmc} declares an endpoint UKF target and a position-only field not
-asserted to be its exact score. Its mechanics must be assessed under that
-contract rather than silently reclassified as an exact-gradient method.
+asserted to be its exact score. Its mechanics must therefore be assessed for
+that declared endpoint density and proposal field, without assuming an exact
+gradient.
 
 \section{Trajectory length, resonance and learned adaptation}
 \label{sec:bf-modern-trajectories}
@@ -770,13 +771,49 @@ State-dependent refreshment strengths would require rechecking the ratio.
 MAMS consequently has several controls: a geometry or preconditioner,
 epsilon, a trajectory length and, in its Langevin variant, a decoherence
 scale. The paper uses automatic adaptation, including a preliminary
-preconditioner estimate---in practice from NUTS---and length selection using
+preconditioner estimate, in practice from NUTS, and length selection using
 autocorrelation information. Its practical acceptance target is 0.90, with
 0.99 used for its funnel experiment; these are author settings, not universal
 optimal values. The paper calls physical trajectory length $L$. This chapter
 uses $\tau$ for physical length and $L$ for an integer integration count,
 with $\tau\approx L\epsilon$, to avoid confusion with BayesFilter's tuning
 interface.
+
+BayesFilter's experimental MAMS implementation separates a requested mean
+physical duration $\ell$ from the integration step size.
+The integer count $N$ is uniform from 1 through $K$.
+The executed duration $\tau=\epsilon N$ therefore has moments
+\begin{equation}
+ \mathbb E[\tau]=\epsilon\frac{K+1}{2},\qquad
+ \mathbb E[\tau^2]=\epsilon^2\frac{(K+1)(2K+1)}{6}.
+\end{equation}
+The compiler rounds $2\ell/\epsilon-1$ to the nearest admissible integer,
+with ties rounded upward, and records both the request and its realized
+mean. Without an active count cap the mean error is at most
+$\epsilon/4$. An infeasible request is reported explicitly. This uniform
+integer law differs from the paper's average-preserving count construction;
+its adaptation coefficients are therefore hypotheses to test locally.
+
+The discarded proposer brackets epsilon at approximately fixed mean travel,
+then measures separate continuous windows with both controls frozen. The
+paper's harmonic-coordinate autocorrelation rule can nominate a duration;
+a separately labeled slow-observable rule and a predeclared duration
+neighborhood provide additional hypotheses. Coordinate squares, radius
+squared, frozen projections, proposed displacement and realized displacement
+including rejection zeros help distinguish small travel from numerical
+acceptance. Constant, numerically unresolved, or lag-limited correlation
+estimates remain unavailable. None of these pilot summaries establishes
+equilibration.
+
+The resulting finite policies enter the same public candidate-set tuners.
+Each needs fresh measurement and verification; every verified member remains
+retained. The optional duration-preserving repair changes epsilon and count
+together and keeps the original family duration request across descendants.
+The shared frozen transition and Metropolis correction are unchanged.
+R-hat, posterior ESS and lugsail precision remain posterior assessment
+criteria, not tuning membership requirements. These changes establish an
+experimental implementation with mechanics tests; multi-model confirmation
+is still required before a robustness or efficiency conclusion.
 
 \section{Unadjusted bias and the LAPS warm-up strategy}
 \label{sec:bf-modern-laps}
@@ -1056,9 +1093,10 @@ synchronized work, its latency ratio to that sequential comparator is
 Per-chain work is about 27 times smaller, but total gradient work is about
 9.4 times larger. The idealized latency gain requires
 $c_{\nabla}(256)/c_{\nabla}(1)<29{,}900/1{,}100$ before other overheads.
-This calculation is not a fair complete local benchmark by itself: a local
-NUTS baseline may also be batched, compilation and adaptation must be counted,
-and a requested MCSE may require more than one final draw per chain.
+A complete comparison would also account for a batched comparator,
+compilation and adaptation. A requested MCSE may require more than one final
+draw per chain. BayesFilter excludes NUTS from local execution; this calculation
+interprets the authors' benchmark rather than prescribing a local NUTS run.
 The paper provides motivation to measure batch scaling, not permission to
 assume it for Kalman, UKF or QZ calculations.
 
@@ -1267,7 +1305,7 @@ Laplace-momentum discontinuous HMC; the complete numerical proposal also needs
 its reversible coordinate update and appropriate treatment of mixed smooth
 coordinates \citep{nishimura2020discontinuous}.
 
-Changing NUTS to MAMS does not by itself implement those events. A DSGE regime
+The smooth MAMS dynamics do not by themselves implement those events. A DSGE regime
 boundary might instead create a discontinuous score of a continuous density,
 a discontinuity in the density, or an invalid region. These are different
 mathematical cases. Their target and boundary behavior must be determined
@@ -1469,8 +1507,8 @@ affect mixing and cost, not the identity of that marginal.
 
 Particle-MALA and Particle-mGRAD adapt this construction to local,
 gradient-informed moves \citep[Algorithms 3--7]{corenflos2024particlemala}.
-The key is to introduce auxiliary variables with known conditional law and
-correct the particle weights for the augmented target. In schematic form,
+Auxiliary variables with known conditional laws guide proposals, while
+corrected particle weights preserve the augmented target. In schematic form,
 \begin{equation}
  \bar\pi(x,u)=\pi_T(x)q(u\mid x).
  \label{eq:bf-modern-particle-auxiliary}
@@ -1662,6 +1700,37 @@ As $\phi$ approaches one, modest batches badly underrepresent the slow
 dependence. Lugsail changes the leading bias; it does not manufacture the
 missing long-time information.
 
+The sign qualification matters for antithetic chains. For a stationary
+unit-variance AR(1) process, $\gamma_k=\rho^{|k|}$ with $|\rho|<1$, define the
+variance of a normalized block sum by
+\begin{align}
+ V_b&=\frac1b\Var\left(\sum_{t=1}^b X_t\right)
+     =1+2\sum_{k=1}^{b-1}\left(1-\frac{k}{b}\right)\rho^k\\
+    &=\frac{1+\rho}{1-\rho}
+       -\frac{2\rho(1-\rho^b)}{b(1-\rho)^2}.
+ \label{eq:bf-modern-ar1-finite-block}
+\end{align}
+The first equality counts the $b-k$ pairs separated by lag $k$; the second
+uses the finite geometric sum and its derivative. For $a=\lfloor n/b\rfloor$
+complete batches, the implemented estimator centers their means on the mean
+of those $ab$ observations. Expanding the centered sum of squares gives
+\[
+ \E\widehat\sigma_b^2
+ =\frac{b}{a-1}\left\{a\Var(\bar X_b)
+                      -a\Var(\bar X_{ab})\right\}
+ =\frac{a}{a-1}\left(V_b-\frac{V_{ab}}{a}\right).
+\]
+This is an exact finite-sample expectation under the stated stationary AR(1)
+law. With $n=2048$, $b=45$, $b/r=15$, $c=1/2$ and $\rho=-0.9$, the true
+long-run variance is $0.052632$, whereas the expectations of ordinary and
+lugsail batch means are $0.064057$ and $0.035102$, respectively. Each batch
+size uses its own complete-batch count. For $\rho=0.9$, the corresponding
+values are $19$, $14.946816$ and $20.492873$. Thus lugsail is not universally
+conservative: reversing the leading bias can increase underestimation for
+negative dependence. These exact calculations motivate antithetic calibration;
+they do not establish interval coverage for HMC or explain a particular
+posterior reference alarm.
+
 Subtracting covariance estimates can produce a negative scalar estimate or
 negative eigenvalues in finite samples. Such an estimate cannot be inserted
 into a square root or treated as zero Monte Carlo uncertainty. Numerical
@@ -1679,6 +1748,90 @@ A separate experimental use of lugsail for acceptance uncertainty did not
 pass its strong-dependence promotion study. That result does not remove the
 posterior MCSE estimator, and the existence of the estimator does not qualify
 the experimental acceptance policy.
+
+A local optional extension, \path{lugsail_max_batch_means}, takes the larger
+of the ordinary and lugsail estimates for each chain and quantity. Writing
+these two estimates as $B_j$ and $L_j$, it uses
+\[
+ S_j=\max(B_j,L_j),\qquad
+ \widehat{\operatorname{Var}}(\bar h)=\frac{1}{m^2 n}\sum_{j=1}^{m}S_j.
+\]
+Here $m$ independent chains each retain $n$ observations. Both components
+must be finite and $B_j$ must be positive. Under these
+conditions a finite nonpositive $L_j$ can be superseded by $B_j$; the report
+preserves both components and records every such substitution. The maximum
+is taken before pooling, so a downward correction in one chain cannot be
+hidden by a larger estimate in another. On common valid inputs the pooled
+estimate is at least as large as either pooled component. If both components
+converge in probability to the same long-run variance, continuity of the
+maximum gives consistency of $S_j$. These facts do not establish conservative
+finite-sample variance or interval coverage at a stopping time. The maximum
+can introduce upward bias and delay stopping. This is a BayesFilter extension
+under calibration, not the lugsail formula attributed to
+\citet{vats2021lugsail}, and it changes no default or tuning-admission rule.
+
+\subsection{What the completed interval studies show}
+
+The October 2026 experiments tested interval coverage rather than assuming
+that a positive variance estimate gives a reliable uncertainty interval. The
+first stress study used four stationary chains and 128 replications in each
+of six conditions: Gaussian and exponentiated-Gaussian margins at latent
+AR(1) correlations $0$, $0.99$ and $-0.99$. The paired margins used the same
+latent paths. Coordinate means, squared coordinates and the event
+$|X|>2$ had known expectations under their respective marginal laws.
+Of 144 prespecified fixed/stopped interval screens, twelve rejected a nominal
+$5\%$ miss probability using Bonferroni-adjusted exact binomial intervals;
+all twelve concerned fixed endpoints. For positively correlated lognormal
+squares, both original lugsail and the optional per-chain maximum missed in
+23 of 128 replications. The adjusted interval for the miss probability was
+$[0.0791,0.3249]$. Autocorrelation-based uncertainty also failed that screen.
+
+A separate-seed follow-up tested two longer-batch hypotheses and
+fixed-endpoint controls based on the exact variance of the mean. Independent
+Gaussian chain means also supplied a Student interval control. It completed
+768 condition records, representing 384 independent latent four-chain units
+because the two marginal laws were paired. Table~\ref{tab:bf-modern-intervals}
+reports the multiplicity-adjusted outcomes. Conditional stopped screens
+include only replications that reached the stopping criterion; most strongly
+dependent conditions never did so by 10,000 observations per chain.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{lrr}
+\toprule
+Follow-up screen family & Screens & Undercoverage flags\\
+\midrule
+Fixed-endpoint method intervals & 108 & 22\\
+Conditional stopped method intervals & 108 & 3\\
+Fixed-endpoint exact-variance/Student controls & 15 & 0\\
+\bottomrule
+\end{tabular}
+\caption{The 231 prespecified interval screens in the October 18 follow-up.
+The three stopped flags concern IID lognormal squares. No control was flagged:
+undercoverage was not detected, which does not establish calibrated
+coverage, because the adjusted intervals remain wide.}
+\label{tab:bf-modern-intervals}
+\end{table}
+
+Longer batches left undercoverage and unavailable estimates, so the study
+selected no replacement estimator. Strong antithetic dependence also exposed
+a distinct limitation of the named TFP positive-pairs ESS estimator: its
+finite-sample lag weighting can produce a negative denominator despite
+positive retained unweighted pairs. BayesFilter, the installed TFP estimator
+and independent covariance arithmetic reproduced that behavior. The affected
+mean MCSE is unavailable; taking an absolute value or substituting another
+estimator would change the procedure.
+
+Stationary initialization isolates variance estimation and stopping behavior;
+it supplies no evidence about burn-in. The independent audit regenerated
+streams, means and batch/control arithmetic, but did not independently repeat
+all TensorFlow ESS and $\widehat R$ calculations. The complete denominators,
+settings and audit limits appear in the stationary-stress and
+\path{bayesfilter-mcse-dependence-interval-result-2026-10-18.md} result notes
+under \path{docs/plans/}; the diagnostics chapter discusses the implemented
+estimators. These findings leave kernel-tuning membership unchanged and
+prevent interpreting a passing repeated-look MCSE screen as nominal
+finite-sample coverage.
 
 \subsection{Modern \texorpdfstring{$\widehat R$}{R-hat} and many short chains}
 
@@ -1884,19 +2037,24 @@ Conditional smoothing reference, correct joint auxiliary weights, path
 mixing and scaling in horizon/state dimension.\\
 \end{longtable}
 
-For the present TensorFlow setting, randomized-length HMC followed by SNAPER
-is the first sampler comparison worth making. The installed TFP source
-already supplies the kernel and trajectory adaptation, although that does
-not integrate them with BayesFilter's evidence and frozen-kernel interfaces.
-Whitening should continue alongside this work. Where a marginal Gaussian
-likelihood is expensive, investigate an equivalent parallel formulation or
-target/score optimization before attributing the cost to the sampler.
-MAMS is the next major kernel candidate. LAPS becomes attractive if those
-same model operations scale well with a large chain batch and its transient
-has independent diagnostic support.
+The implemented TensorFlow comparison includes fixed HMC,
+randomized corrected HMC, discarded ChEES-rate/SNAPER trajectory proposals,
+and deterministic fully refreshed MAMS. All use the shared candidate-set
+tuners after geometry preparation. The completed nonlinear cohorts below
+provide scoped GPU/XLA feasibility evidence. Broader model replication,
+actual consumer qualification and precision calibration remain necessary
+before release or a comparative efficiency claim.
 
-The proposed order reflects implementation availability and mathematical
-applicability, not measured superiority. It can change after profiling.
+Whitening and likelihood optimization remain relevant alongside transition
+choice. When a marginal Gaussian likelihood dominates the cost, an equivalent
+parallel formulation or a faster total score may reduce work independently
+of the sampler. LAPS remains conditional on favorable measured ensemble
+scaling and independent assessment of its transient. MALT, MEADS and delayed
+rejection address different residual failures; they are not implemented by
+the fully refreshed transition profile.
+
+These priorities follow implementation availability and mathematical
+applicability. Profiling and matched replicated comparisons can change them.
 Custom QZ decompositions, equilibrium-solution derivatives, boundary
 handling and filter implementations make a JAX migration a separate
 engineering project. An author implementation in JAX is valuable for
@@ -1912,14 +2070,16 @@ starts, then allows each method its own valid tuning under a comparable
 resource budget. It measures the transition method. An \emph{end-to-end}
 comparison also includes compilation, initialization, map fitting, tuning,
 fresh verification and retained sampling. It measures what a user pays.
-Both should include the current corrected broad-grid HMC, a simple
-randomized-length version, and correctly configured NUTS before crediting a
-more elaborate method. Count every force evaluation, including integrator
+Both should include the current corrected broad-grid HMC and a simple
+randomized-length version before crediting a more elaborate method. BayesFilter
+excludes NUTS from implementation and local comparisons; its discussion here
+explains the literature and author benchmarks. Count every force evaluation, including integrator
 substages and rejected delayed-rejection proposals.
 
 The primary question is time to a predeclared accuracy for stated posterior
-quantities. Numerical validity, reference disagreement, divergences and
-missing diagnostics can reject a candidate. Acceptance, ChEES/SNAPER
+quantities. Numerical invalidity, divergences, failed reference agreement or
+missing required diagnostics can prevent posterior delivery. Posterior
+outcomes do not remove a member from the verified tuning set. Acceptance, ChEES/SNAPER
 objectives, equipartition and short-run ESS explain behavior but do not
 replace posterior checks. Paired repeated runs and uncertainty for the
 declared comparison are necessary for a supported ranking; passing a hard
@@ -2020,6 +2180,257 @@ that passes all correctness checks but uses more total work is viable and
 possibly useful for latency, although a claimed work reduction would be
 unsupported. These distinctions determine the next repair.
 
+\section{Implementation and nonlinear results}
+\label{sec:bf-modern-local-results}
+
+\subsection{From a prepared target to a retained candidate set}
+
+The two public tuning functions differ in preparation. Ordinary
+\path{tune_hmc_kernel} can prepare an affine mass matrix.
+The frozen-transport function \path{tune_fixed_transport_hmc_kernel}
+uses identity mass in latent coordinates. Both call the shared controller.
+The modern transition profiles require an already prepared exact-score target
+and frozen geometry. Their proposer is optional: a declared grid of
+integrator-specific step sizes and lengths can enter the same controller.
+A SNAPER or MAMS pilot nominates settings; it does not supply their fresh
+qualification evidence.
+
+Algorithm~\ref{alg:bf-modern-candidate-procedure} describes the experimental
+v8 procedure used in the completed cohorts. It is an explicitly selected
+lower-bound policy, not a replacement for the ordinary default acceptance
+policy. For candidate $c$, start $i$ and independent repetition $r$, let
+$a_{crit}$ be the Metropolis probability at transition $t$. The measured
+quantity is
+\begin{equation}
+ Y_{cri}=\frac1T\sum_{t=W+1}^{W+T}a_{crit},\qquad
+ \mu_{ci}=\E[Y_{cri}\mid x_{i0},c,W,T].
+ \label{eq:bf-modern-trial-mean}
+\end{equation}
+Every repetition restarts the complete frozen start bank. Dependence within
+a trajectory or between starts in one repetition is allowed; independence
+is required between repetitions. Consequently $\mu_{ci}$ describes
+finite-horizon acceptance from that start, not a stationary acceptance rate.
+Increasing the evidence rung adds repetitions without changing $W$ or $T$.
+
+The simultaneous intervals allocate error across the declared candidate
+allowance, starts and evidence looks. Measurement and fresh verification
+have separate family allocations. With declared acceptance floor $a_0$,
+a member qualifies only when every start's lower endpoint is at least
+$a_0$ and all numerical-health requirements pass. Qualification is checked
+before repair toward the preferred acceptance region. Supported high
+acceptance therefore need not provoke a larger step after qualification.
+This avoids confusing a proposal objective with the condition for retaining
+a usable kernel.
+
+\begin{algorithm}[htbp]
+\caption{Experimental fixed-horizon tuning with separate posterior assessment}
+\label{alg:bf-modern-candidate-procedure}
+\begin{algorithmic}[1]
+\Require Declared target and score, frozen geometry and starts, finite proposals,
+acceptance/health policy, repair and resource limits, posterior criteria
+\State Check target/score compatibility, transformation and execution settings.
+\State Freeze each proposal's integrator, refreshment and trajectory-count law.
+\State Check necessary confidence-bound attainability and available work allowance.
+\State Set verified set $\mathcal V\gets\varnothing$; retain every proposed identity.
+\For{each scheduled candidate $c$ while allowance remains}
+  \State Measure independent fixed-horizon repetitions on the scheduled evidence rungs.
+  \If{measurement qualifies every start and numerical health passes}
+    \State Verify the unchanged candidate using fresh, independent trial streams.
+    \If{verification qualifies every start and numerical health passes}
+      \State Add $c$ to $\mathcal V$; continue the remaining candidate schedule.
+    \EndIf
+  \EndIf
+  \State Record the outcome; schedule only permitted repairs.
+\EndFor
+\State Export all $c\in\mathcal V$ and record uncreated or unfinished proposals.
+\For{each $c\in\mathcal V$ in the declared assessment order while allowance remains}
+  \State Run discarded warm-up with the frozen kernel and assess readiness.
+  \If{warm-up readiness and numerical health pass}
+    \State Accumulate retained chunks; assess declared convergence and precision.
+    \State Assess reference agreement separately.
+  \EndIf
+  \State Record delivery, a failed assessment or an incomplete outcome.
+\EndFor
+\State Return $\mathcal V$, every posterior outcome, remaining work and inclusive cost.
+\end{algorithmic}
+\end{algorithm}
+
+A repair is a new measured candidate with explicit ancestry. In the optional
+MAMS duration-preserving rule, epsilon and the count support change together
+so that the original mean-duration request remains the family target.
+No repair inherits its parent's acceptance qualification. A resource limit
+leaves incomplete work explicitly recorded; it cannot turn missing evidence
+into a pass. Recovery reuses committed chunks only under the same source,
+policy and stream identity, and counts any repeated computation. These rules
+also preserve failed members in a method comparison's denominator.
+
+Tuning uses acceptance, finite state/target behavior, movement and the declared
+energy/status checks. $\widehat R$, posterior ESS, MCSE and reference agreement
+neither reject nor rank tuning members and do not direct their repairs.
+They enter the separate warm-up and posterior stages. An accepted kernel may
+therefore remain in $\mathcal V$ even when its posterior estimate fails a
+precision or reference requirement.
+
+\subsection{What was assessed on the nonlinear targets}
+
+The completed cohorts used common frozen affine geometry and four starts
+within each target. The predator--prey experiment used the full declared
+sparse-grid quadrature-filter (SGQF) posterior. The SIR experiment used a
+horizon-20 finite-filter posterior with three sampled parameters. Both ran
+TensorFlow/TFP on GPU~1 with XLA, TF32 and memory growth configured before
+device initialization. Their numerical source was commit
+\path{e68cdf1c4c6b75c16f92b86a3363a1e24690d22c}. Later controller repairs
+preserved that source and its completed numerical evidence.
+
+The SIR design fixes the interpretation of each screen. Acceptance trials
+used $W=0$, $T=64$, four equally weighted starts and 32--128 independent
+repetitions over the declared rungs. The bounded betting-mixture procedure
+used separate 0.05 family allocations for search and verification, a
+qualification floor of 0.5, and a preferred region $[0.65,0.75]$. These are
+recorded experimental settings, not generally optimal acceptance thresholds.
+Warm-up used 1,000-transition chunks, at least 2,000 and at most 10,000
+transitions per chain, and a latest-1,000 window with modern
+$\widehat R\leq1.05$. Retained assessment required modern $\widehat R\leq1.01$,
+bulk and tail ESS at least 400, and lugsail MCSE/SD at most 0.02, with at
+most 10,000 retained draws per chain. The original lugsail policy used
+$r=3$, $c=1/2$, at least twenty batches and the automatic batch
+length $b=\lfloor\sqrt n\rfloor$ for $n$ retained draws per chain, with
+smaller batches of length $\lfloor b/3\rfloor$. These inherited cohort
+criteria were held fixed when the later
+coverage studies exposed their limitations.
+
+The SIR quantities include physical parameters, squared standardized source
+coordinates and smooth upper-tail functions. With source coordinate $q$,
+the physical parameters are
+$(0.1,18,10)\odot\exp(q)$, standardized coordinates are $z=q/0.5$, and the
+smooth tail quantity is $\operatorname{logistic}(2(z_j-1))$. This last
+quantity is a bounded smooth function, not an indicator probability. The
+SGQF reference uses its separately declared eighteen quantities.
+
+For quantity $h_j$, write $\mu_j^{\rm ref}$ and $s_j^{\rm ref}>0$ for the
+reference mean and standard deviation, and $u_j^{\rm ref}\geq0$ for its
+recorded sensitivity allowance. The executed reference screen was
+\begin{equation}
+ E_j=\frac{|\widehat\mu_j-\mu_j^{\rm ref}|
+             +3\widehat{\rm MCSE}_j+u_j^{\rm ref}}{s_j^{\rm ref}},
+ \qquad \max_j E_j\leq0.1.
+ \label{eq:bf-modern-reference-screen}
+\end{equation}
+The numerator adds absolute discrepancy, an MCSE allowance and reference
+sensitivity in the quantity's units; division makes the screen dimensionless.
+It is an operational accuracy screen, not a calibrated confidence statement
+at the selected stopping time. A failure can reflect insufficient precision,
+reference sensitivity or a discrepant estimate; it alone does not prove bias.
+The references assess the declared finite-filter posteriors. They do not
+remove approximation error relative to the exact nonlinear likelihoods.
+
+\subsection{Complete cohort outcomes}
+
+Earlier experiments explain the need to distinguish tuning from posterior
+assessment. A frozen nine-point SGQF MAMS grid verified all nine candidates
+but delivered five; one had inconclusive warm-up and three insufficient
+precision. It did not run the MAMS duration proposer. The subsequent generic
+repair separated mean travel from epsilon, added discarded target-specific
+proposals and allowed duration-preserving repairs. Its eight-target GPU/XLA
+diagnostic verified all 25 candidates; 21 passed deliberately short local
+posterior checks, yet all four mixture members missed a mode despite passing
+those checks. These are counterexamples to using local diagnostics alone as
+evidence of global exploration. The later cohorts used different frozen
+proposals and cannot establish a causal improvement over that earlier grid.
+
+Table~\ref{tab:bf-modern-cohort-results} retains every verified tuning member.
+All SGQF members received a terminal posterior assessment. On SIR, all 24
+requested roots were created and verified, and 23 completed posterior
+assessment. The fixed-HMC method reached its resource cap before its eighth
+member completed. No repair descendants were needed in these frozen cohorts.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{llrrrr}
+\toprule
+Target & Method & Verified & Posterior & Both & Censored\\
+\midrule
+SGQF & Fixed HMC & 8 & 7 & 7 & 0\\
+ & Randomized HMC & 8 & 6 & 5 & 0\\
+ & SNAPER-proposed HMC & 6 & 5 & 5 & 0\\
+ & Fully refreshed MAMS & 4 & 4 & 4 & 0\\
+\midrule
+SIR & Fixed HMC & 8 & 7 & 6 & 1\\
+ & Randomized HMC & 8 & 8 & 7 & 0\\
+ & SNAPER-proposed HMC & 6 & 6 & 6 & 0\\
+ & Fully refreshed MAMS & 2 & 2 & 2 & 0\\
+\bottomrule
+\end{tabular}
+\caption{Completed frozen-proposal cohorts through 20 October 2026.
+\emph{Posterior} counts passes of the declared convergence/precision checks;
+\emph{Both} additionally requires the finite-filter reference screen.
+Censored members remain unassessed, not rejected as sampler failures.
+The counts describe individual cohorts and do not support a method ranking.}
+\label{tab:bf-modern-cohort-results}
+\end{table}
+
+The SGQF fixed-HMC second member failed precision and reference screening.
+Randomized members 1 and 2 failed precision; members 1 and 8 failed the
+reference screen. The SNAPER-proposed first member passed its reference
+screen but ended with a lugsail MCSE/SD of 0.020537 for a squared coordinate,
+above 0.02. All four MAMS members passed, after 6,000, 10,000, 6,000 and
+3,000 retained transitions per chain. None of these posterior outcomes
+changed tuning membership.
+
+The SIR cohort finished on 20 October 2026 at 01:42 China time. Fixed member
+1 and randomized member 1 passed posterior checks but had maximum reference
+screens of 0.1038983 and 0.1019206, respectively, above 0.1. Both members
+therefore failed the declared reference criterion. Their proximity to the
+threshold supplies no reason to change the rule retrospectively. Fixed
+member 8 is resource-censored. The cohort retained these outcomes without
+selective reruns or threshold relaxation.
+
+Inclusive SIR numerical charges were 83,767.59 seconds for fixed HMC,
+85,925.96 for randomized HMC, 21,119.85 for SNAPER proposals and 6,502.08
+for MAMS: 197,315.49 seconds in total. These occupied worker times include
+the recorded numerical supervision and recovery accounting; they are not
+hardware-independent gradient costs or equal-accuracy timings from
+independent replicated fits. Unequal candidate sets, trajectory costs and
+resource allocations preclude interpreting their ratios as sampler speedups.
+
+The terminal SIR audit reconciled decisions and accounting and checked
+5,530 unique source/evidence file hashes. It did not independently recompute
+TensorFlow ESS, $\widehat R$ or MCSE. Compact designs, settlements and the
+terminal audit are preserved in
+\path{docs/validation/modern-hmc-20261020/}; the dated SGQF and SIR result
+notes under \path{docs/plans/} identify the original numerical records.
+This distinction separates reproducible bookkeeping from an independent
+statistical validation of every diagnostic.
+
+\subsection{What remains to be established}
+
+The results demonstrate that the shared procedure can retain complete tuning
+sets and produce assessed posteriors for these finite nonlinear targets,
+including recovery after an interrupted controller. They also show why a
+successful tuning return is insufficient for posterior delivery: some
+members fail precision or reference screening, and another exhausts its
+resource allowance. These failures concern individual deliveries. They do
+not reject the transition methods as research directions.
+
+The five core nonlinear targets are accumulation, predator--prey UKF,
+predator--prey SGQF, SIR and the structural filter. Their four-method matrix
+contains twenty planned cells, not twenty completed replicated comparisons.
+Growth still needs an eligible parameter-posterior adapter; volatility needs
+an eligible source route and checked target, score, geometry and reference.
+Those additional targets are outside the twenty-cell denominator. Generic
+structural and predator--prey models also do not qualify the actual
+MacroFinance or \path{dsge_hmc}/BGS consumers.
+
+A comparative conclusion needs matched independent-fit replications,
+predeclared posterior quantities, comparable resource accounting and
+uncertainty for the chosen comparison. A frozen proposal cohort does not
+measure the reliability of fitting its adaptation anew. Precision and
+stopping calibration remain open after the interval studies, while actual
+consumer qualification remains a separate requirement. The current evidence
+supports continued scoped validation of fixed HMC, randomized HMC, SNAPER
+proposals and fully refreshed MAMS; it establishes neither a new default
+nor completion of the modern-HMC master program.
+
 \section{Sources, versions and the scope of the conclusions}
 \label{sec:bf-modern-sources}
 
@@ -2047,8 +2458,10 @@ The algebra in this chapter identifies preserved measures, required
 corrections and diagnostic limitations. Symbolic checks accompany the
 document review, but cannot establish geometric ergodicity, finite-time
 convergence, differentiability of an economic solution operator, or practical
-speed on a new consumer. The resulting recommendation is specific: first
-combine validated geometry with inexpensive randomized trajectory adaptation
-and an equivalent efficient likelihood; then evaluate MAMS, and evaluate LAPS
-when measured ensemble scaling warrants it. The state-space tests above are
-what would turn that recommendation into evidence for these repositories.
+speed on a new consumer. The completed nonlinear cohorts now supply local
+evidence for the shared candidate-set procedure and expose unresolved
+precision, reference and resource outcomes. Matched replication and actual
+consumer validation must establish whether randomized trajectories, learned
+lengths or MAMS reduce the cost of reliable economic estimates. LAPS requires
+its own transient assessment and measured ensemble scaling before entering
+that comparison.

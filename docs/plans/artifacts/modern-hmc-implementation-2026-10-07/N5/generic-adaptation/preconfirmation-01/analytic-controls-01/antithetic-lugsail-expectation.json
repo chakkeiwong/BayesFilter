@@ -1,0 +1,30 @@
+{
+  "role": "exact_stationary_AR1_covariance_derivation_not_empirical_sampler_evidence",
+  "marginal_variance": 1,
+  "draws": 2048,
+  "batch_size": 45,
+  "small_batch_size": 15,
+  "lugsail_c": 0.5,
+  "formula": "E[BM_b]=a/(a-1)*(V_b-V_(a*b)/a); V_b=(1+rho)/(1-rho)-2*rho*(1-rho^b)/(b*(1-rho)^2)",
+  "independent_covariance_sum_checked": true,
+  "rows": [
+    {
+      "rho": 0.0,
+      "true_long_run_variance": 1.0,
+      "expected_batch_means": 1.0,
+      "expected_lugsail": 1.0
+    },
+    {
+      "rho": 0.9,
+      "true_long_run_variance": 19.000000000000004,
+      "expected_batch_means": 14.946816416616926,
+      "expected_lugsail": 20.492873108251747
+    },
+    {
+      "rho": -0.9,
+      "true_long_run_variance": 0.05263157894736841,
+      "expected_batch_means": 0.0640570476299022,
+      "expected_lugsail": 0.03510237694064264
+    }
+  ]
+}

@@ -31,9 +31,15 @@ Evidence: artifacts/sir-native-batching-20261021-01/summary-materiality.json,
 artifacts/surrogate-hmc-48h-extension-20261018-01/run/result.md, and
 artifacts/surrogate-hmc-range-bearing-accept70-20261019-01/result.md.
 
-Current authorized action: finish documentation and focused checks, commit all
-pending branch work, merge into the existing clean main worktree, fetch/merge
-origin/main, resolve conflicts, push main normally, and merge main back into
-this branch. Verify both worktrees clean and all three refs identical. Do not
-launch new GPU work. Integration records and the previous reset memos are in
-artifacts/surrogate-hmc-closeout-20261021-01/.
+Campaign documentation, code, and evidence are committed in 091ee89bc;
+main incorporated the branch in a32f00ccb. Remote main at 3eb9462d3 has been
+integrated and its focused checks passed. The integration record is
+surrogate-hmc-git-integration-2026-10-21.md, with preserved check logs under
+artifacts/surrogate-hmc-closeout-20261021-01/integration/.
+
+Current authorized action: commit the checked remote merge, push main normally,
+fast-forward this branch, and verify both worktrees clean with main, origin/main
+and this branch identical. No GPU work is running or launched by this closeout.
+After synchronization, the next research work is the existing SIR NeuTra Phase 1
+adapter/update plan under an explicit bounded follow-on execution plan; the
+five-model objective must not be relabeled as fully achieved.

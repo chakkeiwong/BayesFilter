@@ -70,7 +70,9 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
 
         def bootstrap_results(self, init_state):
             results = inner_kernel.bootstrap_results(init_state)
-            status = read_status(init_state, endpoint(results).is_accepted.shape)
+            status = getattr(endpoint(results).accepted_results, 'status', None)
+            if status is None:
+                status = read_status(init_state, endpoint(results).is_accepted.shape)
             return attach(results, status, status)
 
         def one_step(self, current_state, previous_kernel_results, seed=None):
@@ -83,7 +85,9 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
             clean = replace_endpoint(previous_kernel_results, previous._replace(extra=[]))
             next_state, results = inner_kernel.one_step(current_state, clean, seed=seed)
             base = endpoint(results)
-            proposed = read_status(base.proposed_state, base.is_accepted.shape)
+            proposed = getattr(base.proposed_results, 'status', None)
+            if proposed is None:
+                proposed = read_status(base.proposed_state, base.is_accepted.shape)
             if accepted.keys() != proposed.keys():
                 raise ValueError("cached HMC target-status fields changed within a chain")
             selected = {key: tf.where(base.is_accepted, proposed[key], accepted[key])

@@ -3,6 +3,8 @@
 Batch means follow Vats--Flegal (2021), section 4, equation 7. Quantile MCSE
 follows Vehtari et al. (2021), section 4.4. Finite estimates require the stated
 moment and mixing assumptions; diagnostics cannot establish these assumptions.
+The optional lugsail_max_batch_means method is a local per-chain maximum,
+not the literature lugsail formula or a guarantee of conservative variance.
 """
 from __future__ import annotations
 
@@ -58,7 +60,7 @@ class HMCPrecisionPolicy:
             raise ValueError("precision targets must be a nonempty typed sequence")
         if len({(t.name, t.kind, t.probability) for t in self.targets}) != len(self.targets):
             raise ValueError("duplicate precision target")
-        if self.method not in {"autocorrelation", "batch_means", "lugsail"}:
+        if self.method not in {"autocorrelation", "batch_means", "lugsail", "lugsail_max_batch_means"}:
             raise ValueError("unknown precision estimator")
         for v, lower in ((self.min_batches, 2), (self.lugsail_r, 1)):
             if type(v) is not int or v < lower:
@@ -97,6 +99,19 @@ def _batch_program(shape, batch, small_batch, c, jit_compile):
     return compute
 
 
+@lru_cache(maxsize=32)
+def _batch_maximum_program(shape, jit_compile):
+    @tf.function(input_signature=[tf.TensorSpec(shape, tf.float64)] * 2,
+                 autograph=False, jit_compile=jit_compile)
+    def compute(plain, lugsail):
+        # Neither NaNs nor infinities may disappear through maximum semantics.
+        eligible = tf.math.is_finite(plain) & tf.math.is_finite(lugsail) & (plain > 0.)
+        maximum = tf.where(eligible, tf.maximum(plain, lugsail),
+                           tf.constant(float("nan"), tf.float64))
+        return maximum, eligible & (plain > lugsail)
+    return compute
+
+
 def mean_precision(samples: Any, *, method="autocorrelation", batch_size=None,
                    min_batches=20, lugsail_r=3, lugsail_c=0.5, jit_compile=True):
     """Return tensors for [draw, chain, quantity], preserving chain boundaries."""
@@ -117,7 +132,7 @@ def mean_precision(samples: Any, *, method="autocorrelation", batch_size=None,
         ess = _cross_chain_ess(values)
         variance = tf.square(sd) / ess
         metadata["estimator"] = "tfp_0.25_positive_pairs_real_fft"
-    elif method in {"batch_means", "lugsail"}:
+    elif method in {"batch_means", "lugsail", "lugsail_max_batch_means"}:
         b = int(math.sqrt(n)) if batch_size is None else batch_size
         if type(b) is not int or b < 1 or type(lugsail_r) is not int or lugsail_r < 1:
             raise ValueError("invalid batch size or lugsail r")
@@ -133,6 +148,12 @@ def mean_precision(samples: Any, *, method="autocorrelation", batch_size=None,
         else:
             plain, lrv = _batch_program(tuple(values.shape), b, small,
                 0. if method == "batch_means" else lugsail_c, jit_compile)(values)
+            if method == "lugsail_max_batch_means":
+                metadata["per_chain_raw_lugsail_long_run_variance"] = lrv
+                lrv, activated = _batch_maximum_program((m, p), jit_compile)(plain, lrv)
+                metadata.update(per_chain_batch_maximum_activated=activated,
+                    safeguard="local_per_chain_maximum; no conservative_variance_or_anytime_coverage_guarantee",
+                    small_unused_terminal_draws=n % small)
             variance = tf.reduce_sum(lrv, axis=0) / (m * m * n)
             # A negative per-chain estimate cannot be hidden by pooling.
             variance = tf.where(tf.reduce_all(lrv > 0., axis=0), variance, float("nan"))
@@ -211,11 +232,17 @@ def precision_report(samples, names, policy: HMCPrecisionPolicy | None):
             "mcse": mcse, "mcse_sd_ratio": ratio, "valid": valid, "passed": bool(passed),
             "estimator": report.get("estimator", report["method"])})
     batch_metadata = {k: v for k, v in mean.items() if k in {
-        "batch_size", "small_batch_size", "batch_count", "unused_terminal_draws", "unavailable_reason"}}
-    for key in ("per_chain_long_run_variance", "per_chain_plain_long_run_variance"):
+        "batch_size", "small_batch_size", "batch_count", "unused_terminal_draws", "unavailable_reason",
+        "small_unused_terminal_draws", "safeguard"}}
+    for key in ("per_chain_long_run_variance", "per_chain_plain_long_run_variance",
+                "per_chain_raw_lugsail_long_run_variance"):
         if key in mean:
             batch_metadata[key] = tuple(tuple(float(v) if math.isfinite(float(v)) else None
                 for v in tf.unstack(row)) for row in tf.unstack(mean[key]))
+    if "per_chain_batch_maximum_activated" in mean:
+        batch_metadata["per_chain_batch_maximum_activated"] = tuple(
+            tuple(bool(v) for v in tf.unstack(row))
+            for row in tf.unstack(mean["per_chain_batch_maximum_activated"]))
     return {"schema": "bayesfilter.hmc_precision_report.v1",
             "status": "precision_met" if all(r["passed"] for r in rows) else "precision_insufficient",
             "passed": all(r["passed"] for r in rows), "targets": tuple(rows),

@@ -19,7 +19,7 @@ class FrozenTransition:
     Identity and energy mutations are explicit test controls. They cannot issue
     tuning artifacts. One call is a complete HMC transition, not a leapfrog step.
     """
-    def __init__(self, target, *, chains, step_size, leapfrog_steps, control="baseline", jit_compile=True):
+    def __init__(self, target, *, chains, step_size, leapfrog_steps, control="baseline", jit_compile=True, transition_profile=None):
         from bayesfilter.inference.native_tfp_hmc import reviewed_independent_chain_target_fn
         target.batch_rank_policy = "rank2_required"
         self.target = target
@@ -75,6 +75,36 @@ class FrozenTransition:
         # Metropolis-energy oracle. This diagnostic has no tuning authority.
         self.audit_step = tf.function(audit_step, input_signature=self._signature,
                                       autograph=False, jit_compile=jit_compile)
+
+        if transition_profile is not None:
+            from bayesfilter.inference.hmc_transition_spec import HMCTransitionProfile
+            from bayesfilter.inference.hmc_modern_kernels import ReusableModernHMCRunner
+            profile = HMCTransitionProfile.from_payload(transition_profile)
+            modern = ReusableModernHMCRunner(target, tf.zeros([chains,target.parameter_dim],tf.float64),
+                profile=profile,num_results=1,use_xla=jit_compile)
+            def modern_audit(q,seed):
+                out, trace = modern.one_step(q,seed,epsilon,tf.constant(leapfrog_steps,tf.int32))
+                if control == "wrong_energy":
+                    ratio = -trace["log_accept_ratio"]
+                    key = tf.random.experimental.stateless_split(seed,3)[2]
+                    accepted = tf.math.log(tf.random.stateless_uniform([chains],key,dtype=tf.float64,alg="philox")) < tf.minimum(tf.zeros_like(ratio),ratio)
+                    out = tf.where(accepted[:,None],trace["proposed_state"],q)
+                    trace = {**trace,"log_accept_ratio":ratio,"is_accepted":accepted}
+                return {**trace,"state":out}
+            def modern_step(q,seed):
+                if control == "identity": return q,tf.zeros([chains],tf.float64)
+                if control == "two_cycle": return -q,tf.zeros([chains],tf.float64)
+                trace = modern_audit(q,seed)
+                out = trace["state"]
+                if control == "duplicate_stream": out=tf.repeat(out[:1],chains,axis=0)
+                # Intermediate invalidity must remain visible even if MH rejects.
+                ratio=tf.where(trace["target_score_finite"],trace["log_accept_ratio"],
+                               tf.fill([chains],tf.constant(float("nan"),tf.float64)))
+                return out,ratio
+            self.step=tf.function(modern_step,input_signature=self._signature,autograph=False,jit_compile=jit_compile)
+            self.audit_step=tf.function(modern_audit,input_signature=self._signature,autograph=False,jit_compile=jit_compile)
+            self._powered_steps={1:self.step}
+            self.kernel=modern
 
     def powered_step(self, power, *, with_health=False):
         """Compose the same complete MH transition K a fixed number of times.

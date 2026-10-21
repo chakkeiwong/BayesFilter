@@ -596,6 +596,7 @@ class FixedTransportValueScoreAdapter:
         if not hasattr(base_adapter, "log_prob_and_grad"):
             raise TypeError("base_adapter must expose log_prob_and_grad")
         self.base_adapter = base_adapter
+        self.proposal_rejection_policy = getattr(base_adapter, 'proposal_rejection_policy', None)
         self.transport = transport
         self.parameter_dim = _transport_parameter_dim(transport)
         self.target_scope = str(target_scope)

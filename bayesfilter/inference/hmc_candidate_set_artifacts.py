@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .hmc_transition_spec import candidate_gradient_work
+
 from bayesfilter.inference.hmc_candidate_decisions import HMCCandidateDecision
 
 import hashlib
@@ -336,6 +338,29 @@ def _validate_result_payload(
                 raise ValueError(f"repair {field} identity mismatch")
         if child.get("leapfrog_steps") != action.get("exact_l"):
             raise ValueError("repair exact L mismatch")
+        if checked_config.repair_trajectory_policy == "preserve_mean_duration":
+            if action.get("schema") != "bayesfilter.hmc_repair_action.v2":
+                raise ValueError("duration-preserving repair needs versioned lineage")
+            if action.get("parent_exact_l") != parent.get("leapfrog_steps"):
+                raise ValueError("repair parent count mismatch")
+            from bayesfilter.inference.hmc_trajectory_duration import compile_mean_duration
+            parent_action = action_by_child.get(parent["candidate_id"])
+            if parent.get("parent_candidate_id") is not None and parent_action is None:
+                raise ValueError("duration-preserving repairs must follow their recorded parent action")
+            requested = (parent_action["requested_mean_duration"] if parent_action is not None
+                         else float(parent["epsilon"]) * (int(parent["leapfrog_steps"]) + 1) / 2)
+            if action.get("requested_mean_duration") != requested:
+                raise ValueError("repair requested duration mismatch")
+            compiled = compile_mean_duration(
+                profile=checked_scope.transition_profile,
+                epsilon=float(child["epsilon"]),
+                requested_mean_duration=requested,
+                max_steps_cap=checked_config.repair_mean_duration_max_steps)
+            if compiled.frozen.max_steps != child.get("leapfrog_steps"):
+                raise ValueError("repair child does not preserve requested mean duration")
+        elif (action.get("schema") != "bayesfilter.hmc_repair_action.v1"
+              or child.get("leapfrog_steps") != parent.get("leapfrog_steps")):
+            raise ValueError("legacy repair must retain the parent count")
         if child.get("mass_signature") != action.get("mass_signature"):
             raise ValueError("repair mass identity mismatch")
         if action.get("old_epsilon") != parent.get("epsilon"):
@@ -402,7 +427,7 @@ def _validate_result_payload(
             if (work is None or type(index) is not int or index < 0
                     or type(transitions) is not int or transitions <= 0):
                 raise ValueError("invalid attempted chunk accounting identity or extent")
-            if event.get("gradient_work") != transitions * (by_id[work["candidate_id"]]["leapfrog_steps"] + 1):
+            if event.get("gradient_work") != transitions * candidate_gradient_work(by_id[work["candidate_id"]]):
                 raise ValueError("attempted chunk cost disagrees with candidate")
         if event.get("event") == "work_charged":
             charged += units

@@ -473,6 +473,192 @@ model delivery, GPU parity and independent posterior assessment answer
 different questions. Passing the first two cannot by itself establish the
 remaining three or justify a new default.
 
+\subsection{Experimental randomized HMC and microcanonical transitions}
+
+An already prepared exact-score binding may now specify
+\path{HMCCandidateExecutionConfig.transition_profile} using
+\path{HMCTransitionProfile}. The supported experimental families are ordinary
+HMC with leapfrog integration and fully refreshed MAMS with isokinetic
+velocity-Verlet integration. Both enter the same public tuners and shared
+candidate-set controller. A position-field binding is insufficient: these
+profiles require the score of the declared scalar target. MAMS requires
+dimension greater than one and identity geometry in the prepared coordinates.
+Automatic preparation configurations reject these profiles. The caller first
+obtains a frozen geometry, declares integrator-specific epsilon hypotheses and
+uses \path{HMCControllerConfig} with its numerical binding. An HMC warm-up bound
+cannot silently become a bound for the MAMS integrator.
+
+For the \path{uniform_duration} option, a candidate records a positive step
+size $\epsilon$ and a maximum count $L_{\max}$. Each chain and transition draws
+an independent $U\sim\operatorname{Uniform}[0,1)$ and uses
+\[
+  \tau_{\max}=\epsilon L_{\max},\qquad
+  L=\max\{1,\lceil U L_{\max}\rceil\}.
+\]
+Thus the legacy candidate field \path{leapfrog_steps} is a maximum count for
+this profile. The complete \path{FrozenTransitionSpec} identifies the law,
+integrator, correction and full refreshment. A repaired $\epsilon$ changes
+$\tau_{\max}$ as well and therefore defines a new candidate. The initial
+implementation does not independently parameterize an arbitrary continuous
+maximum duration. The \path{fixed} option retains a deterministic count for
+matched comparisons.
+
+For MAMS, each outer transition independently refreshes a uniform sphere
+direction. Its symmetric force-half-step, position-step, force-half-step
+composition uses the sphere-Jacobian correction derived in
+Chapter~\ref{ch:bf-modern-hmc}; an ordinary kinetic-energy correction
+would be wrong for this transition. Full refreshment makes positions sufficient
+at outer-transition boundaries. Momentum or direction, duration and the
+Metropolis decision have separate stateless streams. The numerical runner
+supports same-seed continuation with a recorded transition offset; retained
+archives use the existing fresh-chunk stream and predecessor checks.
+Persistent and within-trajectory stochastic MAMS, LAPS and MALT are not
+implemented by this profile.
+
+The optional \path{propose_trajectory_candidates} helper runs a discarded
+ChEES-rate or SNAPER pilot with explicit \path{TrajectoryPilotConfig} settings.
+The TFP~0.25 adaptation fixes metric variance to one in the prepared coordinates
+and disables Halton jitter. It retains the source's shared IID pilot jitter;
+the frozen candidate instead has independent chain jitter. The returned
+\path{epsilon_by_l} supplies hypotheses to the same binding's shared search.
+Neither the pilot objective nor its draws qualify a candidate. Fresh
+measurement and independent verification remain necessary.
+
+For full-refresh MAMS, the optional helper is
+\path{propose_mams_trajectory_candidates}.
+Its explicit \path{MAMSPilotConfig} separates the physical travel request
+from integrator resolution. For the existing integer-uniform count
+$N\in\{1,\ldots,K\}$,
+\[
+ E[\epsilon N]=\epsilon\frac{K+1}{2},\qquad
+ E[(\epsilon N)^2]=\epsilon^2\frac{(K+1)(2K+1)}{6}.
+\]
+Given a requested mean $\ell\geq\epsilon$,
+\path{compile_mean_duration} rounds $2\ell/\epsilon-1$ to the nearest integer,
+with ties upward. Without an active count bound, the mean differs from the
+request by at most $\epsilon/4$. A request below one step or beyond the count
+support fails explicitly. The helper records the realized moments and
+quantization; it does not alter the frozen transition law.
+
+The proposer uses bounded geometric epsilon bracketing, followed by settling
+and separately diagnosed continuous windows at a frozen policy. Only these
+windows supply autocorrelations. Changing-policy draws and reset-start
+verification trials are never concatenated for that calculation. The paper's
+harmonic-coordinate length rule is a proposal hypothesis, supplemented by a
+declared duration neighborhood and a separately labeled slow-observable
+extension. Squared coordinates, radial quantities and frozen projections
+guard against judging exploration from means alone. Constant, nonpositive or
+lag-limited estimates remain unavailable. These diagnostics have no posterior
+convergence or tuning-membership authority.
+
+For typed uniform-duration profiles,
+\path{repair_trajectory_policy="preserve_mean_duration"} explicitly requests
+count recompilation when epsilon changes. The first repair adopts its primary
+candidate's realized mean, and every descendant preserves that one request
+rather than successively rounding the rounded child mean. Configuration v3
+and repair-action v2 record the request and parent/child counts; earlier
+configurations retain their fixed-count semantics. Every child receives fresh
+measurement and verification. This option cannot be combined with legacy
+same-count pilot/refinement stages.
+
+Pilot progress and completed numerical windows can be recorded in a fresh
+directory and replayed into another fresh directory under the identical
+source, configuration, binding and backend. Interrupted attempts remain charged.
+The pilot checks wall allocation at window boundaries; serious runs therefore
+need measured window prices and a workload-aware supervisor. Engineering
+regressions establish these mechanics, not global exploration or efficiency.
+
+These profiles require batched chain execution, one independent trial per
+native call, and the explicit v8 replicated policy
+\path{qualification_mode="lower_bound"}. For a declared acceptance floor
+$a_{\min}$, its qualification region is $[a_{\min},1]$. Every start's
+simultaneous lower bound must reach $a_{\min}$. Qualification precedes
+preferred-region repair, so supported high acceptance does not by itself
+reject a candidate or force its step size upward. Numerical health, movement
+and recurrence checks still apply. R-hat, posterior ESS and MCSE cannot gate,
+rank, repair or delay tuning. Fixed HMC may use this same policy when comparing
+kernels under matched evidence requirements.
+
+The new v8 policy and typed transition identities preserve the meaning of
+legacy artifacts. Work preflight and reservations include maximum value/score
+and separate status evaluations, while execution reports actual calls and
+realized counts, including inactive rows evaluated by batched kernels.
+Checked mechanics archives can export and replay every verified member.
+The research consumer
+\path{modern_tuning_consumer.run_frozen_trajectory_search} records each primary
+policy, each repair descendant and every primary policy left uncreated by a
+resource stop. It uses the binding's declared epsilon domain; an upper bound
+of one is not imposed on MAMS. Candidate ancestry determines a repair child's
+identity even when another family contains the same numerical pair. Every
+verified identity is exported and checked on reload.
+Before expensive target preparation, the full-model consumer also checks
+whether the scheduled independent trials can possibly qualify a candidate.
+It evaluates the actual confidence procedure at the most favorable bounded
+trial scores, separately for measurement and verification, with the full
+candidate error allocation. An impossible design stops before sampling.
+Passing this check does not establish statistical power; for a two-sided
+rule, the separate endpoint bounds are only necessary conditions for joint
+qualification. The public tuners retain their original qualification rules.
+
+For the full-data predator--prey, SIR and structural-filter experiments,
+\path{scripts/run_modern_hmc_frozen_full_model.py} reads an explicit design
+containing the transition, search, geometry, repair allowance and optional
+posterior settings. It dispatches to the same public tuner. Posterior
+assessment visits every verified member and reports finite-filter reference
+agreement separately, using the declared precision estimator. A member that
+fails a posterior check remains tuning-qualified. An interrupted run retains
+completed outcomes and records unfinished members; it supplies no missing
+verification or convergence evidence. These consumers do not establish that
+the proposed search covers all useful durations or that an adaptation method
+improves posterior delivery.
+
+The current comparison scope contains five core nonlinear targets:
+\path{NL-ACC}, \path{NL-PP-UKF}, \path{NL-PP-SGQF}, \path{NL-SIR} and
+\path{NL-STR}. Fixed HMC, randomized HMC, SNAPER-proposed randomized HMC and
+fully refreshed MAMS define twenty planned method--target cells. These are
+validation obligations rather than evidence that twenty comparisons have
+finished. The accumulation target uses a generic adapter. The full-model
+frozen-design driver covers the other four adapters: the two predator--prey
+filters, SIR and the structural filter. Each method and target scope still
+needs its own qualification and independent complete-fit evidence.
+
+Two additional targets have explicit unfinished dispositions outside that
+twenty-cell denominator. \path{NL-GROWTH} needs a parameter-posterior adapter
+and checked score, geometry and reference. \path{NL-SV} has an adapter factory,
+but its \path{source_route_eligibility_needed} disposition requires an eligible
+Zhao--Cui source route and checked score, geometry and independent reference
+before admission. A factory alone does not establish that qualification.
+
+A completed full SGQF cohort supplies evidence only for its declared target
+and seed. The completed October cohorts delivered seven of eight fixed-HMC,
+five of eight randomized-HMC, five of six SNAPER-proposed and four of four
+MAMS members under the posterior and reference criteria. The subsequent SIR
+cohort verified all 24 candidates: 23 passed posterior checks and 21 also
+passed reference screening. Two posterior-passing members failed reference screening and one
+fixed-HMC member remained resource-censored. All 24 stayed in the tuning set.
+Algorithm~\ref{alg:bf-modern-candidate-procedure} and
+Table~\ref{tab:bf-modern-cohort-results} give the procedure, criteria and
+complete outcomes. These cohorts do not complete the nonlinear matrix,
+calibrate sequential stopping or establish a method ranking. Agreement with a finite-filter
+reference assesses the declared finite-filter posterior, subject to the
+recorded reference error. Actual MacroFinance and \path{dsge_hmc}/BGS
+consumers need their own target, score, geometry, public-tuner wiring and
+posterior/reference qualification; a generic structural or predator--prey
+model cannot establish those properties. Failed posterior assessments leave
+every tuning-qualified member in the retained candidate set.
+
+Stateless seeds do not by themselves guarantee identical trajectories across
+TensorFlow compilation modes. In the current diagnostic environment, CPU/XLA
+and GPU/XLA share the tested random streams, while non-XLA execution produces
+different draws at the same seed. Numerical parity comparisons therefore need
+matched random inputs or matching compiled modes. Backend and compilation mode
+remain part of the recorded execution identity.
+
+The claim-bearing retained builder rejects these experimental profiles pending
+statistical, posterior and native GPU qualification. Short nonlinear runs and
+CPU regressions establish integration properties, not posterior accuracy,
+efficiency or release readiness.
+
 \subsection{Legacy compatibility and shared numerical health}
 
 The default \path{HMCAcceptancePolicy} uses four independent chain means,
@@ -1087,6 +1273,22 @@ process cap remains necessary. Startup, telemetry, retries and cleanup all count
 against the allocation, and the inherited outer deadline reserves time for the
 coordinator's report. An optional no-progress stall interval must allow for
 measured compilation and chunk times; it is disabled by default.
+
+The v7 confirmation worker accepts an explicit \path{--allowance} from its
+bounded supervisor. This replaces its internal wall clocks, including the
+controller and between-chunk clock, while preserving configured numerical work
+limits. Without that option, the configured wall limit still applies. A monitor
+that merely writes heartbeats does not activate the allowance. Progress includes
+v1 and v2 tuning checkpoints and completed export, evidence reconstruction and
+member-reload operations; duplicate completions and copied old checkpoints do
+not earn additional time.
+
+With \path{extension_mode="observed_intervals"}, trusted contention intervals
+can earn bounded extra time while useful work continues, including during
+closeout. This scheduling allowance is not an estimate of lost GPU compute.
+The extension cap and enclosing campaign deadline remain binding. Checkpoint
+continuation uses its original source; a change of source creates a different
+scope and cannot be presented as preservation of the old random streams.
 
 A shared GPU need not become empty before useful work can proceed. The
 validation policy \path{gpu_admission_mode="shared"} admits work with trusted

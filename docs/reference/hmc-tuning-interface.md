@@ -1,10 +1,18 @@
 # HMC Tuning Interface
 
-Last checked: 2026-10-03. This reference describes the common candidate-set
+Last checked: 2026-10-20 (completed cohorts and monograph consistency). This reference describes the common candidate-set
 procedure. Read it with `HMC_TUNING_INTERFACE_CAPABILITIES` before changing an
 HMC consumer. The generated [interface inventory](../generated/hmc_tuning_route_table.md)
 classifies public tuners, preparation helpers, chain runners, and historical
 readers. A chain runner is not a tuner.
+
+**NUTS is excluded from BayesFilter**, including diagnostic comparators and
+campaign requirements. Its retired entry points reject execution; historical
+readers and literature citations do not provide tuning or sampling authority.
+Use fixed HMC or the explicitly experimental randomized HMC, SNAPER proposals
+and MAMS routes described below. The current comparison inventory is
+`bayesfilter.testing.inference_validation.modern_hmc_scope`; the older matrix
+is preserved only because saved numerical source closures bind its bytes.
 
 The K0--K7 state-space validation inventory and its executable stages are
 documented in [the validation README](../validation/README.md). Those targets
@@ -89,6 +97,181 @@ older `partial` fixtures bound only the applied log-scale and retain unbounded
 tail stiffness. These are analytic test maps, with no transport-training claim;
 the tuning chapter derives their transformed densities.
 
+### Experimental randomized HMC and fully refreshed MAMS
+
+Prepared exact-score bindings can explicitly set
+`HMCCandidateExecutionConfig.transition_profile` to
+`HMCTransitionProfile("hmc", "uniform_duration")` or
+`HMCTransitionProfile("mams", "uniform_duration")`. The `"fixed"` trajectory
+option is available for matched comparisons. Use the same ordinary or
+fixed-transport public tuner with `HMCControllerConfig` and the binding's
+`typed_adapter`. Automatic preparation configs reject modern profiles: an HMC
+warm-up step-size bound cannot silently become a MAMS step-size bound. Prepare
+geometry first and declare the new integrator's epsilon hypotheses explicitly.
+These profiles currently require batched chains, one trial per
+native call (`replicated_trial_batch_size=1`), and the explicit v8 lower-bound
+replicated policy described below. The position-field branch rejects them.
+MAMS additionally requires dimension greater than one and uses identity geometry
+in the prepared coordinates, with independent full direction refreshment at
+every outer transition. Persistent or within-trajectory stochastic MAMS, LAPS,
+and MALT are not implemented by these profiles.
+
+For `uniform_duration`, the candidate's legacy `leapfrog_steps` field means the
+**maximum** count, not a realized fixed length. Each chain and transition draws
+an independent uniform duration on `[0, epsilon * max_steps)`, using
+`max(1, ceil(duration / epsilon))` steps. `FrozenTransitionSpec` preserves the
+family, integrator, duration law, rounding, correction, and refreshment policy.
+Changing epsilon also changes the maximum duration and creates a new candidate.
+This first implementation supports an integer maximum count; it does not expose
+an arbitrary continuous maximum duration independently of epsilon.
+
+Momentum/direction, duration and Metropolis decisions use separate stateless
+streams. The full-refresh profiles need only positions at outer-transition
+boundaries; the numerical runner also supports same-seed continuation by a
+recorded `transition_offset`. Retained archives use the existing fresh-chunk
+stream and predecessor checks. Export/reload verifies the whole transition
+specification. Work preflight, reservation and replay conservatively include
+both value/score and separate status evaluations, including masked batch rows;
+actual calls and realized lengths are reported separately.
+
+`propose_trajectory_candidates(binding, TrajectoryPilotConfig(...))` supplies
+optional discarded ChEES-rate or SNAPER proposals for randomized HMC. Every
+pilot parameter must be explicit. Its `epsilon_by_l` can initialize a new shared
+search on that same binding; adaptation grants no tuning authority. The current
+TFP 0.25 adaptation fixes metric variance to one, so it cannot adapt geometry a
+second time. Its pilot uses shared IID trajectory jitter, while the frozen
+candidate uses independent jitter across chains; these are explicitly different
+policies. All pilot draws are discarded and every proposed setting needs fresh
+measurement and verification.
+
+`propose_mams_trajectory_candidates(binding, MAMSPilotConfig(...))` is an
+optional discarded proposer for the fully refreshed uniform-count MAMS profile.
+Every numerical setting is explicit. It brackets epsilon at approximately
+fixed requested mean duration, then diagnoses separate continuous frozen-policy
+windows. It always includes the declared duration neighborhood. Usable
+coordinate IACT estimates may nominate the paper's length hypothesis; separately
+labeled squared-coordinate, radial and frozen-projection diagnostics may nominate
+a slow-observable sibling. Missing, constant or lag-limited estimates remain
+unavailable and never become tuning gates. The source coefficient is a
+hypothesis under our different integer-count law, not a calibrated default.
+
+`compile_mean_duration` translates a request into the existing frozen policy.
+For counts uniform on `1,...,K`, the actual mean is `epsilon*(K+1)/2`.
+Compilation rounds to the nearest count, ties upward, and records quantization;
+it rejects unsupported requests instead of silently clipping. The transition
+law and Metropolis correction are unchanged.
+
+The explicit controller option `repair_trajectory_policy="preserve_mean_duration"`
+with `repair_mean_duration_max_steps` recompiles a repair child's maximum count
+when epsilon changes. The first repair fixes its family's request to the primary
+candidate's realized mean; subsequent descendants preserve that same request,
+avoiding accumulated rounding drift. This may differ from the pilot's original
+continuous request by its recorded quantization. Config schema v3 and repair
+action schema v2 record these semantics; old configurations retain fixed-count
+repairs. Each child still needs fresh measurement and independent verification.
+This option requires a typed uniform-duration profile and replicated evidence;
+legacy same-count pilots/refinement cannot be combined with it.
+
+Supply a fresh `output_dir` to preserve pilot progress and completed tensor
+windows. `resume_from` recovers into another fresh directory with identical
+binding, source, backend and configuration. Completed calls replay; interrupted
+attempts stay charged and retries consume the remaining allocation. The wall
+cap is checked at window boundaries, so a compiled window can overrun it; use
+measured window costs and the campaign supervisor for serious runs.
+`bayesfilter.testing.inference_validation.mams_adaptation_consumer` connects
+this proposer to the existing public tuners and exports every verified member.
+It is a research consumer, not a third tuning authority.
+It delegates qualification and export to the shared research consumer
+`modern_tuning_consumer.run_frozen_trajectory_search`. This caller also accepts
+explicit fixed/randomized HMC or SNAPER proposal cohorts with their own typed
+binding. Its inventory preserves every repair descendant and any uncreated
+primary pair after a budget stop; it never assumes the final count equals
+the proposal count. Epsilon uses the actual binding domain. Every verified
+root or child is exported and checked on reload.
+
+For the four full-data nonlinear research targets,
+`scripts/run_modern_hmc_frozen_full_model.py` consumes an explicit frozen
+design and uses that same caller. The design declares execution, qualification,
+repair and optional posterior settings. The method label must match the
+actual transition; it does not establish that adaptation was performed.
+Before target preparation, an attainability preflight tests the most favorable
+bounded scores using the actual statistical implementation, scheduled rungs,
+full candidate allowance and both measurement/verification allocations. It
+rejects proven-impossible trial budgets. Passing establishes neither statistical
+power nor joint two-sided attainability. This consumer guard does not change
+the public tuners' qualification law.
+Posterior assessment visits every verified identity, including descendants,
+and uses a separately audited finite-filter reference. Reference agreement
+uses the declared precision settings and never changes tuning membership.
+Resource stops retain completed outcomes and unstarted members. This driver
+is a research consumer, with no additional tuning or release authority.
+
+The current comparison inventory has five core nonlinear targets and four
+methods: fixed HMC, randomized HMC, SNAPER-proposed randomized HMC and fully
+refreshed MAMS. Its **20 planned cells are validation obligations**, not a
+record of completed replicated comparisons. Adapter availability has the following scope:
+
+| Target | Current research consumer | Qualification still required |
+| --- | --- | --- |
+| `NL-ACC` | Generic nonlinear accumulation adapter; separate from the full-model frozen-design driver. | Target/method posterior and reference validation. |
+| `NL-PP-UKF`, `NL-PP-SGQF` | Two full-data predator–prey adapters in the frozen-design driver. | Per-method, per-scope validation and independent fit replication. |
+| `NL-SIR`, `NL-STR` | Full-data SIR and structural-filter adapters in the same driver. | Per-method, per-scope validation and independent fit replication. |
+| `NL-GROWTH` | No current parameter-posterior adapter in this inventory. | Build and check that adapter, score, geometry and reference before admission. |
+| `NL-SV` | An actual-SV adapter factory exists; its inventory disposition is `source_route_eligibility_needed`. | Check the eligible Zhao–Cui source route, score, geometry and independent reference before admission. Factory existence does not establish eligibility. |
+
+The four full-data adapters cover the two predator–prey filters, SIR and the
+structural filter. Growth and volatility are additional dispositions outside
+the core 20-cell denominator. A completed SGQF cohort establishes only its
+declared target/seed feasibility; it does not complete that matrix, calibrate
+sequential stopping or support a method ranking. Finite-filter reference
+agreement assesses the declared finite-filter posterior, with its recorded
+reference error. Actual MacroFinance and `dsge_hmc`/BGS consumers still need
+their own target, score, geometry, public-tuner wiring and posterior/reference
+qualification. Generic structural or predator–prey models do not supply it.
+The [modern-method master](../plans/bayesfilter-modern-hmc-implementation-plan-2026-10-07.md)
+tracks these remaining obligations. Posterior failures never remove a
+tuning-qualified member.
+
+The completed October SGQF cohorts delivered 7/8 fixed-HMC, 5/8 randomized-HMC,
+5/6 SNAPER-proposed and 4/4 MAMS members under the frozen posterior and
+finite-filter reference criteria. The subsequent SIR cohort verified all 24
+candidates; 23 passed posterior checks and 21 also passed reference screening.
+Two posterior-passing members failed the reference screen and one fixed-HMC member remained
+resource-censored. Every verified member remains retained. The
+[SIR result](../plans/bayesfilter-modern-hmc-sir-result-2026-10-20.md) and
+[compact evidence](../validation/modern-hmc-20261020/README.md) preserve the
+counts and costs. The official monograph's modern-HMC chapter gives the
+algorithm and comparison tables. Unequal candidate sets and absent independent
+fit replication prevent a method ranking; these results do not validate
+nominal MCSE coverage or release readiness.
+
+The analytic validation consumer also records original model quantities,
+moderate-tail probabilities and approximate lugsail reference intervals via
+`mams_analytic_diagnostics`. Its exact and partially whitened funnel controls
+now describe the same scale-three model. Missing or degenerate uncertainty is
+inconclusive; non-rejection is not proof of posterior accuracy. Binary events
+use the existing declared probability-diagnostic policy. These checks run only
+in posterior assessment and diagnostic reporting and cannot remove a verified
+tuning member. The [analytic-control plan](../plans/bayesfilter-mams-analytic-controls-2026-10-12.md)
+states their calibration scope and limits.
+
+These are **experimental implementations**. The checked mechanics runner can
+export and replay verified members, but the claim-bearing retained builder
+rejects modern profiles pending scoped statistical, posterior and GPU
+qualification. CPU reference tests and short nonlinear runs do not establish
+convergence, efficiency or release readiness. Current evidence and remaining
+work are tracked in the [implementation execution record](../plans/bayesfilter-modern-hmc-execution-2026-10-07.md).
+
+Short CPU/XLA versus GPU/XLA checks now pass for randomized HMC and MAMS
+on LGSSM and nonlinear accumulation. A GPU/XLA LGSSM run through the public
+tuner also verified, exported and reloaded both declared members. These are
+scoped engineering checks; broader nonlinear posterior validation remains open.
+In the tested TensorFlow environment, the same seed produces different draws
+in non-XLA and XLA execution, even with an explicit Philox algorithm. Preserve
+backend and compilation mode in replay identity. Arithmetic parity checks
+must use matched random inputs or matching compiled modes; seed equality
+alone does not establish identical trajectories across modes.
+
 ## Search, qualification, and retention
 
 1. Prepare and freeze the target, geometry, coordinate transform, four-chain
@@ -119,8 +302,10 @@ the tuning chapter derives their transformed densities.
    streams. Neither adaptation nor tuning draws enter posterior estimates.
 5. Preserve valid directional decisions. A supported smaller epsilon may repair
    rejection-induced immobility while the immobile parent remains unpromotable.
-   Every epsilon repair is an immutable same-L child preserving mass, target,
-   starts and coordinates. The child must be measured and independently verified.
+   The legacy epsilon repair is an immutable same-L child preserving mass, target,
+   starts and coordinates. The explicit duration-preserving policy described
+   above recompiles the maximum count. Every child must be measured and
+   independently verified.
 6. Extend inconclusive measurement or verification using the predeclared finite
    `evidence_rungs`. These are multipliers of the corresponding base draw count;
    the convenience sequence is `(1, 2, 4)`. Each rung is a fresh run of the same
@@ -243,6 +428,29 @@ band, horizon, repetition ladder and method are experimental choices requiring
 their own provenance. The validation matrix and executable model inventory are
 linked from `docs/validation/README.md`. CPU regression success does not prove
 GPU parity, posterior accuracy, or default readiness.
+
+### Experimental lower-bound qualification (v8)
+
+The modern profiles require
+`HMCReplicatedAcceptancePolicy(qualification_mode="lower_bound", ...)`, with
+`qualification_region=(declared_floor, 1.0)`. Search and execution must declare
+the same policy. It retains v7's independent fixed-horizon start-bank trials,
+fresh verification and all-member retention, but asks whether every start's
+simultaneous lower bound exceeds the declared floor. The floor, horizon,
+replications and error allocation are explicit experimental choices, not new
+defaults. Fixed HMC can use this same policy in a fair kernel comparison.
+
+Qualification is checked **before** preferred-region repair. A candidate with
+supported high acceptance can qualify even when its acceptance exceeds the
+optimizer's preferred target. Movement, recurrence, numerical health and budget
+requirements still apply. R-hat, posterior ESS and MCSE cannot reject, rank,
+repair, delay or terminate this tuning search. Posterior assessment remains a
+separate stage.
+
+The v8 identifier prevents silent reinterpretation of v7's two-sided region.
+Legacy payloads retain their existing schemas and meaning. Statistical
+calibration and complete-fit delivery for the new profile remain release work;
+the lower-bound rule alone is not evidence of efficient sampling.
 
 A multiplicative epsilon repair can jump from high acceptance directly to
 nonfinite trajectories. The nonfinite result supplies no valid acceptance
@@ -511,7 +719,7 @@ retain their meanings. R-hat remains reporting-only during tuning.
 | Evidence | Tuning role |
 | --- | --- |
 | Valid acceptance evidence with no promotion veto | Qualifies the exact measured kernel; fresh verification remains required. |
-| Supported directional acceptance failure | Proposes a smaller or larger same-L child. |
+| Supported directional acceptance failure | Proposes a smaller or larger epsilon child; the configured repair policy determines its count. |
 | Repeated states, insufficient movement or recurrence | Vetoes current promotion; may coexist with an eligible directional repair. |
 | Available native divergence | Vetoes current promotion; finite valid acceptance evidence can still support a directional child repair. |
 | Candidate-local invalid target, score or transition health | Rejects that candidate and preserves the reason. |
@@ -860,17 +1068,29 @@ The actual controller must be tested separately from fixed-count intervals.
 The [M25 continuation](../plans/bayesfilter-hmc-gap-closure-continuation-2026-09-22.md)
 keeps readiness, interval coverage and precision delivery separate.
 
-The mean estimators are `autocorrelation`, `batch_means`, and `lugsail`.
+The mean estimators are `autocorrelation`, `batch_means`, `lugsail`, and the
+explicit optional `HMCPrecisionPolicy(method="lugsail_max_batch_means", ...)`.
 Autocorrelation retains the explicitly identified TFP 0.25 positive-pairs
 estimator; it is not Stan's initial-monotone estimator. Batch means use complete
 batches within each independent chain. Lugsail combines estimates at batch
 sizes b and floor(b/r) as `(LRV_b - c*LRV_small)/(1-c)`. The pooled mean variance
 is `sum(chain_LRV)/(chains**2 * draws_per_chain)`. Lugsail r=3, c=0.5 and
 square-root batch size are literature baselines; the minimum 20 batches is an
-operational floor, not calibrated coverage. All are configurable. Negative,
-zero, nonfinite or underbatched estimates cannot grant precision; raw per-chain
+operational floor, not calibrated coverage. All are configurable. With the
+original lugsail policy, negative, zero, nonfinite or underbatched estimates
+cannot grant precision; raw per-chain
 LRV and excluded terminal counts are reported. Quantile ties yielding zero
 width are unavailable evidence, including unobserved rare events.
+
+The optional maximum uses `max(plain_batch_LRV, raw_lugsail_LRV)` separately
+for each chain and quantity, before pooling. It is a local extension, with
+unchanged defaults. Both components must be finite and the plain estimate
+positive; a finite nonpositive lugsail estimate may then be superseded. Reports
+preserve both raw estimates and a boolean activation mask. The maximum cannot
+be smaller than either valid component on the same draws, but can add upward
+bias and delay stopping. It does not guarantee conservative true variance or
+coverage under repeated looks. Use the explicit precision policy through the
+posterior API; the older validation-design method inventory remains unchanged.
 
 Quantile precision uses TFP positive-pairs indicator ESS with a pooled
 percentile that preserves equal interpolation endpoints exactly. The method
@@ -882,6 +1102,15 @@ indicator ESS. Recompute older reports from saved draws; do not reuse a
 checkpoint under the new policy identity. Independent NumPy/SciPy order
 statistics and official TFP ESS tests cover IID, persistent, antithetic, skew,
 tied, constant, odd-length and unobserved-event cases.
+
+The named TFP positive-pairs estimator can return a negative finite ESS on
+strongly antithetic finite chains: positive pair truncation does not ensure
+that its lag-weighted variance denominator is positive. BayesFilter preserves
+the estimator's identity and reports the resulting mean MCSE as unavailable;
+it must not take an absolute value, clip it to a passing value or silently
+substitute the distinct monotone estimator. The October 18 source-parity
+diagnostic reproduces this behavior in the installed TFP implementation and
+independent arithmetic; it is not a real-FFT translation error.
 
 The approximate quantile MCSE and its symmetric `estimate +/- 1.96*MCSE`
 diagnostic interval differ from a direct 95% order-statistic interval at finite
@@ -901,6 +1130,44 @@ development evidence and do not change the default estimator.
 Repeated MCSE checks provide an operational accuracy screen, not anytime-valid
 confidence coverage. Finite-chain calibration does not justify a universal new
 stopping default. Declared target-specific posterior checks remain necessary.
+
+The [completed strong-dependence/skewness calibration](../plans/bayesfilter-mcse-stationary-stress-result-2026-10-18.md)
+contains 128 replications in each of six stationary conditions. It finds
+12 multiplicity-adjusted fixed-interval undercoverage flags, including
+lognormal-square failures for original lugsail, the optional maximum and
+autocorrelation. Original lugsail is unavailable for all 128 strongly
+antithetic Gaussian coordinate cases; autocorrelation is unavailable for 72.
+Most dependent conditions never pass the declared stopping screen, so their
+stopped coverage is unmeasured. The optional maximum is not a general coverage
+repair. These findings motivate separate variance/interval calibration; they
+do not change tuning membership, frozen HMC comparisons or numerical defaults.
+
+The [completed variance-scale/interval follow-up](../plans/bayesfilter-mcse-dependence-interval-result-2026-10-18.md)
+uses a separate seed and six arms, including two longer-batch hypotheses.
+All 768 condition records completed; paired laws share 384 independent latent
+four-chain units. The independent audit regenerated streams, means and
+batch/control arithmetic; it did not independently repeat all TensorFlow ESS
+and R-hat calculations. In its 231-screen family, 22/108
+fixed method screens and 3/108 conditional stopped method screens flagged
+undercoverage. The stopped flags concern IID lognormal squares. None of the
+15 fixed exact-variance/Student controls flagged, which does not establish
+calibration. Most strongly dependent cells never stopped; longer batches
+still left undercoverage and some unavailable estimates. No replacement or
+default was selected. Stationary starts provide no burn-in evidence, and
+these results leave acceptance/health tuning membership unchanged.
+
+The [October 12 fixed and stopped reference study](../plans/bayesfilter-mcse-stopping-calibration-result-2026-10-12.md)
+completed 128 replications for each stationary Gaussian/Student-t condition at
+correlation 0, .9 and -.9. Its exact Gaussian calculation also shows downward
+bias under antithetic dependence: at 10000 draws, the unmasked configured
+lugsail estimate averages about .8936 times the finite-length mean variance.
+Two antithetic Student-t fixed-endpoint estimates were unavailable; both remain
+in the reported denominator. Neither even batch lengths nor the existing
+autocorrelation estimator was promoted as a replacement. Deterministic
+CPU/XLA covariance tests now exercise the actual batch kernel, including
+remainders and the rule that a positive pool cannot hide a negative per-chain
+estimate. This evidence concerns retained uncertainty, not tuning membership
+or warm-up sufficiency.
 
 `checkpoint_store` accepts `DurableTensorCheckpoint` to preserve numerical
 chunks. Restart the call with the same member, policy, seeds, names, coordinate
@@ -1055,6 +1322,22 @@ report `deadline_overrun_seconds` and charge that elapsed time rather than
 granting it as another extension.
 `stall_timeout_seconds` optionally bounds time without durable progress and is
 disabled by default; configure it to allow measured compilation and chunk times.
+
+The v7 confirmation worker accepts an explicit `--allowance` from its bounded
+supervisor. This replaces its internal wall clocks, including the controller
+and between-chunk clock, while retaining its configured numerical work limits.
+Without that option, the configured wall limit still applies. A monitor that
+only writes heartbeats does not activate this behavior. The progress reader
+recognizes both v1 and v2 tuning checkpoints and completed export, evidence
+reconstruction and member-reload operations. Repeated completion records or
+copied old checkpoints do not earn additional time.
+
+Under `extension_mode="observed_intervals"`, trusted contention intervals can
+earn bounded extra time while useful work continues, including during closeout.
+This is a scheduling allowance, not an estimate of lost GPU compute. Both the
+extension cap and the enclosing campaign deadline remain binding. Resume uses
+the source that issued the checkpoint; changing source creates a different
+scope and must not be presented as preservation of the old random streams.
 
 GPU availability does not require exclusive use. Validation campaigns can set
 `timeout_policy.gpu_admission_mode="shared"` with a bounded

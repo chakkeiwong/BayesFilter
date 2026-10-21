@@ -278,8 +278,10 @@ def run_typed_hmc_candidate_set(
             controller._accounting.append({"event": "preparation_elapsed", "seconds": seconds})
         runtime._checkpoint_callback = controller._save_checkpoint
         runtime._charge_chunk = controller.charge_numerical_chunk
-        runtime._deadline = (None if config.max_wall_time_seconds is None else
-            time.monotonic() + max(0.0, config.max_wall_time_seconds - controller._elapsed_seconds))
+        from bayesfilter.runtime.execution_budget import configured_wall_time_limit
+        wall_limit = configured_wall_time_limit(config.max_wall_time_seconds)
+        runtime._deadline = (None if wall_limit is None else
+            time.monotonic() + max(0.0, wall_limit - controller._elapsed_seconds))
     incremental_dispatch = (output_dir is not None and execution is not None
                             and execution.config.replicated_trial_batch_size > 1)
     try:
