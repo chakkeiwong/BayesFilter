@@ -1,0 +1,662 @@
+.........................FFFFFFFF...F..........                          [100%]
+=================================== FAILURES ===================================
+____________ test_complete_recursive_score_all_parameters[0-lgssm] _____________
+
+name = 'lgssm', correction = 0
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 3) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 3) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706ca8540650>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706ca8542a90>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_9}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_37, while/Sum_7, while/truediv_9, while/Max_13, while/Max_14, while/Max_10, while/truediv_7, while/strided_slice_171, while/Minimum_1, while/Min_3, while/strided_slice_172, while/strided_slice_173, while/strided_slice_174, while/Cast_14, while/strided_slice_175, while/strided_slice_176, while/strided_slice_177, while/Max_12)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+_____________ test_complete_recursive_score_all_parameters[0-ksc] ______________
+
+name = 'ksc', correction = 0
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 1) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 1) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d4828d790>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706dc824f190>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_9}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_44, while/Sum_6, while/truediv_10, while/Max_13, while/Max_14, while/Max_10, while/truediv_8, while/strided_slice_150, while/Minimum_1, while/Min_3, while/strided_slice_151, while/strided_slice_152, while/strided_slice_153, while/Cast_14, while/strided_slice_154, while/strided_slice_155, while/strided_slice_156, while/Max_12)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+________ test_complete_recursive_score_all_parameters[0-predator_prey] _________
+
+name = 'predator_prey', correction = 0
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 2) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 2) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d08661e90>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d08660fd0>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_9}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_36, while/Sum_8, while/truediv_5, while/Max_13, while/Max_14, while/Max_10, while/truediv_3, while/strided_slice_129, while/Minimum_1, while/Min_3, while/strided_slice_130, while/strided_slice_131, while/strided_slice_132, while/Cast_14, while/strided_slice_133, while/strided_slice_134, while/strided_slice_135, while/Max_12)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+___________ test_complete_recursive_score_all_parameters[0-sir_d18] ____________
+
+name = 'sir_d18', correction = 0
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 18) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 18) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706ca840ffd0>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706ca84249d0>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_9}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_37, while/Sum_8, while/truediv_8, while/Max_13, while/Max_14, while/Max_10, while/truediv_6, while/strided_slice_130, while/Minimum_1, while/Min_3, while/strided_slice_131, while/strided_slice_132, while/strided_slice_133, while/Cast_14, while/strided_slice_134, while/strided_slice_135, while/strided_slice_136, while/Max_12)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+____________ test_complete_recursive_score_all_parameters[2-lgssm] _____________
+
+name = 'lgssm', correction = 2
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 3) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 3) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d802d76d0>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d802d4450>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_10}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_37, while/Sum_7, while/truediv_47, while/Max_15, while/Max_16, while/Max_12, while/truediv_45, while/strided_slice_361, while/Minimum_1, while/Min_3, while/strided_slice_362, while/strided_slice_363, while/strided_slice_364, while/Cast_17, while/strided_slice_365, while/strided_slice_366, while/strided_slice_367, while/Max_14)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+_____________ test_complete_recursive_score_all_parameters[2-ksc] ______________
+
+name = 'ksc', correction = 2
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 1) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 1) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706dc82ec590>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706dc82eeed0>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_10}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_44, while/Sum_6, while/truediv_48, while/Max_15, while/Max_16, while/Max_12, while/truediv_46, while/strided_slice_340, while/Minimum_1, while/Min_3, while/strided_slice_341, while/strided_slice_342, while/strided_slice_343, while/Cast_17, while/strided_slice_344, while/strided_slice_345, while/strided_slice_346, while/Max_14)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+________ test_complete_recursive_score_all_parameters[2-predator_prey] _________
+
+name = 'predator_prey', correction = 2
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 2) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 2) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d082d3510>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d082d1810>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_10}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_36, while/Sum_8, while/truediv_43, while/Max_15, while/Max_16, while/Max_12, while/truediv_41, while/strided_slice_319, while/Minimum_1, while/Min_3, while/strided_slice_320, while/strided_slice_321, while/strided_slice_322, while/Cast_17, while/strided_slice_323, while/strided_slice_324, while/strided_slice_325, while/Max_14)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+___________ test_complete_recursive_score_all_parameters[2-sir_d18] ____________
+
+name = 'sir_d18', correction = 2
+
+    @pytest.mark.parametrize('name',['lgssm','ksc','predator_prey','sir_d18'])
+    @pytest.mark.parametrize('correction',[0,2])
+    def test_complete_recursive_score_all_parameters(name,correction):
+        spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
+        theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+        base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
+        xx=spec.initial_cloud(theta,base[0])[0]
+        obs=[]
+        for t in range(h):
+            xx=model.transition_mean_fn(theta,xx)
+            obs.append(tf.reduce_mean(model.observation_fn(xx),0)+.15)
+        obs=tf.stack(obs);beta=tf.constant([.2,.3,.5],D)
+        fn=make_filter(spec,n,h,ctl,D,jit_compile=False)
+>       center=fn(theta,tf.zeros_like(theta),obs,*base,beta)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 18) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 18) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706dec107f10>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d082a8dd0>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_10}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_37, while/Sum_8, while/truediv_46, while/Max_15, while/Max_16, while/Max_12, while/truediv_44, while/strided_slice_320, while/Minimum_1, while/Min_3, while/strided_slice_321, while/strided_slice_322, while/strided_slice_323, while/Cast_17, while/strided_slice_324, while/strided_slice_325, while/strided_slice_326, while/Max_14)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+___________________ test_runtime_call_chain_and_fail_closed ____________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x706dc82eca90>
+
+    def test_runtime_call_chain_and_fail_closed(monkeypatch):
+        import bayesfilter.highdim.covariance_proposal_tf as core
+        import bayesfilter.highdim.covariance_proposal_moments_tf as correction
+        calls=[]
+        for module,name in [(core,'build_maps'),(core,'component_densities'),(core,'reset_cloud'),(correction,'repair_moments')]:
+            original=getattr(module,name)
+            def wrapper(*a,_original=original,_name=name,**kw):
+                calls.append(_name)
+                return _original(*a,**kw)
+            monkeypatch.setattr(module,name,wrapper)
+        spec=LGSSMSpec('diagonal_ar',1);theta=tf.constant([.8,.6,.8],D)
+        fn=core.make_filter(spec,32,2,ProposalControls(correction_steps=2),D,jit_compile=False)
+        base=fixed(32,1,2);obs=tf.constant([[.2],[.3]],D)
+>       result=fn(theta,tf.zeros_like(theta),obs,*base,tf.constant([.2,.3,.5],D))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/covariance_proposal_tf.py:249: in program
+    completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = <tf.Tensor 'while/Placeholder:0' shape=() dtype=int32>
+x = <tf.Tensor 'while/Placeholder_1:0' shape=(32, 1) dtype=float64>
+dx = <tf.Tensor 'while/Placeholder_2:0' shape=(32, 1) dtype=float64>
+ell = <tf.Tensor 'while/Placeholder_3:0' shape=() dtype=float64>
+score = <tf.Tensor 'while/Placeholder_4:0' shape=() dtype=float64>
+valid = <tf.Tensor 'while/Placeholder_5:0' shape=() dtype=bool>
+trace = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706cc84ea4d0>
+history = <tensorflow.python.ops.tensor_array_ops.TensorArray object at 0x706d0878b690>
+
+    def step(t,x,dx,ell,score,valid,trace,history):
+        history=history.write(t,x)
+        maps=build_maps(model,theta,x,dx,observations[t],controls)
+        child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
+        logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
+        logmix=logdens+tf.math.log(beta)[None]
+        lq=tf.reduce_logsumexp(logmix,-1); dlq=tf.reduce_sum(tf.nn.softmax(logmix,-1)*ddens,-1)
+        lg,dlg=observation_density(model,theta,child,dchild,observations[t])
+        lr=lg+logdens[:,0]-lq; dlr=dlg+ddens[:,0]-dlq
+        normalizer=tf.reduce_logsumexp(lr); w=tf.nn.softmax(lr); increment=normalizer-tf.math.log(tf.cast(n,dtype))
+        ds=tf.reduce_sum(w*dlr); logw=lr-normalizer; dlogw=dlr-ds
+        z,dz,mu,dmu,pw,dpw,vr,rd=reset_cloud(child,dchild,logw,dlogw,controls)
+        reset_particles=z
+        cd=tf.zeros([3],dtype)
+        if controls.correction_steps:
+            from bayesfilter.highdim.covariance_proposal_moments_tf import repair_moments
+            z,dz,cd=repair_moments(child,dchild,w,w*dlogw,z,dz,mu,dmu,pw,dpw,controls)
+        unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
+        zm,_,zp,_=moments(z,dz,unif,zero)
+        eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+        mean_error=tf.reduce_max(tf.abs(zm-mu))
+        cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
+        moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+        coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
+        cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+        cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
+        good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
+>       row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: Shapes must be equal rank, but are 1 and 0
+E       	From merging shape 13 with other shapes. for '{{node while/stack_10}} = Pack[N=18, T=DT_DOUBLE, axis=0](while/sub_37, while/Sum_7, while/truediv_47, while/Max_15, while/Max_16, while/Max_12, while/truediv_45, while/strided_slice_361, while/Minimum_1, while/Min_3, while/strided_slice_362, while/strided_slice_363, while/strided_slice_364, while/Cast_17, while/strided_slice_365, while/strided_slice_366, while/strided_slice_367, while/Max_14)' with input shapes: [], [], [], [], [], [], [], [], [], [], [], [], [], [1], [], [], [], [].
+
+bayesfilter/highdim/covariance_proposal_tf.py:247: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[0-lgssm]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[0-ksc]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[0-predator_prey]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[0-sir_d18]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[2-lgssm]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[2-ksc]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[2-predator_prey]
+FAILED tests/highdim/test_covariance_proposal.py::test_complete_recursive_score_all_parameters[2-sir_d18]
+FAILED tests/highdim/test_covariance_proposal.py::test_runtime_call_chain_and_fail_closed
+9 failed, 38 passed, 2 warnings in 70.69s (0:01:10)

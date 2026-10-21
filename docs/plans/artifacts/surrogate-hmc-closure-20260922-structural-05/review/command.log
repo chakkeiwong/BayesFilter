@@ -1,0 +1,47 @@
+..................F.                                                     [100%]
+=================================== FAILURES ===================================
+___ test_constant_chains_cannot_establish_equivalence_even_with_equal_means ____
+
+    def test_constant_chains_cannot_establish_equivalence_even_with_equal_means():
+        points = tf.zeros([4, 80, 2], tf.float64)
+        values = tf.ones([4, 80, 13], tf.float64)
+>       result = assess(points, values, tf.ones([13], tf.float64), tf.zeros([13], tf.float64),
+                        tf.ones([13], tf.float64), seed=[12, 34])
+
+tests/test_surrogate_hmc_scoped_assessment.py:12: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_scoped_assessment.py:59: in assess
+    result = diagnostic_calculator(int(points.shape[1]))(points, values, tf.constant(seed, tf.int32))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scoped_assessment.py:26: in diagnostic_calculator
+    batches, randomized = diagnostic_batch_statistics(count, 13), batch_randomization(count, 13)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+draws = 80, function_count = 13
+
+    @lru_cache(maxsize=4)
+    def diagnostic_batch_statistics(draws, function_count=15):
+        """Longer diagnostic scopes only; parity-checked against the runtime formula.
+    
+        This extension cannot authorize an additional inferential look in HMC.
+        The production helper deliberately accepts only its frozen two looks.
+        """
+        if draws not in (1000, 2000, 4000, 8000):
+>           raise ValueError('unplanned diagnostic sample size')
+E           ValueError: unplanned diagnostic sample size
+
+bayesfilter/testing/surrogate_hmc_mcse_randomization.py:39: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_scoped_assessment.py::test_constant_chains_cannot_establish_equivalence_even_with_equal_means
+1 failed, 19 passed, 2 warnings in 4.21s

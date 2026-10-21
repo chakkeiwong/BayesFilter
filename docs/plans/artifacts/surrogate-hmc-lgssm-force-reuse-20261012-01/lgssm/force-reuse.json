@@ -1,0 +1,1529 @@
+{
+  "status": "FORCE_REUSE_PARITY_PASS",
+  "scope": {
+    "model": "lgssm",
+    "target_id": "sqmc_lgssm_p44_d3_predict_first_v2",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 3,
+    "parameter_dimension": 4,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.25,
+        -1.7147984504699707,
+        -2.1202635765075684,
+        0.03999999910593033
+      ],
+      "scales": [
+        0.4,
+        0.5,
+        0.5,
+        0.2
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "7b2a781983c7e2d627dc7b9b25335e413ea81f4975b82de02001dbe427c664fa",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "f18bd545fc0820dad91520001a2b045bcaf4cb46387541cac525cbbb46cc86e1",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection_hash": "b51391b2eb7660ece3b23ca818f1597bc723fb7f8cb9fa6762e28a9351c405db",
+  "force_identity": "3a3be223bd0927b366d750d3cf120395bdca7a8ce491074afe1074a618b1825f:analytical-fp32",
+  "source_sha256": "255f83971d037254fe71f311e2ddb9e9fc3c29ff9f0d81e91a04c0f3fad6e087",
+  "steps": 2,
+  "leapfrog_steps": 1,
+  "starts": [
+    [
+      -0.15,
+      -0.15,
+      -0.15,
+      -0.15
+    ],
+    [
+      -0.05,
+      -0.05,
+      -0.05,
+      -0.05
+    ],
+    [
+      0.05,
+      0.05,
+      0.05,
+      0.05
+    ],
+    [
+      0.15,
+      0.15,
+      0.15,
+      0.15
+    ]
+  ],
+  "trials": [
+    {
+      "trial": 0,
+      "cold": true,
+      "order": [
+        "uncached",
+        "cached"
+      ],
+      "seed": [
+        6111111,
+        31
+      ],
+      "seconds": {
+        "uncached": 153.02858833014034,
+        "cached": 170.75281527079642
+      },
+      "assessment": {
+        "scaled_gaps": {
+          "positions": 0.0,
+          "potentials": 0.0,
+          "log_acceptance_ratio": 0.0,
+          "initial_potential": 0.0,
+          "final_potential": 0.0,
+          "initial_kinetic": 0.0,
+          "final_kinetic": 0.0,
+          "delta_h": 0.0
+        },
+        "decisions_and_status_equal": true,
+        "healthy": true,
+        "pass_parity": true,
+        "force_counts": {
+          "uncached": 4,
+          "cached": 3
+        },
+        "count_pass": true
+      },
+      "archive": {
+        "uncached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-positions.tensor",
+            "sha256": "c2d110c1223b6fc47870a802a00adc2c5e09fb2d6e6c232df3d0f1a6608c26cf",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-potentials.tensor",
+            "sha256": "e4bdb1971eab3760512551704d4c290ab7de59ad18227605bbf77a4de1a3a368",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-log_acceptance_ratio.tensor",
+            "sha256": "c20b8753cd04b61775fcdd38e4a24fbfe776862c53cfc97eab48c96f1d69f13e",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-initial_potential.tensor",
+            "sha256": "6b187eccdc3b6c2dce7c3938fee4430560884b2e10e652fda8ef58a2c6143f49",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-final_potential.tensor",
+            "sha256": "e4bdb1971eab3760512551704d4c290ab7de59ad18227605bbf77a4de1a3a368",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-initial_kinetic.tensor",
+            "sha256": "c9f350285185ae5a5fe0cce0e6e85db2b1ecee1771a645d785a9ebcb488b6e74",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-final_kinetic.tensor",
+            "sha256": "ec0b5808598fb0ba9e6a295ebe40e963ac3e91bfb96693d12748205576ab7a94",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-delta_h.tensor",
+            "sha256": "6a677a5dcf1f9c1ca82a20fe879f5c69dcf85597a8014a6be283cf7c03e1c152",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-force_call_count.tensor",
+            "sha256": "e6fab1dcaa491c45e630248a05b11e0396de033d3fb86c57f4b06f1071ac368a",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-uncached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        },
+        "cached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-positions.tensor",
+            "sha256": "c2d110c1223b6fc47870a802a00adc2c5e09fb2d6e6c232df3d0f1a6608c26cf",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-potentials.tensor",
+            "sha256": "e4bdb1971eab3760512551704d4c290ab7de59ad18227605bbf77a4de1a3a368",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-log_acceptance_ratio.tensor",
+            "sha256": "c20b8753cd04b61775fcdd38e4a24fbfe776862c53cfc97eab48c96f1d69f13e",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-initial_potential.tensor",
+            "sha256": "6b187eccdc3b6c2dce7c3938fee4430560884b2e10e652fda8ef58a2c6143f49",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-final_potential.tensor",
+            "sha256": "e4bdb1971eab3760512551704d4c290ab7de59ad18227605bbf77a4de1a3a368",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-initial_kinetic.tensor",
+            "sha256": "c9f350285185ae5a5fe0cce0e6e85db2b1ecee1771a645d785a9ebcb488b6e74",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-final_kinetic.tensor",
+            "sha256": "ec0b5808598fb0ba9e6a295ebe40e963ac3e91bfb96693d12748205576ab7a94",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-delta_h.tensor",
+            "sha256": "6a677a5dcf1f9c1ca82a20fe879f5c69dcf85597a8014a6be283cf7c03e1c152",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-force_call_count.tensor",
+            "sha256": "71e9b12383258d88369c086e161d28ef6d1ae3d7dde47df911dd18e9fd47b667",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-0-cached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "trial": 1,
+      "cold": false,
+      "order": [
+        "cached",
+        "uncached"
+      ],
+      "seed": [
+        6111111,
+        33
+      ],
+      "seconds": {
+        "cached": 96.79379229410551,
+        "uncached": 176.84101703879423
+      },
+      "assessment": {
+        "scaled_gaps": {
+          "positions": 0.0,
+          "potentials": 0.0,
+          "log_acceptance_ratio": 0.0,
+          "initial_potential": 0.0,
+          "final_potential": 0.0,
+          "initial_kinetic": 0.0,
+          "final_kinetic": 0.0,
+          "delta_h": 0.0
+        },
+        "decisions_and_status_equal": true,
+        "healthy": true,
+        "pass_parity": true,
+        "force_counts": {
+          "cached": 3,
+          "uncached": 4
+        },
+        "count_pass": true
+      },
+      "archive": {
+        "cached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-positions.tensor",
+            "sha256": "83085b49b01315f1f51b079ab52a4adb2a7d13e925fa28d9620d334b44f541fa",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-potentials.tensor",
+            "sha256": "5b21cf53b4826edae777eb2882ef1c4323fb2fe01e35a3387550071923973731",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-log_acceptance_ratio.tensor",
+            "sha256": "2602314ca0705ea63b6d64ee5edcd669db1669b15a744ad0c9c46704bc6a1ac2",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-initial_potential.tensor",
+            "sha256": "31a60378194cf50fdb7a73927ddc99fe8e1340bcda72f9e0761c7521a0e9f547",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-final_potential.tensor",
+            "sha256": "5b21cf53b4826edae777eb2882ef1c4323fb2fe01e35a3387550071923973731",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-initial_kinetic.tensor",
+            "sha256": "c59546570500f3446464042037cecad5533d3a49a4d502ba3d6c73a56ba6ef91",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-final_kinetic.tensor",
+            "sha256": "fe498bfb281ee424facd259b0dafa206466311528b0043af19b79bae431dbcce",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-delta_h.tensor",
+            "sha256": "55849f035b3bdff32aa8f98d3f3b70160289783ac83b30408c8eea8544dd77a2",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-force_call_count.tensor",
+            "sha256": "71e9b12383258d88369c086e161d28ef6d1ae3d7dde47df911dd18e9fd47b667",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-cached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        },
+        "uncached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-positions.tensor",
+            "sha256": "83085b49b01315f1f51b079ab52a4adb2a7d13e925fa28d9620d334b44f541fa",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-potentials.tensor",
+            "sha256": "5b21cf53b4826edae777eb2882ef1c4323fb2fe01e35a3387550071923973731",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-log_acceptance_ratio.tensor",
+            "sha256": "2602314ca0705ea63b6d64ee5edcd669db1669b15a744ad0c9c46704bc6a1ac2",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-initial_potential.tensor",
+            "sha256": "31a60378194cf50fdb7a73927ddc99fe8e1340bcda72f9e0761c7521a0e9f547",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-final_potential.tensor",
+            "sha256": "5b21cf53b4826edae777eb2882ef1c4323fb2fe01e35a3387550071923973731",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-initial_kinetic.tensor",
+            "sha256": "c59546570500f3446464042037cecad5533d3a49a4d502ba3d6c73a56ba6ef91",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-final_kinetic.tensor",
+            "sha256": "fe498bfb281ee424facd259b0dafa206466311528b0043af19b79bae431dbcce",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-delta_h.tensor",
+            "sha256": "55849f035b3bdff32aa8f98d3f3b70160289783ac83b30408c8eea8544dd77a2",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-force_call_count.tensor",
+            "sha256": "e6fab1dcaa491c45e630248a05b11e0396de033d3fb86c57f4b06f1071ac368a",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-1-uncached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "trial": 2,
+      "cold": false,
+      "order": [
+        "uncached",
+        "cached"
+      ],
+      "seed": [
+        6111111,
+        35
+      ],
+      "seconds": {
+        "uncached": 196.7140647151973,
+        "cached": 189.13874043384567
+      },
+      "assessment": {
+        "scaled_gaps": {
+          "positions": 0.0,
+          "potentials": 0.0,
+          "log_acceptance_ratio": 0.0,
+          "initial_potential": 0.0,
+          "final_potential": 0.0,
+          "initial_kinetic": 0.0,
+          "final_kinetic": 0.0,
+          "delta_h": 0.0
+        },
+        "decisions_and_status_equal": true,
+        "healthy": true,
+        "pass_parity": true,
+        "force_counts": {
+          "uncached": 4,
+          "cached": 3
+        },
+        "count_pass": true
+      },
+      "archive": {
+        "uncached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-positions.tensor",
+            "sha256": "7dd18f2da4a79aa57762c0889cea70bf2fb8edd4772fff07260fe188fb4ce122",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-potentials.tensor",
+            "sha256": "aee5c639377d3973e0cdc5b908b16be37b53a59360b5e82e91802bc029d60217",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-log_acceptance_ratio.tensor",
+            "sha256": "e0e07d3906a2c6c42c187fffc00d96ac44c769ecdc9bc0d0021ac9a81bdd7fc7",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-initial_potential.tensor",
+            "sha256": "31aae4107d80b87b8fd254844dd6184de243aa3c0fb67f3b072a02a49913f2f0",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-final_potential.tensor",
+            "sha256": "aee5c639377d3973e0cdc5b908b16be37b53a59360b5e82e91802bc029d60217",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-initial_kinetic.tensor",
+            "sha256": "8d46b7991c43197ccbb120146deaa727cb66fef8eb8e63a2d811a569251a0725",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-final_kinetic.tensor",
+            "sha256": "685ae2cdf34ca2e28b87d7f6fa0854ed350a4b802ea3066e64c56583ea3d4503",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-delta_h.tensor",
+            "sha256": "5eb0a48be3e2af9837a94952d10920a30adf26d5ae5a2586a8ae7c5cdca8ea02",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-force_call_count.tensor",
+            "sha256": "e6fab1dcaa491c45e630248a05b11e0396de033d3fb86c57f4b06f1071ac368a",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-uncached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        },
+        "cached": {
+          "positions": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-positions.tensor",
+            "sha256": "7dd18f2da4a79aa57762c0889cea70bf2fb8edd4772fff07260fe188fb4ce122",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4,
+              4
+            ]
+          },
+          "potentials": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-potentials.tensor",
+            "sha256": "aee5c639377d3973e0cdc5b908b16be37b53a59360b5e82e91802bc029d60217",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "log_acceptance_ratio": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-log_acceptance_ratio.tensor",
+            "sha256": "e0e07d3906a2c6c42c187fffc00d96ac44c769ecdc9bc0d0021ac9a81bdd7fc7",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-initial_potential.tensor",
+            "sha256": "31aae4107d80b87b8fd254844dd6184de243aa3c0fb67f3b072a02a49913f2f0",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_potential": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-final_potential.tensor",
+            "sha256": "aee5c639377d3973e0cdc5b908b16be37b53a59360b5e82e91802bc029d60217",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "initial_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-initial_kinetic.tensor",
+            "sha256": "8d46b7991c43197ccbb120146deaa727cb66fef8eb8e63a2d811a569251a0725",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "final_kinetic": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-final_kinetic.tensor",
+            "sha256": "685ae2cdf34ca2e28b87d7f6fa0854ed350a4b802ea3066e64c56583ea3d4503",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "delta_h": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-delta_h.tensor",
+            "sha256": "5eb0a48be3e2af9837a94952d10920a30adf26d5ae5a2586a8ae7c5cdca8ea02",
+            "dtype": "float64",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "accepted": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-accepted.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "finite_status": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-finite_status.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "divergence": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-divergence.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "force_fallback": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-force_fallback.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_call_count.tensor",
+            "sha256": "ddb7a947141dc106fb2db899dabe02bffcf86e52af91b63c43c5fada42e4dc3d",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "force_call_count": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-force_call_count.tensor",
+            "sha256": "71e9b12383258d88369c086e161d28ef6d1ae3d7dde47df911dd18e9fd47b667",
+            "dtype": "int32",
+            "shape": [
+              2
+            ]
+          },
+          "endpoint_status-value_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-value_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_valid": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-force_valid.tensor",
+            "sha256": "b0abce04310e9c5f2be25dcda6f1cd17dd19d3293102a2974513c18e117b53b1",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-outside_declared_support": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-outside_declared_support.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-value_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-value_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-force_failure_code": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-force_failure_code.tensor",
+            "sha256": "626119a03d90d024d0bee2eb37d7ba5b862a6c2ad23bf200c9f99f059c68f9e6",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_time": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-first_failure_time.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_stage": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-first_failure_stage.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-first_failure_particle": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-first_failure_particle.tensor",
+            "sha256": "56b2697a48d3dee9a374df5ff1c45ef75d27c72c77548528ad13293e328965db",
+            "dtype": "int32",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-numerical_failure": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-numerical_failure.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          },
+          "endpoint_status-coordinate_boundary_rounding": {
+            "path": "docs/plans/artifacts/surrogate-hmc-lgssm-force-reuse-20261012-01/lgssm/reuse-2-cached-endpoint_status-coordinate_boundary_rounding.tensor",
+            "sha256": "07a65b6a413fe5c46fa194a97d8ce53e48499321d2d513ea5648b3801e41fc41",
+            "dtype": "bool",
+            "shape": [
+              2,
+              4
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "evidence_role": "paired_mechanics_and_descriptive_cost",
+  "nonclaims": [
+    "no posterior convergence",
+    "no statistical speed ranking"
+  ],
+  "allocator": {
+    "current": 4100608,
+    "peak": 657293824
+  },
+  "posterior_sampling_complete": false
+}

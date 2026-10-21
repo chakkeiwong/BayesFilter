@@ -1,0 +1,89 @@
+{
+  "status": "INCOMPLETE_SEE_MODEL_RESULTS",
+  "started_utc": "2026-10-18T08:00:41.947744+00:00",
+  "pid": 4166669,
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-48h-extension-2026-10-18.md",
+  "models": {
+    "predator_prey": {
+      "status": "VERIFIED",
+      "returncode": 0,
+      "exit_code_observed": true,
+      "wall_seconds": 24242.537702436035,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/predator_prey-retry-01/predator_prey/inference/hmc.json"
+    },
+    "range_bearing": {
+      "status": "VERIFIED",
+      "returncode": 0,
+      "exit_code_observed": true,
+      "wall_seconds": 9134.71893985197,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/range_bearing-energy-resume-01/range_bearing/inference/hmc.json"
+    },
+    "sir_d18": {
+      "status": "BUDGET_EXHAUSTED",
+      "returncode": 2,
+      "exit_code_observed": true,
+      "wall_seconds": 118731.48038818501,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/sir_d18-energy-retry-01/sir_d18/inference/hmc.json"
+    }
+  },
+  "current_model": null,
+  "phase_started_monotonic": 340661.583394741,
+  "deadline_utc": "2026-10-20T08:00:41.921494+00:00",
+  "deadline_epoch": 1792483241.9214945,
+  "updated_utc": "2026-10-20T07:37:55.049054+00:00",
+  "consumed_worker_seconds_estimate": 161236.64535267995,
+  "remaining_worker_seconds_estimate": 11563.354647320055,
+  "unreserved_worker_seconds": 11563.354647320055,
+  "active_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+    "continue-advance",
+    "--model",
+    "sir_d18",
+    "--advance-root",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/literature-prior-other-four-advance-01",
+    "--campaign-ledger",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/budget.json",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/sir_d18-energy-retry-01",
+    "--budget-seconds",
+    "125497.27524614334",
+    "--per-model-timeout",
+    "125497.27524614334",
+    "--gpu",
+    "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "--priors",
+    "literature-model-priors-v1",
+    "--resume-manifest",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-60h-continuation-20261016-01/sir_d18/sir_d18/inference/public-tuning/manifest.json"
+  ],
+  "phase_budget_seconds": 125497.27524614334,
+  "prior_attempts": [
+    {
+      "model": "predator_prey",
+      "status": "STAGE_ERROR",
+      "returncode": 2,
+      "wall_seconds": 5.985564832983073,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/predator_prey/predator_prey/inference/hmc.json"
+    },
+    {
+      "model": "range_bearing",
+      "status": "HEALTH_VETO",
+      "returncode": null,
+      "exit_code_observed": false,
+      "wall_seconds": 9110.64069935499,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/range_bearing/range_bearing/inference/hmc.json"
+    },
+    {
+      "model": "sir_d18",
+      "status": "STAGE_ERROR",
+      "returncode": 2,
+      "exit_code_observed": true,
+      "wall_seconds": 11.282058018958196,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/sir_d18/sir_d18/inference/hmc.json"
+    }
+  ],
+  "queue_repair_plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-energy-warning-repair-2026-10-19.md",
+  "previous_supervisor_pid": 3835358,
+  "finished_utc": "2026-10-20T07:37:55.048931+00:00"
+}

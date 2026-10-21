@@ -1,0 +1,89 @@
+.F...                                                                    [100%]
+=================================== FAILURES ===================================
+________________ test_invalid_heuristic_keeps_primary_interval _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-196/test_invalid_heuristic_keeps_p0')
+
+    def test_invalid_heuristic_keeps_primary_interval(tmp_path):
+        args, rows = fixture(tmp_path)
+        next(r for r in rows if r["arm"] == "global_guide")["valid"] = False
+        result = report(args, rows)
+        assert result["complete"] and not result["heuristic_suite_complete"]
+        cell = result["cells"][0]
+        assert cell["primary_complete"] and cell["paired_95_student_interval"] is not None
+>       assert cell["heuristic_dominance"] == "incomplete_heuristic_screen"
+E       AssertionError: assert 'descriptive_...romotion_veto' == 'incomplete_heuristic_screen'
+E         
+E         - incomplete_heuristic_screen
+E         + descriptive_underperformance_promotion_veto
+
+tests/diagnostics/test_range_bearing_covariance_report.py:53: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{
+  "heldout_rows": 96,
+  "cells": [
+    {
+      "data_seed": 1704,
+      "point": 0,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    },
+    {
+      "data_seed": 1704,
+      "point": 1,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    },
+    {
+      "data_seed": 18020,
+      "point": 0,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    },
+    {
+      "data_seed": 18020,
+      "point": 1,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    },
+    {
+      "data_seed": 18021,
+      "point": 0,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    },
+    {
+      "data_seed": 18021,
+      "point": 1,
+      "verdict": "conditional_score_improvement_with_reference_sensitivity",
+      "paired_95_student_interval": [
+        -1.5000000000000002,
+        -1.4999999999999998
+      ],
+      "heuristic_dominance": "descriptive_underperformance_promotion_veto"
+    }
+  ]
+}
+=========================== short test summary info ============================
+FAILED tests/diagnostics/test_range_bearing_covariance_report.py::test_invalid_heuristic_keeps_primary_interval
+1 failed, 4 passed in 0.14s

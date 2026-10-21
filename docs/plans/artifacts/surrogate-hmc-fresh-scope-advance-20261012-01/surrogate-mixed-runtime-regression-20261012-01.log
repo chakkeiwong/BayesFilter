@@ -1,0 +1,41 @@
+.......F................................................................ [ 84%]
+.............                                                            [100%]
+=================================== FAILURES ===================================
+________________ test_actual_hmc_consumer_forwards_mixed_policy ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x756c18221610>
+
+    def test_actual_hmc_consumer_forwards_mixed_policy(monkeypatch):
+        monkeypatch.setattr(runtime,"N",64)
+        case=runtime.configure_precision(runtime.load_case("lgssm"),POLICY,20)
+        called=[]
+        def factory(spec,n,h,controls,dtype,**kwargs):
+            called.append((dtype,kwargs["precision_policy"]))
+            assert dtype==tf.float64 and kwargs["precision_policy"]==POLICY
+            def program(theta,obs,initial,innovations,uniforms,beta):
+                assert all(x.dtype==tf.float64 for x in (theta,obs,initial,innovations,uniforms,beta))
+                return dict(score=tf.ones_like(theta),valid=tf.ones([2],tf.bool),
+                            steps_completed=tf.fill([2],h))
+            return program
+        monkeypatch.setattr(runtime,"make_batched_score_filter",factory)
+        monkeypatch.setattr(runtime,"reference",lambda _: (lambda theta:(-tf.reduce_sum(theta*theta),tf.constant(True)),"test"))
+        components=runtime.bindings(case)
+        q=tf.zeros([4,case.p],tf.float64)
+>       result=components["force"](q)
+               ^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'FrozenPositionOnlyForce' object is not callable
+
+tests/test_surrogate_hmc_mixed_runtime.py:84: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_hmc_consumer_forwards_mixed_policy
+1 failed, 84 passed, 2 warnings in 205.09s (0:03:25)

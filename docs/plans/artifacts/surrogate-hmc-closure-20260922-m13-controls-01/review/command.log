@@ -1,0 +1,289 @@
+.............................FFF.....................................    [100%]
+=================================== FAILURES ===================================
+__________ test_stage_binds_selection_and_never_evaluates_claim[True] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-30/test_stage_binds_selection_and0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x744ec0e7ae90>
+stable = True
+
+    @pytest.mark.parametrize("stable", [True, False])
+    def test_stage_binds_selection_and_never_evaluates_claim(tmp_path, monkeypatch, stable):
+        calls = []
+        def factory(fixture, **kwargs):
+            calls.append((fixture.fixture_generation_seed, kwargs))
+            multiplier = kwargs["controls"]["reset_ridge"]/1e-5
+            def compile(batch, **flags):
+                assert batch == 9 and flags == dict(filter_moments=True, all_correction_diagnostics=True)
+                value = 1.+(.01 if stable else 10.)*multiplier
+                return lambda theta: _output(value=value)
+            return SimpleNamespace(manifest={"source_sha256": {}, "dtype": "float32"}, compile=compile)
+        monkeypatch.setattr(m13, "make_range_bearing_target", factory)
+>       result = m13.controls_stage(tmp_path/"report.json")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_controls.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_controls.py:142: in controls_stage
+    issue_selection(output=selection_path, scope=scope, evidence_paths=curves,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def issue_selection(*, output, scope, evidence_paths, partition_data_paths, source_hashes):
+        """Read saved measured curves; callers cannot stamp a selected index."""
+        if set(evidence_paths) != {"calibration", "validation"} or set(partition_data_paths) != set(evidence_paths):
+            raise ValueError("selection cannot consume claim data")
+        data = {p: json.loads(Path(path).read_text()) for p, path in partition_data_paths.items()}
+        attempt = scope.get("attempt")
+        model = scope.get("model")
+        if type(attempt) is not int or attempt < 1 or not isinstance(model, str) or not model:
+>           raise ValueError("explicit model and positive attempt required in tuning scope")
+E           ValueError: explicit model and positive attempt required in tuning scope
+
+bayesfilter/inference/surrogate_hmc_dctr_selection.py:61: ValueError
+----------------------------- Captured stdout call -----------------------------
+calibration 1.0 {'nominal': True, 'stress': True} 0.0025543310039211065
+calibration 0.1 {'nominal': True, 'stress': True} 0.0020909040031256154
+calibration 0.01 {'nominal': True, 'stress': True} 0.0020315809961175546
+calibration 0.001 {'nominal': True, 'stress': True} 0.002044263994321227
+validation 1.0 {'nominal': True, 'stress': True} 0.002368377012317069
+validation 0.1 {'nominal': True, 'stress': True} 0.0021679990022676066
+validation 0.01 {'nominal': True, 'stress': True} 0.0019588739960454404
+validation 0.001 {'nominal': True, 'stress': True} 0.0021596559963654727
+_________ test_stage_binds_selection_and_never_evaluates_claim[False] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-30/test_stage_binds_selection_and1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x744ec1021550>
+stable = False
+
+    @pytest.mark.parametrize("stable", [True, False])
+    def test_stage_binds_selection_and_never_evaluates_claim(tmp_path, monkeypatch, stable):
+        calls = []
+        def factory(fixture, **kwargs):
+            calls.append((fixture.fixture_generation_seed, kwargs))
+            multiplier = kwargs["controls"]["reset_ridge"]/1e-5
+            def compile(batch, **flags):
+                assert batch == 9 and flags == dict(filter_moments=True, all_correction_diagnostics=True)
+                value = 1.+(.01 if stable else 10.)*multiplier
+                return lambda theta: _output(value=value)
+            return SimpleNamespace(manifest={"source_sha256": {}, "dtype": "float32"}, compile=compile)
+        monkeypatch.setattr(m13, "make_range_bearing_target", factory)
+>       result = m13.controls_stage(tmp_path/"report.json")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_controls.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_controls.py:142: in controls_stage
+    issue_selection(output=selection_path, scope=scope, evidence_paths=curves,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def issue_selection(*, output, scope, evidence_paths, partition_data_paths, source_hashes):
+        """Read saved measured curves; callers cannot stamp a selected index."""
+        if set(evidence_paths) != {"calibration", "validation"} or set(partition_data_paths) != set(evidence_paths):
+            raise ValueError("selection cannot consume claim data")
+        data = {p: json.loads(Path(path).read_text()) for p, path in partition_data_paths.items()}
+        attempt = scope.get("attempt")
+        model = scope.get("model")
+        if type(attempt) is not int or attempt < 1 or not isinstance(model, str) or not model:
+>           raise ValueError("explicit model and positive attempt required in tuning scope")
+E           ValueError: explicit model and positive attempt required in tuning scope
+
+bayesfilter/inference/surrogate_hmc_dctr_selection.py:61: ValueError
+----------------------------- Captured stdout call -----------------------------
+calibration 1.0 {'nominal': True, 'stress': True} 0.002312587996129878
+calibration 0.1 {'nominal': True, 'stress': True} 0.0017884420085465536
+calibration 0.01 {'nominal': True, 'stress': True} 0.0019414489943301305
+calibration 0.001 {'nominal': True, 'stress': True} 0.0019412990077398717
+validation 1.0 {'nominal': True, 'stress': True} 0.0021951060043647885
+validation 0.1 {'nominal': True, 'stress': True} 0.001948170000105165
+validation 0.01 {'nominal': True, 'stress': True} 0.0020814649906242266
+validation 0.001 {'nominal': True, 'stress': True} 0.0020269129890948534
+_____________ test_master_reserves_new_stage_without_reopening_lg1 _____________
+
+    def test_master_reserves_new_stage_without_reopening_lg1():
+        from bayesfilter.inference import surrogate_hmc_closure_program as program
+        jobs = program.jobs("m13-controls")
+        assert [row["name"] for row in jobs] == ["review", "m13-controls"]
+        assert jobs[1]["device"] == "gpu"
+        assert jobs[1]["plan"] == m13.PLAN
+        assert "tests/test_surrogate_hmc_m13_controls.py" in jobs[0]["command"]
+        cap = program.remaining_pass_reservation([], "m13-controls")
+        assert sum(j["cpu"] for j in jobs) <= cap["cpu_worker_seconds"]
+        assert jobs[1]["timeout"] <= cap["gpu_seconds"]
+        with pytest.raises(ValueError, match="separate bounded pass"):
+>           program.jobs("m13-controls,m13-consumer")
+
+tests/test_surrogate_hmc_m13_controls.py:95: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+selected = 'm13-controls,m13-consumer'
+
+    def jobs(selected=None):
+        worker = [sys.executable, "-m", "bayesfilter.testing.surrogate_hmc_closure_diagnostics"]
+        available = [dict(name="review", dependencies=[], device="cpu", timeout=240., cpu=300.,
+                     command=[sys.executable, "-m", "pytest", "-q", "tests/test_surrogate_hmc_closure_program.py",
+                              "tests/test_wrapped_gaussian_tf.py", "tests/test_surrogate_hmc_structural_scope.py",
+                              "tests/test_surrogate_hmc_range_bearing_scope.py", "tests/test_surrogate_hmc_program.py",
+                              "tests/test_surrogate_hmc_dependency_execution.py"]),
+                dict(name="wrapped", dependencies=["review"], device="gpu", timeout=120., cpu=150., command=worker+["--stage", "wrapped"]),
+                dict(name="structural", dependencies=["review"], device="cpu", timeout=120., cpu=150., command=worker+["--stage", "structural"]),
+                dict(name="uncertainty", dependencies=["review"], device="gpu", timeout=3000., cpu=1650., command=worker+["--stage", "uncertainty"]),
+                dict(name="uncertainty-confirmation", dependencies=["review"], device="gpu", timeout=3000., cpu=1650.,
+                     command=worker+["--stage", "uncertainty-confirmation"]),
+                dict(name="structural-integration", dependencies=["review"], device="gpu", timeout=1200., cpu=900.,
+                     command=worker+["--stage", "structural-integration"]),
+                dict(name="ar2-reference", dependencies=["review"], device="gpu", timeout=600., cpu=300.,
+                     command=worker+["--stage", "ar2-reference"]),
+                dict(name="ar2-reference-extended", dependencies=["review"], device="gpu", timeout=600., cpu=300.,
+                     command=worker+["--stage", "ar2-reference-extended"]),
+                dict(name="ar2-controls", dependencies=["review"], device="gpu", timeout=1500., cpu=900.,
+                     command=worker+["--stage", "ar2-controls"]),
+                dict(name="ar2-cost", dependencies=["review"], device="gpu", timeout=900., cpu=600.,
+                     command=worker+["--stage", "ar2-cost"]),
+                dict(name="ar2-calibration", dependencies=["review"], device="gpu", timeout=2700., cpu=1500.,
+                     command=worker+["--stage", "ar2-calibration"]),
+                dict(name="ar2-calibration-confirm", dependencies=["review"], device="gpu", timeout=1100., cpu=650.,
+                     command=worker+["--stage", "ar2-calibration-confirm"]),
+                dict(name="ar2-calibration-repair", dependencies=["review"], device="gpu", timeout=1500., cpu=900.,
+                     command=worker+["--stage", "ar2-calibration-repair"]),
+                dict(name="ar2-calibration-repair-r2", dependencies=["review"], device="gpu", timeout=1500., cpu=900.,
+                     command=worker+["--stage", "ar2-calibration-repair-r2"]),
+                dict(name="ar2-profile", dependencies=["review"], device="gpu", timeout=600., cpu=450.,
+                     command=worker+["--stage", "ar2-profile"]),
+                dict(name="ar2-kernel-repair", dependencies=["review"], device="gpu", timeout=600., cpu=450.,
+                     command=worker+["--stage", "ar2-kernel-repair"]),
+                dict(name="ar2-inference-b", dependencies=["review"], device="gpu", timeout=22500., cpu=21000.,
+                     max_timeout_seconds=22500.,
+                     command=worker+["--stage", "ar2-inference-b"]),
+                dict(name="ar2-inference-a", dependencies=["review"], device="gpu", timeout=3400., cpu=3200.,
+                     command=worker+["--stage", "ar2-inference-a"]),
+                dict(name="ar2-finite-preflight", dependencies=["review"], device="gpu", timeout=900., cpu=600.,
+                     command=worker+["--stage", "ar2-finite-preflight"]),
+                dict(name="ar2-finite-localize", dependencies=["review"], device="gpu", timeout=1500., cpu=1000.,
+                     command=worker+["--stage", "ar2-finite-localize"]),
+                dict(name="m13-reference", dependencies=["review"], device="gpu", timeout=2400., cpu=1800.,
+                     command=worker+["--stage", "m13-reference"]),
+                dict(name="m13-reference-guided", dependencies=["review"], device="gpu", timeout=2400., cpu=1800.,
+                     command=worker+["--stage", "m13-reference-guided"]),
+                dict(name="m13-reference-trajectory", dependencies=["review"], device="gpu", timeout=2400., cpu=1800.,
+                     command=worker+["--stage", "m13-reference-trajectory"]),
+                dict(name="m13-consumer", dependencies=["review"], device="gpu", timeout=1200., cpu=1000.,
+                     command=worker+["--stage", "m13-consumer"]),
+                dict(name="m13-consumer-localize", dependencies=["review"], device="gpu", timeout=1800., cpu=1200.,
+                     command=worker+["--stage", "m13-consumer-localize"]),
+                dict(name="m13-consumer-parity", dependencies=["review"], device="gpu", timeout=1200., cpu=900.,
+                     command=worker+["--stage", "m13-consumer-parity"]),
+                dict(name=M13_CONSUMER_REPAIR, dependencies=["review"], device="gpu", timeout=1200., cpu=900.,
+                     command=worker+["--stage", M13_CONSUMER_REPAIR], plan=M13_REPAIR_PLAN),
+                dict(name="m13-controls", dependencies=["review"], device="gpu", timeout=3300., cpu=2100.,
+                     command=worker+["--stage", "m13-controls"], plan=M13_CONTROLS_PLAN)]
+        for index, name in enumerate(M13_REPEAT_CASES):
+            dependency = "review" if index == 0 else M13_REPEAT_CASES[index-1]
+            available.append(dict(name=name, dependencies=[dependency], device="gpu", timeout=300., cpu=300.,
+                                  command=worker+["--stage", name], plan=M13_REPEAT_PLAN))
+        available.append(dict(name=M13_REPEAT_SUMMARY, dependencies=list(M13_REPEAT_CASES),
+                              device="cpu", timeout=60., cpu=60.,
+                              command=worker+["--stage", M13_REPEAT_SUMMARY], plan=M13_REPEAT_PLAN))
+        names = (set(M13_REPEAT_STAGES) if selected == "m13-repeatability" else
+                 set(selected.split(",")) if selected else {"review", "wrapped", "structural", "uncertainty"})
+        if not names or not names <= {row["name"] for row in available}:
+            raise ValueError("unknown or empty closure stage selection")
+        if {"uncertainty", "uncertainty-confirmation"} <= names:
+            raise ValueError("run the fresh confirmation after inspecting and preserving the initial calibration")
+        names.add("review")
+        references = names & {"ar2-reference", "ar2-reference-extended"}
+        if references:
+            if len(references) != 1 or names != {"review", *references}:
+                raise ValueError("inspect the AR2 reference before a separate bounded refinement")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                        "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_ar2_reference.py"])
+        if "ar2-controls" in names:
+            if names != {"review", "ar2-controls"}:
+                raise ValueError("AR2 controls require a separate inspected reference prerequisite")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                        "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_ar2_consumer.py"])
+        if names & {"ar2-cost", "ar2-profile"}:
+            if len(names) != 2:
+                raise ValueError("inspect AR2 cost before allocating inference")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                        "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_scoped_assessment.py"])
+        if names & {"ar2-calibration", "ar2-calibration-confirm", "ar2-calibration-repair", "ar2-calibration-repair-r2"}:
+            if len(names) != 2:
+                raise ValueError("inspect scoped uncertainty before allocating posterior chains")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_scoped_assessment.py",
+                "tests/test_surrogate_hmc_ar2_calibration.py"])
+            if names & {"ar2-calibration-repair", "ar2-calibration-repair-r2"}:
+                available[0]["command"] += ["tests/test_surrogate_hmc_ar2_assessment.py"]
+        if "structural-integration" in names:
+            if names != {"review", "structural-integration"}:
+                raise ValueError("the structural integration pass has a separate bounded reservation")
+            available[0].update(timeout=600., cpu=750.)
+            available[0]["command"] += ["tests/test_ledh_structural_innovation.py",
+                                        "tests/highdim/test_ledh_canonical_score_full.py",
+                                        "tests/highdim/test_ledh_numerical_safety_tf.py"]
+        if "ar2-kernel-repair" in names:
+            if names != {"review", "ar2-kernel-repair"}:
+                raise ValueError("inspect kernel non-harm before scoped requalification")
+            available[0].update(timeout=300., cpu=300., command=[sys.executable, "-m", "pytest", "-q",
+                "tests/test_surrogate_hmc_closure_program.py", "tests/highdim/test_ledh_small_matrix_tf.py",
+                "tests/highdim/test_ledh_numerical_safety_tf.py", "tests/test_ledh_structural_innovation.py",
+                "tests/highdim/test_ledh_canonical_score_full.py"])
+        if names & {"ar2-inference-b", "ar2-inference-a"}:
+            if len(names) != 2:
+                raise ValueError("AR2 inference arms require a separate focused prerequisite review")
+            available[0].update(timeout=300., cpu=200., command=[sys.executable, "-m", "pytest", "-q",
+                "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_ar2_inference.py",
+                "tests/test_hmc_tensorflow_verified.py", "tests/test_surrogate_hmc_ar2_assessment.py",
+                "tests/test_surrogate_hmc_program.py"])
+        if names & {"ar2-finite-preflight", "ar2-finite-localize"}:
+            if len(names) != 2:
+                raise ValueError("inspect one finite-target diagnostic stage at a time")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_ar2_finite.py",
+                "tests/test_surrogate_hmc_ar2_consumer.py"])
+    
+        if names & {"m13-reference", "m13-reference-guided", "m13-reference-trajectory"}:
+            if len(names) != 2:
+                raise ValueError("M13 reference requires a separate focused review")
+            available[0].update(timeout=180., cpu=180., command=[sys.executable, "-m", "pytest", "-q",
+                "tests/test_surrogate_hmc_closure_program.py", "tests/test_surrogate_hmc_m13_reference.py",
+                "tests/test_wrapped_gaussian_tf.py", "tests/test_surrogate_hmc_range_bearing_scope.py"])
+        if names & {*M13_CONSUMER_STAGES, M13_CONSUMER_REPAIR}:
+            if len(names) != 2:
+>               raise ValueError("M13 consumer requires a separate focused review")
+E               ValueError: M13 consumer requires a separate focused review
+
+bayesfilter/inference/surrogate_hmc_closure_program.py:320: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_master_reserves_new_stage_without_reopening_lg1():
+        from bayesfilter.inference import surrogate_hmc_closure_program as program
+        jobs = program.jobs("m13-controls")
+        assert [row["name"] for row in jobs] == ["review", "m13-controls"]
+        assert jobs[1]["device"] == "gpu"
+        assert jobs[1]["plan"] == m13.PLAN
+        assert "tests/test_surrogate_hmc_m13_controls.py" in jobs[0]["command"]
+        cap = program.remaining_pass_reservation([], "m13-controls")
+        assert sum(j["cpu"] for j in jobs) <= cap["cpu_worker_seconds"]
+        assert jobs[1]["timeout"] <= cap["gpu_seconds"]
+>       with pytest.raises(ValueError, match="separate bounded pass"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'separate bounded pass'
+E         Actual message: 'M13 consumer requires a separate focused review'
+
+tests/test_surrogate_hmc_m13_controls.py:94: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_controls.py::test_stage_binds_selection_and_never_evaluates_claim[True]
+FAILED tests/test_surrogate_hmc_m13_controls.py::test_stage_binds_selection_and_never_evaluates_claim[False]
+FAILED tests/test_surrogate_hmc_m13_controls.py::test_master_reserves_new_stage_without_reopening_lg1
+3 failed, 66 passed, 2 warnings in 17.81s

@@ -1,0 +1,152 @@
+{
+  "schema": "surrogate_hmc_master_document_validation_v1",
+  "classification": "documentation_and_source_symbol_checks_only",
+  "timestamp_utc": "2026-09-18T05:40:17.699920+00:00",
+  "workspace": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "execution": "Python standard library only; no TensorFlow/NumPy imports, GPU detection, numerical experiment or Claude invocation",
+  "documents": {
+    "surrogate-hmc-all-models-master-program-2026-09-18.md": {
+      "lines": 947,
+      "words": 9882,
+      "sha256": "d8f305666874b9a2110d6cb0051d34bdf3125e612dc101eda086e7237153a8d4",
+      "local_link_count": 42
+    },
+    "surrogate-hmc-all-models-master-review-2026-09-18.md": {
+      "lines": 150,
+      "words": 2037,
+      "sha256": "b39add1c32b2f00d281c070f69a8b7ab749638d08b058b70e5c8586adea3af83",
+      "local_link_count": 11
+    },
+    "surrogate-hmc-all-models-claude-handoff-2026-09-18.md": {
+      "lines": 108,
+      "words": 913,
+      "sha256": "2fdac4621964a5862eaf0ee189ea2e73c3c50eaddee1ce29ad77348bb11275b8",
+      "local_link_count": 3
+    }
+  },
+  "master_sections": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13
+  ],
+  "minimum_register_identifiers": [
+    "M01",
+    "M02",
+    "M03",
+    "M04",
+    "M05",
+    "M06",
+    "M07",
+    "M08",
+    "M09",
+    "M10",
+    "M11",
+    "M12",
+    "M13",
+    "M14",
+    "C01",
+    "C02",
+    "C03"
+  ],
+  "coverage_limit": "Identifier consistency only; complete repository scope closure remains P0 work.",
+  "allocation_rows": [
+    {
+      "stage": "P0 scope closure / manifest preparation",
+      "gpu_hours": "0",
+      "cpu_worker_hours": "1"
+    },
+    {
+      "stage": "P1 shared consumer / controlled-force checks",
+      "gpu_hours": "1",
+      "cpu_worker_hours": "1"
+    },
+    {
+      "stage": "P2 LG1 inference and one repair",
+      "gpu_hours": "3",
+      "cpu_worker_hours": "1"
+    },
+    {
+      "stage": "P3 reference-feasible models and controls",
+      "gpu_hours": "12",
+      "cpu_worker_hours": "3"
+    },
+    {
+      "stage": "P4 broader families and references",
+      "gpu_hours": "18",
+      "cpu_worker_hours": "4"
+    },
+    {
+      "stage": "P5 replication and declared scale scopes",
+      "gpu_hours": "20",
+      "cpu_worker_hours": "3"
+    },
+    {
+      "stage": "Shared repair reserve and P6 analysis",
+      "gpu_hours": "9",
+      "cpu_worker_hours": "2"
+    }
+  ],
+  "proposed_total": {
+    "gpu_hours": "63",
+    "cpu_worker_hours": "15"
+  },
+  "conservative_remainder": {
+    "gpu_hours": "63.56869373160305259166666667",
+    "cpu_worker_hours": "15.10159964243250725833333333"
+  },
+  "accounting_sources": [
+    "docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/run-accounting.json",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/run-manifest.json",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/run-manifest.json"
+  ],
+  "source_symbol_lines": {
+    "bayesfilter/inference/neural_force_hmc.py": {
+      "FrozenPositionOnlyForce": 104,
+      "FrozenTargetPotential": 142,
+      "PositionOnlyForceEvaluation": 44,
+      "TargetPotentialEvaluation": 50,
+      "bind_neural_force_hmc_tuning_runner": 1190,
+      "neural_force_proposal": 467,
+      "neural_force_hmc_transition": 603
+    },
+    "bayesfilter/inference/hmc_tuning_dispatch.py": {
+      "tune_hmc_kernel": 29
+    },
+    "tests/test_neural_force_hmc.py": {
+      "test_typed_binding_v2_builds_tensor_kernel_for_honestly_labeled_field": 129,
+      "test_proposal_with_momentum_flip_is_an_involution": 218,
+      "test_full_energy_trace_and_cached_endpoint_call_count": 250,
+      "test_omitted_kinetic_rule_fails_known_swap_counterexample": 277,
+      "test_batch_permutation_replay_shape_and_dtype": 409
+    }
+  },
+  "force_semantic_constants": {
+    "POSITION_ONLY_FORCE_SEMANTICS": "position_only_scalar_potential_gradient",
+    "DETERMINISTIC_POSITION_ONLY_PROPOSAL_FIELD_SEMANTICS": "deterministic_position_only_proposal_field"
+  },
+  "force_wrapper_default": "POSITION_ONLY_FORCE_SEMANTICS",
+  "not_established": [
+    "end-to-end consumer correctness",
+    "full model coverage closure",
+    "reference qualification",
+    "GPU/XLA validity",
+    "posterior accuracy",
+    "all-model compute feasibility"
+  ],
+  "failures": [
+    "missing link: surrogate-hmc-all-models-master-review-2026-09-18.md: artifacts/surrogate-hmc-master-20260918-01/validation.json"
+  ],
+  "status": "FAIL"
+}

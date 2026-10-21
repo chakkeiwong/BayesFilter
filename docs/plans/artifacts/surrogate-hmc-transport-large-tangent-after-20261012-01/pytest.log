@@ -1,0 +1,109 @@
+..................................F.                                     [100%]
+=================================== FAILURES ===================================
+_____________ test_packed_transport_large_common_offsets[262144.0] _____________
+
+tangent_offset = 262144.0
+
+    @pytest.mark.parametrize("tangent_offset", [2048., 262144.])
+    def test_packed_transport_large_common_offsets(tangent_offset):
+        # Distance derivatives must be invariant to common position AND tangent
+        # offsets. Direct differences provide the independent arithmetic reference.
+        p,b,n,d=3,2,32,3
+        controls=ProposalControls(reset_steps=5,reset_epsilon=.5)
+        x=tf.random.stateless_normal([b,n,d],[11,7],dtype=tf.float32)+tf.constant(4096.)
+        dx=tf.random.stateless_normal([p,b,n,d],[13,7],dtype=tf.float32)+tf.constant(tangent_offset)
+        lw=tf.nn.log_softmax(tf.random.stateless_normal([b,n],[17,7]),axis=-1)
+        dlw=tf.random.stateless_normal([p,b,n],[19,7])
+        dlw-=tf.reduce_sum(tf.exp(lw)[None]*dlw,-1,keepdims=True)
+        @tf.function(input_signature=[tf.TensorSpec(x.shape,x.dtype),tf.TensorSpec(dx.shape,dx.dtype),tf.TensorSpec(lw.shape,lw.dtype),tf.TensorSpec(dlw.shape,dlw.dtype)],jit_compile=True,autograph=False)
+        def actual(x,dx,lw,dlw):
+            y,_,_=transport(Jet(x,dx),Jet(lw,dlw),controls)
+            return y.v,y.t
+        value,tangent=actual(x,dx,lw,dlw)
+        for bi in range(b):
+            for pi in range(p):
+                expected,derivative,_,_=_dense_reset_transport(tf.cast(x[bi],tf.float64),tf.cast(dx[pi,bi],tf.float64),tf.cast(lw[bi],tf.float64),tf.cast(dlw[pi,bi],tf.float64),controls)
+                expected=tf.cast(expected,tf.float32); derivative=tf.cast(derivative,tf.float32)
+                tf.debugging.assert_near(value[bi],expected,atol=.02,rtol=1e-6)
+                # A relative tolerance on the common shift would hide cancellation.
+>               tf.debugging.assert_near(tangent[pi,bi]-tangent_offset,
+                                         derivative-tangent_offset,atol=.08,rtol=1e-5)
+
+tests/highdim/test_covariance_proposal_packed_score.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = <tf.Tensor: shape=(), dtype=bool, numpy=False>
+data = ['', 'x and y not equal to tolerance rtol = tf.Tensor(1e-05, shape=(), dtype=float32), atol = tf.Tensor(0.08, shape=()...6875,  0.34375 ],
+       [-0.640625, -1.      ,  0.09375 ],
+       [-0.671875,  0.6875  , -0.8125  ]], dtype=float32)>]
+summarize = None, name = None
+
+    @tf_export("debugging.Assert", "Assert")
+    @dispatch.add_dispatch_support
+    @tf_should_use.should_use_result
+    def Assert(condition, data, summarize=None, name=None):
+      """Asserts that the given condition is true.
+    
+      If `condition` evaluates to false, print the list of tensors in `data`.
+      `summarize` determines how many entries of the tensors to print.
+    
+      Args:
+        condition: The condition to evaluate.
+        data: The tensors to print out when condition is false.
+        summarize: Print this many entries of each tensor.
+        name: A name for this operation (optional).
+    
+      Returns:
+        assert_op: An `Operation` that, when executed, raises a
+        `tf.errors.InvalidArgumentError` if `condition` is not true.
+        @compatibility(eager)
+        returns None
+        @end_compatibility
+    
+      Raises:
+        @compatibility(TF1)
+        When in TF V1 mode (that is, outside `tf.function`) Assert needs a control
+        dependency on the output to ensure the assertion executes:
+    
+      ```python
+      # Ensure maximum element of x is smaller or equal to 1
+      assert_op = tf.Assert(tf.less_equal(tf.reduce_max(x), 1.), [x])
+      with tf.control_dependencies([assert_op]):
+        ... code using x ...
+      ```
+    
+        @end_compatibility
+      """
+      if context.executing_eagerly():
+        if not condition:
+          xs = ops.convert_n_to_tensor(data)
+          data_str = [_summarize_eager(x, summarize) for x in xs]
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message="Expected '%s' to be true. Summarized data: %s" %
+              (condition, "\n".join(data_str)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''
+E         b'x and y not equal to tolerance rtol = tf.Tensor(1e-05, shape=(), dtype=float32), atol = tf.Tensor(0.08, shape=(), dtype=float32)'
+E         b'x (shape=(32, 3) dtype=float32) = '
+E         2.1875, -1.90625, 1.34375, ...
+E         b'y (shape=(32, 3) dtype=float32) = '
+E         2.1875, -1.90625, 1.34375, ...
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/control_flow_assert.py:102: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_packed_score.py::test_packed_transport_large_common_offsets[262144.0]
+1 failed, 35 passed, 2 warnings in 71.46s (0:01:11)

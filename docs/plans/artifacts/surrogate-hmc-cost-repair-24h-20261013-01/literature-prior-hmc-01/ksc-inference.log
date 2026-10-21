@@ -1,0 +1,33 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792058249.771678  493900 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1792058249.774543  493900 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792058249.781127  493900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792058249.781174  493900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792058249.781180  493900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792058249.781182  493900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1792058252.311694  493900 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792058252.691557  493900 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792058253.703510  493900 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+2026-10-15 18:02:53.116060: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_33935__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.595965] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-15 18:03:46.115608: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m52.999652152s
+
+********************************
+[Compiling module a_inference_run_33935__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.595965] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792060092.388635  493900 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5a60460901c0
+HMC sequential {'warmup': 250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1000, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 0} RUNNING {'bulk': [1.007872500506227, 1.0043967709772192], 'folded': [1.0023197885751252, 1.012005212724476], 'maximum': [1.007872500506227, 1.012005212724476]}
+HMC sequential {'warmup': 2000, 'verification': 250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1000} VERIFIED {'bulk': [1.0054562213479292, 1.0059978913954408], 'folded': [1.0030423027226387, 1.0007006961288096], 'maximum': [1.0054562213479292, 1.0059978913954408]}

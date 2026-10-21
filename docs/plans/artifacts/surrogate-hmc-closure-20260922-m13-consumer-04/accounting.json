@@ -1,0 +1,65 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 141.50456,
+    "gpu_seconds": 100.60203428800014
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 35810.338525,
+    "gpu_seconds": 33507.6772886668
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_consumer.py",
+        "tests/test_wrapped_gaussian_tf.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_m13_reference.py",
+        "tests/highdim/test_ledh_canonical_batch_fused.py::test_all_computed_correction_diagnostics_reach_batch_consumer"
+      ],
+      "cpu_allowance_seconds": 240.0,
+      "cpu_worker_seconds": 18.527822999999998,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 240.0,
+      "wall_seconds": 18.271138592997886
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-consumer-parity",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-consumer-04/m13-consumer-parity/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 900.0,
+      "cpu_worker_seconds": 122.755862,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 100.60203428800014,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 1200.0,
+      "wall_seconds": 100.60203428800014
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 35668.833965,
+    "gpu_seconds": 33407.0752543788
+  }
+}

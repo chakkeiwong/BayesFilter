@@ -1,0 +1,351 @@
+{
+  "status": "CONSUMER_PARITY_PASS_COST_MEASURED",
+  "scope": {
+    "model": "ksc",
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 1,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 60,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        1.5,
+        0.0
+      ],
+      "scales": [
+        0.5,
+        0.5
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection_hash": "11a711c8b8667232591dcd4a88eb09ad6fd721a811d7441630c89182bb34f694",
+  "positions": [
+    [
+      -0.15,
+      -0.15
+    ],
+    [
+      -0.05,
+      -0.05
+    ],
+    [
+      0.05,
+      0.05
+    ],
+    [
+      0.15,
+      0.15
+    ]
+  ],
+  "measurements": [
+    {
+      "name": "explicit_B2_full_output",
+      "cold_compile_execute_seconds": 12.262158158933744,
+      "warmed_seconds": [
+        4.856255335034803,
+        4.860792289953679
+      ],
+      "allocator": {
+        "current": 2661632,
+        "peak": 271097344
+      },
+      "output": {
+        "value": [
+          -111.82833862304688,
+          -111.96360778808594
+        ],
+        "score": [
+          [
+            -2.092902421951294,
+            -0.5353227257728577
+          ],
+          [
+            -2.0716795921325684,
+            -0.7010592818260193
+          ]
+        ],
+        "valid": [
+          true,
+          true
+        ],
+        "steps_completed": [
+          50,
+          50
+        ]
+      }
+    },
+    {
+      "name": "explicit_B2_score_projection",
+      "cold_compile_execute_seconds": 10.130513862008229,
+      "warmed_seconds": [
+        4.493685201043263,
+        4.5961824781261384
+      ],
+      "allocator": {
+        "current": 2663424,
+        "peak": 271312896
+      },
+      "output": {
+        "score": [
+          [
+            -2.092902421951294,
+            -0.5353227257728577
+          ],
+          [
+            -2.0716795921325684,
+            -0.7010592818260193
+          ]
+        ],
+        "valid": [
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "actual_force_B2_closed_inputs",
+      "cold_compile_execute_seconds": 12.601809345185757,
+      "warmed_seconds": [
+        4.555795353138819,
+        4.543420617002994
+      ],
+      "allocator": {
+        "current": 2665472,
+        "peak": 271312896
+      },
+      "output": {
+        "force": [
+          [
+            0.896451210975647,
+            0.11766136288642884
+          ],
+          [
+            0.9858397960662841,
+            0.30052964091300965
+          ]
+        ],
+        "force_valid": [
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "actual_force_B4_in_B2_groups",
+      "cold_compile_execute_seconds": 15.032846202841029,
+      "warmed_seconds": [
+        9.678499950096011,
+        9.067910893121734
+      ],
+      "allocator": {
+        "current": 2666496,
+        "peak": 271312896
+      },
+      "output": {
+        "force": [
+          [
+            0.896451210975647,
+            0.11766136288642884
+          ],
+          [
+            0.9858397960662841,
+            0.30052964091300965
+          ],
+          [
+            1.0607399225234986,
+            0.4715700924396515
+          ],
+          [
+            1.1247924208641051,
+            0.6329986393451691
+          ]
+        ],
+        "force_valid": [
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    },
+    {
+      "name": "independent_endpoint_B4",
+      "cold_compile_execute_seconds": 0.5205670797731727,
+      "warmed_seconds": [
+        0.052527655148878694,
+        0.052158288890495896
+      ],
+      "allocator": {
+        "current": 2668544,
+        "peak": 271312896
+      },
+      "output": {
+        "potential": [
+          111.79215671333772,
+          111.90710541018078,
+          112.04833937947804,
+          112.2133932016076
+        ],
+        "status": {
+          "value_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "force_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "numerical_failure": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "outside_declared_support": [
+            false,
+            false,
+            false,
+            false
+          ]
+        }
+      }
+    },
+    {
+      "name": "diagnostic_native_B4_full_output",
+      "cold_compile_execute_seconds": 21.71913001104258,
+      "warmed_seconds": [
+        9.34391210298054,
+        9.283915349049494
+      ],
+      "allocator": {
+        "current": 2917376,
+        "peak": 539788544
+      },
+      "output": {
+        "value": [
+          -111.82833862304688,
+          -111.96360778808594,
+          -112.104736328125,
+          -112.24938201904297
+        ],
+        "score": [
+          [
+            -2.092902421951294,
+            -0.5353227257728577
+          ],
+          [
+            -2.0716795921325684,
+            -0.7010592818260193
+          ],
+          [
+            -2.021479845046997,
+            -0.843140184879303
+          ],
+          [
+            -1.9495848417282104,
+            -0.9659972786903381
+          ]
+        ],
+        "valid": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "steps_completed": [
+          50,
+          50,
+          50,
+          50
+        ]
+      }
+    }
+  ],
+  "scaled_gaps": {
+    "B2_projection": 0.0,
+    "B2_force": 0.0,
+    "B2_B4_grouped_force": 0.0,
+    "B4_force": 0.0,
+    "B2_B4_score": 0.0
+  },
+  "lane_health": {
+    "B2_direct": true,
+    "B2_projection": true,
+    "B2_force": true,
+    "B4_grouped_force": true,
+    "B4_endpoint": true,
+    "B4_direct": true
+  },
+  "posterior_sampling_complete": false,
+  "evidence_role": "same_input_consumer_cost_localization",
+  "nonclaims": [
+    "no statistical speed ranking",
+    "no posterior convergence",
+    "B4 is diagnostic only and requires new scope tuning for HMC"
+  ],
+  "healthy": true,
+  "long_chain_cost_model": {
+    "status": "DESCRIPTIVE_L1_COST_MODEL",
+    "role": "explanatory_timing_only",
+    "initial_force_seconds": 9.373205421608873,
+    "force_seconds_per_transition": 9.373205421608873,
+    "endpoint_seconds_per_transition": 0.052342972019687295,
+    "modeled_seconds_per_four_chain_transition": 9.42554839362856,
+    "modeled_2000_transition_hours_including_one_initial_force": 5.239019442410758,
+    "long_chain_rate_measured": false,
+    "warmup_lower_bound_established": false,
+    "limitations": "Fixed-position timings, few repeats, L=1 only; no adaptation, tuned trajectory length, changing-position costs or convergence claim."
+  }
+}

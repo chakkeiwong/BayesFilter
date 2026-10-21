@@ -1,0 +1,291 @@
+{
+  "schema": "bayesfilter.five_model_hmc_campaign.v1",
+  "status": "INCOMPLETE_SEE_MODEL_STATUS",
+  "started_utc": "2026-10-10T18:38:33.788336+00:00",
+  "particles": 4032,
+  "dtype": "float32",
+  "tf32": false,
+  "horizons": {
+    "lgssm": 50,
+    "ksc": 50,
+    "predator_prey": 50,
+    "sir_d18": 50,
+    "range_bearing": 20
+  },
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-n4032-master-2026-10-11.md",
+  "prior_choice": null,
+  "through_phase": "filter-tuning",
+  "wall_budget_seconds": 3000.0,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_surrogate_hmc_five_model_master.py",
+    "campaign",
+    "--through",
+    "filter-tuning",
+    "--budget-seconds",
+    "3000",
+    "--gpu",
+    "1",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04"
+  ],
+  "audit": {
+    "status": "PASS_READINESS_ONLY",
+    "particle_count": 4032,
+    "models": [
+      "lgssm",
+      "ksc",
+      "predator_prey",
+      "sir_d18",
+      "range_bearing"
+    ],
+    "horizons": {
+      "lgssm": 50,
+      "ksc": 50,
+      "predator_prey": 50,
+      "sir_d18": 50,
+      "range_bearing": 20
+    },
+    "dtype": "float32",
+    "tf32": false,
+    "chunk": {
+      "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "num_particles": 4032,
+      "row_chunk_size": 2016,
+      "col_chunk_size": 2016,
+      "row_blocks": 2,
+      "col_blocks": 2
+    },
+    "hmc_public_tuner": "bayesfilter.inference.hmc_tuning_dispatch.tune_hmc_kernel",
+    "hmc_position_field_authority": "conditional_mechanics_only",
+    "surrogate_force_endpoint_separation": "required_not_yet_admitted"
+  },
+  "models": {
+    "lgssm": {
+      "endpoint-audit": {
+        "status": "STAGE_ERROR",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "lgssm",
+          "--phase",
+          "endpoint-audit",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/lgssm/endpoint-audit",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:38:36.397973+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/lgssm-endpoint-audit.log",
+        "runtime_estimate": null,
+        "returncode": 1,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/lgssm/endpoint-audit/endpoint-audit.json",
+        "wall_seconds": 5.083109779981896,
+        "finished_utc": "2026-10-10T18:38:41.481633+00:00"
+      },
+      "filter-tuning": {
+        "status": "PREREQUISITE_REPAIR_REQUIRED",
+        "reason": "preserve failed evidence; do not promote invalid endpoint/filter/mechanics"
+      }
+    },
+    "ksc": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "ksc",
+          "--phase",
+          "endpoint-audit",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc/endpoint-audit",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:38:41.482672+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc-endpoint-audit.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc/endpoint-audit/endpoint-audit.json",
+        "wall_seconds": 5.9815600391011685,
+        "finished_utc": "2026-10-10T18:38:47.464885+00:00"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "ksc",
+          "--phase",
+          "filter-tuning",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc/filter-tuning",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:39:33.103897+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc-filter-tuning.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/ksc/filter-tuning/filter-selection.json",
+        "wall_seconds": 65.35282708401792,
+        "finished_utc": "2026-10-10T18:40:38.457431+00:00"
+      }
+    },
+    "predator_prey": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "predator_prey",
+          "--phase",
+          "endpoint-audit",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey/endpoint-audit",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:38:47.465680+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey-endpoint-audit.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey/endpoint-audit/endpoint-audit.json",
+        "wall_seconds": 14.108501742128283,
+        "finished_utc": "2026-10-10T18:39:01.574868+00:00"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "predator_prey",
+          "--phase",
+          "filter-tuning",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey/filter-tuning",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:40:38.458528+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey-filter-tuning.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/predator_prey/filter-tuning/filter-selection.json",
+        "wall_seconds": 96.26502059190534,
+        "finished_utc": "2026-10-10T18:42:14.724249+00:00"
+      }
+    },
+    "sir_d18": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "sir_d18",
+          "--phase",
+          "endpoint-audit",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18/endpoint-audit",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:39:01.575791+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18-endpoint-audit.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18/endpoint-audit/endpoint-audit.json",
+        "wall_seconds": 15.669724547071382,
+        "finished_utc": "2026-10-10T18:39:17.246144+00:00"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "sir_d18",
+          "--phase",
+          "filter-tuning",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18/filter-tuning",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:42:14.725206+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18-filter-tuning.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/sir_d18/filter-tuning/filter-selection.json",
+        "wall_seconds": 430.26865332201123,
+        "finished_utc": "2026-10-10T18:49:24.994435+00:00"
+      }
+    },
+    "range_bearing": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "range_bearing",
+          "--phase",
+          "endpoint-audit",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/endpoint-audit",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:39:17.247191+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing-endpoint-audit.log",
+        "runtime_estimate": null,
+        "returncode": 0,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/endpoint-audit/endpoint-audit.json",
+        "wall_seconds": 15.854065546067432,
+        "finished_utc": "2026-10-10T18:39:33.101993+00:00"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "range_bearing",
+          "--phase",
+          "filter-tuning",
+          "--output",
+          "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/filter-tuning",
+          "--gpu",
+          "1"
+        ],
+        "started_utc": "2026-10-10T18:49:24.995427+00:00",
+        "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing-filter-tuning.log",
+        "runtime_estimate": null,
+        "returncode": 2,
+        "result": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/filter-tuning/filter-selection.json",
+        "wall_seconds": 105.71598723693751,
+        "finished_utc": "2026-10-10T18:51:10.712010+00:00"
+      }
+    }
+  },
+  "wall_seconds": 756.9279028521851,
+  "remaining_wall_seconds": 2243.0720967748202,
+  "completed_models": [],
+  "finished_utc": "2026-10-10T18:51:10.716223+00:00",
+  "scientific_default_promoted": false
+}

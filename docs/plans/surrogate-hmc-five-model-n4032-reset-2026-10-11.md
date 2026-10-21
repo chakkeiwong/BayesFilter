@@ -37,9 +37,15 @@ integrated and its focused checks passed. The integration record is
 surrogate-hmc-git-integration-2026-10-21.md, with preserved check logs under
 artifacts/surrogate-hmc-closeout-20261021-01/integration/.
 
-Current authorized action: commit the checked remote merge, push main normally,
-fast-forward this branch, and verify both worktrees clean with main, origin/main
-and this branch identical. No GPU work is running or launched by this closeout.
-After synchronization, the next research work is the existing SIR NeuTra Phase 1
-adapter/update plan under an explicit bounded follow-on execution plan; the
-five-model objective must not be relabeled as fully achieved.
+Repository integration is complete. Remote merge e0ded6482 passed all three
+oracle hook tests (138.16 seconds), was pushed normally to origin/main, and was
+fast-forwarded into this branch. Direct remote lookup and local checks confirmed
+main, origin/main and this branch identical, with both worktrees clean. The
+following documentation and evidence commit records that observed outcome and
+explicitly includes scientific records otherwise omitted by JSON/log ignore
+rules. Its exact file inventory is preserved in the integration artifact.
+
+No compute task is active or launched by this closeout. The next research work
+is the existing SIR NeuTra Phase 1 adapter/update plan under an explicit bounded
+follow-on execution plan; the five-model objective remains incomplete. Do not
+repeat the finished Git integration or silently start another GPU allocation.

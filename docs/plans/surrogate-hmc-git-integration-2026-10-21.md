@@ -59,10 +59,29 @@ Commands, environment, timings, and preserved logs are in
 [the integration validation record](artifacts/surrogate-hmc-closeout-20261021-01/integration/validation.json).
 The original branch validation remains in the parent artifact directory.
 
-The remaining delivery actions are the remote-merge commit (with its oracle
-hook), ordinary push to origin/main, fast-forward of the work branch, and a
-final check of both worktrees and remote refs. These happen after this record
-is written; the final user report supplies their observed outcome.
+## Observed delivery outcome
+
+Remote merge `e0ded648228fef93ab27e492b3d5292449b3c94d` passed all three
+oracle hook tests in 138.16 seconds. An ordinary push advanced origin/main
+from `3eb9462d3` to this commit, and the work branch fast-forwarded to it.
+`git ls-remote origin refs/heads/main` independently confirmed the remote hash.
+Local main, origin/main and `ledh-graceful-failure-execution-20260917` matched;
+both worktrees were clean, including untracked-file checks. All five requested
+closeout steps were completed. The following documentation and evidence commit
+records this observed outcome and is synchronized through the same ordinary
+push and fast-forward process. No numerical code or recorded campaign values
+change in that update.
+
+A final tracked-link check found that the global JSON/log ignore rules had
+omitted supporting records even though ordinary Git status was clean. The
+closeout therefore explicitly adds 7,468 existing scientific evidence files
+(715,347,768 bytes before Git compression) from the campaign directories already
+included in `091ee89bc`, including the referenced terminal HMC records and all
+integration logs. The
+[evidence index](artifacts/surrogate-hmc-closeout-20261021-01/integration/preserved-evidence-index.json)
+records their exact paths. Compiler/cache files, process files and LaTeX
+intermediates remain ignored. These archived records preserve original outcomes;
+they do not turn historical results into current promotion evidence.
 
 The strongest integration risk was silent loss of one side's behavior despite
 a clean textual merge. The executable backward-guide failures and both public

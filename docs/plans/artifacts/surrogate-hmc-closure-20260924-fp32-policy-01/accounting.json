@@ -1,0 +1,89 @@
+{
+  "charged": {
+    "cpu_worker_seconds": 70.064439,
+    "gpu_seconds": 0.0
+  },
+  "charged_this_run": {
+    "cpu_worker_seconds": 70.082926292,
+    "gpu_seconds": 0.0
+  },
+  "external_charges": [
+    {
+      "cpu_worker_seconds": 0.018487292,
+      "gpu_seconds": 0.0,
+      "reason": "Prior postprocessing not previously in master accounting; charged once here",
+      "source": "docs/plans/artifacts/surrogate-hmc-m13-materiality-20260924-01/run-manifest.json"
+    }
+  ],
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_repeatability.py",
+        "tests/test_surrogate_hmc_m13_consumer.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_dependency_execution.py"
+      ],
+      "cpu_allowance_seconds": 150.0,
+      "cpu_worker_seconds": 31.369028999999998,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 30.28279191700858
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260924-fp32-policy-01/reassess.py"
+      ],
+      "cpu_allowance_seconds": 45.0,
+      "cpu_worker_seconds": 3.785722,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 60.0,
+      "wall_seconds": 5.005858926000656
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_repeatability.py",
+        "tests/test_surrogate_hmc_m13_consumer.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_dependency_execution.py"
+      ],
+      "cpu_allowance_seconds": 100.0,
+      "cpu_worker_seconds": 34.909687999999996,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 120.0,
+      "wall_seconds": 35.28867008400266
+    }
+  ],
+  "limits": {
+    "cpu_worker_seconds": 180.0,
+    "gpu_seconds": 1.0
+  }
+}

@@ -1,0 +1,49 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791539038.893662  781164 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791539038.898667  781164 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791539038.908073  781164 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791539038.908165  781164 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791539038.908173  781164 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791539038.908175  781164 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791539041.251119  781164 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791539041.615526  781164 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x621689f48e50
+I0000 00:00:1791539045.138736  781164 cuda_dnn.cc:529] Loaded cuDNN version 92000
+I0000 00:00:1791539057.911125  781164 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 490, in <module>
+    main()
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 476, in main
+    check(args, tf, dtype)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 218, in check
+    previous = old_result(compile_filter(spec, args.particles, controls(0), MARGINAL_WEIGHT_POLICY_ID, dtype), theta, obs, fixed)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 174, in old_result
+    result = clean(program(theta, base, noise, reset, obs))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 165, in evaluate
+    value, score, status = canonical_batch_fused_value_score(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 440, in canonical_batch_fused_value_score
+    values,scores,diagnostics = _map_evaluations(
+                                ^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 42, in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 408, in evaluate_row
+    values,scores,direction_status = _map_evaluations(
+                                     ^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 42, in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 366, in evaluate_direction
+    result = canonical_value_and_analytical_score(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 1076, in canonical_value_and_analytical_score
+    return _value_and_analytical_score_impl(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 237, in _value_and_analytical_score_impl
+    raise ValueError("unsupported importance_weight_policy")
+ValueError: unsupported importance_weight_policy

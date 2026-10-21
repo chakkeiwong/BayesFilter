@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "timestamp": "2026-09-30T20:54:47.678843+00:00",
+  "question": "continue frozen M13 surrogate HMC from saved attempt 2",
+  "checked": {
+    "unchanged_numerical_functions": true,
+    "unchanged_result_writer": true,
+    "public_tuner_call_chain": true,
+    "skip_nomination_and_warmup": true,
+    "exact_seed_state_and_diagnostic_resume_equivalence": true,
+    "checksum_and_state_corruption_rejection": true,
+    "real_tensorflow_xla_tuner_resume_and_reload": true,
+    "retained_sample_cap_and_calibration_prefix": true,
+    "supervisor_exit_receipt": true,
+    "gpu_archive_binding_replay": true,
+    "memory_growth": true
+  },
+  "cpu_logs": [
+    "cpu-tests-01/command.log",
+    "cpu-tests-02/command.log",
+    "cpu-tests-03/command.log",
+    "cpu-tests-04/command.log"
+  ],
+  "failures_repaired": [
+    "selection source migration recognized after numerical audit",
+    "synthetic tensor dtype metadata",
+    "new baseline predicate restored to original healthy-but-unqualified comparator requirement"
+  ],
+  "budget": {
+    "start": "2026-09-30T19:37:42Z",
+    "deadline": "2026-10-01T10:37:42Z",
+    "wall_seconds": 54000,
+    "post_warmup_per_chain_max": 20000
+  },
+  "limits": [
+    "no convergence guarantee",
+    "RWM comparator not posterior-qualified",
+    "fixed approximate endpoint",
+    "all-model campaign incomplete"
+  ],
+  "next_action": "launch scripts/run_surrogate_hmc_resume.py execute; continuation belongs to existing master"
+}

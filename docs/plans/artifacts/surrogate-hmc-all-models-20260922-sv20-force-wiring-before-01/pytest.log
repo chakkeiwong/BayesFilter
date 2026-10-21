@@ -1,0 +1,63 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+___ test_worker_checks_original_force_before_posterior_functionals[healthy] ____
+tests/test_surrogate_hmc_sv_force_guard.py:93: in test_worker_checks_original_force_before_posterior_functionals
+    assert row["chunks"][0]["original_force_health"]["passed"] is (scenario != "original_force_failure")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'original_force_health'
+----------------------------- Captured stdout call -----------------------------
+B TUNING_PASSED
+B CHUNK 1
+B CHUNK 2
+B CHUNK 3
+B LOOK 1000 EQUIVALENT
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790025250.689977       5 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790025250.694054       5 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790025250.704336       5 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790025250.704401       5 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790025250.704403       5 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790025250.704404       5 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-22 05:14:13.910687: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (100)
+------------------------------ Captured log call -------------------------------
+WARNING  matplotlib:__init__.py:541 /home/chakwong/.config/matplotlib is not a writable directory
+WARNING  matplotlib:__init__.py:554 Matplotlib created a temporary cache directory at /tmp/matplotlib-4sa2msc0 because there was an issue with the default path (/home/chakwong/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+_ test_worker_checks_original_force_before_posterior_functionals[original_force_failure] _
+tests/test_surrogate_hmc_sv_force_guard.py:90: in test_worker_checks_original_force_before_posterior_functionals
+    assert calls == dict(chunks=1, functionals=0, looks=0)
+E   AssertionError: assert {'chunks': 4,...4, 'looks': 1} == {'chunks': 1,...0, 'looks': 0}
+E     
+E     Differing items:
+E     {'looks': 1} != {'looks': 0}
+E     {'chunks': 4} != {'chunks': 1}
+E     {'functionals': 4} != {'functionals': 0}
+E     Use -v to get more diff
+----------------------------- Captured stdout call -----------------------------
+B TUNING_PASSED
+B CHUNK 1
+B CHUNK 2
+B CHUNK 3
+B LOOK 1000 EQUIVALENT
+_ test_worker_checks_original_force_before_posterior_functionals[generic_failure] _
+tests/test_surrogate_hmc_sv_force_guard.py:93: in test_worker_checks_original_force_before_posterior_functionals
+    assert row["chunks"][0]["original_force_health"]["passed"] is (scenario != "original_force_failure")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'original_force_health'
+----------------------------- Captured stdout call -----------------------------
+B TUNING_PASSED
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_sv_force_guard.py::test_worker_checks_original_force_before_posterior_functionals[healthy]
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_sv_force_guard.py::test_worker_checks_original_force_before_posterior_functionals[healthy]
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_sv_force_guard.py::test_worker_checks_original_force_before_posterior_functionals[healthy]
+FAILED tests/test_surrogate_hmc_sv_force_guard.py::test_worker_checks_original_force_before_posterior_functionals[original_force_failure]
+FAILED tests/test_surrogate_hmc_sv_force_guard.py::test_worker_checks_original_force_before_posterior_functionals[generic_failure]
+3 failed, 2 warnings in 3.74s

@@ -1,0 +1,71 @@
+.........F........                                                       [100%]
+=================================== FAILURES ===================================
+_____________ test_unfinished_warmup_continues_without_restarting ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-18/test_unfinished_warmup_continu0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d7f301934d0>
+
+    def test_unfinished_warmup_continues_without_restarting(tmp_path, monkeypatch):
+        cfg, run, calls = mechanics(monkeypatch)
+        interrupted = tmp_path/"warmup-interrupted"
+        interrupted.mkdir()
+        partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+            source_root=tmp_path, records=[], output_root=interrupted,
+            permit_new=lambda phase,count:len(calls)<1, run_new=run)
+        assert partial["status"] == "BUDGET_EXHAUSTED"
+        assert partial["counts"] == dict(warmup=2, verification=0)
+        assert not partial["warmup_ready"]
+        resumed_dir = tmp_path/"warmup-resumed"
+        resumed_dir.mkdir()
+        resumed = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+            source_root=interrupted, records=partial["chunks"],
+            output_root=resumed_dir, run_new=run)
+        continued_calls = copy.deepcopy(calls)
+        assert len(continued_calls) == 8
+        calls.clear()
+        whole_dir = tmp_path/"whole"
+        whole_dir.mkdir()
+        whole = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+            source_root=tmp_path, records=[], output_root=whole_dir, run_new=run)
+        assert resumed["status"] == whole["status"] == "VERIFIED"
+        assert resumed["events"] == whole["events"]
+        assert resumed["used_seeds"] == whole["used_seeds"]
+        assert continued_calls == calls
+        for phase in ("warmup", "verification"):
+>           got = combined_chunks(resumed[phase])
+                                  ^^^^^^^^^^^^^^
+E           KeyError: 'warmup'
+
+tests/test_hmc_tensorflow_resume.py:171: KeyError
+----------------------------- Captured stdout call -----------------------------
+HMC resumed sequence {'warmup': 2, 'verification': 0} RUNNING None
+HMC resumed sequence {'warmup': 2, 'verification': 0} BUDGET_EXHAUSTED None
+HMC resumed sequence {'warmup': 2, 'verification': 0} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 0} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 2} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 4} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 6} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 8} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 10} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 12} VERIFIED {'maximum': [1.0, 1.0]}
+HMC resumed sequence {'warmup': 2, 'verification': 0} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 0} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 2} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 4} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 6} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 8} RUNNING {'maximum': [1.02, 1.02]}
+HMC resumed sequence {'warmup': 4, 'verification': 10} RUNNING None
+HMC resumed sequence {'warmup': 4, 'verification': 12} VERIFIED {'maximum': [1.0, 1.0]}
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_tensorflow_resume.py::test_unfinished_warmup_continues_without_restarting
+1 failed, 17 passed, 2 warnings in 16.38s

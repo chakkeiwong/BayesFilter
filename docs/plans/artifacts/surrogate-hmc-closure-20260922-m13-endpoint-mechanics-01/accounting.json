@@ -1,0 +1,62 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 169.74193999999997,
+    "gpu_seconds": 56.597425869011204
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 46453.541627292,
+    "gpu_seconds": 35889.581024092855
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_endpoint_mechanics.py",
+        "tests/test_neural_force_hmc.py"
+      ],
+      "cpu_allowance_seconds": 180.0,
+      "cpu_worker_seconds": 11.592310000000001,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 11.76837104500737
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-endpoint-mechanics",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-endpoint-mechanics-01/m13-endpoint-mechanics/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 500.0,
+      "cpu_worker_seconds": 158.02882499999998,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 1,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 56.597425869011204,
+      "max_timeout_seconds": 14400,
+      "status": "FAILED",
+      "timeout_seconds": 1200.0,
+      "wall_seconds": 56.597425869011204
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 46283.799687292,
+    "gpu_seconds": 35832.983598223844
+  }
+}

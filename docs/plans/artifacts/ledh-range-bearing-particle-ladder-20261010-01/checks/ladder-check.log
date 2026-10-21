@@ -1,0 +1,25 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791574464.506094 1330210 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791574464.508943 1330210 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791574464.516594 1330210 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791574464.516654 1330210 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791574464.516661 1330210 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791574464.516663 1330210 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791574466.636008 1330210 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 588, in <module>
+    main()
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py", line 572, in main
+    repair_checks(args, tf, dtype)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/range_bearing_particle_ladder.py", line 62, in repair_checks
+    dense, tiled = small(x, dx, lw, dlw)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/range_bearing_particle_ladder.py", line 56, in small
+    tiled_sinkhorn_barycentres(x, dx, lw, dlw, ctl))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/covariance_proposal_transport_tf.py", line 66, in tiled_sinkhorn_barycentres
+    _, gamma, dgamma, alpha, dalpha = tf.while_loop(
+                                      ^^^^^^^^^^^^^^
+ValueError: Input tensor `zeros_1:0` enters the loop with shape (32,), but has shape (None,) after one iteration. To allow the shape to vary across iterations, use the `shape_invariants` argument of tf.while_loop to specify a less-specific shape.

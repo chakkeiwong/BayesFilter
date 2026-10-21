@@ -1,0 +1,65 @@
+{
+  "status": "REVIEW_PASS",
+  "tests": 159,
+  "test_log": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/accepted-ot-refresh-tests.log",
+  "plan": "docs/plans/surrogate-hmc-accepted-ot-continuation-2026-10-15.md",
+  "source_sha256": {
+    "scripts/run_surrogate_hmc_performance_repair.py": "103801b7af208ce9746211e77ecc59b6d41612592796ab396f5c073b1c9873d0",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "59587e6dd61a7da1b2645576d52646b2486f6ee158520fd6fddda26f0281c9d8",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "3bd4a904a41689cdf754f1ca2dc46ddfd91c539a1f2b2989f2bc6503ae04787d",
+    "tests/test_surrogate_hmc_performance_repair.py": "7ced3c575c464bdd767ec327e4275bef4a5fed577761a1980264d027bae9de28",
+    "tests/test_surrogate_hmc_five_model_master.py": "46292f99cbcebd0e7a97dacbeee1f9d7872b02aacfdfaaabb1e00f22426f28d4"
+  },
+  "scopes": {
+    "lgssm": {
+      "contraction": "direct",
+      "tuning_timeout_seconds": 2400,
+      "runtime_precision": "uniform",
+      "tuning_seed_offset": 100,
+      "control_family": "fixed_epsilon1_steps5"
+    },
+    "ksc": {
+      "contraction": "direct",
+      "tuning_timeout_seconds": 2400,
+      "runtime_precision": "uniform",
+      "tuning_seed_offset": 100,
+      "control_family": "fixed_epsilon1_steps5"
+    },
+    "predator_prey": {
+      "contraction": "matrix",
+      "tuning_timeout_seconds": 2400,
+      "runtime_precision": "uniform",
+      "tuning_seed_offset": 100,
+      "control_family": "fixed_epsilon1_steps5"
+    },
+    "sir_d18": {
+      "contraction": "direct",
+      "tuning_timeout_seconds": 2400,
+      "runtime_precision": "fp64_recursion_fp32_pairs",
+      "tuning_seed_offset": 100,
+      "control_family": "fixed_epsilon1_steps5"
+    },
+    "range_bearing": {
+      "contraction": "direct",
+      "tuning_timeout_seconds": 2400,
+      "runtime_precision": "uniform",
+      "tuning_seed_offset": 100,
+      "control_family": "fixed_epsilon1_steps5"
+    }
+  },
+  "findings_repaired": [
+    "stale October11 control baseline replaced by explicit latest-controls warm start",
+    "fixed OT family now reaches worker and scope tuner",
+    "campaign phase pointer refreshed automatically"
+  ],
+  "evidence_limits": [
+    "CPU tests are wiring/mechanics evidence only",
+    "GPU scientific results pending",
+    "no posterior or canonical promotion"
+  ],
+  "execution": "LAUNCHED",
+  "launch_manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/accepted-ot-scope-advance-01.launch.json",
+  "gpu_probe": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/accepted-ot-gpu-probe.json",
+  "confirmed_live_pid": 88183,
+  "confirmed_utc": "2026-10-14T19:03:53.429821+00:00"
+}

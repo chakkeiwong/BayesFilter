@@ -1,0 +1,49 @@
+{
+  "chart": "bounded logistic chart, uniform prior and Jacobian once",
+  "chunk_extent": 1024,
+  "comparisons": {
+    "B_vs_R": "NOT_RUN",
+    "C_vs_D": "NOT_RUN",
+    "C_vs_R": "NOT_RUN",
+    "D_vs_R": "NOT_RUN"
+  },
+  "controls_status": "unselected_hypothesis",
+  "data_partition": "calibration_validation",
+  "data_replicate": 0,
+  "endpoint": "same-law FP64 matrix Kalman posterior",
+  "family": "M01",
+  "force": "full canonical analytical DCTR; frozen imperfect proposal field",
+  "horizon": 20,
+  "id": "M01-LG2-T20-N1024-attempt1",
+  "inference_attempt": 1,
+  "law": "stationary x0; F=a*[[.7,.2],[.1,.6]], Q=exp(2*b)*[[1,.3],[.3,.8]], H=I, R=.5*I",
+  "mechanics_only": false,
+  "model": "LG2",
+  "parameter_dimension": 2,
+  "parameters": [
+    "a",
+    "b"
+  ],
+  "particle_count": 1024,
+  "precision": {
+    "endpoint": "float64",
+    "force": "float32",
+    "force_tf32": true,
+    "integrator": "float64",
+    "jit_compile": true,
+    "reference": "float64"
+  },
+  "prior": "independent Uniform(.5,1.2) and Uniform(-1,1)",
+  "remaining": [
+    "scoped control calibration",
+    "complete inference cost forecast",
+    "public tuning",
+    "retained inference"
+  ],
+  "stage": "P3-LG2-controls",
+  "state_dimension": 2,
+  "truth": [
+    1.0,
+    0.0
+  ]
+}

@@ -143,3 +143,10 @@ The initial main merge passed 103 distinct focused tests, including two new
 backward-guidance failure regressions; the remote integration passed 82 focused
 tests. The [integration record](surrogate-hmc-git-integration-2026-10-21.md)
 records the conflict resolutions, environment repair, commands and evidence.
+
+Repository closeout was completed at merge `e0ded6482`: main incorporated both
+the work branch and newer origin/main, the normal push succeeded, and this
+branch was synchronized. Direct remote and local checks confirmed identical
+refs and clean worktrees. A following documentation and evidence update records
+that outcome and explicitly includes scientific records omitted by the global
+JSON/log ignore rules; the integration record lists the preserved files.

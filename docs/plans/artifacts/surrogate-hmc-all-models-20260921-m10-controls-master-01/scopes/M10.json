@@ -1,0 +1,19 @@
+{
+  "chart": "identity log-noise scales",
+  "family": "M10",
+  "horizon": 2,
+  "id": "M10-T2",
+  "law": "x=a*xprev+.2*sin(xprev)+sigma_Q*epsilon; y=H*x+.12*x^2+sigma_R*eta",
+  "parameter_dimension": 2,
+  "parameters": [
+    "lambda_Q",
+    "lambda_R"
+  ],
+  "plan": "docs/plans/surrogate-hmc-nonlinear-reference-2026-09-20.md",
+  "posterior_reference_qualified": true,
+  "prior": "independent Normal(0,log(2)^2)",
+  "role": "reference_and_consumer_preparation",
+  "stage": "P3-M10-controls",
+  "state_dimension": 1,
+  "surrogate_hmc_tested": false
+}

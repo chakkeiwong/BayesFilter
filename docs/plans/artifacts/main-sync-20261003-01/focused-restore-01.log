@@ -1,0 +1,27 @@
+
+==================================== ERRORS ====================================
+____________ ERROR collecting tests/test_hmc_tensorflow_verified.py ____________
+tests/test_hmc_tensorflow_verified.py:56: in <module>
+    {"nomination":dataclasses.replace(nomination(), use_xla=False)},
+                                      ^^^^^^^^^^^^
+tests/test_hmc_tensorflow_verified.py:18: in nomination
+    return TensorFlowHMCKernelTuningConfig(
+<string>:29: in __init__
+    ???
+bayesfilter/inference/hmc_tensorflow_tuning.py:298: in __post_init__
+    raise ValueError("evidence_role must be diagnostic_only or candidate")
+E   ValueError: evidence_role must be diagnostic_only or candidate
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_hmc_tensorflow_verified.py - ValueError: evidence_role must ...
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+2 warnings, 1 error in 5.00s
