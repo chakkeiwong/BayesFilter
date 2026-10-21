@@ -271,3 +271,40 @@ def test_unsupported_guide_combinations_fail_at_both_endpoints(integrated, extra
             fixture["initial_states"], fixture["initial_covariances"], fixture["noises"],
             fixture["observations"], with_score=True, backward_guide=_mixture(), **options,
         )
+
+
+@pytest.mark.parametrize("failure", ["guide_validity", "guide_tangent"])
+def test_guided_proposal_preserves_split_failure_status(integrated, monkeypatch, failure):
+    """A merged guided lane must retain value/force failure separation."""
+    from bayesfilter.highdim import ledh_backward_guide_tf as guide_module
+
+    fixture, _ = integrated
+    original = guide_module.guided_gaussian_draw
+
+    def failing_draw(*args, **kwargs):
+        values = list(original(*args, **kwargs))
+        if failure == "guide_validity":
+            # Finite arithmetic must not conceal the guide's invalidity flag.
+            values[-1] = tf.constant(False)
+        else:
+            # A failed derivative does not invalidate the finite scalar value.
+            values[3] = tf.fill(tf.shape(values[3]), tf.constant(float("nan"), DTYPE))
+        return tuple(values)
+
+    monkeypatch.setattr(guide_module, "guided_gaussian_draw", failing_draw)
+    theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
+    direction = tf.constant([0.4, -0.3, 0.2, 0.5], DTYPE)
+    value, score, status = shared_score._value_and_analytical_score_impl(
+        _parameterized_model(theta, direction), theta,
+        fixture["initial_states"], fixture["initial_covariances"], fixture["noises"],
+        fixture["observations"], with_score=True, return_status=True,
+        backward_guide=_mixture(), **fixture["options"],
+    )
+    assert not bool(status["force_valid"])
+    assert bool(tf.reduce_all(tf.math.is_finite(score)))
+    if failure == "guide_validity":
+        assert not bool(status["value_valid"])
+        assert float(value) == float("-inf")
+    else:
+        assert bool(status["value_valid"])
+        assert bool(tf.math.is_finite(value))

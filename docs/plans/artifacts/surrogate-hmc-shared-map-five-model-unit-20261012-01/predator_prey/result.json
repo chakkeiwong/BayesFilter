@@ -1,0 +1,494 @@
+{
+  "status": "PASS",
+  "model": "predator_prey",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "predator_prey",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-shared-map-five-model-unit-20261012-01/predator_prey",
+    "--gpu",
+    "0",
+    "--batch-size",
+    "2",
+    "--paired-repeats",
+    "0",
+    "--offset",
+    "0.0",
+    "--unit",
+    "--unit-horizon",
+    "2",
+    "--correction-steps",
+    "0"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-12T00:35:54.832562+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "459917fe4980e4490fcb2c7f4f85e25c4a47c72f306e98df65ef5396dec2575c",
+    "covariance_proposal_score_tf.py": "a68bc0a1405af3e0668ee0ad95e4f2b5e2a75b5507f45bb26c2c20d21a830ebb",
+    "covariance_proposal_score_batch_tf.py": "aa97ccc5ae6c7ca15314fbecb4ce641da6a1ccb3f9d8eac26187cc7b080b5e9e",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "source_snapshot": "docs/plans/artifacts/surrogate-hmc-shared-map-five-model-unit-20261012-01/predator_prey/source",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "source_dependency_sha256": {
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "4327067be1eea4c52f7c1c22155a9faaa1b500e32f0cfa88713ac8a7acba603d",
+    "bayesfilter/highdim/analytical_jet_tf.py": "459917fe4980e4490fcb2c7f4f85e25c4a47c72f306e98df65ef5396dec2575c",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "a68bc0a1405af3e0668ee0ad95e4f2b5e2a75b5507f45bb26c2c20d21a830ebb",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "aa97ccc5ae6c7ca15314fbecb4ce641da6a1ccb3f9d8eac26187cc7b080b5e9e",
+    "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+    "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+  },
+  "particles": 64,
+  "horizon": 2,
+  "parameter_count": 6,
+  "state_dimension": 2,
+  "observation_dimension": 2,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 2,
+    "reset_steps": 4,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.8999999761581421,
+    0.0
+  ],
+  "offset": 0.0,
+  "data_sha256": "5798daf584595804a87dbfc620a49fc1c992289724b2b240b7431971e4eabb37",
+  "gpu_devices": [],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "batch_size": 2,
+  "new_first_call_seconds": 17.021525077987462,
+  "trace_fields": [
+    "log_increment",
+    "score_increment",
+    "ess",
+    "max_weight",
+    "max_prior_proposal_ratio",
+    "reset_mean_error",
+    "reset_covariance_relative_error",
+    "reset_margin",
+    "guide_margin",
+    "map_margin",
+    "correction_displacement",
+    "moment_loss_before",
+    "moment_loss_after",
+    "valid",
+    "sinkhorn_row_error",
+    "reset_displacement",
+    "sinkhorn_column_error",
+    "correction_coordinate_displacement"
+  ],
+  "candidate": {
+    "value": [
+      -11.522123736129931,
+      -11.790884862193181
+    ],
+    "score": [
+      [
+        -37.240079658708865,
+        -0.45289556989651225,
+        -0.04324730463767562,
+        6.422138232152842,
+        4.2618157539558075,
+        -5.959719225357689
+      ],
+      [
+        -40.10262365174479,
+        -0.48541885536093377,
+        -0.04542263722237163,
+        6.895582809250074,
+        4.39665924190198,
+        -6.147053488701451
+      ]
+    ],
+    "score_trace": [
+      [
+        [
+          -18.628259056844534,
+          -0.14242988907461251,
+          -0.03128321716597487,
+          2.394995740984405,
+          4.165448244086556,
+          -5.791916439099752
+        ],
+        [
+          -18.611820601864334,
+          -0.31046568082189974,
+          -0.011964087471700757,
+          4.027142491168437,
+          0.09636750986925188,
+          -0.16780278625793665
+        ]
+      ],
+      [
+        [
+          -20.004407155042763,
+          -0.15217696290404986,
+          -0.03207860816227085,
+          2.559451354549262,
+          4.1983910392137025,
+          -5.842452084113469
+        ],
+        [
+          -20.09821649670203,
+          -0.3332418924568839,
+          -0.013344029060100779,
+          4.336131454700812,
+          0.19826820268827733,
+          -0.30460140458798296
+        ]
+      ]
+    ],
+    "trace": [
+      [
+        [
+          -6.348737503100081,
+          -18.628259056844534,
+          58.289166235209855,
+          0.018268902637607727,
+          9.99882352103212,
+          0.0,
+          4.0224953849961674e-16,
+          0.4546305921785884,
+          0.9562827560528093,
+          0.9763161328028938,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.01676562717287399,
+          1.1635680598931735,
+          1.1102230246251565e-15,
+          0.0
+        ],
+        [
+          -5.1733862330298495,
+          -18.611820601864334,
+          60.65812756369687,
+          0.017511676278176305,
+          9.857778861025622,
+          2.842170943040401e-14,
+          1.2370457058764935e-15,
+          0.7592338976404198,
+          0.7558283491144931,
+          0.8555611903476384,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.01128799038816279,
+          0.38645391317856226,
+          6.661338147750939e-16,
+          0.0
+        ]
+      ],
+      [
+        [
+          -6.451284592370842,
+          -20.004407155042763,
+          58.22741657063995,
+          0.01825490879900651,
+          9.999054552725257,
+          2.842170943040401e-14,
+          8.309010398039421e-16,
+          0.44808003017009884,
+          0.9556948950928155,
+          0.9759932690268196,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.017027472327016346,
+          1.2058408658175856,
+          1.5543122344752192e-15,
+          0.0
+        ],
+        [
+          -5.339600269822338,
+          -20.09821649670203,
+          60.47311359665784,
+          0.01757707461309175,
+          9.90095323532051,
+          1.4210854715202004e-14,
+          6.260651917186469e-16,
+          0.7529070844744784,
+          0.7562353435990378,
+          0.8558516740157721,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.010605004827615937,
+          0.3940978555670592,
+          1.1102230246251565e-15,
+          0.0
+        ]
+      ]
+    ],
+    "valid": [
+      true,
+      true
+    ],
+    "steps_completed": [
+      2,
+      2
+    ]
+  },
+  "final_particle_tangent_max_abs": [
+    [
+      35.59643746763389,
+      0.5600743767056364,
+      0.06986397715801675,
+      9.704501746769154,
+      13.77587324357034,
+      18.161796636269226
+    ],
+    [
+      35.899388987678876,
+      0.5505210451955245,
+      0.09878890698975325,
+      9.613534653777378,
+      18.15208102853657,
+      23.97225751058052
+    ]
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "score_trace_absolute_error": [
+    [
+      [
+        1.0658141036401503e-14,
+        5.551115123125783e-17,
+        6.938893903907228e-18,
+        8.881784197001252e-16,
+        0.0,
+        8.881784197001252e-16
+      ],
+      [
+        1.8829382497642655e-13,
+        1.609823385706477e-15,
+        1.2836953722228372e-16,
+        1.687538997430238e-14,
+        7.868705687030797e-15,
+        1.0380585280245214e-14
+      ]
+    ],
+    [
+      [
+        7.105427357601002e-15,
+        0.0,
+        0.0,
+        0.0,
+        2.6645352591003757e-15,
+        2.6645352591003757e-15
+      ],
+      [
+        2.4158453015843406e-13,
+        1.942890293094024e-15,
+        6.245004513516506e-17,
+        2.1316282072803006e-14,
+        4.618527782440651e-14,
+        3.730349362740526e-14
+      ]
+    ]
+  ],
+  "analytical_implementation_parity_pass": true,
+  "finite_difference_score": [
+    [
+      -37.24007963494813,
+      -0.4528955697821794,
+      -0.043247304624571825,
+      6.422138232498042,
+      4.261815752393261,
+      -5.959719221682035
+    ],
+    [
+      -40.102623628524015,
+      -0.48541885524397577,
+      -0.045422637243389165,
+      6.895582808841282,
+      4.396659240413214,
+      -6.147053485072717
+    ]
+  ],
+  "finite_difference_error": [
+    [
+      2.3760733824929048e-08,
+      1.1433287649964541e-10,
+      1.3103795826197029e-11,
+      3.4519942460065067e-10,
+      1.562546536604259e-09,
+      3.675653559298553e-09
+    ],
+    [
+      2.3220778189170233e-08,
+      1.169579988413716e-10,
+      2.1017534934664184e-11,
+      4.0879211127275994e-10,
+      1.4887655552797696e-09,
+      3.628734646099474e-09
+    ]
+  ],
+  "finite_difference_pass": true,
+  "old_first_call_seconds": 8.596170453121886,
+  "baseline": {
+    "value": [
+      -11.522123736129927,
+      -11.790884862193195
+    ],
+    "score": [
+      [
+        -37.240079658708666,
+        -0.4528955698965106,
+        -0.04324730463767549,
+        6.422138232152824,
+        4.2618157539558155,
+        -5.959719225357677
+      ],
+      [
+        -40.10262365174504,
+        -0.4854188553609357,
+        -0.04542263722237157,
+        6.8955828092500955,
+        4.396659241902029,
+        -6.147053488701491
+      ]
+    ],
+    "score_trace": [
+      [
+        [
+          -18.628259056844524,
+          -0.14242988907461246,
+          -0.03128321716597486,
+          2.3949957409844043,
+          4.165448244086556,
+          -5.791916439099751
+        ],
+        [
+          -18.611820601864146,
+          -0.3104656808218981,
+          -0.011964087471700628,
+          4.02714249116842,
+          0.09636750986925975,
+          -0.16780278625792627
+        ]
+      ],
+      [
+        [
+          -20.00440715504277,
+          -0.15217696290404986,
+          -0.03207860816227085,
+          2.559451354549262,
+          4.198391039213705,
+          -5.8424520841134715
+        ],
+        [
+          -20.09821649670227,
+          -0.33324189245688585,
+          -0.013344029060100716,
+          4.336131454700833,
+          0.1982682026883235,
+          -0.30460140458802026
+        ]
+      ]
+    ],
+    "valid": [
+      true,
+      true
+    ]
+  },
+  "score_absolute_error": [
+    [
+      1.9895196601282805e-13,
+      1.6653345369377348e-15,
+      1.3183898417423734e-16,
+      1.7763568394002505e-14,
+      7.993605777301127e-15,
+      1.1546319456101628e-14
+    ],
+    [
+      2.4868995751603507e-13,
+      1.942890293094024e-15,
+      6.245004513516506e-17,
+      2.1316282072803006e-14,
+      4.884981308350689e-14,
+      3.9968028886505635e-14
+    ]
+  ],
+  "value_absolute_error": [
+    3.552713678800501e-15,
+    1.4210854715202004e-14
+  ],
+  "tolerance": {
+    "rtol": 2e-07,
+    "atol": 2e-07
+  },
+  "parity_pass": true,
+  "paired_warmed_seconds": [
+    {
+      "new": 0.008585804840549827,
+      "old": 0.01954633486457169
+    }
+  ],
+  "median_speedup": 2.276587370383318,
+  "performance_status": "DESCRIPTIVE_FASTER",
+  "wall_seconds": 29.823327010963112,
+  "peak_host_rss_bytes": 1868775424
+}

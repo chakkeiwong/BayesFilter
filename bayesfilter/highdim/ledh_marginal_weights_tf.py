@@ -1,15 +1,17 @@
-"""Gaussian LEDH importance correction with one or all ancestor components.
+"""Exact Gaussian marginal importance ratios and analytical total tangents.
 
-The same density and total-tangent calculation serves both selections. The
-diagonal selection costs O(N); the full mixture uses exact repository tiles.
-The caller retains the outer ancestor weight in either case. This extension
-requires full-rank Gaussian transitions and innovation-independent affine maps.
+Optional method extension for one-child-per-ancestor affine LEDH proposals.
+This is not an admission authority and does not change the default weight law.
+No random label is sampled here: the caller must retain its outer ancestor
+weight. Full-rank Gaussian transitions and innovation-independent affine maps
+are prerequisites. Covariances are checked, never silently regularized.
 """
 from __future__ import annotations
 
 import math
 import tensorflow as tf
 
+import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
 from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
 from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
 
@@ -32,7 +34,7 @@ def gaussian_mixture_log_density_tangent(
     n, d = int(points.shape[0]), int(points.shape[1])
     dtype = points.dtype
     valid, chol = safe_cholesky(covariances, "importance_component")
-    precision = tf.linalg.cholesky_solve(chol, tf.broadcast_to(tf.eye(d, dtype=dtype), [n,d,d]))
+    precision = small_matrix.cholesky_solve(chol, tf.broadcast_to(tf.eye(d, dtype=dtype), [n,d,d]))
     normalizers = (-tf.constant(.5*d*math.log(2*math.pi), dtype)
                    -tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1))
     trace = tf.einsum("nij,nji->n", precision, d_covariances)
@@ -98,27 +100,60 @@ def gaussian_mixture_log_density_tangent(
 
 def marginal_prior_ratio_tangent(
     points, d_points, anchors, d_anchors, process_covariance, d_process_covariance,
-    proposal_means, d_proposal_means, flow_matrix, d_flow_matrix,
+    proposal_means, d_proposal_means, affine_matrix, d_affine_matrix,
     log_weights, d_log_weights, *, component_policy="marginal_mixture",
+    return_precision_diagnostics=False,
 ):
-    """log(f_S/q_S) and its analytical total derivative, S={i} or all j.
+    """Return log p_N(x)-log q_N(x), its total tangent, and validity.
 
-    For q_j=N(F_j(anchor_j), B_j Q B_j^T), differentiate every covariance
-    factor: dS=(dB Q+B dQ)B^T+B Q dB^T. No ridge changes this density.
+    ``proposal_means`` is the auxiliary endpoint F_j(m_j) computed by the
+    *same* flow loop. The pushed Gaussian covariance is B_j Q B_j'.
+    FP32 products failing the unchanged symmetry margin are recomputed in
+    FP64 and cast back, together with their total tangent. This defines a
+    piecewise precision policy; no derivative of the switching event is claimed.
+    Optional diagnostics report how many component products were recomputed.
     """
     n, d = int(points.shape[0]), int(points.shape[1])
-    q = tf.broadcast_to(process_covariance,[n,d,d])
-    dq = tf.broadcast_to(d_process_covariance,[n,d,d])
-    bq = tf.linalg.matmul(flow_matrix,q)
-    proposal_cov = tf.linalg.matmul(bq,flow_matrix,transpose_b=True)
-    d_proposal_cov = (
-        tf.linalg.matmul(tf.linalg.matmul(d_flow_matrix,q)+tf.linalg.matmul(flow_matrix,dq),
-                         flow_matrix,transpose_b=True)
-        +tf.linalg.matmul(bq,d_flow_matrix,transpose_b=True))
-    prior, d_prior, prior_valid, prior_force = gaussian_mixture_log_density_tangent(
-        points,d_points,anchors,d_anchors,q,dq,log_weights,d_log_weights,
+    q = tf.broadcast_to(process_covariance, [n, d, d])
+    dq = tf.broadcast_to(d_process_covariance, [n, d, d])
+    b, db = affine_matrix, d_affine_matrix
+    bq = tf.linalg.matmul(b, q)
+    s = tf.linalg.matmul(bq, b, transpose_b=True)
+    ds = (tf.linalg.matmul(tf.linalg.matmul(db, q) + tf.linalg.matmul(b, dq), b, transpose_b=True)
+          + tf.linalg.matmul(bq, db, transpose_b=True))
+    repaired = tf.zeros([n], tf.bool)
+    if points.dtype == tf.float32:
+        # Use precisely the scale-free symmetry margin in safe_cholesky.
+        # Preserve healthy component products bit for bit. Recompute both
+        # covariance and its analytical tangent only after a symmetry failure.
+        finite = tf.reduce_all(tf.math.is_finite(s), axis=[-2, -1])
+        clean = tf.where(finite[:, None, None], s, tf.eye(d, batch_shape=[n], dtype=s.dtype))
+        scale = tf.reduce_max(tf.abs(clean), axis=[-2, -1], keepdims=True)
+        normalized = clean / tf.where(scale > 0, scale, tf.ones_like(scale))
+        asymmetry = tf.reduce_max(
+            tf.abs(normalized - tf.linalg.matrix_transpose(normalized)), axis=[-2, -1])
+        repaired = finite & (asymmetry > tf.constant(8 * d * 2.0**-23, s.dtype))
+
+        def precise_products():
+            q64, dq64 = tf.cast(q, tf.float64), tf.cast(dq, tf.float64)
+            b64, db64 = tf.cast(b, tf.float64), tf.cast(db, tf.float64)
+            bq64 = tf.linalg.matmul(b64, q64)
+            s64 = tf.linalg.matmul(bq64, b64, transpose_b=True)
+            ds64 = (tf.linalg.matmul(tf.linalg.matmul(db64, q64)
+                    + tf.linalg.matmul(b64, dq64), b64, transpose_b=True)
+                    + tf.linalg.matmul(bq64, db64, transpose_b=True))
+            return (tf.where(repaired[:, None, None], tf.cast(s64, s.dtype), s),
+                    tf.where(repaired[:, None, None], tf.cast(ds64, ds.dtype), ds))
+
+        s, ds = tf.cond(tf.reduce_any(repaired), precise_products, lambda: (s, ds))
+    # Final finite/SPD/symmetry checks remain in the mixture-density evaluator.
+    p, dp, pv, pf = gaussian_mixture_log_density_tangent(
+        points, d_points, anchors, d_anchors, q, dq, log_weights, d_log_weights,
         component_policy=component_policy)
-    proposal, d_proposal, proposal_valid, proposal_force = gaussian_mixture_log_density_tangent(
-        points,d_points,proposal_means,d_proposal_means,proposal_cov,d_proposal_cov,
-        log_weights,d_log_weights,component_policy=component_policy)
-    return prior-proposal, d_prior-d_proposal, prior_valid & proposal_valid, prior_force & proposal_force
+    proposal, dproposal, qv, qf = gaussian_mixture_log_density_tangent(
+        points, d_points, proposal_means, d_proposal_means, s, ds, log_weights, d_log_weights,
+        component_policy=component_policy)
+    result = (p-proposal, dp-dproposal, pv & qv, pf & qf)
+    if return_precision_diagnostics:
+        return (*result, tf.reduce_sum(tf.cast(repaired, tf.int32)))
+    return result

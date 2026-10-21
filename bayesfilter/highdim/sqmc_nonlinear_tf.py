@@ -57,7 +57,10 @@ class NonlinearSQMCSpec:
         from bayesfilter.highdim.models import zhao_cui_sir_austria_model
         with tf.init_scope():
             mean = zhao_cui_sir_austria_model().initial_mean
-        return tf.cast(mean, dtype)
+            # Capture the prepared constant in the requested arithmetic, rather
+            # than passing an FP64 constant through every FP32 compiled call.
+            mean = tf.cast(mean, dtype)
+        return mean
 
     def model(self, theta, direction):
         factory = predator_prey_canonical_model if self.dimension == 2 else austria_sir_canonical_model

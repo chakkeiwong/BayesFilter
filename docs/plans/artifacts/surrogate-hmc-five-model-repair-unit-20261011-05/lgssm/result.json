@@ -1,0 +1,121 @@
+{
+  "status": "PASS",
+  "model": "lgssm",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "lgssm",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-repair-unit-20261011-05/lgssm",
+    "--gpu",
+    "0",
+    "--unit",
+    "--correction-steps",
+    "1",
+    "--offset",
+    "0.08"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-11T15:58:37.663025+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "8ed9bb0e7ae9950e23b683671889d2fe92f86b768045096f8c62060581c67ae9",
+    "covariance_proposal_score_tf.py": "2533249d698328a070e8e875de8d694786b7f763aa5e6db4ba82ea2accf81b5e",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "particles": 64,
+  "horizon": 2,
+  "parameter_count": 4,
+  "state_dimension": 3,
+  "observation_dimension": 3,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 2,
+    "reset_steps": 4,
+    "reset_epsilon": 1.0,
+    "correction_steps": 1,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.5657151937484741,
+    0.33428478240966797
+  ],
+  "offset": 0.08,
+  "data_sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+  "gpu_devices": [],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "new_first_call_seconds": 6.783766036853194,
+  "candidate": {
+    "value": -2.85663934904168,
+    "score": [
+      -0.2717493194584927,
+      -1.371607297339577,
+      -0.9623008827970291,
+      0.11348496657074762
+    ],
+    "valid": true,
+    "steps_completed": 2
+  },
+  "old_first_call_seconds": 5.3806177489459515,
+  "baseline": {
+    "value": -2.8566393490416795,
+    "score": [
+      -0.2717493194584975,
+      -1.3716072973395785,
+      -0.9623008827970277,
+      0.11348496657074773
+    ],
+    "valid": true
+  },
+  "score_absolute_error": [
+    4.829470157119431e-15,
+    1.5543122344752192e-15,
+    1.3322676295501878e-15,
+    1.1102230246251565e-16
+  ],
+  "value_absolute_error": 4.440892098500626e-16,
+  "tolerance": {
+    "rtol": 2e-07,
+    "atol": 2e-07
+  },
+  "parity_pass": true,
+  "paired_warmed_seconds": [
+    {
+      "new": 0.008405565051361918,
+      "old": 0.013558391947299242
+    }
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "median_speedup": 1.6130256400909577,
+  "wall_seconds": 15.021899577928707
+}

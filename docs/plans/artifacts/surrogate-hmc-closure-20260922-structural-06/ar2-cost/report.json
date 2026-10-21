@@ -1,0 +1,1042 @@
+{
+  "acceleration_claim": false,
+  "conservative_inference_forecast": {
+    "A": {
+      "cpu_worker_seconds": 3151.4376449999804,
+      "wall_seconds": 3488.718538043322
+    },
+    "B": {
+      "cpu_worker_seconds": 693461.7258285002,
+      "wall_seconds": 692035.6528755699
+    }
+  },
+  "costs": {
+    "exact_force": [
+      {
+        "compilation_included": true,
+        "cpu_worker_seconds": 0.8205910000000003,
+        "wall_seconds": 0.8676521559245884
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.01126700000000369,
+        "wall_seconds": 0.011265475070104003
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.011901000000008821,
+        "wall_seconds": 0.011905540945008397
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.0053160000000005425,
+        "wall_seconds": 0.005292339948937297
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.007193000000000893,
+        "wall_seconds": 0.007176714017987251
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.004902000000001294,
+        "wall_seconds": 0.004882701905444264
+      }
+    ],
+    "model_endpoint": [
+      {
+        "compilation_included": true,
+        "cpu_worker_seconds": 0.5894650000000041,
+        "wall_seconds": 0.5596325739752501
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.01569899999999791,
+        "wall_seconds": 0.017917018034495413
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.015821000000002527,
+        "wall_seconds": 0.017365768901072443
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.015996999999998707,
+        "wall_seconds": 0.017822380061261356
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.015545000000003029,
+        "wall_seconds": 0.016744795022532344
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 0.01135500000000178,
+        "wall_seconds": 0.012302956078201532
+      }
+    ],
+    "surrogate_force": [
+      {
+        "compilation_included": true,
+        "cpu_worker_seconds": 22.997689,
+        "wall_seconds": 19.11442166508641
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 2.038741999999999,
+        "wall_seconds": 2.143797668046318
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 1.5548249999999975,
+        "wall_seconds": 1.5701445119921118
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 1.441434000000001,
+        "wall_seconds": 1.4912780419690534
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 2.128161999999996,
+        "wall_seconds": 2.3780300029320642
+      },
+      {
+        "compilation_included": false,
+        "cpu_worker_seconds": 1.6420299999999983,
+        "wall_seconds": 1.669536633999087
+      }
+    ]
+  },
+  "device": "gpu",
+  "exact_force_comparator_cost_ratio": 267.4055456016021,
+  "forecast_assumptions": "L8 upper trajectory bound; retained final look plus 7000 tuning/verification transitions; 1.5 safety factor and 600s extra compilation per arm",
+  "gpu_intentionally_hidden": false,
+  "inference_launched": false,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "next_action": "Existing master: qualify uncertainty at the measured precision schedule, publicly tune and execute AR2 B/R posterior test",
+  "precision": {
+    "assumed_iat": 4.0,
+    "design_rule": "first two-look pair with final per-chain count >= max variance-based effective requirement at IAT4",
+    "forecast_is_guarantee": false,
+    "maximum_per_chain_required_at_iat": {
+      "1": 1756.854217159079,
+      "10": 17568.54217159079,
+      "4": 7027.416868636316
+    },
+    "precision_forecast_sufficient": true,
+    "required_effective_draws_total": [
+      1120.3055572360186,
+      1128.1966079867066,
+      6869.222129210161,
+      2193.108817313128,
+      1794.5581635381404,
+      2720.499794191312,
+      7007.277696258563,
+      2714.057919171927,
+      2613.798442851707,
+      7027.416868636316,
+      2539.485615876892,
+      24.50556775309515,
+      63.5786061657799
+    ],
+    "retained_looks": [
+      4000,
+      8000
+    ]
+  },
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "qualified": true,
+  "ranking": "NOT_ESTABLISHED",
+  "reference_report_sha256": "fbf9c231baf11f7ef853b35c3c98e58479344258623b1a302ad5bdfd48ff0028",
+  "reference_variances": [
+    0.9999999999999998,
+    1.0,
+    6.097064147963918,
+    1.8973228367301473,
+    1.5972961216866572,
+    0.09108299311869111,
+    0.24981725837562302,
+    0.0894995486452331,
+    0.09218074423764565,
+    0.24996713745011945,
+    0.0894034862085497,
+    0.0008748385244620809,
+    0.0022696673895409173
+  ],
+  "selection_sha256": "d0fe95f86eda69bd796a9464f92f3f74b2740295960f33d79c5be42f89cb07f6",
+  "source_hashes": {
+    "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "330fca673b12727e6c9936f5b0720a907a7f7601c626b5e4e618adf7453a6232",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "68697f687301304620a59c6cfad9f26c1867a919cd946a36d589c69f1dbb9f35",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/highdim/ledh_structural_ar2_target_tf.py": "2c2b60a393369a2970f584c3a2741cd308437b4a2ae35b7e6436a071b07dab74",
+    "bayesfilter/highdim/ledh_structural_innovation_tf.py": "343be0034d08104e669e3dcb8e3059f7c35aae6ab43da4b3899e36bb09db1b85",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/testing/surrogate_hmc_ar2_consumer.py": "c6f34975eab26ae3ee36dac9f14e13d5fa5bd3b0665ff5026b4e97369947711f",
+    "bayesfilter/testing/surrogate_hmc_ar2_controls.py": "335b2741c8843cc3e8478f38fb84f8c3f6331b2cec0139f7acfe1f9183bf4ccf",
+    "bayesfilter/testing/surrogate_hmc_ar2_reference.py": "f34e99880413f76951c9b7232f6caa62228974dc20ecf928d0139746c776af0b",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f"
+  },
+  "stage": "ar2-cost",
+  "status": "AR2_COMPLETE_TRANSITION_COST_MEASURED",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true,
+  "transitions": {
+    "A_L1": {
+      "costs": [
+        {
+          "compilation_included": true,
+          "cpu_worker_seconds": 2.9110759999999942,
+          "wall_seconds": 2.8805257979547605
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.03084200000000692,
+          "wall_seconds": 0.03128216601908207
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.03321900000000255,
+          "wall_seconds": 0.0336544489255175
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.03020899999999216,
+          "wall_seconds": 0.03560202301014215
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.04399299999999329,
+          "wall_seconds": 0.057694813003763556
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.03175900000000098,
+          "wall_seconds": 0.03203879902139306
+        }
+      ],
+      "trace": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "delta_h": [
+          1.2463691342612382e-06,
+          0.0001058054069456027,
+          1.1719871401416615e-06,
+          -7.511141512442365e-05
+        ],
+        "divergence": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_call_count": 1,
+        "endpoint_out_of_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_status": {
+          "coordinate_boundary_rounding": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "first_failure_particle": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_stage": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_time": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "force_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "force_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "numerical_failure": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "outside_declared_support": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "value_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "value_valid": [
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "final_kinetic": [
+          0.06565146173783343,
+          1.61966982434918,
+          0.13662332911855615,
+          0.2747446343055111
+        ],
+        "final_momentum": [
+          [
+            0.24071134254113455,
+            0.5785883559307797
+          ],
+          [
+            -4.463537237630763,
+            -1.8839322663839053
+          ],
+          [
+            1.640822638129915,
+            -0.20428659310371777
+          ],
+          [
+            -2.38992776806461,
+            0.09014354883702724
+          ]
+        ],
+        "final_potential": [
+          7.877436707814562,
+          8.662335101407065,
+          8.54215233967742,
+          8.358958696592595
+        ],
+        "finite_status": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "force_call_count": 2,
+        "force_fallback": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "initial_kinetic": [
+          0.06610357782957518,
+          1.7304740987086231,
+          0.14299943720965844,
+          0.2293089763989057
+        ],
+        "initial_momentum": [
+          [
+            -0.26494421726198675,
+            -0.5779714255049768
+          ],
+          [
+            4.697600866532003,
+            1.8955302433715506
+          ],
+          [
+            -1.6092400605302775,
+            0.3190904838517276
+          ],
+          [
+            2.171166619374732,
+            -0.14259624793026712
+          ]
+        ],
+        "initial_potential": [
+          7.876983345353686,
+          8.551425021640675,
+          8.535775059599178,
+          8.404469465914325
+        ],
+        "log_acceptance_ratio": [
+          -1.2463691342612382e-06,
+          -0.0001058054069456027,
+          -1.1719871401416615e-06,
+          0.0
+        ]
+      }
+    },
+    "A_L8": {
+      "costs": [
+        {
+          "compilation_included": true,
+          "cpu_worker_seconds": 3.0134299999999996,
+          "wall_seconds": 2.9358930489979684
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.09513499999999198,
+          "wall_seconds": 0.09703613491728902
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.09986299999999915,
+          "wall_seconds": 0.11485843104310334
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.09394100000000094,
+          "wall_seconds": 0.09605416306294501
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.07822399999999874,
+          "wall_seconds": 0.08991362806409597
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 0.08345399999999614,
+          "wall_seconds": 0.08797209104523063
+        }
+      ],
+      "trace": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "delta_h": [
+          1.553504113985249e-05,
+          0.0007026967942507234,
+          -0.00014570770338737105,
+          -0.0005024442373832427
+        ],
+        "divergence": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_call_count": 1,
+        "endpoint_out_of_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_status": {
+          "coordinate_boundary_rounding": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "first_failure_particle": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_stage": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_time": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "force_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "force_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "numerical_failure": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "outside_declared_support": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "value_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "value_valid": [
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "final_kinetic": [
+          0.054333869822451655,
+          0.8176137705381143,
+          0.20315160303925606,
+          0.5845134767695325
+        ],
+        "final_momentum": [
+          [
+            0.02516602587987491,
+            0.5376853123675507
+          ],
+          [
+            -2.514810993263243,
+            -1.6559912017849139
+          ],
+          [
+            1.7239996255140926,
+            0.5697779356336213
+          ],
+          [
+            -3.4632897662402837,
+            -0.23945121718452925
+          ]
+        ],
+        "final_potential": [
+          7.888768588401949,
+          9.464988046605434,
+          8.475477186066193,
+          8.048762521306315
+        ],
+        "finite_status": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "force_call_count": 9,
+        "force_fallback": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "initial_kinetic": [
+          0.06610357782957518,
+          1.7304740987086231,
+          0.14299943720965844,
+          0.2293089763989057
+        ],
+        "initial_momentum": [
+          [
+            -0.26494421726198675,
+            -0.5779714255049768
+          ],
+          [
+            4.697600866532003,
+            1.8955302433715506
+          ],
+          [
+            -1.6092400605302775,
+            0.3190904838517276
+          ],
+          [
+            2.171166619374732,
+            -0.14259624793026712
+          ]
+        ],
+        "initial_potential": [
+          7.876983345353686,
+          8.551425021640675,
+          8.535775059599178,
+          8.404469465914325
+        ],
+        "log_acceptance_ratio": [
+          -1.553504113985249e-05,
+          -0.0007026967942507234,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "B_L1": {
+      "costs": [
+        {
+          "compilation_included": true,
+          "cpu_worker_seconds": 27.967316000000004,
+          "wall_seconds": 28.319057599059306
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 2.861288000000002,
+          "wall_seconds": 2.9534498989814892
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 3.7070850000000064,
+          "wall_seconds": 3.7899870929541066
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 4.025810000000007,
+          "wall_seconds": 4.217403999064118
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 2.8231309999999894,
+          "wall_seconds": 2.8817554030101746
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 2.220462999999995,
+          "wall_seconds": 2.2850762269226834
+        }
+      ],
+      "trace": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "delta_h": [
+          0.0010016205213558005,
+          -0.0010442724959252025,
+          -0.0014620681344866548,
+          0.0015326023377260911
+        ],
+        "divergence": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_call_count": 1,
+        "endpoint_out_of_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_status": {
+          "coordinate_boundary_rounding": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "first_failure_particle": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_stage": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_time": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "force_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "force_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "numerical_failure": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "outside_declared_support": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "value_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "value_valid": [
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "final_kinetic": [
+          0.06665847361556555,
+          1.618525919805344,
+          0.1351733963530477,
+          0.2763340217476935
+        ],
+        "final_momentum": [
+          [
+            0.23508545076580525,
+            0.5837870953991953
+          ],
+          [
+            -4.463434351658498,
+            -1.8823774004028482
+          ],
+          [
+            1.6321194300871813,
+            -0.2031449956372348
+          ],
+          [
+            -2.395637651994208,
+            0.0981267081091192
+          ]
+        ],
+        "final_potential": [
+          7.877430070089051,
+          8.662328928048028,
+          8.542139032321302,
+          8.358977022903263
+        ],
+        "finite_status": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "force_call_count": 2,
+        "force_fallback": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "initial_kinetic": [
+          0.06610357782957518,
+          1.7304740987086231,
+          0.14299943720965844,
+          0.2293089763989057
+        ],
+        "initial_momentum": [
+          [
+            -0.26494421726198675,
+            -0.5779714255049768
+          ],
+          [
+            4.697600866532003,
+            1.8955302433715506
+          ],
+          [
+            -1.6092400605302775,
+            0.3190904838517276
+          ],
+          [
+            2.171166619374732,
+            -0.14259624793026712
+          ]
+        ],
+        "initial_potential": [
+          7.876983345353686,
+          8.551425021640675,
+          8.535775059599178,
+          8.404469465914325
+        ],
+        "log_acceptance_ratio": [
+          -0.0010016205213558005,
+          0.0,
+          0.0,
+          -0.0015326023377260911
+        ]
+      }
+    },
+    "B_L8": {
+      "costs": [
+        {
+          "compilation_included": true,
+          "cpu_worker_seconds": 50.28221900000001,
+          "wall_seconds": 50.38061667094007
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 30.461996,
+          "wall_seconds": 30.625833507976495
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 30.777169000000015,
+          "wall_seconds": 30.713781420025043
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 27.204836999999998,
+          "wall_seconds": 27.20859179389663
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 19.646484000000015,
+          "wall_seconds": 19.68692066206131
+        },
+        {
+          "compilation_included": false,
+          "cpu_worker_seconds": 22.14203600000002,
+          "wall_seconds": 22.158986422000453
+        }
+      ],
+      "trace": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "delta_h": [
+          0.00878638843852389,
+          -0.006258138391091794,
+          -0.01168282415702046,
+          0.0070546850505307235
+        ],
+        "divergence": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_call_count": 1,
+        "endpoint_out_of_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "endpoint_status": {
+          "coordinate_boundary_rounding": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "first_failure_particle": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_stage": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "first_failure_time": [
+            -1,
+            -1,
+            -1,
+            -1
+          ],
+          "force_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "force_valid": [
+            true,
+            true,
+            true,
+            true
+          ],
+          "numerical_failure": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "outside_declared_support": [
+            false,
+            false,
+            false,
+            false
+          ],
+          "value_failure_code": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "value_valid": [
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        "final_kinetic": [
+          0.06295643278572904,
+          0.8114123246347063,
+          0.1931146687903476,
+          0.5896300015326283
+        ],
+        "final_momentum": [
+          [
+            -0.014473163428587916,
+            0.5788945427551809
+          ],
+          [
+            -2.5166869652029624,
+            -1.6452620969758673
+          ],
+          [
+            1.650830575309368,
+            0.5780108767077359
+          ],
+          [
+            -3.491521104886512,
+            -0.1859432755520556
+          ]
+        ],
+        "final_potential": [
+          7.888916878836056,
+          9.4642286573235,
+          8.473977003861469,
+          8.051203125831133
+        ],
+        "finite_status": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "force_call_count": 9,
+        "force_fallback": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "initial_kinetic": [
+          0.06610357782957518,
+          1.7304740987086231,
+          0.14299943720965844,
+          0.2293089763989057
+        ],
+        "initial_momentum": [
+          [
+            -0.26494421726198675,
+            -0.5779714255049768
+          ],
+          [
+            4.697600866532003,
+            1.8955302433715506
+          ],
+          [
+            -1.6092400605302775,
+            0.3190904838517276
+          ],
+          [
+            2.171166619374732,
+            -0.14259624793026712
+          ]
+        ],
+        "initial_potential": [
+          7.876983345353686,
+          8.551425021640675,
+          8.535775059599178,
+          8.404469465914325
+        ],
+        "log_acceptance_ratio": [
+          -0.00878638843852389,
+          0.0,
+          0.0,
+          -0.0070546850505307235
+        ]
+      }
+    }
+  }
+}

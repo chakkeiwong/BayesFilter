@@ -1,0 +1,120 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/surrogate_hmc_lg1_probe.py",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01/P1-LG1",
+    "--particle-count",
+    "1024"
+  ],
+  "command_line": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_surrogate_hmc_program.py",
+    "--stage",
+    "all",
+    "--scope",
+    "all",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01",
+    "--max-gpu-seconds",
+    "3600",
+    "--max-cpu-worker-seconds",
+    "7200",
+    "--probe-timeout",
+    "900"
+  ],
+  "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "endpoint_force_identities": "issued from actual frozen inputs by worker before evaluation",
+  "environment": {
+    "CONDA_PREFIX": "/home/chakwong/anaconda3/envs/tftwogpu",
+    "CUDA_VISIBLE_DEVICES": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "execution_plan": "docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "git_status": " M docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md\n?? bayesfilter/inference/surrogate_hmc_program.py\n?? bayesfilter/testing/surrogate_hmc_lg1_tf.py\n?? docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/\n?? docs/plans/artifacts/surrogate-hmc-master-20260918-01/\n?? docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/\n?? docs/plans/ledh-lg1-regression-audit-2026-09-18.md\n?? docs/plans/ledh-lg1-regression-audit-result-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-inference-continuation-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-model-coverage-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-recovery-plan-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-recovery-result-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-claude-handoff-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md\n?? docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-master-review-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-reply-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-response-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-verdict-2026-09-18.md\n?? scripts/run_surrogate_hmc_program.py\n?? scripts/surrogate_hmc_lg1_probe.py\n?? tests/test_surrogate_hmc_program.py\n",
+  "inference_forecast": "NOT_MEASURED; inference launch prohibited",
+  "inference_ready": false,
+  "plan": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "remaining_budget": {
+    "cpu_worker_seconds": 7200.0,
+    "gpu_seconds": 3600.0
+  },
+  "required_inputs": [
+    "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+    "docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md"
+  ],
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01/result.md",
+  "schema": "bayesfilter.surrogate_hmc_master.v1",
+  "scope": "all",
+  "scope_card": {
+    "chart": "phi=-.95+1.9*sigmoid(z), Jacobian once",
+    "chunk_extent": 1024,
+    "comparisons": {
+      "B_vs_R": "NOT_RUN",
+      "C_vs_D": "NOT_RUN",
+      "C_vs_R": "NOT_RUN",
+      "D_vs_R": "NOT_RUN"
+    },
+    "continuation_vetoes": [
+      "wrong target",
+      "nonfinite accepted state",
+      "cross-chain coupling",
+      "nondeterministic field",
+      "mutating endpoint",
+      "invalid status"
+    ],
+    "controls_status": "warm_start_hypothesis_not_selected_or_admitted",
+    "data_partition": "diagnostic",
+    "data_replicate": 0,
+    "endpoint": "same-law FP64 Kalman posterior",
+    "explanatory_only": [
+      "force discrepancy",
+      "filter discrepancy",
+      "acceptance",
+      "runtime"
+    ],
+    "family": "M01",
+    "force": "full canonical analytical DCTR; frozen proposal field, not admitted exact score",
+    "horizon": 10,
+    "id": "M01-LG1-T10-N1024-attempt4",
+    "inference_attempt": 4,
+    "law": "x0~N(0,1/(1-phi^2)); xt=phi*xprev+N(0,1); yt=xt+N(0,.5)",
+    "mechanics_only": true,
+    "nonclaims": [
+      "posterior recovery",
+      "convergence",
+      "DCTR likelihood accuracy",
+      "default readiness"
+    ],
+    "parameter_dimension": 1,
+    "parameters": [
+      "phi"
+    ],
+    "particle_count": 1024,
+    "precision": {
+      "device": "GPU",
+      "endpoint": "float64",
+      "force": "float32",
+      "force_tf32": true,
+      "integrator": "float64",
+      "jit_compile": true,
+      "momentum": "float64",
+      "reference": "float64"
+    },
+    "precision_classification": "FP64_INTEGRATOR_FP32_DCTR",
+    "prior": "Uniform(-.95,.95)",
+    "stage": "P1",
+    "state_dimension": 1,
+    "truth": 0.8
+  },
+  "source_sha256": {
+    "bayesfilter/inference/surrogate_hmc_program.py": "e047a50b9b33af732d989a9e2dfd0b91e5441eb3aa6b025e074fb4e2b55c99e8",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "5c5161cd42eb4a7cb86e1b19d5174344fec95cc1ea5aae5faa6b0732a15b4f41",
+    "scripts/run_surrogate_hmc_program.py": "3d179aeb241b10cebd2cdc015448aa8661233775d03db265f1d3019a0edc4227",
+    "scripts/surrogate_hmc_lg1_probe.py": "221c323c3d92b3ce72fb30a60e04e2fd5c4edc06a2eaf2caa4cccc515394a01a"
+  },
+  "stage": "all",
+  "wall_seconds": 55.05229035601951
+}

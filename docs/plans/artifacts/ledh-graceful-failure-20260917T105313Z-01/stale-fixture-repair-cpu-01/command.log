@@ -1,0 +1,23 @@
+...........F.                                                            [100%]
+=================================== FAILURES ===================================
+__ TestLEDHGracefulFailureIntegration.test_pathological_lgssm_returns_neg_inf __
+tests/integration/test_ledh_graceful_failure_integration.py:136: in test_pathological_lgssm_returns_neg_inf
+    self.assertEqual(int(valid['first_failure_time'][0]), 0)
+E   AssertionError: -1 != 0
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/integration/test_ledh_graceful_failure_integration.py::TestLEDHGracefulFailureIntegration::test_session
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/unittest/case.py:678: DeprecationWarning: It is deprecated to return a value that is not None from a test case (<bound method TensorFlowTestCase.test_session of <test_ledh_graceful_failure_integration.TestLEDHGracefulFailureIntegration testMethod=test_session>>)
+    return self.run(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_ledh_graceful_failure_integration.py::TestLEDHGracefulFailureIntegration::test_pathological_lgssm_returns_neg_inf
+1 failed, 12 passed, 3 warnings in 30.11s

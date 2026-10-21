@@ -1,0 +1,68 @@
+{
+  "status": "COMPLETE",
+  "research_question": "Does the optional exact marginal-mixture importance law reduce LEDH likelihood/score error without material LGSSM/KSC deterioration, as a component test for surrogate HMC?",
+  "program": "scripts/run_surrogate_hmc_marginal_weight_campaign.py",
+  "analysis": "scripts/analyze_marginal_weight_campaign.py",
+  "plan": [
+    "docs/plans/surrogate-hmc-marginal-weight-execution-2026-10-05.md",
+    "docs/plans/surrogate-hmc-marginal-weight-follow-through-2026-10-05.md"
+  ],
+  "result": "docs/plans/surrogate-hmc-marginal-weight-results-2026-10-05.md",
+  "roots": {
+    "01": {
+      "path": "docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01",
+      "status": "historical_initial_attempt",
+      "campaign_status": "REPAIR_REQUIRED",
+      "purpose": "LGSSM/KSC and initial M13 attempt; invalid calibration serialization preserved"
+    },
+    "02": {
+      "path": "docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-02",
+      "status": "complete",
+      "campaign_status": "COMPLETE",
+      "purpose": "repaired N256 M13 follow-through"
+    },
+    "03": {
+      "path": "docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-03",
+      "status": "complete",
+      "campaign_status": "COMPLETE",
+      "purpose": "N4096 M13 refinement"
+    },
+    "supplement": {
+      "path": "docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-supplement",
+      "status": "complete",
+      "purpose": "tile, precision, heuristic and reference-uncertainty diagnostics"
+    }
+  },
+  "verdict": {
+    "lgssm_ksc": "PASS material non-inferiority in all 15 conditional cells for likelihood and scaled score",
+    "m13": "PARTIAL_REPAIR substantial N4096 reduction versus ancestor weights; residual heuristic underperformance and precision sensitivity",
+    "default": "RETAIN ancestor default; marginal mixture remains opt-in",
+    "surrogate_hmc": "COMPONENT evidence only; no posterior/HMC convergence claim"
+  },
+  "hard_checks": {
+    "driver_provenance_tests": "6 passed",
+    "mixture_tests": "5 passed",
+    "batch_api_regression": "12 passed",
+    "full_filter_fd": "14 passed",
+    "old_default_regression": "3 saved fixtures exact",
+    "tile_check": "passed"
+  },
+  "budget": {
+    "entries": {
+      "01": 824.5471798666986,
+      "02": 306.011153427884,
+      "03": 422.3430108160246,
+      "tile": 1.9829265769803897,
+      "precision": 618.2325242859079,
+      "heuristics": 36.80166832602117,
+      "failed_tile_upper_bound": 10.0
+    },
+    "used": 2279.9184632995166,
+    "cap": 21600.0,
+    "remaining": 19320.081536700483,
+    "qualification": "diagnostic phase times exclude startup; reserve an extra 60 seconds for all three diagnostic process startups"
+  },
+  "metadata_repair": "active-process.json files now record pid=null/status=FINISHED with historical_pid retained",
+  "source_commit": "a55c6be7a16e9401242ee3449248fa347eb58d90",
+  "created_utc": "2026-10-05T11:54:29Z"
+}

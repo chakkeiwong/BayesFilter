@@ -1,161 +1,111 @@
-"""Independent density/FD references and actual shared-core wiring checks."""
-import os
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
-from dataclasses import replace
-import math
-from unittest.mock import patch
-import numpy as np
+"""Independent reference checks; autodiff is diagnostic only."""
 import pytest
 import tensorflow as tf
-from bayesfilter.highdim.ledh_marginal_weights_tf import (
-    gaussian_mixture_log_density_tangent, marginal_prior_ratio_tangent)
-from bayesfilter.highdim.ledh_canonical_score_tf import (
-    NonlinearScoreModel, canonical_value_and_analytical_score)
-from bayesfilter.highdim.ledh_canonical_batch_fused_tf import (
-    PerPointScoreModel, canonical_batch_fused_value_score,
-    canonical_batch_fused_value_score_whileloop)
-D = tf.float64
+from bayesfilter.highdim.ledh_marginal_weights_tf import gaussian_mixture_log_density_tangent, marginal_prior_ratio_tangent
+from bayesfilter.highdim.ledh_canonical_batch_fused_tf import _single_cloud_model
+from bayesfilter.highdim.ledh_canonical_score_tf import _flow_substeps_with_tangent
+from bayesfilter.testing.marginal_weight_campaign import specification
+
+def inputs(d=3, n=5):
+    dtype = tf.float64
+    raw = tf.random.stateless_normal([n,d,d], [21,12], dtype=dtype)
+    c = raw@tf.linalg.matrix_transpose(raw)+tf.eye(d,batch_shape=[n],dtype=dtype)
+    dc = tf.random.stateless_normal([n,d,d], [21,13], dtype=dtype)
+    dc = .02*(dc+tf.linalg.matrix_transpose(dc))
+    x = tf.random.stateless_normal([n,d], [21,14], dtype=dtype)
+    m = tf.random.stateless_normal([n,d], [21,15], dtype=dtype)
+    dx = tf.random.stateless_normal([n,d], [21,16], dtype=dtype)*.1
+    dm = tf.random.stateless_normal([n,d], [21,17], dtype=dtype)*.1
+    lw = tf.nn.log_softmax(tf.linspace(tf.constant(-1.,dtype),tf.constant(1.,dtype),n))
+    dlw = tf.linspace(tf.constant(-.2,dtype),tf.constant(.3,dtype),n)
+    dlw -= tf.reduce_sum(tf.exp(lw)*dlw)
+    return x,dx,m,dm,c,dc,lw,dlw
+
+@pytest.mark.parametrize("d", [1,3])
+def test_nonuniform_mixture_total_derivative(d):
+    x,dx,m,dm,c,dc,lw,dlw = inputs(d)
+    value,derivative,vv,fv = gaussian_mixture_log_density_tangent(x,dx,m,dm,c,dc,lw,dlw)
+    assert bool(vv & fv)
+    import tensorflow_probability as tfp
+    a = tf.constant(0.,tf.float64)
+    with tf.GradientTape() as tape:
+        tape.watch(a)
+        terms = tfp.distributions.MultivariateNormalTriL(m+a*dm,tf.linalg.cholesky(c+a*dc)).log_prob((x+a*dx)[:,None])
+        ref = tf.reduce_logsumexp(terms+lw+a*dlw,axis=1)
+        scalar = tf.reduce_sum(ref)
+    tf.debugging.assert_near(value,ref,atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(tf.reduce_sum(derivative),tape.gradient(scalar,a),atol=1e-11,rtol=1e-11)
+    for h in (1e-4,3e-5):
+        plus = gaussian_mixture_log_density_tangent(x+h*dx,dx,m+h*dm,dm,c+h*dc,dc,lw+h*dlw,dlw)[0]
+        minus = gaussian_mixture_log_density_tangent(x-h*dx,dx,m-h*dm,dm,c-h*dc,dc,lw-h*dlw,dlw)[0]
+        tf.debugging.assert_near(derivative,(plus-minus)/(2*h),atol=1e-8,rtol=1e-8)
+
+def test_identity_flow_cancels_mixture_and_tangent():
+    x,dx,m,dm,c,dc,lw,dlw = inputs()
+    b = tf.eye(3,batch_shape=[5],dtype=tf.float64)
+    result = marginal_prior_ratio_tangent(x,dx,m,dm,c[0],dc[0],m,dm,b,tf.zeros_like(b),lw,dlw)
+    tf.debugging.assert_near(result[0],tf.zeros([5],tf.float64),atol=1e-13)
+    tf.debugging.assert_near(result[1],tf.zeros([5],tf.float64),atol=1e-13)
+    assert bool(result[2] & result[3])
+
+def test_invalid_component_is_not_silently_ridged():
+    x,dx,m,dm,c,dc,lw,dlw = inputs()
+    c = tf.tensor_scatter_nd_update(c,[[0,0,0]],[tf.constant(-100.,tf.float64)])
+    assert not bool(gaussian_mixture_log_density_tangent(x,dx,m,dm,c,dc,lw,dlw)[2])
+
+def test_affine_bookkeeping_matches_actual_nonlinear_flow():
+    spec = specification("m13-t1",tf.float64)
+    theta,direction = tf.constant([-.3,.2],tf.float64),tf.constant([.3,-.2],tf.float64)
+    model = _single_cloud_model(spec["model"],theta,direction)
+    anchors = tf.constant([[1.2,.7,.18,-.06],[1.,.8,.15,.03]],tf.float64)
+    da = tf.constant([[.1,-.1,.02,.03],[-.1,.04,.03,-.01]],tf.float64)
+    innovation = tf.constant([[.03,-.02,.01,.02],[-.02,.03,-.01,.01]],tf.float64)
+    di = .1*innovation
+    p = tf.broadcast_to(tf.constant(.04,tf.float64)*tf.eye(4,dtype=tf.float64),[2,4,4]);dp=.02*p
+    r = model.observation_covariance; dr = model.observation_covariance_tangent_fn(theta);rinv=tf.linalg.inv(r)
+    out = _flow_substeps_with_tangent(model,anchors+innovation,da+di,anchors,da,p,dp,
+        spec["fixture"].observations[0],r,dr,rinv,-rinv@dr@rinv,substeps=10,eye=tf.eye(4,dtype=tf.float64),return_affine=True)
+    x,dx,_,_,vv,fv,mean,dmean,b,db = out
+    tf.debugging.assert_equal(tf.reduce_all(vv & fv),True)
+    tf.debugging.assert_near(x,mean+tf.linalg.matvec(b,innovation),atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(dx,dmean+tf.linalg.matvec(db,innovation)+tf.linalg.matvec(b,di),atol=1e-12,rtol=1e-12)
+
+    # The Gaussian pushforward additionally requires that its coefficients
+    # do not depend on this child's fresh innovation. Affine bookkeeping alone
+    # would not detect coefficients evaluated on the actual random child.
+    changed_innovation = -2.3*innovation
+    changed_di = 1.7*di
+    other = _flow_substeps_with_tangent(
+        model,anchors+changed_innovation,da+changed_di,anchors,da,p,dp,
+        spec["fixture"].observations[0],r,dr,rinv,-rinv@dr@rinv,
+        substeps=10,eye=tf.eye(4,dtype=tf.float64),return_affine=True)
+    tf.debugging.assert_equal(tf.reduce_all(other[4] & other[5]),True)
+    for original_coefficient,changed_coefficient in zip(out[6:],other[6:]):
+        tf.debugging.assert_near(original_coefficient,changed_coefficient,atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(other[0],mean+tf.linalg.matvec(b,changed_innovation),atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(other[1],
+        dmean+tf.linalg.matvec(db,changed_innovation)+tf.linalg.matvec(b,changed_di),
+        atol=1e-12,rtol=1e-12)
 
 
-@pytest.mark.parametrize("policy", ["ancestor", "marginal_mixture"])
-def test_density_nonuniform_weights_total_derivative(policy):
-    rng = np.random.default_rng(109)
-    n, d = 8, 3
-    x, dx, m, dm = [rng.normal(size=(n,d)) for _ in range(4)]
-    a = rng.normal(size=(n,d,d)); cov = a@a.transpose(0,2,1)+np.eye(d)[None]
-    dcov = rng.normal(size=(n,d,d)); dcov = .05*(dcov+dcov.transpose(0,2,1))
-    logits, dl = rng.normal(size=(2,n))
-    def ref(h):
-        w = np.exp(logits+h*dl); w /= w.sum()
-        c = cov+h*dcov
-        residual = (x+h*dx)[:,None]-(m+h*dm)[None]
-        terms = np.log(w)[None]-.5*(d*math.log(2*math.pi)+np.linalg.slogdet(c)[1][None]
-            +np.einsum('nmi,mij,nmj->nm',residual,np.linalg.inv(c),residual))
-        return np.diag(terms) if policy == "ancestor" else np.logaddexp.reduce(terms,axis=1)
-    w = np.exp(logits); w /= w.sum()
-    args = [tf.constant(v,D) for v in (x,dx,m,dm,cov,dcov,np.log(w),dl-w@dl)]
-    @tf.function(input_signature=[tf.TensorSpec(t.shape,D) for t in args],jit_compile=True,autograph=False)
-    def run(*t): return gaussian_mixture_log_density_tangent(*t,component_policy=policy)
-    value, tangent, valid, force = run(*args)
-    assert bool(valid & force)
-    np.testing.assert_allclose(value,ref(0),atol=1e-12,rtol=1e-12)
-    h=1e-5
-    np.testing.assert_allclose(tangent,(ref(h)-ref(-h))/(2*h),atol=2e-8,rtol=2e-8)
+
+@pytest.mark.parametrize("dtype", [tf.float32, tf.float64])
+def test_precision_policy_keeps_invalid_covariance_invalid(dtype):
+    args=[tf.cast(x,dtype) for x in inputs()]
+    x,dx,m,dm,c,dc,lw,dlw=args
+    q=tf.linalg.diag(tf.constant([1.,1.,-1.],dtype))
+    b=tf.eye(3,batch_shape=[5],dtype=dtype)
+    result=marginal_prior_ratio_tangent(x,dx,m,dm,q,dc[0],m,dm,b,
+        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
+    assert not bool(result[2])
+    assert int(result[4])==0
 
 
-@pytest.mark.parametrize("n", [2, 8])
-def test_identical_components_collapse_without_losing_outer_weights(n):
-    points=tf.reshape(tf.linspace(tf.constant(-1.,D),tf.constant(1.,D),n),[n,1])
-    anchors=tf.zeros_like(points); means=tf.ones_like(points)*.2
-    q=tf.ones([1,1],D)*.7; b=tf.ones([n,1,1],D)*.6
-    lw=tf.nn.log_softmax(tf.cast(tf.range(n),D))
-    dl=tf.cast(tf.range(n),D);dl-=tf.reduce_sum(tf.exp(lw)*dl)
-    args=(points,tf.ones_like(points)*.1,anchors,anchors,q,q*.1,means,means*.2,b,b*.1,lw,dl)
-    own=marginal_prior_ratio_tangent(*args,component_policy="ancestor")
-    full=marginal_prior_ratio_tangent(*args,component_policy="marginal_mixture")
-    assert all(bool(v) for v in (*own[2:],*full[2:]))
-    np.testing.assert_allclose(own[0],full[0],atol=1e-12,rtol=1e-12)
-    np.testing.assert_allclose(own[1],full[1],atol=1e-12,rtol=1e-12)
-    np.testing.assert_allclose(tf.nn.softmax(lw+own[0]),tf.nn.softmax(lw+full[0]),atol=1e-12)
-
-
-def single_model():
-    return NonlinearScoreModel(
-        transition_mean_fn=lambda t,x:t[0]*x,
-        transition_mean_tangent_fn=lambda t,x,dx:x+t[0]*dx,
-        observation_fn=lambda x:x, observation_tangent_fn=lambda x,dx:dx,
-        observation_jacobian_fn=lambda x:tf.ones([x.shape[0],1,1],D),
-        process_covariance=tf.constant([[.4]],D),observation_covariance=tf.constant([[.6]],D))
-
-
-def batch_model():
-    return PerPointScoreModel(
-        transition_mean_fn=lambda t,x:t*x,
-        transition_mean_tangent_fn=lambda t,x,dx,dt:dt*x+t*dx,
-        observation_fn=lambda x:x, observation_tangent_fn=lambda x,dx:dx,
-        observation_jacobian_fn=lambda x:tf.ones([x.shape[0],1,1],D),
-        process_covariance=tf.constant([[.4]],D),observation_covariance=tf.constant([[.6]],D))
-
-
-def inputs():
-    x=tf.reshape(tf.linspace(tf.constant(-1.,D),tf.constant(1.,D),8),[8,1])
-    p=tf.ones([8,1,1],D)
-    noise=tf.random.stateless_normal([3,8,1],[23,10],dtype=D)
-    obs=tf.constant([[.2],[-.1],[.3]],D)
-    reset=x/tf.sqrt(tf.reduce_mean(x*x))
-    return x,p,noise,obs,reset
-
-
-CONTROLS=dict(reset_policy="contract_e",reset_sinkhorn_steps=8,reset_balance_steps=8,
-              reset_epsilon=2.,reset_ridge=1e-5,correction_steps=1,pairwise_steps=1,
-              correction_strength=.2,correction_lm_damping=.01,correction_lm_scale_floor=1e-4,
-              pairwise_strength=.02,
-              correction_trust_radius=.1,pairwise_rms_cap=2.,coordinate_cap=16.,coordinate_cap_power=8)
-
-
-@pytest.mark.parametrize("endpoint",[canonical_batch_fused_value_score,canonical_batch_fused_value_score_whileloop])
-@pytest.mark.parametrize("policy",["ancestor","marginal_mixture"])
-def test_batch_endpoints_reach_shared_correction_and_match_scalar(endpoint,policy):
-    x,p,z,y,reset=inputs();theta=tf.constant([[.7],[.8]],D)
-    options=dict(CONTROLS,reset_design=reset,importance_weight_policy=policy)
-    with patch('bayesfilter.highdim.ledh_canonical_score_tf.marginal_prior_ratio_tangent',
-               wraps=marginal_prior_ratio_tangent) as call:
-        @tf.function(input_signature=[tf.TensorSpec([2,1],D)],jit_compile=True,autograph=False)
-        def run(t):return endpoint(batch_model(),t,tf.ones([2,1],D),x,p,z,y,substeps=4,**options)
-        values,scores,status=run(theta)
-        assert call.called
-        assert all(c.kwargs['component_policy']==policy for c in call.call_args_list)
-    expected=[canonical_value_and_analytical_score(single_model(),t,x,p,z,y,
-        flow_substeps=4,with_score=True,**options) for t in theta]
-    assert bool(tf.reduce_all(status['program_valid']))
-    np.testing.assert_allclose(values,[v for v,s in expected],atol=1e-10,rtol=1e-10)
-    np.testing.assert_allclose(scores,[s[0] for v,s in expected],atol=1e-9,rtol=1e-9)
-
-
-@pytest.mark.parametrize("policy",["ancestor","marginal_mixture"])
-def test_recursive_score_and_trace_total_finite_difference(policy):
-    x,p,z,y,reset=inputs()
-    @tf.function(input_signature=[tf.TensorSpec([1],D)],jit_compile=True,autograph=False)
-    def run(t):return canonical_value_and_analytical_score(single_model(),t,x,p,z,y,
-        with_score=True,return_trace=True,flow_substeps=4,reset_design=reset,
-        importance_weight_policy=policy,**CONTROLS)
-    t=tf.constant([.7],D);value,score,trace=run(t)
-    assert len(trace)==3 and bool(tf.math.is_finite(value))
-    h=tf.constant(1e-5,D);fd=(run(t+h)[0]-run(t-h)[0])/(2*h)
-    np.testing.assert_allclose(score[0],fd,atol=1e-7,rtol=1e-7)
-
-
-def test_default_is_diagonal_and_unsupported_mixture_fails():
-    x,p,z,y,_=inputs();t=tf.constant([.7],D);kwargs=dict(flow_substeps=4,with_score=True)
-    default=canonical_value_and_analytical_score(single_model(),t,x,p,z,y,**kwargs)
-    own=canonical_value_and_analytical_score(single_model(),t,x,p,z,y,importance_weight_policy="ancestor",**kwargs)
-    for a,b in zip(default,own):np.testing.assert_array_equal(a,b)
-    for extra in [dict(importance_weight_policy="unknown"),
-                  dict(importance_weight_policy="marginal_mixture",annealed_stages=2)]:
-        with pytest.raises(ValueError):
-            canonical_value_and_analytical_score(single_model(),t,x,p,z,y,**kwargs,**extra)
-    custom=replace(single_model(),transition_log_density_fn=lambda *args:None)
-    with pytest.raises(ValueError,match="Gaussian"):
-        canonical_value_and_analytical_score(custom,t,x,p,z,y,importance_weight_policy="marginal_mixture",**kwargs)
-
-
-def test_multiple_exact_tiles_match_closed_form():
-    # N=4096 requires K=2048: exercise row and column accumulation, including
-    # nonuniform weights whose total derivative sums to zero.
-    n=4096
-    x=tf.reshape(tf.linspace(tf.constant(-2.,D),tf.constant(2.,D),n),[n,1])
-    mean=tf.ones_like(x)*.3;dx=tf.ones_like(x)*.2;dm=tf.ones_like(x)*.1
-    cov=tf.ones([n,1,1],D)*.7;dcov=tf.ones_like(cov)*.05
-    lw=tf.nn.log_softmax(tf.linspace(tf.constant(-1.,D),tf.constant(1.,D),n))
-    dl=tf.linspace(tf.constant(-.2,D),tf.constant(.4,D),n)
-    dl-=tf.reduce_sum(tf.exp(lw)*dl)
-    args=(x,dx,mean,dm,cov,dcov,lw,dl)
-    @tf.function(input_signature=[tf.TensorSpec(t.shape,D) for t in args],jit_compile=True,autograph=False)
-    def run(*t):return gaussian_mixture_log_density_tangent(*t)
-    value,tangent,valid,force=run(*args)
-    residual=(x-mean)[:,0]
-    expected=-.5*(math.log(2*math.pi*.7)+residual**2/.7)
-    derivative=-residual*.1/.7+.5*(residual**2/.7-1)*.05/.7
-    assert bool(valid & force)
-    np.testing.assert_allclose(value,expected,atol=1e-12,rtol=1e-12)
-    np.testing.assert_allclose(tangent,derivative,atol=1e-12,rtol=1e-12)
+def test_fp64_precision_observability_preserves_identity_cancellation():
+    x,dx,m,dm,c,dc,lw,dlw=inputs()
+    b=tf.eye(3,batch_shape=[5],dtype=tf.float64)
+    result=marginal_prior_ratio_tangent(x,dx,m,dm,c[0],dc[0],m,dm,b,
+        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
+    assert int(result[4])==0 and bool(result[2] & result[3])
+    tf.debugging.assert_near(result[0],tf.zeros([5],tf.float64),atol=1e-13)
+    tf.debugging.assert_near(result[1],tf.zeros([5],tf.float64),atol=1e-13)

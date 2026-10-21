@@ -1,0 +1,140 @@
+{
+  "classification": "mechanics_smoke_only",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tf32_enabled": true,
+  "jit_compile": true,
+  "gpu_visible": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "checks": [
+    {
+      "dtype": "float32",
+      "endpoint": "canonical_batch_fused_value_score",
+      "compile_first_seconds": 15.509628083993448,
+      "value_valid": [
+        true,
+        false,
+        true
+      ],
+      "force_valid": [
+        true,
+        false,
+        false
+      ],
+      "first_failure_stage": [
+        -1,
+        1,
+        1
+      ],
+      "first_failure_time": [
+        -1,
+        0,
+        0
+      ],
+      "mean_warm_seconds": 0.11528235700097866
+    },
+    {
+      "dtype": "float32",
+      "endpoint": "canonical_batch_fused_value_score_whileloop",
+      "compile_first_seconds": 9.66804909199709,
+      "value_valid": [
+        true,
+        false,
+        true
+      ],
+      "force_valid": [
+        true,
+        false,
+        false
+      ],
+      "first_failure_stage": [
+        -1,
+        1,
+        1
+      ],
+      "first_failure_time": [
+        -1,
+        0,
+        0
+      ],
+      "mean_warm_seconds": 0.0983140873334681
+    },
+    {
+      "dtype": "float64",
+      "endpoint": "canonical_batch_fused_value_score",
+      "compile_first_seconds": 8.559819691989105,
+      "value_valid": [
+        true,
+        false,
+        true
+      ],
+      "force_valid": [
+        true,
+        false,
+        false
+      ],
+      "first_failure_stage": [
+        -1,
+        1,
+        1
+      ],
+      "first_failure_time": [
+        -1,
+        0,
+        0
+      ],
+      "mean_warm_seconds": 0.12793961500089304
+    },
+    {
+      "dtype": "float64",
+      "endpoint": "canonical_batch_fused_value_score_whileloop",
+      "compile_first_seconds": 8.83720250200713,
+      "value_valid": [
+        true,
+        false,
+        true
+      ],
+      "force_valid": [
+        true,
+        false,
+        false
+      ],
+      "first_failure_stage": [
+        -1,
+        1,
+        1
+      ],
+      "first_failure_time": [
+        -1,
+        0,
+        0
+      ],
+      "mean_warm_seconds": 0.07537925366583902
+    }
+  ],
+  "allocator": {
+    "current": 10240,
+    "peak": 134225408
+  },
+  "status": "passed"
+}
