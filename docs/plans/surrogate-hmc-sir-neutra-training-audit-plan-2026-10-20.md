@@ -7,6 +7,42 @@ evidence for a new long training run. Existing unrelated changes are preserved.
 
 ## Active checkpoint
 
+2026-10-21, after the [optimization implementation and equivalence campaign](surrogate-hmc-optimization-results-2026-10-21.md): the matched SIR analytical
+value/score adapter, native complete-update sharding and frozen-map HMC binding
+are implemented and tested. The real GPU/XLA pilot used N4032, T50, ordinary
+FP32 filtering with TF32 off, logical B8 and native shard S4. Whole and sharded
+losses agree exactly; complete gradients and two Adam updates agree to recorded
+rounding limits, and checkpoint continuation is bitwise exact. All 130 distinct
+tests pass in their latest execution. The two-update map and finite HMC mechanics
+check establish integration, not trained-map coverage or posterior convergence.
+
+The numerical training machinery is ready. The unattended training campaign is
+not yet executable through the five-model master: its `PHASES` still contain
+only `endpoint-audit`, `filter-tuning`, `mechanics` and `inference`. The separate
+optimization master intentionally runs a bounded two-update integration check.
+Remaining work belongs to the existing phases below: add resumable training,
+monitoring, candidate/rung progression, freezing and adaptive-HMC orchestration;
+freeze the SIR-specific initialization, learning-rate schedule, seed partitions
+and budget before a serious run. The original six-configuration search is a
+proposal, not a calibrated default.
+
+Measured warm update times are 14.934 seconds for B8 whole-batch and 15.954
+seconds for B8/S4. At the first rate, six candidates with 128 updates each would
+take about 3.19 GPU hours, excluding compilation and monitoring; six candidates
+with 512 updates each would take about 12.74 hours before fresh-seed fits or
+HMC. These are extrapolations from the narrow integration fixture, not runtime
+guarantees. The completed six-hour optimization allocation used 2,758.012
+seconds, with 18,841.988 seconds unused; that remainder has not been allocated
+to a new training campaign. No training or HMC job is active. Refresh the
+remaining phases from these measurements instead of rerunning the completed
+adapter and capacity prerequisites.
+
+The following dated checkpoint and audit record describe earlier states.
+Their missing-adapter and missing-binding statements are superseded by this
+checkpoint; their unresolved target-specific training requirements remain.
+
+## Batching prerequisite checkpoint (historical)
+
 2026-10-21: the owner authorized committing the baseline, implementing the
 batching repair, reviewing the plan and executing it. The implementation and
 bounded capacity diagnostics are tracked in

@@ -1239,6 +1239,7 @@ def bind_neural_force_hmc_tuning_runner(
     force: FrozenPositionOnlyForce,
     target: FrozenTargetPotential,
     target_scope: str,
+    frozen_transport: Any = None,
 ) -> HMCTuningRunnerBinding:
     """Bind neural-force mechanics to the ordinary public tuning ladder.
 
@@ -1257,11 +1258,22 @@ def bind_neural_force_hmc_tuning_runner(
         raise InvalidNeuralForceHMCConfiguration(
             "force and endpoint target must use the same coordinate system"
         )
-    if force.coordinate_system != "raw":
+    if force.coordinate_system != "raw" and frozen_transport is None:
         raise InvalidNeuralForceHMCConfiguration(
             "ordinary neural-force tuning requires raw adapter coordinates; "
             "a transformed target belongs to the fixed-transport contract"
         )
+    if frozen_transport is not None:
+        from bayesfilter.inference.neutra_artifacts import LoadedFrozenNeuTraArtifact
+        if not isinstance(frozen_transport, LoadedFrozenNeuTraArtifact):
+            raise InvalidNeuralForceHMCConfiguration("expected a verified frozen NeuTra artifact")
+        identity = frozen_transport.manifest.transport_hash
+        if (force.coordinate_system != "transformed"
+                or not target.includes_chart_log_jacobian
+                or not force.identity.endswith(":"+identity)
+                or not target.identity.endswith(":"+identity)
+                or not scope.endswith(":"+identity)):
+            raise InvalidNeuralForceHMCConfiguration("frozen-map coordinate identity mismatch")
 
     def bound_runner(adapter: Any, initial_state: Any, config: Any) -> Any:
         return run_full_chain_neural_force_hmc(

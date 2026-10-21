@@ -1,8 +1,53 @@
 # Active surrogate-HMC reset memo
 
-Updated 2026-10-21 for campaign closeout and repository integration.
+Updated 2026-10-21 for optimization implementation closeout.
 Checkout: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917.
 Branch: ledh-graceful-failure-execution-20260917.
+Optimization baseline: d189c429542eb3a682677ce7fc463c3b796b69ea.
+
+## Current checkpoint
+
+The requested four-optimization implementation, review and equivalence plan is
+complete. Final GPU/XLA N4032 comparisons retain ordinary FP32 with TF32 off:
+all saved tensors for LGSSM, KSC SV, predator-prey and SIR are bitwise identical
+to baseline. Range bearing has small recorded FP32 differences, with observed
+runtime about 28% lower and allocator peak about 32% lower on the paired fixture.
+The triangular OT cache was rejected for slowdown and the original dense cache
+restored; the invariant feature hoist remains. The 130 distinct CPU tests all
+pass in their latest execution, including the repaired independent polar
+finite-difference check.
+
+The SIR matched target/trainer adapter, complete-update sharding and frozen-map
+HMC connection are implemented. A real N4032/T50 two-update integration pilot
+passes gradient/Adam equivalence and bitwise checkpoint continuation; its HMC
+mechanics rows are finite. This is an integration-only map, not a
+coverage-trained posterior map. Parent Phase 1's adapter/update gap is closed;
+target-specific training/search and subsequent adaptive SIR sampling remain.
+The five-model posterior objective is still incomplete.
+
+Plan: [optimization implementation](surrogate-hmc-optimization-implementation-2026-10-21.md).
+Result: [optimization results](surrogate-hmc-optimization-results-2026-10-21.md).
+Evidence: `artifacts/surrogate-hmc-optimization-20261021-01/`, including
+`comparison.json`, `saved-tensor-equivalence.json`, `test-summary.json` and
+`training-sir_d18-candidate-03/`. Master: `scripts/run_surrogate_hmc_optimization.py`.
+All final numerical source hashes match the executed manifest. Accounted worker
+time is 2,758.012 seconds of six hours; 18,841.988 seconds remain unused and no
+jobs are pending. Code and these records are included in the owner-requested
+optimization commit on this branch; this task does not repeat the earlier
+merge/push integration.
+
+Next research action: add the parent SIR training/search and adaptive-HMC phases
+to the five-model master, then execute their measured, bounded protocol. The
+numerical training machinery is ready, but the five-model master still has no
+NeuTra phase. The refreshed parent plan records that distinction and the pilot
+update costs. This is beyond the completed implementation/equivalence plan,
+not an unfinished job in the optimization master. No further GPU job was
+launched at closeout.
+
+## Earlier campaign and Git closeout (historical status)
+
+The following records the state before the optimization plan above. Its pending
+adapter/update statements are superseded by the current checkpoint.
 Reviewed batching commit: 65a379b2c; closeout commits follow it.
 
 Goal: test surrogate HMC on LGSSM, KSC SV, predator–prey and SIR at T50,

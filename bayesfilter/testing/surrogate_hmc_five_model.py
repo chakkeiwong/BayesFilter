@@ -126,6 +126,9 @@ class Case:
             ROOT / "bayesfilter/highdim/analytical_jet_tf.py",
             ROOT / "bayesfilter/highdim/covariance_proposal_score_tf.py",
             ROOT / "bayesfilter/highdim/covariance_proposal_score_batch_tf.py",
+            ROOT / "bayesfilter/highdim/covariance_proposal_native_models_tf.py",
+            ROOT / "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py",
+            ROOT / "bayesfilter/highdim/ledh_range_bearing_target_tf.py",
             ROOT / "bayesfilter/highdim/covariance_proposal_score_moments_tf.py",
             ROOT / "docs/benchmarks/run_ledh_covariance_proposal.py",
             ROOT / "scripts/run_range_bearing_covariance_comparison.py",
@@ -311,7 +314,8 @@ def configure_precision(case, policy="uniform", tuning_seed_offset=0):
         tuning_seed_offset=tuning_seed_offset)
 
 
-def bindings(case):
+def bindings(case, *, neutra_payload=None, training_target_signature=None,
+             training_target_scope=None):
     p = case.p
     batch_size = 2
     dtype = case.force_dtype
@@ -377,13 +381,30 @@ def bindings(case):
     frozen_force = FrozenPositionOnlyForce(force, scope+":analytical-"+case.precision_policy+"-"+case.force_dtype.name,
         semantics="deterministic_position_only_proposal_field")
     frozen_target = FrozenTargetPotential(endpoint, scope+":independent-reference")
-    binding = bind_neural_force_hmc_tuning_runner(force=frozen_force, target=frozen_target, target_scope=scope)
+    transport = None
+    if neutra_payload is not None:
+        if case.name != "sir_d18" or not training_target_signature:
+            raise ValueError("a SIR map requires its matched training-target signature")
+        from bayesfilter.testing.surrogate_hmc_sir_neutra import (
+            frozen_neutra_bindings, verify_sir_training_scope)
+        expected = verify_sir_training_scope(case, neutra_payload, training_target_scope)
+        if training_target_signature != expected:
+            raise ValueError("SIR map signature differs from its current training scope")
+        mapped = frozen_neutra_bindings(neutra_payload,
+            target_signature=training_target_signature, raw_force=frozen_force,
+            raw_target=frozen_target, target_scope=scope)
+        frozen_force, frozen_target, binding = (mapped[k] for k in ("force", "target", "binding"))
+        transport = mapped["transport"]
+        scope = binding.target_scope
+    else:
+        binding = bind_neural_force_hmc_tuning_runner(force=frozen_force, target=frozen_target, target_scope=scope)
     class Adapter:
         target_scope = scope
         def adapter_signature(self):
             return scope + ":" + binding.binding_hash
     return dict(force=frozen_force, target=frozen_target, binding=binding, adapter=Adapter(),
-                scope=scope, scalar_force=scalar_force, independent=independent, reference_role=reference_role)
+                scope=scope, scalar_force=scalar_force, independent=independent, reference_role=reference_role,
+                transport=transport)
 
 
 
@@ -545,12 +566,16 @@ def make_tuning_config(case, scope, *, target_accept_prob=.7, initial_step_size=
 
 
 def inference(case, output, selection_path, *, resume_manifest=None,
-              target_accept_prob=None, initial_step_size=None):
+              target_accept_prob=None, initial_step_size=None,
+              neutra_payload=None, training_target_signature=None,
+              training_target_scope=None):
     """Public-tuner nomination, adaptive warmup and cumulative retained sampling."""
     from dataclasses import replace
     from bayesfilter.inference import tune_hmc_kernel, VerifiedTensorFlowHMCConfig
     load_selection(case, selection_path)
-    components = bindings(case)
+    components = bindings(case, neutra_payload=neutra_payload,
+                          training_target_signature=training_target_signature,
+                          training_target_scope=training_target_scope)
     if resume_manifest is not None:
         if target_accept_prob is not None or initial_step_size is not None:
             raise ValueError("resuming a frozen kernel cannot also request retuning")
@@ -563,7 +588,9 @@ def inference(case, output, selection_path, *, resume_manifest=None,
             initial_step_size=.01 if initial_step_size is None else initial_step_size)
     save(Path(output)/"hmc-config.json", dict(config=config.payload(), scope=case.scope(),
          endpoint=components["reference_role"], posterior_sampling_includes_public_verification_draws=True,
-         redundant_validation_phase=False))
+         redundant_validation_phase=False,
+         sampling_coordinates="frozen_neutra_z" if components["transport"] is not None else "q",
+         bound_target_scope=components["scope"]))
     begin = time.monotonic()
     try:
         result = tune_hmc_kernel(adapter=components["adapter"], initial_position=(0.,)*case.p,
@@ -596,6 +623,9 @@ def inference(case, output, selection_path, *, resume_manifest=None,
         states = tensor("states")
         # These archived states are affine tuning coordinates; return to q.
         q = result.nomination.center + tf.linalg.matmul(states, result.nomination.factor, transpose_b=True)
+        if components["transport"] is not None:
+            shape = tf.shape(q)
+            q = tf.reshape(components["transport"].forward_batch(tf.reshape(q, [-1, case.p])), shape)
         record.update(diagnostics=compute_coordinate_diagnostics(tf.transpose(q, [1, 0, 2])),
                       q_mean=tf.reduce_mean(q, axis=[0, 1]),
                       q_standard_deviation=tf.math.reduce_std(q, axis=[0, 1]),

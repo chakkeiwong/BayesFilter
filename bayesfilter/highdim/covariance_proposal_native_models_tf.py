@@ -17,9 +17,8 @@ def diagonal(x):
 class NativeModels:
     """Native B-row model laws and analytical partials for all P parameters.
 
-    Shared Jet operations reuse the primal. The range-bearing local polar
-    callback currently flattens P,B,N for its analytic directional interface;
-    that bounded callback still repeats primal work across parameter directions.
+    Shared Jet operations reuse the primal. Range-bearing polar geometry is
+    computed once across B,N and shared by every analytical parameter tangent.
     """
     def __init__(self, spec, theta):
         self.spec = spec
@@ -149,14 +148,10 @@ class NativeModels:
         return Jet(v,t)
 
     def _polar(self,x,jacobian=False):
-        from bayesfilter.highdim.ledh_range_bearing_target_tf import (polar_observation,
-            polar_observation_tangent,polar_jacobian,polar_jacobian_tangent)
+        from bayesfilter.highdim.ledh_range_bearing_target_tf import polar_value_tangents
         flat = tf.reshape(x.v,[-1,self.d])
-        fn,dfn = (polar_jacobian,polar_jacobian_tangent) if jacobian else (polar_observation,polar_observation_tangent)
-        v = fn(flat)
-        # Local directional callbacks see a single native P*B*N tensor, not P replays.
-        repeated = tf.broadcast_to(flat[None],[self.p,*flat.shape])
-        t = dfn(tf.reshape(repeated,[-1,self.d]),tf.reshape(x.t,[-1,self.d]))
+        v,t = polar_value_tangents(flat,tf.reshape(x.t,[self.p,-1,self.d]),
+                                   jacobian=jacobian)
         shape = [*x.v.shape[:-1],*v.shape[1:]]
         return Jet(tf.reshape(v,shape),tf.reshape(t,[self.p,*shape]))
 

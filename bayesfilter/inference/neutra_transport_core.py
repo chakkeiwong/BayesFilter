@@ -386,8 +386,19 @@ def forward_proposal_score(transport, latent):
 
 
 def reverse_kl_evaluate(transport, target_value_score, latent, *, estimator, variables=None,
-                        target_dtype=None):
+                        target_dtype=None, sample_mask=None):
     variables = tuple(transport.trainable_variables if variables is None else variables)
+    mask = (tf.ones(latent.shape[:1], tf.bool) if sample_mask is None else
+            tf.ensure_shape(tf.convert_to_tensor(sample_mask, tf.bool), latent.shape[:1]))
+
+    def mean(value):
+        return tf.reduce_sum(tf.where(mask, value, tf.zeros_like(value))) / tf.reduce_sum(tf.cast(mask, value.dtype))
+
+    def finite_rows(value):
+        finite = tf.math.is_finite(value)
+        if value.shape.rank > 1:
+            finite = tf.reduce_all(finite, axis=tuple(range(1, value.shape.rank)))
+        return tf.reduce_all(finite | ~mask)
     with tf.GradientTape(watch_accessed_variables=False) as tape:
         tape.watch(variables)
         if estimator == "path":
@@ -407,23 +418,23 @@ def reverse_kl_evaluate(transport, target_value_score, latent, *, estimator, var
             raise ValueError("target values and scores must share float32 or float64 dtype")
         status = tf.ensure_shape(tf.convert_to_tensor(status, tf.bool), latent.shape[:1])
         # RKL up to the parameter-independent base log-density constant.
-        actual_loss = tf.reduce_mean(-values-tf.cast(logdet, values.dtype))
+        actual_loss = mean(-values-tf.cast(logdet, values.dtype))
         # Keep target values/scores in their own precision. Casting this carrier
         # backpropagates to the flow dtype, including FP32 parameter gradients.
         physical_target = tf.cast(physical, values.dtype)
         if estimator == "path":
-            carrier = tf.reduce_mean(tf.reduce_sum(tf.stop_gradient(
+            carrier = mean(tf.reduce_sum(tf.stop_gradient(
                 tf.cast(proposal_score, score.dtype)-score)*physical_target, axis=-1))
         else:
             attached = tf.stop_gradient(values)+tf.reduce_sum(
                 (physical_target-tf.stop_gradient(physical_target))*tf.stop_gradient(score), axis=-1)
-            carrier = tf.reduce_mean(-attached-tf.cast(logdet, values.dtype))
+            carrier = mean(-attached-tf.cast(logdet, values.dtype))
     gradients = tape.gradient(carrier, variables)
     if any(g is None for g in gradients):
         raise ValueError("missing transport parameter gradient")
-    valid = tf.reduce_all(tf.stack((tf.reduce_all(status), *(
-        tf.reduce_all(tf.math.is_finite(v)) for v in
-        (latent, physical, values, score, logdet, proposal_score, actual_loss, carrier, *gradients)))))
+    valid = tf.reduce_all(tf.stack((tf.reduce_any(mask), tf.reduce_all(status | ~mask),
+        *(finite_rows(v) for v in (latent, physical, values, score, logdet, proposal_score)),
+        *(tf.reduce_all(tf.math.is_finite(v)) for v in (actual_loss, carrier, *gradients)))))
     return {"loss": actual_loss, "gradients": tuple(gradients), "valid": valid,
             "proposal_score": proposal_score}
 
