@@ -1,0 +1,31 @@
+{
+  "checkout": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/highdim/test_ledh_canonical_batch_fused.py::test_all_computed_correction_diagnostics_reach_batch_consumer",
+    "tests/test_surrogate_hmc_m13_consumer.py",
+    "tests/test_wrapped_gaussian_tf.py",
+    "tests/test_surrogate_hmc_closure_program.py"
+  ],
+  "commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "device": "cpu",
+  "exit_code": 0,
+  "gpu_intentionally_hidden": true,
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "repair_attempts": [
+    {
+      "failure": "Focused authority test exposed incompatible default diagnostic shape (expected scalar, got [state_dim])",
+      "repair": "Make expanded diagnostic signature opt-in and restore scalar five-field default contract"
+    },
+    {
+      "verification": "All focused tests pass after shape correction"
+    }
+  ],
+  "test_scope": "M13 observability compatibility repair",
+  "wall_seconds": 20.761533174998476
+}

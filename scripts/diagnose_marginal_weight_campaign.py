@@ -22,12 +22,11 @@ def source(name):
     raise FileNotFoundError(name)
 
 
-def prior_trajectory_reference(tf,m,spec,observed,n):
+def prior_trajectory_reference(tf,m,spec,observed,n,*,dtype=None,dynamic_observations=False):
     """Naive full-prior trajectory importance sampling, deliberately no resampling."""
-    dtype=tf.float64;d,p,t=(spec[k] for k in ('d','p','t'));model=spec['model']
-    @tf.function(input_signature=[tf.TensorSpec([p],dtype),tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
-    def evaluate(theta,seed):
-        if spec['kind']=='m13':mean,covariance=spec['fixture'].m0,spec['fixture'].P0
+    dtype=tf.float64 if dtype is None else dtype;d,p,t=(spec[k] for k in ('d','p','t'));model=spec['model']
+    def evaluate(theta,observed,seed):
+        if spec['kind']=='m13':mean,covariance=tf.cast(spec['fixture'].m0,dtype),tf.cast(spec['fixture'].P0,dtype)
         else:mean,covariance=model.initial_distribution_fn(theta)
         x=mean+tf.random.stateless_normal([n,d],seed,dtype=dtype)@tf.transpose(tf.linalg.cholesky(covariance))
         rows=tf.broadcast_to(theta,[n,p])
@@ -45,19 +44,18 @@ def prior_trajectory_reference(tf,m,spec,observed,n):
             return i+1,x,logw+logg
         _,_,logw=tf.while_loop(lambda i,*_:i<t,body,(tf.constant(0),x,tf.zeros([n],dtype)))
         return tf.reduce_logsumexp(logw)-tf.math.log(tf.cast(n,dtype))
-    return evaluate
+    return m.compile_reference(evaluate,spec,dtype,observed,dynamic_observations,seeded=True)
 
 
-def gaussian_reference(tf,m,spec,observed):
+def gaussian_reference(tf,m,spec,observed,*,dtype=None,dynamic_observations=False):
     """Kalman / moment-matched KSC / EKF comparator; AD is diagnostic only."""
-    dtype=tf.float64;d,p=(spec[k] for k in ('d','p'));kind=spec['kind']
-    if kind.startswith('lg'):return m.kalman_reference(spec,observed)
+    dtype=tf.float64 if dtype is None else dtype;d,p=(spec[k] for k in ('d','p'));kind=spec['kind']
+    if kind.startswith('lg'):return m.kalman_reference(spec,observed,dtype=dtype,dynamic_observations=dynamic_observations)
     mixture=m.ksc_1998_log_chi_square_mixture()
     weights,means,variances=(tf.cast(getattr(mixture,k),dtype) for k in ('weights','means','variances'))
     mixture_mean=tf.reduce_sum(weights*means)
     mixture_variance=tf.reduce_sum(weights*(variances+means*means))-mixture_mean**2
-    @tf.function(input_signature=[tf.TensorSpec([p],dtype)],jit_compile=True,autograph=False)
-    def evaluate(theta):
+    def evaluate(theta,observed):
         with tf.GradientTape() as tape:
             tape.watch(theta)
             if kind=='ksc':
@@ -65,8 +63,8 @@ def gaussian_reference(tf,m,spec,observed):
                 f=tf.reshape(theta[0],[1,1]);q=tf.ones([1,1],dtype)
                 r=tf.reshape(mixture_variance,[1,1])
             else:
-                fixture=spec['fixture'];mean,covariance=fixture.m0,fixture.P0
-                f=fixture.A;q=fixture.Q*tf.exp(2*theta[0]);r=fixture.R*tf.exp(2*theta[1])
+                fixture=spec['fixture'];mean,covariance=tf.cast(fixture.m0,dtype),tf.cast(fixture.P0,dtype)
+                f=tf.cast(fixture.A,dtype);q=tf.cast(fixture.Q,dtype)*tf.exp(2*theta[0]);r=tf.cast(fixture.R,dtype)*tf.exp(2*theta[1])
             total=tf.zeros([],dtype)
             for i in range(spec['t']):
                 mean=tf.linalg.matvec(f,mean);covariance=f@covariance@tf.transpose(f)+q
@@ -88,7 +86,7 @@ def gaussian_reference(tf,m,spec,observed):
                 stable=tf.eye(d,dtype=dtype)-gain@h
                 covariance=stable@covariance@tf.transpose(stable)+gain@r@tf.transpose(gain)
         return dict(value=total,score=tape.gradient(total,theta))
-    return evaluate
+    return m.compile_reference(evaluate,spec,dtype,observed,dynamic_observations)
 
 
 def run(args,tf,m):

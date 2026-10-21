@@ -1,0 +1,127 @@
+{
+  "status": "PASS",
+  "model": "predator_prey",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "predator_prey",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-repair-unit-20261011-03/predator_prey",
+    "--gpu",
+    "0",
+    "--unit",
+    "--correction-steps",
+    "1",
+    "--offset",
+    "0.08"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-11T15:28:34.230166+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "8ed9bb0e7ae9950e23b683671889d2fe92f86b768045096f8c62060581c67ae9",
+    "covariance_proposal_score_tf.py": "fa061f64e1b92227936523cdacdbb317b45678a24888e6b5cf50a1c32f606d5c",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "particles": 64,
+  "horizon": 2,
+  "parameter_count": 6,
+  "state_dimension": 2,
+  "observation_dimension": 2,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 2,
+    "reset_steps": 4,
+    "reset_epsilon": 1.0,
+    "correction_steps": 1,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.8999999761581421,
+    0.0
+  ],
+  "offset": 0.08,
+  "data_sha256": "5798daf584595804a87dbfc620a49fc1c992289724b2b240b7431971e4eabb37",
+  "gpu_devices": [],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "new_first_call_seconds": 9.961556788068265,
+  "candidate": {
+    "value": -14.256779136627816,
+    "score": [
+      -61.839528932410346,
+      -0.7263737018397882,
+      -0.06174238162386751,
+      10.346023965818155,
+      5.442383629137712,
+      -7.602279294033208
+    ],
+    "valid": true,
+    "steps_completed": 2
+  },
+  "old_first_call_seconds": 6.074632642092183,
+  "baseline": {
+    "value": -14.256779136627816,
+    "score": [
+      -61.83952893241035,
+      -0.726373701839788,
+      -0.06174238162386724,
+      10.346023965818151,
+      5.442383629137681,
+      -7.602279294033208
+    ],
+    "valid": true
+  },
+  "score_absolute_error": [
+    7.105427357601002e-15,
+    2.220446049250313e-16,
+    2.706168622523819e-16,
+    3.552713678800501e-15,
+    3.108624468950438e-14,
+    0.0
+  ],
+  "value_absolute_error": 0.0,
+  "tolerance": {
+    "rtol": 2e-07,
+    "atol": 2e-07
+  },
+  "parity_pass": true,
+  "paired_warmed_seconds": [
+    {
+      "new": 0.016680972883477807,
+      "old": 0.016157777048647404
+    }
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "median_speedup": 0.9686351726314105,
+  "wall_seconds": 18.79035180993378
+}

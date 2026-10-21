@@ -183,13 +183,14 @@ row among healthy rows, all parameter scores, completed observations and
 intermediate particles/covariances. Cover SIR first and the other four model
 adapters before a cross-model completion claim. Test optional correction too.
 
-Numerical promotion criterion: preserve the intended finite value and total
-score; use tight precision-scaled primitive checks and the owner's existing
-1% full-output materiality rule with vector-scaled score differences and an
-explicit near-zero floor. Freeze the precise comparison scales before running;
-do not select them after seeing results. The observed 8.274% CPU/GPU score gap
-must be localized against references rather than adopting CPU output as truth.
-Final-posterior correctness is outside this capacity repair's evidence.
+Revised numerical criterion (owner correction, 2026-10-21): preserve the
+intended finite value and total score and retain precision-scaled primitive
+algebra checks. The former 1% full-output rule is retired. Assess scientific
+materiality against the Zhao–Cui adapted reference with estimation uncertainty,
+following [the current policy](sir-batching-materiality-policy-2026-10-21.md).
+CPU/GPU and FP32/FP64 differences remain explanatory; CPU output is not truth.
+Missing replication is uncertainty, not proof of equivalence or a new automatic
+blocker. Final-posterior correctness is outside this capacity repair's evidence.
 
 Capacity promotion criterion: full-horizon execution with measured host/device
 peaks within the configured limits. Timeouts are incomplete measurements, not

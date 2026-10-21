@@ -1,0 +1,11 @@
+# HMC consumer cost localization
+
+Question: why does the four-chain LGSSM HMC consumer cost about180.56s per L=1 transition when a standalone B2 score evaluation was16.36s? These observations use different positions; they cannot establish a compiler regression by themselves.
+
+Compare the same selected controls, fixed data, designs, FP32 scores, N4032/K2016, GPU, and four positions used by the mechanics pilot. Baselines are two standalone B2 score calls and the actual repository force binding. Measure the independent endpoint separately. Test a native B4 invocation as an engineering diagnostic, not as a newly tuned HMC force. Compilation is separated from two warmed measurements. Compare values/score/status outputs before interpreting timing. A score discrepancy greater than1% or invalid row vetoes a proposed execution change. Runtime differences are descriptive; no statistical speed or posterior claim. Save per-call timings, paired output gaps, device memory, source identities, and selected tuning path in a new versioned result.
+
+Defaults: four positions are the existing mechanics starts, not a posterior sample; B2 is the frozen production consumer grouping; B4 is a diagnostic hypothesis requiring new scope tuning before HMC use. The 1% threshold is the owner criterion, applied componentwise with unit floor. Healthy exact-output parity is stronger evidence where it occurs. Pure numerical kernels use explicit signatures and XLA. No eager or Python sample loop is proposed as an HMC replacement. Host timing loops are diagnostic only.
+
+Budget: at most1500 additional GPU worker wall seconds, charged to the existing36000-second allocation. Run only after the current five-scope advance worker sequence is idle and only if this allocation remains. Invalid or incomplete results stop this diagnostic; independent scope candidate failures do not cancel it. No external compute or new approval gate.
+
+Skeptical audit passed: same-input comparison corrects the unmatched timing baseline; endpoint cost is isolated; batch-size change is not silently promoted; numerical/runtime source files remain frozen. A timing result alone cannot repair or certify practical HMC. The main remaining alternative explanations are graph embedding/layout changes, scope/control differences, and quadratic particle work.

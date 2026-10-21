@@ -299,6 +299,8 @@ class NeuralForceTransitionKernelResults(NamedTuple):
     divergence: tf.Tensor
     force_fallback: tf.Tensor
     endpoint_status: dict[str, tf.Tensor]
+    retained_force: tuple[tf.Tensor, tf.Tensor]
+    force_call_count: tf.Tensor
 
 
 class NeuralForceHMCChain(NamedTuple):
@@ -477,6 +479,16 @@ def neural_force_proposal(
 ) -> NeuralForceProposal:
     """Execute the fixed symmetric proposal and terminal momentum flip."""
 
+    return _neural_force_proposal(
+        position, momentum, force, config, step_size=step_size
+    )[0]
+
+
+def _neural_force_proposal(
+    position, momentum, force, config, *, step_size=None, initial_force=None
+):
+    """Shared proposal; return endpoint forces for exact retained-state reuse."""
+
     dtype = config.tf_dtype
     dimension = len(config.inverse_mass_diagonal)
     position = _assert_all_finite(
@@ -519,9 +531,13 @@ def neural_force_proposal(
     ):
         step_size = tf.identity(step_size)
     inverse_mass = tf.constant(config.inverse_mass_diagonal, dtype=dtype)
-    initial_force, initial_force_fallback = _evaluate_force(
-        force, position, dimension=dimension, dtype=dtype
-    )
+    initial_call_count = tf.constant(int(initial_force is None), tf.int32)
+    if initial_force is None:
+        initial_force = _evaluate_force(
+            force, position, dimension=dimension, dtype=dtype
+        )
+    starting_force = initial_force
+    initial_force, initial_force_fallback = starting_force
     momentum, initial_momentum_invalid = _sanitize_batch_matrix(
         momentum - 0.5 * step_size * initial_force
     )
@@ -592,15 +608,16 @@ def neural_force_proposal(
     )
     divergence = tf.logical_or(divergence, final_momentum_invalid)
     force_fallback = tf.logical_or(force_fallback, final_force_fallback)
-    return NeuralForceProposal(
+    proposal = NeuralForceProposal(
         position=final_position,
         momentum=-final_momentum,
         force_call_count=(
-            tf.cast(config.num_leapfrog_steps, tf.int32) + tf.constant(1, tf.int32)
+            tf.cast(config.num_leapfrog_steps, tf.int32) + initial_call_count
         ),
         divergence=divergence,
         force_fallback=force_fallback,
     )
+    return proposal, (final_force, final_force_fallback), starting_force
 
 
 def neural_force_hmc_transition(
@@ -614,6 +631,18 @@ def neural_force_hmc_transition(
     step_size: tf.Tensor | float | None = None,
 ) -> NeuralForceHMCTransition:
     """Run one corrected batched transition with one new endpoint evaluation."""
+
+    return _neural_force_hmc_transition(
+        position, current_potential, force, target, config, seed,
+        step_size=step_size,
+    )[0]
+
+
+def _neural_force_hmc_transition(
+    position, current_potential, force, target, config, seed, *,
+    step_size=None, retained_force=None,
+):
+    """Return the transition and the force at its accepted or retained state."""
 
     dtype = config.tf_dtype
     dimension = len(config.inverse_mass_diagonal)
@@ -654,12 +683,13 @@ def neural_force_hmc_transition(
         tf.shape(position), momentum_seed, dtype=dtype
     ) * tf.math.rsqrt(inverse_mass)
     momentum, generated_momentum_invalid = _sanitize_batch_matrix(momentum)
-    proposal = neural_force_proposal(
+    proposal, proposed_force, starting_force = _neural_force_proposal(
         position,
         momentum,
         force,
         config,
         step_size=step_size,
+        initial_force=retained_force,
     )
     proposed_potential, endpoint_status = _evaluate_endpoint_potential(
         target, proposal.position, dtype=dtype, return_status=True
@@ -739,7 +769,11 @@ def neural_force_hmc_transition(
         force_fallback=proposal.force_fallback,
         endpoint_status=endpoint_status,
     )
-    return NeuralForceHMCTransition(next_position, next_potential, trace)
+    next_force = (
+        tf.where(accepted[:, tf.newaxis], proposed_force[0], starting_force[0]),
+        tf.where(accepted, proposed_force[1], starting_force[1]),
+    )
+    return NeuralForceHMCTransition(next_position, next_potential, trace), next_force
 
 
 class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
@@ -789,6 +823,11 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
         )
         target_log_prob = -potential
         zeros = tf.zeros_like(target_log_prob)
+        # Rebootstrap after changing field or coordinates, as for a changed target.
+        retained_force = _evaluate_force(
+            self.force, state, dimension=len(self.config.inverse_mass_diagonal),
+            dtype=self.config.tf_dtype,
+        )
         return NeuralForceTransitionKernelResults(
             accepted_results=NeuralForceEndpointKernelResults(target_log_prob),
             is_accepted=tf.ones_like(target_log_prob, dtype=tf.bool),
@@ -800,8 +839,10 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
             delta_h=zeros,
             finite_status=tf.math.is_finite(target_log_prob),
             divergence=tf.zeros_like(target_log_prob, dtype=tf.bool),
-            force_fallback=tf.zeros_like(target_log_prob, dtype=tf.bool),
+            force_fallback=retained_force[1],
             endpoint_status=endpoint_status,
+            retained_force=retained_force,
+            force_call_count=tf.constant(1, tf.int32),
         )
 
     def one_step(
@@ -816,7 +857,7 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
             previous_kernel_results.accepted_results.target_log_prob,
             dtype=self.config.tf_dtype,
         )
-        transition = neural_force_hmc_transition(
+        transition, retained_force = _neural_force_hmc_transition(
             current_state,
             current_potential,
             self.force,
@@ -824,6 +865,7 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
             self.config,
             seed,
             step_size=previous_kernel_results.step_size,
+            retained_force=previous_kernel_results.retained_force,
         )
         trace = transition.trace
         return transition.position, NeuralForceTransitionKernelResults(
@@ -840,6 +882,8 @@ class NeuralForceTransitionKernel(tfp.mcmc.TransitionKernel):
             divergence=trace.divergence,
             force_fallback=trace.force_fallback,
             endpoint_status=trace.endpoint_status,
+            retained_force=retained_force,
+            force_call_count=trace.force_call_count,
         )
 
     @property
@@ -1313,6 +1357,11 @@ def sample_neural_force_hmc(
     initial_position = tf.convert_to_tensor(initial_position, dtype=dtype)
     initial_potential = tf.convert_to_tensor(initial_potential, dtype=dtype)
     seed = tf.convert_to_tensor(seed, tf.int32)
+    # Cache the sanitized field and its fallback flag. Charge initialization
+    # to the first transition so physical evaluation counts remain complete.
+    initial_force = _evaluate_force(
+        force, initial_position, dimension=len(config.inverse_mass_diagonal), dtype=dtype
+    )
     positions = tf.TensorArray(dtype, size=total, clear_after_read=False)
     potentials = tf.TensorArray(dtype, size=total, clear_after_read=False)
     accepted = tf.TensorArray(tf.bool, size=total, clear_after_read=False)
@@ -1353,10 +1402,12 @@ def sample_neural_force_hmc(
         endpoint_count_array: tf.TensorArray,
         force_count_array: tf.TensorArray,
         endpoint_status_array: dict[str, tf.TensorArray],
+        retained_force: tuple[tf.Tensor, tf.Tensor],
     ) -> tuple[Any, ...]:
         iteration_seed = tf.random.experimental.stateless_fold_in(seed, index)
-        transition = neural_force_hmc_transition(
-            position, potential, force, target, config, iteration_seed
+        transition, retained_force = _neural_force_hmc_transition(
+            position, potential, force, target, config, iteration_seed,
+            retained_force=retained_force,
         )
         return (
             index + 1,
@@ -1375,9 +1426,11 @@ def sample_neural_force_hmc(
             divergence_array.write(index, transition.trace.divergence),
             force_fallback_array.write(index, transition.trace.force_fallback),
             endpoint_count_array.write(index, transition.trace.endpoint_call_count),
-            force_count_array.write(index, transition.trace.force_call_count),
+            force_count_array.write(index, transition.trace.force_call_count
+                                    + tf.cast(index == 0, tf.int32)),
             {key: array.write(index, transition.trace.endpoint_status[key])
              for key, array in endpoint_status_array.items()},
+            retained_force,
         )
 
     result = tf.while_loop(
@@ -1402,6 +1455,7 @@ def sample_neural_force_hmc(
             endpoint_counts,
             force_counts,
             endpoint_status_arrays,
+            initial_force,
         ),
         parallel_iterations=1,
     )

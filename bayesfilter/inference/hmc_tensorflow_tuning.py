@@ -288,10 +288,13 @@ class TensorFlowHMCKernelTuningConfig:
     target_status_trace_policy: str = "none"
     use_xla: bool = True
     non_xla_reason: str | None = None
+    max_step_size: float | None = None
+    energy_error_max: float | None = None
 
     def __post_init__(self) -> None:
         dimension = _positive_int(self.parameter_dimension, "parameter_dimension")
         role = str(self.evidence_role)
+        role = {"diagnostic_smoke": "diagnostic_only", "diagnostic_candidate_screen": "candidate"}.get(role, role)
         if role not in {"diagnostic_only", "candidate"}:
             raise ValueError("evidence_role must be diagnostic_only or candidate")
         windows = tuple(
@@ -380,6 +383,10 @@ class TensorFlowHMCKernelTuningConfig:
         object.__setattr__(self, "eigenvalue_floor", floor)
         object.__setattr__(self, "max_condition_number", condition)
         object.__setattr__(self, "seed", seed)
+        for name in ("max_step_size", "energy_error_max"):
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, _positive_finite(value, name))
         for name in (
             "budget_provenance",
             "initial_step_size_provenance",
@@ -442,6 +449,8 @@ class TensorFlowHMCKernelTuningConfig:
                 "and_target_accept_prob"
             ),
             "initial_step_size": self.initial_step_size,
+            "max_step_size": self.max_step_size,
+            "energy_error_max": self.energy_error_max,
             "budget_provenance": self.budget_provenance,
             "initial_step_size_provenance": self.initial_step_size_provenance,
             "geometry_provenance": self.geometry_provenance,
@@ -544,6 +553,8 @@ class TensorFlowHMCKernelTuningConfig:
             target_status_trace_policy=payload["target_status_trace_policy"],
             use_xla=payload["use_xla"],
             non_xla_reason=payload.get("non_xla_reason"),
+            max_step_size=payload.get("max_step_size"),
+            energy_error_max=payload.get("energy_error_max"),
         )
 
 
@@ -601,7 +612,7 @@ ENDPOINT_STATUS_TRACE_FIELDS = (
     "value_valid", "force_valid", "outside_declared_support",
     "value_failure_code", "force_failure_code", "first_failure_time",
     "first_failure_stage", "first_failure_particle", "numerical_failure",
-    "force_fallback", "phase", "trajectory_length", "round",
+    "force_fallback", "coordinate_boundary_rounding", "phase", "trajectory_length", "round",
 )
 
 
@@ -652,7 +663,7 @@ def _run_tensor_steps(
     delta_h = tf.TensorArray(_DTYPE, num_results, element_shape=vectors)
     accepted = tf.TensorArray(tf.bool, num_results, element_shape=vectors)
     endpoint_status = tf.TensorArray(
-        tf.int32, num_results, element_shape=[_CHAIN_COUNT, 10])
+        tf.int32, num_results, element_shape=[_CHAIN_COUNT, len(ENDPOINT_STATUS_TRACE_FIELDS)-3])
 
     def cond(index: tf.Tensor, *_: Any) -> tf.Tensor:
         return index < tf.constant(num_results, tf.int32)
@@ -687,7 +698,8 @@ def _run_tensor_steps(
             endpoint_array.write(index, tf.stack([
                 tf.cast(inner.endpoint_status[name], tf.int32)
                 for name in ENDPOINT_STATUS_TRACE_FIELDS[:9]
-            ] + [tf.cast(inner.force_fallback, tf.int32)], axis=-1)),
+            ] + [tf.cast(inner.force_fallback, tf.int32),
+                 tf.cast(inner.endpoint_status["coordinate_boundary_rounding"], tf.int32)], axis=-1)),
         )
 
     result = tf.while_loop(
@@ -867,6 +879,26 @@ def _phase_seed(root: tf.Tensor, phase: int) -> tf.Tensor:
     )
 
 
+def _bounded_fixed_step(step, config):
+    """Cap only fixed nomination/verification steps, never the target or force."""
+    if config.max_step_size is None:
+        return step
+    return tf.minimum(step, tf.constant(config.max_step_size, _DTYPE))
+
+
+def _guard_candidate_energy(decision, delta_h, config):
+    """A finite energy-limit failure requests the existing bounded step repair."""
+    if config.energy_error_max is None:
+        return decision
+    finite = tf.reduce_all(tf.math.is_finite(delta_h))
+    healthy = tf.logical_and(finite, tf.reduce_all(
+        tf.abs(delta_h) <= tf.constant(config.energy_error_max, _DTYPE)))
+    return decision._replace(
+        passed=tf.logical_and(decision.passed, healthy),
+        log_acceptance_defined=tf.logical_and(decision.log_acceptance_defined, finite),
+        repair_direction=tf.where(healthy, decision.repair_direction, tf.constant(-1, tf.int32)))
+
+
 def _candidate_verification(
     *,
     binding: HMCTuningRunnerBinding,
@@ -892,7 +924,7 @@ def _candidate_verification(
         seed=_phase_seed(seed, 0),
         adaptive=True,
     )
-    step = adapted.final_step_size
+    step = _bounded_fixed_step(adapted.final_step_size, config)
     state = adapted.final_state
 
     def run_verification(
@@ -916,7 +948,7 @@ def _candidate_verification(
             chunk.log_accept_ratio,
             divergence_count=tf.reduce_sum(tf.cast(chunk.divergence, tf.int32)),
         )
-        return chunk, decision
+        return chunk, _guard_candidate_energy(decision, chunk.delta_h, config)
 
     verified, decision = run_verification(state, step, 0)
     endpoint_traces = [
@@ -935,6 +967,7 @@ def _candidate_verification(
                 verified.final_step_size,
             ),
         )
+        repaired_step = _bounded_fixed_step(repaired_step, config)
         needs_repair = tf.logical_and(
             tf.logical_not(decision.passed),
             tf.logical_and(
@@ -1091,7 +1124,7 @@ def _build_tuning_graph(
         candidate_summary = tf.TensorArray(
             _DTYPE,
             candidate_count,
-            element_shape=tf.TensorShape([7]),
+            element_shape=tf.TensorShape([9]),
             clear_after_read=False,
         )
 
@@ -1121,6 +1154,11 @@ def _build_tuning_graph(
                     fallback_count,
                     decision.passed,
                     decision.overall_mean,
+                    tf.stack((tf.reduce_max(tf.abs(chunk.delta_h)),
+                        tf.cast(tf.reduce_sum(tf.cast(
+                            tf.abs(chunk.delta_h) > tf.constant(config.energy_error_max, _DTYPE),
+                            tf.int32)), _DTYPE)
+                        if config.energy_error_max is not None else tf.constant(-1., _DTYPE))),
                     candidate_trace,
                 )
 
@@ -1134,6 +1172,7 @@ def _build_tuning_graph(
                     tf.constant(0, tf.int32),
                     tf.constant(False),
                     tf.constant(float("nan"), _DTYPE),
+                    tf.fill([2], tf.constant(float("nan"), _DTYPE)),
                     _empty_endpoint_trace(),
                 )
 
@@ -1146,6 +1185,7 @@ def _build_tuning_graph(
                 candidate_fallback,
                 candidate_passed,
                 candidate_overall_mean,
+                candidate_energy_summary,
                 candidate_trace,
             ) = tf.cond(candidate_selected, skip_candidate, evaluate_candidate)
             endpoint_traces.append(candidate_trace)
@@ -1176,7 +1216,7 @@ def _build_tuning_graph(
             candidate_selected = tf.logical_or(candidate_selected, choose)
             candidate_summary = candidate_summary.write(
                 candidate_index,
-                tf.stack(
+                tf.concat((tf.stack(
                     (
                         tf.cast(evaluated, _DTYPE),
                         tf.cast(leapfrog_steps, _DTYPE),
@@ -1186,13 +1226,15 @@ def _build_tuning_graph(
                         tf.cast(candidate_fallback, _DTYPE),
                         tf.cast(candidate_passed, _DTYPE),
                     )
-                ),
+                ), candidate_energy_summary), axis=0),
             )
 
         health = config.acceptance_policy.evaluate(
             reported_log_accept,
             divergence_count=reported_divergence_count,
         )
+        # HMC log acceptance is the negative endpoint Hamiltonian difference.
+        health = _guard_candidate_energy(health, -reported_log_accept, config)
         metric_rank_eligible = tf.constant(config.metric_rank_eligible)
         metric_update_count = tf.constant(len(config.mass_window_results), tf.int32)
         metric_update_valid = tf.logical_and(
@@ -1438,6 +1480,8 @@ def _write_tuning_artifact(
                 "divergence_count",
                 "force_fallback_count",
                 "health_passed",
+                "max_abs_energy_error",
+                "energy_error_breach_count",
             ),
             "health_summary_fields": (
                 "chain_0_acceptance_mean",
@@ -1651,6 +1695,10 @@ def _run_tensorflow_hmc_tuning(
         tf.cast(tf.convert_to_tensor(parameter_scales), _DTYPE),
         [config.parameter_dimension],
     )
+    # XLA may elide graph assertions. Validate external inputs on the host.
+    tf.debugging.assert_all_finite(position, "initial_position must be finite")
+    tf.debugging.assert_all_finite(scales, "parameter_scales must be finite")
+    tf.debugging.assert_positive(scales, "parameter_scales must be positive")
     graph = _build_tuning_graph(config, runner_binding, adapter_signature)
     values = dict(graph(position, scales))
     values["initial_position_was_replicated"] = position_was_replicated
@@ -1983,6 +2031,9 @@ def build_retained_bound_hmc_archive_runner_from_tuning_result(
     tuning_result: TensorFlowHMCKernelTuningResult,
     runner_binding: HMCTuningRunnerBinding,
 ) -> BoundRetainedHMCArchiveRunner:
+    from .hmc_tensorflow_verified import VerifiedTensorFlowHMCResult, _build_verified_runner
+    if isinstance(tuning_result, VerifiedTensorFlowHMCResult):
+        return _build_verified_runner(tuning_result, runner_binding)
     if not isinstance(tuning_result, TensorFlowHMCKernelTuningResult):
         raise TypeError("tuning_result must be TensorFlowHMCKernelTuningResult")
     if not isinstance(runner_binding, HMCTuningRunnerBinding):

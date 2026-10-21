@@ -1,0 +1,90 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/calibrate_surrogate_hmc_mcse_randomization.py",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260920-mcse-randomization-01"
+  ],
+  "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "source_hashes": {
+    "docs/plans/surrogate-hmc-mcse-randomization-2026-09-20.md": "b2f5af132654a27f5a1dd571a8624541ec109f59f89149c4d2c77a2272e5cfbf",
+    "scripts/calibrate_surrogate_hmc_mcse_randomization.py": "2e9f93ebc00a23f8fd3124e838079ec440b524c1baf9a246977db7631984f7f2",
+    "scripts/diagnose_surrogate_hmc_mcse.py": "e3b769b2cdf71ab1ad0296fa1ec6e8b41f452520fe52640b694bdc4ce6fd995a",
+    "bayesfilter/testing/surrogate_hmc_mcse_randomization.py": "5c34b8571d7bf5d5f6297db9a8ea86001ea67e28c8010c17bcc0cc7649d63499",
+    "bayesfilter/inference/surrogate_hmc_equivalence.py": "a03d78b250f53c0fb8c4f950ae6e5551d8cc5b1dba8070b1b02ff658231c3b18",
+    "bayesfilter/inference/hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+    "bayesfilter/testing/surrogate_hmc_gaussian_control.py": "f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "tests/test_surrogate_hmc_mcse_randomization.py": "aacdcab63c12c1ebbdf13ce9baf921c3a4f51490734f718c52e05346e14b9697"
+  },
+  "plan": "docs/plans/surrogate-hmc-mcse-randomization-2026-09-20.md",
+  "result": "docs/plans/artifacts/surrogate-hmc-all-models-20260920-mcse-randomization-01/report.json",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "cpu_budget": 600.0,
+  "wall_budget": 600.0,
+  "seeds": {
+    "data_date_key": 20260921,
+    "permutation_date_key": 20260922,
+    "groups": [
+      [
+        "iid",
+        0.0,
+        0,
+        512,
+        400000
+      ],
+      [
+        "ar_positive",
+        0.5,
+        0,
+        256,
+        410000
+      ],
+      [
+        "ar_negative",
+        -0.5,
+        0,
+        256,
+        420000
+      ],
+      [
+        "ar_borderline",
+        0.9,
+        0,
+        256,
+        430000
+      ],
+      [
+        "ar_slow",
+        0.99,
+        0,
+        256,
+        440000
+      ],
+      [
+        "chain_offset",
+        0.0,
+        1,
+        256,
+        450000
+      ],
+      [
+        "linear_drift",
+        0.0,
+        2,
+        256,
+        460000
+      ]
+    ]
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1"
+  },
+  "wall_seconds": 8.977748482022434,
+  "cpu_worker_seconds": 13.903042999999998,
+  "status": "EXECUTION_FAILED"
+}

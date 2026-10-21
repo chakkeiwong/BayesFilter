@@ -1,0 +1,554 @@
+{
+  "command_line": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_surrogate_hmc_program.py",
+    "--stage",
+    "P3-SV20-qualify",
+    "--scope",
+    "SV20",
+    "--reference-root",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference",
+    "--posterior-root",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-posterior-01/P3-SV20-posterior",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-01"
+  ],
+  "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "endpoint_force_identities": "issued from actual frozen inputs by worker before evaluation",
+  "environment": {
+    "CONDA_PREFIX": "/home/chakwong/anaconda3/envs/tftwogpu",
+    "CUDA_VISIBLE_DEVICES": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "execution_plan": "docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "git_status": " M bayesfilter/inference/__init__.py\n M bayesfilter/inference/hmc_posterior_diagnostics.py\n M bayesfilter/inference/hmc_tensorflow_tuning.py\n M bayesfilter/inference/hmc_tuning_dispatch.py\n M bayesfilter/inference/neural_force_hmc.py\n M bayesfilter/inference/tuning_contract.py\n M docs/generated/hmc_tuning_route_table.md\n M docs/generated/hmc_tuning_route_table.tex\n M docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md\n M docs/reference/hmc-tuning-interface.md\n M tests/test_hmc_posterior_diagnostics.py\n?? bayesfilter/inference/hmc_tensorflow_verified.py\n?? bayesfilter/inference/surrogate_hmc_dctr_selection.py\n?? bayesfilter/inference/surrogate_hmc_equivalence.py\n?? bayesfilter/inference/surrogate_hmc_program.py\n?? bayesfilter/testing/surrogate_hmc_gaussian_control.py\n?? bayesfilter/testing/surrogate_hmc_lg1_finite_consumer.py\n?? bayesfilter/testing/surrogate_hmc_lg1_finite_endpoint.py\n?? bayesfilter/testing/surrogate_hmc_lg1_finite_reference.py\n?? bayesfilter/testing/surrogate_hmc_lg1_reference.py\n?? bayesfilter/testing/surrogate_hmc_lg1_scoped.py\n?? bayesfilter/testing/surrogate_hmc_lg1_tf.py\n?? bayesfilter/testing/surrogate_hmc_linear_consumer.py\n?? bayesfilter/testing/surrogate_hmc_linear_posterior_reference.py\n?? bayesfilter/testing/surrogate_hmc_linear_reference.py\n?? bayesfilter/testing/surrogate_hmc_sv_consumer.py\n?? bayesfilter/testing/surrogate_hmc_sv_posterior_reference.py\n?? bayesfilter/testing/surrogate_hmc_sv_reference.py\n?? docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-controls-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-controls-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-finite-endpoint-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-reference-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-reference-master-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-sample-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-tune-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-tune-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-review-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-review-tests/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-03/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-04/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-05/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-06/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-closed-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-inference-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-qualify-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-inspection-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-sample-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-tune-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-finite-reference-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-consumer-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-consumer-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-controls-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-posterior-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-check-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-check-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-closed-lg1-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-continuation-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-continuation-tests-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-history-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-lg2-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-lg2-tests-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-mcse-diagnostic-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-tests-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-tests-02/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-posterior-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/\n?? docs/plans/artifacts/surrogate-hmc-all-models-20260920-tuner-repair-07/\n?? docs/plans/artifacts/surrogate-hmc-master-20260918-01/\n?? docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/\n?? docs/plans/ledh-lg1-regression-audit-2026-09-18.md\n?? docs/plans/ledh-lg1-regression-audit-result-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-inference-continuation-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-model-coverage-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-recovery-plan-2026-09-18.md\n?? docs/plans/ledh-surrogate-hmc-recovery-result-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-claude-handoff-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md\n?? docs/plans/surrogate-hmc-all-models-execution-result-2026-09-19.md\n?? docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-master-review-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-reply-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-response-2026-09-18.md\n?? docs/plans/surrogate-hmc-all-models-opus-verdict-2026-09-18.md\n?? docs/plans/surrogate-hmc-gaussian-controls-2026-09-20.md\n?? docs/plans/surrogate-hmc-gaussian-controls-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg1-finite-comparisons-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg1-finite-endpoint-2026-09-19.md\n?? docs/plans/surrogate-hmc-lg1-finite-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg1-inference-2026-09-19.md\n?? docs/plans/surrogate-hmc-lg1-inference-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg1-preparation-2026-09-19.md\n?? docs/plans/surrogate-hmc-lg1-preparation-result-2026-09-19.md\n?? docs/plans/surrogate-hmc-lg2-consumer-qualification-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-consumer-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-controls-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-controls-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-inference-preparation-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-posterior-reference-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-reference-preparation-2026-09-20.md\n?? docs/plans/surrogate-hmc-lg2-reference-preparation-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-mcse-diagnostic-2026-09-20.md\n?? docs/plans/surrogate-hmc-mcse-diagnostic-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-sv20-consumer-2026-09-20.md\n?? docs/plans/surrogate-hmc-sv20-posterior-2026-09-20.md\n?? docs/plans/surrogate-hmc-sv20-posterior-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md\n?? docs/plans/surrogate-hmc-sv20-reference-result-2026-09-20.md\n?? docs/plans/surrogate-hmc-tf-tuner-repair-2026-09-19.md\n?? docs/plans/surrogate-hmc-tf-tuner-repair-result-2026-09-19.md\n?? scripts/calibrate_surrogate_hmc_lg1_controls.py\n?? scripts/calibrate_surrogate_hmc_linear_controls.py\n?? scripts/diagnose_surrogate_hmc_mcse.py\n?? scripts/inspect_surrogate_hmc_archives.py\n?? scripts/prepare_surrogate_hmc_lg1_finite_reference.py\n?? scripts/prepare_surrogate_hmc_lg1_reference.py\n?? scripts/prepare_surrogate_hmc_linear_reference.py\n?? scripts/prepare_surrogate_hmc_sv_posterior.py\n?? scripts/prepare_surrogate_hmc_sv_reference.py\n?? scripts/qualify_hmc_tensorflow_verified.py\n?? scripts/qualify_surrogate_hmc_gaussian_controls.py\n?? scripts/qualify_surrogate_hmc_lg1_finite_endpoint.py\n?? scripts/qualify_surrogate_hmc_lg1_tuner.py\n?? scripts/qualify_surrogate_hmc_linear_consumer.py\n?? scripts/qualify_surrogate_hmc_sv_consumer.py\n?? scripts/run_surrogate_hmc_gaussian_controls.py\n?? scripts/run_surrogate_hmc_lg1_finite.py\n?? scripts/run_surrogate_hmc_program.py\n?? scripts/sample_surrogate_hmc_lg1.py\n?? scripts/surrogate_hmc_lg1_probe.py\n?? scripts/tune_surrogate_hmc_lg1.py\n?? tests/test_hmc_tensorflow_verified.py\n?? tests/test_surrogate_hmc_dctr_selection.py\n?? tests/test_surrogate_hmc_dependency_execution.py\n?? tests/test_surrogate_hmc_equivalence.py\n?? tests/test_surrogate_hmc_finite_reference.py\n?? tests/test_surrogate_hmc_gaussian_control.py\n?? tests/test_surrogate_hmc_lg1_finite_endpoint.py\n?? tests/test_surrogate_hmc_linear_consumer.py\n?? tests/test_surrogate_hmc_linear_cost_forecast.py\n?? tests/test_surrogate_hmc_linear_posterior_reference.py\n?? tests/test_surrogate_hmc_linear_reference.py\n?? tests/test_surrogate_hmc_program.py\n?? tests/test_surrogate_hmc_retained_history.py\n?? tests/test_surrogate_hmc_sv_consumer.py\n?? tests/test_surrogate_hmc_sv_posterior_reference.py\n?? tests/test_surrogate_hmc_sv_reference.py\n",
+  "inference_forecast": "NOT_MEASURED; inference launch prohibited",
+  "inference_ready": false,
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_sv_consumer.py",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-01/P3-SV20-qualify",
+        "--reference-root",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference",
+        "--posterior-root",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-posterior-01/P3-SV20-posterior",
+        "--wall-budget",
+        "600.0",
+        "--cpu-budget",
+        "450.0"
+      ],
+      "cpu_allowance": 450.0,
+      "device": "gpu",
+      "name": "P3-SV20-qualify-job",
+      "timeout": 600.0
+    }
+  ],
+  "plan": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+  "prior_retained_results": {},
+  "prior_runs": [
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 53.966779,
+        "gpu_seconds": 48.34384329500608
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01/accounting.json",
+      "sha256": "5ba927fdba46718e1e9b5ab279e37cef79af90b2e4dec32d490e15a2fec54995"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.54512699999998,
+        "gpu_seconds": 3.859282205987256
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-controls-01/accounting.json",
+      "sha256": "a6eb8fc78aed3b066c6bf565b94de87b1c5a91a44859114949361771876aca68"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 117.894182,
+        "gpu_seconds": 113.99584374099504
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-controls-02/accounting.json",
+      "sha256": "0ae0eeb59d0d455633f27c8565b3eedd5bfe6d130a3f8011b0c885b7d4c177a0"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 45.55088599999999,
+        "gpu_seconds": 40.460836835962255
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-finite-endpoint-01/accounting.json",
+      "sha256": "874f643b2bdf533ea7a9b28ffd5d720cdaa56b95462d2f1f7fdb9b7b1ca98037"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 6.41,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-reference-01/accounting.json",
+      "sha256": "34f75b7ae8beefab74a504fcac0d99d116669d942231fabf1676c69cd996fed2"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 13.50389400000006,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-reference-master-01/accounting.json",
+      "sha256": "2212552ab8930033cdebb7a4d270b6bdc3fa51d483f40499eb9f9588e87bd30f"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 1315.065797,
+        "gpu_seconds": 1315.2708765239804
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-sample-01/accounting.json",
+      "sha256": "da9894fd0b543d315364e1524525d93d391dfcc8aadd6db8547f81650e453219"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 11.198106000000053,
+        "gpu_seconds": 4.815313450002577
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-tune-01/accounting.json",
+      "sha256": "251efcdf96464b9cda209a5370c4d4f9f4ffd3342a56d125c278865af6e62064"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 1070.5505099999998,
+        "gpu_seconds": 1121.009301722981
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-lg1-tune-02/accounting.json",
+      "sha256": "1a5d9b2c0b9300179132dbac39042a79fb067b0a4df8d4cae876ed2a7ede973d"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 74.737619,
+        "gpu_seconds": 68.18925328296609
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-review-02/accounting.json",
+      "sha256": "b1ce572ece02823f8f30997b69c91ce2d36810ca6967035d9f0bce6f5ee4b2d1"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 99.46,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-review-tests/accounting.json",
+      "sha256": "801b2be956963ba1ae52d597ab2321736286430be3b179c2886462db4120e127"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 186.71999999999997,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-01/accounting.json",
+      "sha256": "7ddf938e38db524e6ef3b0c974b7f455542cf18493640bb2dd7760da9d487394"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 3.2253259999999955,
+        "gpu_seconds": 3.5041538900113665
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-02/accounting.json",
+      "sha256": "72cd1ed601a4ec31dde3fc412ec55e1e82e0c2264f005e42c9fe2225e9f36bc4"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 63.351380999999975,
+        "gpu_seconds": 59.1000673599774
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-03/accounting.json",
+      "sha256": "a9caf4e0c7f8385bac2c5ba3060c04ab27aecb9edc8a98ceba958bfa5e61f7b4"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 64.28927899999996,
+        "gpu_seconds": 60.41446194000309
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-04/accounting.json",
+      "sha256": "71a395e76ba2edd20ea3f39f393315ac53f0adf47d2393d313f39fe206aea147"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 39.31185499999998,
+        "gpu_seconds": 38.68683666002471
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-05/accounting.json",
+      "sha256": "71560191b3886dc1a55a313dafd35408d7aa0987e6898fb06002ec2c84be4158"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 61.48634499999997,
+        "gpu_seconds": 57.691311561036855
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-06/accounting.json",
+      "sha256": "0c23a49be274b9020e01ea4afc72cb284e87f2616ae6961621c6155d9675e4e4"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 5.788496999999552,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-closed-01/accounting.json",
+      "sha256": "920992656a585a7aceae650dd454130f6985695ed462900e463f7e2a4e6e99a9"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 155.6469040000011,
+        "gpu_seconds": 141.92721240600804
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-inference-01/accounting.json",
+      "sha256": "c7b97b612139721c0da876af36a621cbc360ea010e3bc45f5b453ee5b78b2306"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 5.082444,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-inspection-01/accounting.json",
+      "sha256": "a2da37a3c57769191e1ab2c0f73381cfeef44c297005582a9de72a43023e6018"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 24.740928000001077,
+        "gpu_seconds": 19.476292433973867
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-qualify-01/accounting.json",
+      "sha256": "f4de54fbce1fc1545410af837e4fd0ee8244a383c4eb6b18fc81d2f7a1eb7499"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 14.107013,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-tests-01/accounting.json",
+      "sha256": "a362f6e364d567bdebbf3ff4d03c8107f77e72873dde32a419d7a79788eb4931"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 14.630596,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-tests-02/accounting.json",
+      "sha256": "718bca0d49556d2f0127a7d0a03884de6f5e4a7beb7e2abb01172ccdb42a095b"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 3.993556,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-inspection-01/accounting.json",
+      "sha256": "7537709af129c392547859c7bd0c754d75ec7b0c4115d5324c7d45f53f16eefd"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 2605.3125919999993,
+        "gpu_seconds": 2721.3570676450036
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-sample-01/accounting.json",
+      "sha256": "916f3420a698fce2ded5bbb7c28c39f6d7e6b04c90d4c085dd0da3d85e4cb1cd"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 1759.6108629999999,
+        "gpu_seconds": 1823.9396775389905
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-C-tune-01/accounting.json",
+      "sha256": "120be3b0f3c7a7dede22b573423765b08467f96f26a516d6621c6d3d65040198"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 172.75253900000007,
+        "gpu_seconds": 174.9462693479727
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg1-finite-reference-01/accounting.json",
+      "sha256": "548d90c68205c996591855a0964cb07439d6031dbc7c97a90b3501cca0545959"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 198.952951,
+        "gpu_seconds": 143.800454325974
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-consumer-01/accounting.json",
+      "sha256": "bf2ef5483574f990be7a7acfc33593c9d819570ee9dd278af954f07842dba266"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 7.854222999999999,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-consumer-tests-01/accounting.json",
+      "sha256": "8d65c35ecd4f79ef34a3b1b8baecce513f1cc4209b3676299908adb8f495aada"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 310.7900239999999,
+        "gpu_seconds": 255.1790381980245
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-controls-01/accounting.json",
+      "sha256": "fb3063411b26d845cebe04f0464887db0fa253f58b00c1a3b9d909577a22a0d2"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 14.371981,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-posterior-tests-01/accounting.json",
+      "sha256": "16994792e5af22f56fd97aa44282e8e9479e67b74b404f4147b449b95ca5c429"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 13.312586999999999,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/accounting.json",
+      "sha256": "818f767ad8b94b0fb6f3930d4743890e2c288f715605df458fd5a6d6595627c7"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 7.1764920000000005,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-check-01/accounting.json",
+      "sha256": "318fb01a2c7fc4b93155c5bd9f454f672a88f0c4e954ec44f7d90d9e2fd3fa09"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 11.802824,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-check-02/accounting.json",
+      "sha256": "9a8aef8aae1f2c29398cc0026cc82a6888ffed4fd894f805f1a1d7cd170f84db"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 6.163081999999122,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-closed-lg1-01/accounting.json",
+      "sha256": "843d87aa1ed6cb046c463b57bd85092163fc56d70779a211722e8c7a52040a51"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 13.358159,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-continuation-tests-01/accounting.json",
+      "sha256": "f9778b67c6f19943f9b511487e03168f4d6d7ff09a97777dcaec101c8ecd079e"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 0.614624,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-continuation-tests-02/accounting.json",
+      "sha256": "76eb36f672e1e0d3e271f3767a0fa98f7e4689ef950018b08b1a6202e8ad3bf2"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 11.427365,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-history-tests-01/accounting.json",
+      "sha256": "3090d78da7f2a7e2069cc58f536d9f856225d482c03bde38fc7371799b9c9e90"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.090536,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-lg2-tests-01/accounting.json",
+      "sha256": "a89f03ac0d3fa1b1ad25623e8e33ee998df7f6729f0886bf73b51e28941d935b"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.074249,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-master-lg2-tests-02/accounting.json",
+      "sha256": "5db79db6ab5bcd628ebc1383bd94647b1ca8bb2b783f33e78fa59e51c0d0b7f5"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.810538000000001,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-mcse-diagnostic-01/accounting.json",
+      "sha256": "754ef63c42f5d6f3d251ead3b6c2a84fc462febd3331ae921f5f65663fc3fe85"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.167850999999999,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-tests-01/accounting.json",
+      "sha256": "015ecb3704c79eb521cb2c44c0bafa598be5b0fd0de51777f023911f1a00d1d4"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 12.384091999999999,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-tests-02/accounting.json",
+      "sha256": "db6c876bfba7db567f0e67071296d9b0288e66be08cb14ca142858ac6e6b1107"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 142.92785700000059,
+        "gpu_seconds": 152.85366117296508
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-posterior-01/accounting.json",
+      "sha256": "42d4a84b9a5976f1762658ade71e4c994a5e24eb7e6d290ea24ac8dc7279b1e4"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 15.461895,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-posterior-tests-01/accounting.json",
+      "sha256": "c86f63a463fb09b7b56d390be48c3741f65067c4d14ad8aae5bff1509d84dcdf"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 14.595588000000134,
+        "gpu_seconds": 10.430387963016983
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/accounting.json",
+      "sha256": "6ff1597aff6fae5d55abaead855f6dfabb7c76354875d7eb8eabc3d750b16196"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 12.462882,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-tests-01/accounting.json",
+      "sha256": "1249d359a0cff5326e454c4f829d61ae91eed06fef5c1606ce8460ecaf3a4647"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 10.442002,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-tests-02/accounting.json",
+      "sha256": "7369c70f3e7b648197dc395281c764622136c5515ac480d54df1f3d84a09ceec"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 11.401211,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-tests-03/accounting.json",
+      "sha256": "5b255f34711793aed4e0fdc59e856325f8932f10c60cfcfe44556ff6dd6c25f8"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 11.328672,
+        "gpu_seconds": 0.0
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-tests-04/accounting.json",
+      "sha256": "88658d85ba75a86a543ce3f166d3d7dda924755dca9db4763ddf27b5c7924358"
+    },
+    {
+      "charged_this_run": {
+        "cpu_worker_seconds": 62.291571000000204,
+        "gpu_seconds": 60.8238390480401
+      },
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-tuner-repair-07/accounting.json",
+      "sha256": "30e9625cb1e0c292e1bbaaec9732acc1ee892c3fb99f381fa6787aa089a5f310"
+    }
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "remaining_budget": {
+    "cpu_worker_seconds": 45070.803726,
+    "gpu_seconds": 218359.9247174511
+  },
+  "required_inputs": [
+    "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+    "docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md",
+    "docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md",
+    "docs/plans/surrogate-hmc-sv20-posterior-2026-09-20.md",
+    "docs/plans/surrogate-hmc-sv20-consumer-2026-09-20.md"
+  ],
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-consumer-01/result.md",
+  "schema": "bayesfilter.surrogate_hmc_master.v1",
+  "scope": "SV20",
+  "scope_card": {
+    "chart": "gamma,beta=.1+.8*Phi(z)",
+    "family": "M02",
+    "horizon": 20,
+    "id": "M02-SV20-attempt1",
+    "law": "stationary actual SV; transition then Normal(0,beta^2*exp(x)) observation; sigma=1",
+    "parameter_dimension": 2,
+    "parameters": [
+      "gamma",
+      "beta"
+    ],
+    "plan": "docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md",
+    "posterior_reference_qualified": false,
+    "prior": "independent Uniform(.1,.9)",
+    "role": "reference_and_full_DCTR_consumer_preparation",
+    "stage": "P3-SV20-qualify",
+    "state_dimension": 1,
+    "surrogate_hmc_tested": false
+  },
+  "scope_cards": {
+    "SV20": {
+      "chart": "gamma,beta=.1+.8*Phi(z)",
+      "family": "M02",
+      "horizon": 20,
+      "id": "M02-SV20-attempt1",
+      "law": "stationary actual SV; transition then Normal(0,beta^2*exp(x)) observation; sigma=1",
+      "parameter_dimension": 2,
+      "parameters": [
+        "gamma",
+        "beta"
+      ],
+      "plan": "docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md",
+      "posterior_reference_qualified": false,
+      "prior": "independent Uniform(.1,.9)",
+      "role": "reference_and_full_DCTR_consumer_preparation",
+      "stage": "P3-SV20-qualify",
+      "state_dimension": 1,
+      "surrogate_hmc_tested": false
+    }
+  },
+  "source_sha256": {
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/inference/surrogate_hmc_equivalence.py": "a03d78b250f53c0fb8c4f950ae6e5551d8cc5b1dba8070b1b02ff658231c3b18",
+    "bayesfilter/inference/surrogate_hmc_program.py": "5d3e4f36aac48e263d23bd826078c3a6977b0ba76ade6602c28cbac72f5dee36",
+    "bayesfilter/testing/surrogate_hmc_gaussian_control.py": "f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "bayesfilter/testing/surrogate_hmc_lg1_finite_consumer.py": "18344266e5f497b026a219db6f8135145de35b0c41334dab0891fe8e92ebf6a3",
+    "bayesfilter/testing/surrogate_hmc_lg1_finite_endpoint.py": "1b88eeef5dfd2513daee9ef8767f636eda09bd3f51d14bc745342cac8babedd9",
+    "bayesfilter/testing/surrogate_hmc_lg1_finite_reference.py": "0c8fb4508ca5fbe33f752ca848cba19d90a65f6015f86aabfad696418d1c95cf",
+    "bayesfilter/testing/surrogate_hmc_lg1_reference.py": "703c489270f453db452fd307310b4e5aee6f8897137bd2ea8ccbf3445bd2bbf8",
+    "bayesfilter/testing/surrogate_hmc_lg1_scoped.py": "70ab280ed85b874e1c64b6e447d4401e6cdeb1bc0c6beb28387c03f95b1909c2",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+    "bayesfilter/testing/surrogate_hmc_linear_consumer.py": "3020faed8d10d8625f2afb48bf19237d4aaf7b90ba90d6f323ca5720e64a97d5",
+    "bayesfilter/testing/surrogate_hmc_linear_posterior_reference.py": "c6a251f0d5c88adf0526975f79b5201661812f4558c4b6dade0f77739ea35d55",
+    "bayesfilter/testing/surrogate_hmc_linear_reference.py": "e84a41d732de06c49bb489165691c177d9efb64f7d949c93a424af658ef54624",
+    "bayesfilter/testing/surrogate_hmc_sv_consumer.py": "26405f34bf8e68c5cee37de23239d282f64a18e5853dfe25bf12d551bf472567",
+    "bayesfilter/testing/surrogate_hmc_sv_posterior_reference.py": "41cfc0812301864cc7d85505ee0ed59599974fad731bd259a00a1503b84a208c",
+    "bayesfilter/testing/surrogate_hmc_sv_reference.py": "b35ce7f8020038d8830cf9d9f2840b76e636aa67fbc0e0e5f542c415b35752e3",
+    "scripts/calibrate_surrogate_hmc_lg1_controls.py": "4a29dc99c36fc3ed5e2c5e59640fece199053ccfb35adaa8ab424fa33e9d21a5",
+    "scripts/calibrate_surrogate_hmc_linear_controls.py": "fe0cf287e0115d64ae27ba420e3144c80bec302cee189a5d0ad7390dc6e44bfe",
+    "scripts/prepare_surrogate_hmc_lg1_finite_reference.py": "f194b3e6439a2f66cb3249b66629d92f4a410cf2b3baaa67417cf14a55623ed7",
+    "scripts/prepare_surrogate_hmc_lg1_reference.py": "b2e3bcc1ad41303fe4ad43de3568258e6cedc0c2b3bf3d0281ee9063f14e4123",
+    "scripts/prepare_surrogate_hmc_linear_reference.py": "1ce9cd453541097015d346223c82faeddae3df45415dbeb27a65851a5d2a3530",
+    "scripts/prepare_surrogate_hmc_sv_posterior.py": "24572447cc0394e3cd25fe291522be13cd5ed563588dc72ac84d6b29bd5101b0",
+    "scripts/prepare_surrogate_hmc_sv_reference.py": "e417b869648c4c572c29a62b22aa438ae975d6bdc9554380e87be36bf39c0b50",
+    "scripts/qualify_surrogate_hmc_gaussian_controls.py": "1127c24ed9b72e3e470268155639ebcafb1ebac634611df300cdf90218579254",
+    "scripts/qualify_surrogate_hmc_lg1_finite_endpoint.py": "029e4713ed6ab8f28792fc5b5fd23a1e15cd75a3daeddef38c23f8d1ec59c350",
+    "scripts/qualify_surrogate_hmc_linear_consumer.py": "7e6cf3dfd83ea6918e7e0329d4f55ef33a05fcbdee98331e35ea5873f0c9702a",
+    "scripts/qualify_surrogate_hmc_sv_consumer.py": "2c760f2a3314063cf2f65c188efbc5a291847e88a7934ff44b84e997e84db09d",
+    "scripts/run_surrogate_hmc_gaussian_controls.py": "f8e29d9e4615cd819dcebaa9049483db0d9dfe8b9386f93534f383926e025794",
+    "scripts/run_surrogate_hmc_lg1_finite.py": "9f6d62a26abdac3121f770977a0756bf458652a941381ecbae93109943573563",
+    "scripts/run_surrogate_hmc_program.py": "3d179aeb241b10cebd2cdc015448aa8661233775d03db265f1d3019a0edc4227",
+    "scripts/sample_surrogate_hmc_lg1.py": "5dc0fb8c8657c65c4ee22875f4fe7a617cdf0227fed5c712b499449ebc1905d5",
+    "scripts/surrogate_hmc_lg1_probe.py": "6131036291aecfef0b28cf0cfcc040d2c53641e161d559114cf19bd0dd85687f",
+    "scripts/tune_surrogate_hmc_lg1.py": "756ad033f526b3dbe8813d3fd558ac29ba3e84952e36613b39fe6d6263ca1713"
+  },
+  "stage": "P3-SV20-qualify",
+  "wall_seconds": 87.88594755204394
+}

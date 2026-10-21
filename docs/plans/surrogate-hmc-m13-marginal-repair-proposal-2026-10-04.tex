@@ -1,0 +1,725 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.88in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,booktabs,array,longtable,microtype}
+\usepackage[breaklinks=true,colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+\newtheorem{proposition}{Proposition}
+\newcommand{\D}{\mathrm D}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\N}{\mathcal N}
+\title{Marginal weights for the M13 particle-flow likelihood and score\\
+while preserving LGSSM and KSC-SV}
+\author{BayesFilter technical note}
+\date{4 October 2026; implementation status updated 6 October 2026}
+\begin{document}
+\maketitle
+
+\paragraph{Implementation status, 6 October 2026.}
+The marginal-mixture extension is implemented in commit \texttt{f5e69d716}.
+It accumulates the affine matrix and its tangent in the shared flow loop,
+evaluates both full Gaussian mixtures, and differentiates the finite recursion
+analytically. The original ancestor policy remains the default. The current
+main algorithm chapter includes the complete recursion, density and score
+derivations, and completed three-model evidence. This proposal preserves the
+original derivation and prospective optional defensive component; that component
+has not been implemented. References below to proposed experiments describe
+the October 4 plan. The October 5 experiments are complete: LGSSM/KSC showed
+material non-inferiority conditional on the tested datasets, and range--bearing
+showed lower errors than ancestor weights but still lost to bootstrap filtering
+on observed likelihood error. The expanded October 6 campaign tests fresh data,
+longer horizons, dimensions and cost; it does not itself run surrogate HMC.
+
+
+The proposed repair is to sum over possible ancestors in the importance
+correction, while retaining the existing UKF covariance lifecycle, LEDH flow,
+Contract E reset, and analytical differentiation. This is the marginal
+particle-filter construction applied to the actual affine flow proposals.
+It changes the finite likelihood approximation and therefore needs a distinct
+route identity and its own tuning. It is not the unchanged Li--Coates
+Algorithm 1.
+
+The purpose remains testing \emph{surrogate HMC}. A particle-filter score may
+supply a force for proposals, but the Metropolis calculation must use the
+declared endpoint target. A better filter score can make those proposals more
+useful; it does not by itself establish posterior correctness or convergence.
+
+The mathematics below establishes the proposed one-step integration identity
+and the total derivative of the resulting finite program. It also establishes
+why a universal finite-sample improvement claim would be wrong. The existing
+LGSSM and KSC-SV computations are preserved by retaining their existing route,
+then checking that preservation through the actual consumers. The new M13
+route must earn admission by measurement.
+
+\section{The observed failure and the quantity to repair}
+
+The October 4 localization traced the M13 consumer through the fused batch
+route into the canonical scalar value and analytical-score implementation.
+At all eight diagnosed parameter points, the diagnostic trace and full
+consumer agreed in FP64. The analytical score also agreed with finite
+differences of its \emph{own} implemented likelihood to about
+$2.6\,10^{-6}$ in the preceding score check. This rules out a large missing
+derivative term as the explanation supported by those checks. It does not
+establish accuracy relative to the statistical model.
+
+M13 has a four-dimensional state and two observations (range and bearing).
+At the diagnosed low-process-noise point, the first observation already shows
+the failure:
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Method & Log likelihood & First score coordinate & Particle ESS\\
+\midrule
+Refined independent quadrature & $-0.13791267$ & $0.01149807$ & ---\\
+Same-design bootstrap & $-0.13013616$ & $0.00812633$ & $205.04$\\
+Current LEDH & $-2.22116858$ & $3.57681741$ & $6.66$\\
+\bottomrule
+\end{tabular}
+\end{center}
+There are 4,096 particles. The second score coordinates are respectively
+$-0.10229746$, $-0.10443582$, and $0.19335105$.
+The diagnostic parameter is
+$\theta=(-0.73272085,-0.01465508)$ in the recorded M13 coordinates.
+
+Before applying the observation density, the importance estimate of an
+integral equal to one is only $0.00344047$. The first UKF position variance
+is about 116.74 times the conditional process variance. The root mean square
+flow displacement, measured in process-covariance Mahalanobis units, is
+20.61. These observations support a specific mechanism: a child can be moved
+far from its own ancestor's narrow transition density. Its assigned
+ancestor then explains it poorly, even when other ancestors could explain
+the same location.
+
+The discrepancy occurs before the first reset. Preserving the computed
+cloud's mean and covariance during reset cannot reconstruct filtering
+probability that the importance approximation has already lost.
+Replacing the UKF covariance with the process covariance is not justified
+by this observation: those covariances describe different conditional
+distributions, and the UKF lifecycle is part of the specified algorithm.
+
+The quadrature was refined in both grid size and finite-difference step.
+This is a numerical reference, not an exact closed-form M13 score oracle.
+The eight points are now development data. Their results are descriptive
+and cannot serve as untouched promotion evidence.
+
+\section{Specify the finite mixture before changing its weights}
+
+Fix one time step and condition on the complete previous cloud and all
+offline numerical controls. Write the ancestors and their normalized
+positive weights as $(a_j,\omega_j)_{j=1}^N$, where
+$\sum_j\omega_j=1$. For M13,
+\begin{equation}
+ f_j(x)=p_\theta(x\mid a_j)=\N(x;m_j,Q_\theta),\qquad
+ p_N(x)=\sum_{j=1}^N\omega_j f_j(x),\qquad
+ Z_N=\int g_\theta(x)p_N(x)\,dx .
+ \label{eq:predictive-mixture}
+\end{equation}
+Here $m_j=Aa_j$ with the model's declared transition, and $g_\theta(x)$ is
+the implemented range--bearing observation density, including its angle
+convention. $Z_N$ is the normalizer of this \emph{finite predictive
+mixture}; it is not automatically the exact model's predictive likelihood.
+
+In the current M13 implementation, each auxiliary flow starts at the
+zero-process-noise prediction. Conditional on the previous cloud, its
+coefficients do not depend on the current process innovation. The composed
+Euler map acting on that innovation's child is therefore affine. For a
+state dimension $d$ (here $d=4$), $u,x,c_j,m_j\in\mathbb R^d$ and
+$B_j,Q_\theta\in\mathbb R^{d\times d}$; assume $Q_\theta$ is symmetric
+positive definite and each $B_j$ is nonsingular throughout the
+parameter neighborhood under consideration:
+\begin{equation}
+ F_j(u)=B_j u+c_j,\qquad
+ q_j(x)=\frac{f_j\!\left(B_j^{-1}(x-c_j)\right)}
+                   {|\det B_j|}.
+ \label{eq:affine-density}
+\end{equation}
+These conditions make $q_j$ a normalized pushforward density, as in the
+conditional-flow construction of \cite[Algorithm~1 and Eqs.~(19)--(20)]{li}.
+Nonsingularity must hold in the neighborhood in which a score is claimed.
+For a general nonlinear map, a nonsingular Jacobian at the sampled point
+alone would not establish global invertibility; the conditional affine
+structure is doing real work here.
+
+This construction uses a full-dimensional density with respect to Lebesgue
+measure. A structurally singular transition, such as a deterministic
+coordinate in AR(2), needs a separate innovation-space measure derivation.
+The proposed full-rank route must reject that unsupported case, rather
+than add an undeclared ridge or call it the same density.
+
+With one child $X_i=F_i(U_i)$ from each ancestor, $U_i\sim f_i$, the current
+correction has the form
+\begin{equation}
+ V_i^{\rm old}=\omega_i g_\theta(X_i)
+                         \frac{f_i(X_i)}{q_i(X_i)} .
+ \label{eq:old-weight}
+\end{equation}
+Define the marginal proposal and implemented optional weights by
+\begin{equation}
+ q_N(x)=\sum_j\omega_j q_j(x),\qquad
+ V_i^{\rm mar}=\omega_i g_\theta(X_i)
+                       \frac{p_N(X_i)}{q_N(X_i)},\qquad
+ \widehat Z_{\rm mar}=\sum_i V_i^{\rm mar}.
+ \label{eq:marginal-weight}
+\end{equation}
+Both the numerator and denominator change to mixtures. Replacing only one
+of them computes a different correction.
+
+The leading $\omega_i$ is correct for one draw from each component and the
+weighted sum displayed here. If instead $M$ labels are drawn independently
+from $\omega$, the estimator is the average of $M$ marginal weights, with
+leading factor $1/M$, not a second factor $\omega_{J_i}$.
+This distinction must survive any implementation refactor.
+
+\section{What marginalization proves, and what it does not}
+
+\begin{proposition}[Conditional integration identity]
+\label{prop:integration}
+Suppose each $X_i$ has conditional marginal density $q_i$, $g_\theta p_N$
+is integrable, and $q_N>0$ wherever $g_\theta p_N>0$. Then
+$\E[\widehat Z_{\rm mar}\mid (a,\omega)]=Z_N$.
+\end{proposition}
+\begin{proof}
+Linearity of expectation and the definition of the mixture give
+\begin{align}
+ \E\widehat Z_{\rm mar}
+ &=\sum_i\omega_i\int q_i(x)
+                    \frac{g_\theta(x)p_N(x)}{q_N(x)}\,dx \notag\\
+ &=\int\frac{\sum_i\omega_i q_i(x)}{q_N(x)}
+                        g_\theta(x)p_N(x)\,dx
+ =Z_N .
+ \label{eq:integration-proof}
+\end{align}
+Independence between children is unnecessary for this expectation identity.
+\end{proof}
+
+Setting $g_\theta=1$ gives the pre-observation normalization target one.
+This provides a cheap diagnostic of integration error. The statement is
+conditional on the specified cloud and sampling law. A frozen Halton
+trajectory is not a random experiment satisfying those assumptions merely
+because its inputs once came from a randomized construction. Neither this
+proof nor the marginal-particle-filter literature licenses a claim that the
+log likelihood, its score, or the complete likelihood product after the
+repository's deterministic Contract E and GenUT operations is unbiased.
+Unbiasedness of a positive likelihood estimator would not itself imply
+unbiasedness after taking its logarithm.
+
+\begin{proposition}[Variance reduction in the random-label experiment]
+\label{prop:variance}
+Draw $J$ with probabilities $\omega_j$, then $X\mid J=j\sim q_j$.
+Let $W=g_\theta(X)f_J(X)/q_J(X)$ and
+$W_m=g_\theta(X)p_N(X)/q_N(X)$. If the relevant second moments are finite,
+$\Var(W_m)\leq\Var(W)$.
+\end{proposition}
+\begin{proof}
+Bayes' rule gives
+$\Pr(J=j\mid X=x)=\omega_j q_j(x)/q_N(x)$. Hence
+\begin{equation}
+ \E[W\mid X=x]
+ =\sum_j\frac{\omega_j q_j(x)}{q_N(x)}
+                    \frac{g_\theta(x)f_j(x)}{q_j(x)}
+ =\frac{g_\theta(x)p_N(x)}{q_N(x)}=W_m(x).
+ \label{eq:rb-proof}
+\end{equation}
+Applying the law of total variance,
+\begin{equation}
+ \Var(W)-\Var(W_m)=\E[\Var(W\mid X)]\geq0.
+ \label{eq:variance-decomposition}
+\end{equation}
+For two components, with $0<w<1$ and $q_1,q_2>0$, the pointwise
+second-moment difference has the explicit nonnegative form
+\begin{equation}
+ \frac{wf_1^2}{q_1}+\frac{(1-w)f_2^2}{q_2}
+ -\frac{(wf_1+(1-w)f_2)^2}{wq_1+(1-w)q_2}
+ =
+ \frac{w(1-w)(f_1q_2-f_2q_1)^2}
+      {q_1q_2(wq_1+(1-w)q_2)} .
+ \label{eq:two-component-square}
+\end{equation}
+Multiply by $g_\theta^2$ and integrate to obtain the corresponding
+second-moment comparison.
+\end{proof}
+
+This is the Rao--Blackwell argument behind the marginal particle filter
+\cite[Sec.~3, Fig.~3, Sec.~3.1 and Prop.~1]{klaas}.
+Its sampling experiment differs from a stratified allocation with exactly
+one child per component. The distinction prevents an invalid guarantee.
+
+For an explicit counterexample, consider two states $A,B$ with
+\[
+ g=(1,2),\quad f_1=(9/10,1/10),\quad f_2=(1/10,9/10),
+ \quad \omega_1=\omega_2=1/2,
+\]
+and choose $q_1=(9/11,2/11)$, $q_2=(1/19,18/19)$.
+Then $g f_1/q_1=11/10$ and $g f_2/q_2=19/10$, constant within
+each component. With independent draws, one from each component,
+the original estimate is exactly $3/2$ and has zero variance.
+But $p_N=(1/2,1/2)$ and $q_N=(91/209,118/209)$, so the marginal
+weights at $A,B$ are $209/182$ and $209/118$. Direct calculation gives
+\begin{align}
+ \E\widehat Z_{\rm mar}&=3/2,\notag\\
+ \Var(\widehat Z_{\rm mar})
+ &=\frac14\left(\frac9{11}\frac2{11}
+                    +\frac1{19}\frac{18}{19}\right)
+            \left(\frac{209}{182}-\frac{209}{118}\right)^2
+ =\frac{555264}{28826161}>0 .
+ \label{eq:counterexample}
+\end{align}
+Thus the proposed marginal weights can be worse under stratification.
+There is no universal finite-design non-deterioration theorem to transfer
+to LGSSM, KSC-SV, or M13. Even the valid random-label theorem says nothing
+by itself about the variance or accuracy of log-likelihood derivatives.
+
+For M13, the reason to test the repair is narrower: the diagnosed
+ancestor-conditional ratios are extremely poorly integrated, whereas
+a mixture can explain a transported particle using other ancestors.
+Whether that opportunity is sufficient is an empirical question.
+
+\section{The score must differentiate the same finite program}
+
+Let $\D$ denote the total derivative in an arbitrary parameter direction,
+holding the base design and all offline controls fixed. It includes the
+dependence of previous particles, weights, current children, UKF moments,
+flow coefficients and process/observation covariances on the parameter.
+Work on a neighborhood where these functions are differentiable, densities
+are positive and the declared numerical status is valid. An angle-branch
+boundary or an invalid factorization requires an explicit status; it cannot
+be hidden in a smooth-score assertion.
+
+At a child location $x=X_i(\theta)$ define the responsibilities
+\[
+ r_j^f=\frac{\omega_j f_j(x)}{p_N(x)},\qquad
+ r_j^q=\frac{\omega_j q_j(x)}{q_N(x)}.
+\]
+Differentiating a finite sum and dividing by that sum yields
+\begin{align}
+ \D\log p_N(x)
+   &=\sum_j r_j^f\{\D\log\omega_j+\D\log f_j(x)\},\notag\\
+ \D\log q_N(x)
+   &=\sum_j r_j^q\{\D\log\omega_j+\D\log q_j(x)\}.
+ \label{eq:mixture-score}
+\end{align}
+For example,
+$\D p_N=\sum_j\{(\D\omega_j)f_j+\omega_j\D f_j\}$;
+division by $p_N$ gives the first line. Responsibilities appear as
+coefficients in this first derivative; no extra derivative of the
+responsibility is added. That extra term would belong to a second derivative.
+
+The proposed log-weight derivative is therefore
+\begin{equation}
+ \D\log V_i^{\rm mar}
+ =\D\log\omega_i+\D\log g_\theta(X_i)
+       +\D\log p_N(X_i)-\D\log q_N(X_i).
+ \label{eq:weight-score}
+\end{equation}
+With $\bar V_{ti}=V_{ti}/\sum_k V_{tk}$, the finite log likelihood
+and its derivative are
+\begin{equation}
+ \widehat\ell(\theta)=\sum_t\log\!\sum_i V_{ti}(\theta),\qquad
+ \D\widehat\ell(\theta)=
+             \sum_t\sum_i\bar V_{ti}\D\log V_{ti}.
+ \label{eq:finite-score}
+\end{equation}
+This is an ordinary finite-program chain rule, not differentiation under
+a probability integral. It proves which derivative an implementation must
+compute, rather than accuracy relative to the model likelihood.
+
+To evaluate a proposal component at an arbitrary child, use the same
+$d$-dimensional domain: $B_j,\D B_j\in\mathbb R^{d\times d}$, with
+$B_j$ nonsingular, and $x,c_j,v_j,\D x,\D c_j\in\mathbb R^d$. Put
+$v_j=B_j^{-1}(x-c_j)$. Differentiating $B_jv_j=x-c_j$ gives
+\begin{equation}
+ \D v_j=B_j^{-1}\{\D x-\D c_j-(\D B_j)v_j\}.
+ \label{eq:inverse-tangent}
+\end{equation}
+On a nonsingular neighborhood the determinant has constant sign, and
+Jacobi's identity gives
+\begin{equation}
+ \D\log q_j(x)=\D\log f_j(v_j)
+                      -\tr(B_j^{-1}\D B_j).
+ \label{eq:proposal-score}
+\end{equation}
+In particular, omitting the inverse-map tangent is wrong relative to the
+total-score claim.
+
+For a Gaussian component take symmetric positive-definite
+$Q\in\mathbb R^{d\times d}$ and symmetric $\D Q\in\mathbb R^{d\times d}$.
+Let $x,m,e,u,\D x,\D m\in\mathbb R^d$, with $e=x-m$ and $u=Q^{-1}e$.
+From $\log f=-\tfrac12\log\det Q-\tfrac12 e^\top Q^{-1}e+\mathrm{const}$,
+$\D Q^{-1}=-Q^{-1}(\D Q)Q^{-1}$ and
+$\D\log\det Q=\tr(Q^{-1}\D Q)$, obtain
+\begin{equation}
+ \D\log f(x)
+ =u^\top(\D m-\D x)
+  +\tfrac12u^\top(\D Q)u-\tfrac12\tr(Q^{-1}\D Q).
+ \label{eq:gaussian-score}
+\end{equation}
+The terms in $\D x$, $\D m$ and $\D Q$ all matter. In the denominator,
+replace $x$ by $v_j$ and use \eqref{eq:inverse-tangent}.
+
+The composed maps and their derivatives can be accumulated in the existing
+flow loop. For Euler step $k$ let $M_k=I+\epsilon_k A_k$, with the step
+schedule fixed offline. Then
+\begin{align}
+ B_{k+1}&=M_k B_k,& c_{k+1}&=M_k c_k+\epsilon_k b_k,
+ \label{eq:map-composition}\\
+ \D B_{k+1}&=(\D M_k)B_k+M_k\D B_k,&
+ \D c_{k+1}&=(\D M_k)c_k+M_k\D c_k+\epsilon_k\D b_k .
+ \label{eq:map-tangent}
+\end{align}
+Initialize $B_0=I$, $c_0=0$ and both tangents at zero.
+The existing analytical $A_k,b_k,\D A_k,\D b_k$ must be reused.
+Do not construct a simpler map in the batch lane or drop the UKF/auxiliary
+dependence. Matrix multiplication order must be preserved.
+
+After weighting, the existing reset and correction still have to propagate
+the total derivative. In particular Contract E requires both the direct
+moment/weight terms and the terms through transport; changing the weights
+does not remove either dependence. The derivation is inductive: if the
+incoming cloud and UKF tangents are correct, the displayed formulas give
+correct weight tangents; the existing reset/correction must then return
+correct outgoing tangents. Wiring and end-to-end finite differences must
+check this induction. The implementation now follows this call chain. Fourteen full-filter FP64
+finite-difference cases check both policies and every physical parameter
+direction in seven scopes at batch size one; broader scope checks are ongoing.
+
+\section{An optional defensive component if marginalization is insufficient}
+
+A mixture over flowed ancestors can still miss important regions. A second
+candidate, only if that problem persists, uses the actual proposal
+\begin{align}
+ r_j(x)&=\alpha f_j(x)+(1-\alpha)q_j(x),\quad 0<\alpha\leq1,\notag\\
+ r_N(x)&=\alpha p_N(x)+(1-\alpha)q_N(x),\qquad
+ W_\alpha(x)=\frac{g_\theta(x)p_N(x)}{r_N(x)} .
+ \label{eq:defensive}
+\end{align}
+Samples must be drawn from $r_j$, for example by an offline frozen,
+parameter-independent Bernoulli label and the corresponding base
+innovation. Merely changing the denominator while continuing to sample
+only from $q_j$ is wrong. As with the earlier identity, the randomized
+sampling-law claim and any particular frozen realization are distinct.
+This proposal keeps $\alpha$ fixed; parameter-dependent or online
+selection would require another method and derivative derivation.
+
+Since $r_N\geq\alpha p_N$ pointwise, wherever $p_N>0$,
+\begin{equation}
+ \frac{p_N}{r_N}\leq\frac1\alpha,\qquad
+ \E_{r_N}W_\alpha^2
+ =\int\frac{g_\theta^2 p_N^2}{r_N}
+ \leq\frac1\alpha\E_{p_N}g_\theta^2 .
+ \label{eq:defensive-bound}
+\end{equation}
+Provided $\E_{p_N}g_\theta^2<\infty$, subtraction of $Z_N^2$ yields
+\begin{equation}
+ \Var_{r_N}(W_\alpha)
+ \leq\frac1\alpha\Var_{p_N}(g_\theta)
+           +\left(\frac1\alpha-1\right)Z_N^2 .
+ \label{eq:defensive-variance}
+\end{equation}
+The last term must not be dropped. The bound is on a random marginal draw,
+not a uniform guarantee about stratified quadrature error, score error,
+or the adequacy of the previous cloud. It does not guarantee high ESS.
+At $\alpha=1$ this is bootstrap sampling; at $\alpha=0$ one obtains the
+unprotected marginal proposal, outside the displayed bound.
+
+This is the basic defensive-importance argument discussed by
+Owen and Zhou \cite[Sec.~3, especially Eq.~(10), and Sec.~3.1]{owen}.
+Their stronger results use additional control variates; those are not
+part of this proposal and their guarantees must not be borrowed.
+A defensive mixture can deteriorate an already excellent importance
+proposal. No numerical value of $\alpha$ has been justified here.
+Its choice would need scope-specific offline calibration and a separate
+non-harm assessment, never selection inside HMC.
+
+\section{Preserve the original LGSSM and KSC-SV values and scores}
+
+Preservation has a precise and achievable meaning. Existing qualified
+scopes keep their existing algorithm, prepared observations, base designs,
+settings, coordinate transforms and consumer endpoints. The proposed
+correction is an explicit optional mode selected before tracing. It must
+not be a parameter-dependent switch and must not silently become the
+factory default. The mode is generic; this does not justify a reduced,
+model-specific implementation of the canonical flow.
+
+\begin{proposition}[Preservation by unchanged execution]
+\label{prop:preserve}
+Let $A_{\rm old}(\theta;\xi,c)$ denote the current finite program with fixed
+inputs $\xi$ and controls $c$. If the new factory's legacy mode calls
+that same program on those same inputs, with no changed operations,
+then on its valid differentiable domain
+\begin{equation}
+ A_{\rm legacy}(\theta;\xi,c)=A_{\rm old}(\theta;\xi,c),\qquad
+ \D A_{\rm legacy}(\theta;\xi,c)=\D A_{\rm old}(\theta;\xi,c).
+ \label{eq:preserve}
+\end{equation}
+\end{proposition}
+\begin{proof}
+The function computed in legacy mode is the same function. Equal
+differentiable functions on a neighborhood have equal derivatives there.
+If the implementation returns a separate analytical score, preserving its
+operations and inputs also preserves that returned score, including any
+pre-existing error. This proposition does not newly certify that score.
+\end{proof}
+
+The implementation obligation is substantive: a refactor can change
+reduction order, random-number consumption, precision or a shared helper.
+The proof cannot certify those details before code exists. Freeze the
+current \emph{post-fix} source closure and actual outputs, then exercise the
+real consumers to verify them. Bitwise parity is the goal where execution
+is deterministic. Any nondeterministic FP32 tolerance must come from
+measured same-build repeatability, not from a convenient new error allowance.
+
+The original scalar LG1 model has state and observation dimensions one:
+$x_t=\phi x_{t-1}+\epsilon_t$ with process variance one, observation
+variance $1/2$, and stationary initial variance $(1-\phi^2)^{-1}$.
+Its exact Kalman value and analytical derivative are the independent
+reference. Preserve the derivative of the initial variance,
+$2\phi/(1-\phi^2)^2$, and the existing bounded-parameter chart and prior.
+The regression inventory must include every already qualified LGSSM
+consumer/scope, not infer coverage of all linear models from this one case.
+
+The protected KSC consumer is the seven-component approximation to the
+log-squared-return observation law:
+\begin{equation}
+ g_\theta(z\mid x)=
+       \sum_{k=1}^7\pi_k\,\N(z;x+2\log\beta+\mu_k,v_k).
+ \label{eq:ksc-law}
+\end{equation}
+It is distinct from the raw-return Gaussian stochastic-volatility
+observation density. For residual
+$e_k=z-x-2\log\beta-\mu_k$ and fixed mixture constants, each component has
+\begin{equation}
+ \D\log g_k=\frac{e_k}{v_k}
+                  \left(\D x+\frac{2\,\D\beta}{\beta}\right).
+ \label{eq:ksc-tangent}
+\end{equation}
+The recently repaired $2\,\D\beta/\beta$ term must remain.
+The score of \eqref{eq:ksc-law} is the responsibility-weighted sum of these
+component scores. The $T=2$ KSC fixture has an independent 49-component
+Gaussian likelihood after integrating its latent states; it is exact for
+this declared KSC mixture model, not for the unapproximated SV model.
+Preserve the stationary state variance and its derivative, chart,
+prior and observation mixture.
+
+For both protected families, compare separately the physical likelihood,
+physical score, transformed target and transformed score. Check FP64
+against the frozen post-fix implementation and the independent reference.
+Check the actual FP32 GPU/XLA consumer using the repository memory policy.
+Require the previous error envelope against the reference to be maintained
+for both values and scores; an improved value cannot excuse a worse score.
+Statuses, finiteness and deterministic outputs are part of preservation.
+Repeated builds or randomizations need paired uncertainty where relevant.
+
+This proposal does not assert that marginal weighting will be as accurate
+as the old computation on every LGSSM or KSC scope. Migration would require
+new evidence. Retaining the original computation is what guarantees that
+testing the M13 candidate does not degrade those working results.
+
+\section{Implementation and the smallest discriminating experiments}
+
+The M13 consumer runs through
+\path{ledh_range_bearing_target_tf.py},
+\path{ledh_canonical_batch_fused_tf.py}, and the shared executor
+\path{ledh_canonical_score_tf.py}. The optional policy
+\path{importance_weight_policy="marginal_mixture"} calls
+\path{marginal_prior_ratio_tangent} in
+\path{ledh_marginal_weights_tf.py}. The ancestor policy remains the default.
+Commit \texttt{f5e69d716} contains this implementation and its first completed
+three-model comparison.
+
+The shared flow returns the affine matrix and its tangent together with the
+auxiliary endpoint and its tangent. The mixture routine evaluates both
+Gaussian mixtures at all children using log-sum-exp and analytical
+responsibility reductions. Automatic differentiation and finite differences
+are independent diagnostics only. At $N=4096$ the exact chunk extent is
+$K=2048$. There are $N^2$ component/child pairs per step: tiling controls
+memory, not this arithmetic cost. No nearest-ancestor truncation is used.
+
+The completed 5 October comparison used untouched data and 32 paired
+particle designs. All 15 LGSSM/KSC parameter cells satisfied their declared
+0.05 material non-inferiority criterion, conditional on the tested datasets.
+M13 value and score errors decreased relative to ancestor weighting in the
+four tested horizon/regime cells, but bootstrap filtering had smaller
+observed likelihood error in each cell. Thus this is an implemented partial
+repair, with evidence against promotion over the simple comparator.
+The main monograph's evidence section reports the numerical table.
+No defensive proposal component has been implemented or promoted.
+
+The 6 October expanded master uses fresh datasets, starting at four and
+extending to eight or sixteen when uncertainty remains. It tests horizons
+$10,20,50,120,240$ and LGSSM dimensions $1,3,10,20$, with native scalar KSC
+and four-state range--bearing models while the meaning of their dimension
+extensions is resolved. It also strengthens independent references, tests
+multiple-row parity and precision, and compares particle-count and runtime
+budgets with simple filters. Every scope freezes controls after separate
+calibration and validation. Its plan and running results are preserved in
+\path{docs/plans/surrogate-hmc-marginal-expanded-execution-2026-10-06.md}.
+
+The expanded engineering checks have passed: multiple-row and separate-call
+values/scores were identical in all tested fixtures, and the largest relative
+finite-difference score discrepancy was $1.78\times10^{-5}$. Refined
+range--bearing $T=1$ quadrature agreed with the replicated particle reference
+within its recorded uncertainty. Repeated $N=4096$ full-filter precision checks
+were finite and repeatable; the largest FP32/FP64 log-likelihood difference
+was $0.00530$, below the predeclared 0.05 materiality margin. These results
+do not settle the outstanding fresh-dataset replication grid.
+
+As of 6 October at 10:00 UTC, fresh-data runs have finished for LGSSM
+$d=1,3$ and scalar KSC at $T=10,20$, and M13 range--bearing at $T=10$,
+all with $N=1024$. The three-state LGSSM $T=20$ scope resolved at eight
+independent datasets; the other completed scopes used sixteen. Each dataset
+had 32 paired particle designs at the declared parameter points. All twelve
+LGSSM cells met the 0.05 non-inferiority criterion for both primary metrics;
+adjusted intervals supported smaller value error in two cells and smaller
+scaled-score error in six. KSC at $T=10$ had two non-inferior points and
+one inconclusive point. At $T=20$, the same likelihood comparison remained
+inconclusive, while all three score comparisons passed. M13 had lower paired
+value and score error at both points, but bootstrap and EKF likelihood errors
+were smaller in the observed rows, so the simple-comparator check remains a
+promotion veto. Dataset clusters, rather than individual particle designs,
+are the replication units; eight or sixteen clusters still give approximate
+interval coverage. These results do not establish an improvement over the
+exact Kalman filter or readiness for surrogate HMC.
+
+The first $N=1024$ scopes $d=10,T=10$, $d=20,T=10$, and
+$d=20,T=240$ failed during stationary initialization, before filtering.
+GPU checks traced this to TF32 matrix products evaluated against a
+full-FP32 equation-residual tolerance. Both policies were affected.
+Using FP64 for the small initialization products restored all 24 isolated
+checks; the solves and the particle filter retain FP32, with TF32 enabled
+for filtering. The maximum relative covariance/tangent discrepancies were
+$5.9\times10^{-7}$ and $1.4\times10^{-6}$. These are initialization diagnostics,
+not evidence about likelihood accuracy. The largest scaled change in valid
+LG1/LG3/KSC full-filter regressions was $3.6\times10^{-6}$. The tiny
+range--bearing check failed identically in both versions; the separate healthy
+engineering fixtures passed after repair. Higher-dimensional marginal runs
+then failed during mixture-weight factorization, prompting a separate
+precision repair rather than a change to the marginal identity. A bounded covariance probe captured the actual
+consumer inputs and found that TF32 pushed-covariance products exceed the
+existing symmetry guard at the failing parameter points, while TF32-off and
+FP64-product-then-cast diagnostic arms pass. Finiteness and positive
+symmetric-part eigenvalues remain valid. Recomputing every product in FP64
+recovered the high-dimensional cases but failed the no-harm screen on three
+healthy low-noise range--bearing rows. The selective repair recomputes only
+finite products exceeding the existing relative symmetry margin
+$8d\,2^{-23}$. It recomputes the covariance and its analytical tangent
+together, casts them back to FP32, and keeps the final validity checks
+unchanged. The six-scope diagnostic recovered all twelve formerly invalid
+high-dimensional rows and preserved every previously valid tested value and
+score exactly. The derivative follows the selected branch; smoothness at a
+precision-switch boundary and its consequences for HMC remain unchecked.
+A comparison of the integrated consumer with saved prior-process results
+subsequently failed the same no-harm criterion on two healthy range--bearing
+rows. However, the unchanged archived implementation also failed to reproduce
+its saved results, with maximum differences $0.01530$ in log likelihood and
+$0.19890$ in scaled score. Two independent original graphs and the integrated
+repair agreed exactly when compared in one process. The final six-scope
+paired public-consumer check passed all 68 rows: every previously valid value
+and score was identical, and all twelve invalid high-dimensional rows were
+recovered with positive precision-repair counts. This supports continuing the
+component experiment. Reproducibility between separate FP32/TF32 processes
+and behavior at a precision-switch boundary remain unresolved.
+The source continuation uses fresh calibration and claim datasets.
+FP32/TF32 remains the filter mode; local FP64 products and independent
+references are explicit exceptions. The revised master measures synchronized
+computation separately from unequal report-serialization overhead.
+Because bootstrap filtering returns a likelihood without a score, these
+timings cannot support a claim about HMC-force efficiency. A warmed
+synchronized-call probe measured KSC marginal-mixture/bootstrap medians of
+$0.05497/0.00292$ seconds and M13 medians of $0.16341/0.00240$ seconds;
+report-ready medians were $0.08846/0.00294$ and $0.19733/0.00242$ seconds.
+The probe exposes unequal reporting overhead; inaccurate predictions from
+individual timing calls also contribute to sparse matches. Bounded timing
+warm-up and separate repeat-count calibration subsequently matched eight of
+eight KSC designs and seven of eight M13 designs. The remaining mismatch is
+retained. Equal-runtime coverage is therefore still incomplete; neither
+accuracy comparisons nor timing repairs establish HMC-force efficiency.
+
+A subsequent surrogate-HMC test still needs the declared endpoint target,
+supported public tuner, adaptive warm-up, cumulative retained sampling and
+posterior/reference agreement. No new HMC samples are supplied by the
+component comparisons above. The defensive proposal remains a possible
+separately tuned repair if the fresh-data results diagnose inadequate
+coverage; its parameter $\alpha$ has not been selected.
+
+The correct tuner must be chosen using
+\path{docs/reference/hmc-tuning-interface.md} and
+\path{HMC_TUNING_INTERFACE_CAPABILITIES}.
+The existing neural-force runner binding supports the public
+\path{tune_hmc_kernel} route; a stage helper is not a tuner, and an
+arbitrary force must not be routed through the fixed-transport tuner.
+
+Every new scope still owes offline LEDH tuning. FP32 GPU/XLA remains the
+default execution target, with memory growth verified before device
+initialization; FP64 is a reference arm. No new tolerance is selected from
+the observed failures. For HMC materiality, useful explanatory quantities
+are local log-likelihood-ratio error
+$\delta(\theta+h)-\delta(\theta)$ and score error in the declared HMC
+coordinates, such as $\|L^\top(\widehat s-s_{\rm ref})\|$ for
+$\theta=\theta_0+Lz$. Neither substitutes for downstream sampling evidence.
+
+The 12:30 UTC continuation adds LGSSM $d=1,3,T=50$, where every
+parameter point passes the declared likelihood and score non-inferiority
+checks. At range--bearing $T=20$, the nominal point supports lower errors
+than ancestor weighting, with mean absolute likelihood errors $3.9274$
+versus $0.6125$ and scaled score errors $1.0036$ versus $0.1595$.
+The simple bootstrap and Gaussian likelihood comparators still have lower
+observed errors. At the low-noise point one ancestor run failed and all
+marginal runs remained valid; this invalidates the paired accuracy comparison
+at that point, not the marginal method. The failed row is retained.
+
+\section{Mathematical audit and limits of this proposal}
+
+Manual proofs above establish the stated conditional identities. MathDevMCP
+has verified the two-component variance identity, conditional-expectation
+identity, rational mixture derivative, Gaussian scalar tangent,
+inverse-map scalar tangent, KSC tangent and exact counterexample arithmetic
+using its symbolic backend. Five additional coefficient checks cover the
+full two-dimensional Gaussian derivative; independent local algebra also
+checks noncommuting map composition and inverse differentiation.
+The separate audit record preserves exact
+inputs, outputs, parser limitations and document-audit results.
+
+An attempted nested differentiation expression was not encoded correctly by
+the tool. It was replaced by an explicit rational derivative identity.
+A separate high-level request to refute universal stratified
+non-deterioration returned an inconclusive wrapper status despite an
+exact nonzero backend difference. The explicit counterexample and its
+checked rational arithmetic carry the argument; the wrapper abstention
+is not represented as a proof certificate.
+
+These mathematical checks alone do not certify the TensorFlow call chain,
+empirical improvement, universal non-deterioration, a full-horizon exact
+M13 score or HMC convergence. The implementation and numerical evidence
+described above are separate from the symbolic proofs. The remaining empirical
+question is whether the optional correction improves accuracy and computational
+value across fresh datasets without material deterioration in LGSSM and KSC,
+and ultimately whether it supports the intended surrogate-HMC inference.
+
+\begin{thebibliography}{9}
+\bibitem{li}
+Y. Li and M. Coates (2017).
+Particle Filtering with Invertible Particle Flow.
+\emph{IEEE Transactions on Signal Processing}, 65(16), 4102--4116.
+Algorithm 1, Eqs.~(19)--(20), Lemma IV.2, Theorem IV.3 and Lemma IV.4.
+\url{https://arxiv.org/abs/1607.08799}.
+The local implementation was inspected; the original-author software
+link was unavailable during this audit. No author-code equivalence
+claim follows from the paper inspection.
+
+\bibitem{klaas}
+M. Klaas, N. de Freitas and A. Doucet (2005).
+Toward Practical $N^2$ Monte Carlo: the Marginal Particle Filter.
+\emph{Proceedings of UAI}, 308--315.
+Sec.~3 and Fig.~3 (mixture weights); Sec.~3.1 and Proposition 1
+(random-label variance argument).
+\url{https://www.cs.ubc.ca/~arnaud/klass_defreitas_doucet_marginalparticlefilterUAI2005.pdf}.
+
+\bibitem{owen}
+A. B. Owen and Y. Zhou (2000).
+Safe and Effective Importance Sampling.
+\emph{Journal of the American Statistical Association}, 95(449), 135--143.
+Sec.~3, Eq.~(10) and Sec.~3.1.
+\url{https://artowen.su.domains/reports/seis.pdf}.
+\end{thebibliography}
+\end{document}

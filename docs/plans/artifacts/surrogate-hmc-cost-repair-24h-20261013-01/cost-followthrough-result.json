@@ -1,0 +1,42 @@
+{
+  "status": "COST_DIAGNOSTIC_COMPLETE_POSTERIOR_AWAITING_OWNER_PRIORS",
+  "updated_utc": "2026-10-15T00:57:38.397962+00:00",
+  "part_of_existing_master": true,
+  "posterior_sampling_complete": false,
+  "gpu_worker_running": false,
+  "decision": "Do not adopt normalizer reuse; protected implementation restored exactly; retain master scope handoff and prior guard",
+  "comparisons": [
+    {
+      "model": "lgssm",
+      "artifact": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/accepted-ot-normalizer-reuse-lgssm-01/lgssm/covariance-comparison.json",
+      "nominal_outputs_exact": true,
+      "initial_region_value_score_exact": true,
+      "mean_seconds": {
+        "baseline": 8.471484470333053,
+        "candidate": 8.930512148666821
+      },
+      "runtime_ratio": 1.0541850345050237
+    },
+    {
+      "model": "sir_d18",
+      "artifact": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/accepted-ot-normalizer-reuse-sir_d18-01/sir_d18/covariance-comparison.json",
+      "nominal_outputs_exact": true,
+      "initial_region_value_score_exact": true,
+      "mean_seconds": {
+        "baseline": 17.77768034566634,
+        "candidate": 17.69784986666673
+      },
+      "runtime_ratio": 0.9955095109458939
+    }
+  ],
+  "tests": "42 passed, 2 warnings in 51.27s",
+  "source_sha256": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+  "remaining_seconds": 47849.122295826644,
+  "remaining_attempts": 11,
+  "next": "Bind owner scientific priors and coordinate Jacobians; refresh affected scope tuning; resume existing master adaptive warmup and cumulative retained sampling within remaining budget",
+  "not_concluded": [
+    "posterior convergence",
+    "statistical speed ranking",
+    "all computational optimization complete"
+  ]
+}

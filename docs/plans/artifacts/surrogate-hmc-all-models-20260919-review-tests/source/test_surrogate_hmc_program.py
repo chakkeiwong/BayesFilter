@@ -1,0 +1,166 @@
+"""Scientific consumer checks and bounded orchestration regression tests."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+import pytest
+
+from bayesfilter.inference.surrogate_hmc_program import (
+    CPU_CAP, GPU_CAP, ROOT, lg1_scope, model_register, reserve_job, run_job,
+    validated_budget,
+    charge_previous_runs,
+)
+
+
+@pytest.mark.parametrize("gpu,cpu", [(float("nan"), 1), (1, float("inf")), (-1, 2), (GPU_CAP+1, 2), (1, CPU_CAP+1)])
+def test_invalid_or_expanded_budget_rejected(gpu,cpu):
+    with pytest.raises(ValueError):
+        validated_budget(gpu,cpu)
+
+
+def test_budget_reservation_prevents_launch():
+    budget=validated_budget(5,20)
+    reserve_job(budget,"gpu",5)
+    budget["charged"]["gpu_seconds"]=.1
+    with pytest.raises(ValueError,match="insufficient"):
+        reserve_job(budget,"gpu",5)
+
+
+def test_cumulative_budget_uses_incremental_charges_once(tmp_path):
+    first = tmp_path / "first.json"
+    first.write_text(json.dumps({"charged": {"gpu_seconds": 10., "cpu_worker_seconds": 20.}}))
+    second = tmp_path / "second.json"
+    second.write_text(json.dumps({"charged": {"gpu_seconds": 15., "cpu_worker_seconds": 27.},
+                                  "charged_this_run": {"gpu_seconds": 5., "cpu_worker_seconds": 7.}}))
+    ledger = validated_budget(100, 100)
+    charge_previous_runs(ledger, [first, second, first])
+    assert ledger["charged"] == {"gpu_seconds": 15., "cpu_worker_seconds": 27.}
+    with pytest.raises(ValueError, match="exceeds"):
+        charge_previous_runs(validated_budget(14, 100), [first, second])
+    second.write_text(json.dumps({"charged": {"gpu_seconds": -1, "cpu_worker_seconds": 0}}))
+    with pytest.raises(ValueError, match="invalid prior"):
+        charge_previous_runs(validated_budget(100, 100), [second])
+
+
+def test_launch_error_preserves_terminal_manifest_and_charge(tmp_path):
+    ledger = validated_budget(10, 30)
+    with pytest.raises(FileNotFoundError):
+        run_job([str(tmp_path / "missing-executable")], tmp_path / "job", ledger,
+                device="cpu", timeout=1)
+    manifest = json.loads((tmp_path / "job/run-manifest.json").read_text())
+    assert manifest["status"] == "LAUNCH_ERROR"
+    assert manifest["exit_code"] is None
+    assert len(ledger["jobs"]) == 1
+    assert manifest["wall_seconds"] >= 0
+
+
+def test_failed_and_timed_out_work_is_charged_and_preserved(tmp_path):
+    ledger=validated_budget(10,30)
+    failure=run_job([sys.executable,"-c","print('preserved'); raise SystemExit(7)"],tmp_path/"failure",ledger,device="cpu",timeout=2)
+    assert failure["exit_code"]==7 and failure["status"]=="FAILED"
+    assert "preserved" in (tmp_path/"failure/command.log").read_text()
+    timeout=run_job([sys.executable,"-c","import time; time.sleep(10)"],tmp_path/"timeout",ledger,device="cpu",timeout=.3)
+    assert timeout["status"]=="WALL_TIME_LIMIT"
+    assert ledger["charged"]["cpu_worker_seconds"]>0
+    assert ledger["charged"]["gpu_seconds"]==0
+    with pytest.raises(FileExistsError):
+        run_job([sys.executable,"-c","pass"],tmp_path/"failure",ledger,device="cpu",timeout=1)
+
+
+def test_dry_run_has_no_framework_import_or_files(tmp_path):
+    output=tmp_path/"uncreated"
+    code="""import sys, runpy
+sys.argv=['scripts/run_surrogate_hmc_program.py','--output',sys.argv[1],'--dry-run']
+try:
+    runpy.run_path('scripts/run_surrogate_hmc_program.py',run_name='__main__')
+except SystemExit as exc:
+    assert exc.code==0
+assert 'tensorflow' not in sys.modules
+assert 'numpy' not in sys.modules
+"""
+    result=subprocess.run([sys.executable,"-c",code,str(output)],cwd=ROOT,text=True,capture_output=True,check=True)
+    payload=json.loads(result.stdout)
+    assert payload["inference_ready"] is False
+    assert not output.exists()
+    assert not payload["scope_card"]["comparisons"]["B_vs_R"]=="PASS"
+
+
+def test_all_minimum_families_remain_visible():
+    register=model_register()
+    assert len(register["families"])==17
+    assert not register["all_models_validated"]
+    assert all(row["inference_status"]=="NOT_RUN" for row in register["families"])
+    assert lg1_scope()["parameter_dimension"]==1
+
+
+def test_stationary_kalman_matches_dense_observation_law_and_total_gradient():
+    import tensorflow as tf
+    from bayesfilter.testing.surrogate_hmc_lg1_tf import kalman_physical
+    y=tf.constant([[.3],[-.7],[1.2],[.5]],tf.float64)
+    phi=tf.constant([-.8,.1,.8],tf.float64)
+    with tf.GradientTape() as tape:
+        tape.watch(phi)
+        indices=tf.range(4)
+        distance=tf.abs(indices[:,None]-indices[None,:])
+        covariance=tf.pow(phi[:,None,None],tf.cast(distance[None],tf.float64))/(1-phi[:,None,None]**2)+.5*tf.eye(4,dtype=tf.float64)[None]
+        chol=tf.linalg.cholesky(covariance)
+        residual=tf.broadcast_to(y[None],[3,4,1])
+        solved=tf.linalg.triangular_solve(chol,residual)
+        dense=-.5*(4*tf.math.log(tf.constant(2*3.141592653589793,tf.float64))+2*tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)),axis=-1)+tf.reduce_sum(solved**2,axis=[1,2]))
+    derivative=tape.gradient(dense,phi)
+    value,score,_=kalman_physical(phi,y)
+    tf.debugging.assert_near(value,dense,atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(score,derivative,atol=1e-11,rtol=1e-11)
+
+
+def test_bounded_prior_chart_and_predictive_probability_are_same_law():
+    import tensorflow as tf
+    from bayesfilter.testing.surrogate_hmc_lg1_tf import kalman_physical,kalman_unconstrained
+    y=tf.constant([[.3],[-.7],[1.2],[.5]],tf.float64)
+    z=tf.constant([[-2.],[0.],[2.]],tf.float64)
+    with tf.GradientTape() as tape:
+        tape.watch(z)
+        logp,gradient,predictive=kalman_unconstrained(z,y)
+    tf.debugging.assert_near(gradient,tape.gradient(logp,z),atol=1e-11,rtol=1e-11)
+    sig=tf.math.sigmoid(z[:,0]);phi=-.95+1.9*sig
+    likelihood,_,_=kalman_physical(phi,y)
+    explicit=likelihood-tf.math.log(tf.constant(1.9,tf.float64))+tf.math.log(1.9*sig*(1-sig))
+    tf.debugging.assert_near(logp,explicit,atol=1e-12,rtol=1e-12)
+    distance=tf.abs(tf.range(4)[:,None]-tf.range(4)[None,:])
+    cov=tf.pow(phi[:,None,None],tf.cast(distance[None],tf.float64))/(1-phi[:,None,None]**2)+.5*tf.eye(4,dtype=tf.float64)[None]
+    cross=tf.pow(phi[:,None],tf.cast(tf.range(4,0,-1)[None],tf.float64))/(1-phi[:,None]**2)
+    solved=tf.linalg.solve(cov,tf.broadcast_to(y[None],[3,4,1]))[:,:,0]
+    mean=tf.reduce_sum(cross*solved,axis=1)
+    variance=1/(1-phi**2)+.5-tf.reduce_sum(cross*tf.linalg.solve(cov,cross[:,:,None])[:,:,0],axis=1)
+    exact=.5*tf.math.erfc(-mean/tf.sqrt(2*variance))
+    tf.debugging.assert_near(predictive,exact,atol=1e-12,rtol=1e-12)
+
+
+def test_consumer_resolves_to_complete_canonical_callable(monkeypatch):
+    import tensorflow as tf
+    import bayesfilter.highdim.ledh_program_fixtures_tf as fixtures
+    from bayesfilter.testing.surrogate_hmc_lg1_tf import make_diagnostic_dataset,make_lg1_consumer,endpoint_status
+    calls=[]
+    def canonical(model,theta,directions,initial,covs,noises,obs,**controls):
+        calls.append(controls)
+        batch=tf.shape(theta)[0]
+        value=-tf.reduce_sum(theta**2,axis=-1)
+        status=endpoint_status(value)
+        status.update(program_valid=status['value_valid'],direction_value_valid=status['value_valid'][:,None],
+                      direction_force_valid=status['force_valid'][:,None])
+        return value,-2*theta,status
+    monkeypatch.setattr(fixtures,'canonical_batch_fused_value_score',canonical)
+    consumer=make_lg1_consumer(make_diagnostic_dataset(),batch_size=4,particle_count=16,jit_compile=False)
+    z=tf.constant([[-1.],[0.],[1.],[2.]],tf.float64)
+    before=consumer.endpoint.function(z).potential
+    field=consumer.force.function(z)
+    assert len(calls)==1
+    assert calls[0]['reset_policy']=='contract_e'
+    assert calls[0]['correction_steps']>0 and calls[0]['pairwise_steps']>0
+    assert calls[0]['coordinate_cap']>0 and calls[0]['reset_design'].shape==(16,1)
+    assert field.force.dtype==tf.float64
+    assert consumer.force.identity!=consumer.endpoint.identity
+    assert consumer.force.semantics=='deterministic_position_only_proposal_field'
+    tf.debugging.assert_equal(before,consumer.endpoint.function(z).potential)

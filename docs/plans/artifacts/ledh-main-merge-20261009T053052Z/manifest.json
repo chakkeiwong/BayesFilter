@@ -1,0 +1,94 @@
+{
+  "schema": "ledh_main_merge_check_v1",
+  "premerge_head": "f5e69d716818ff9ecf28b732a8952f5ec7f87739",
+  "source_main": "285b43e111124b0f3337f81032905591b9a54324",
+  "remote_main": "b1ccb8678c1ca68811eaa301bd4e1fd368e4bc23",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "premerge_tracked_status": [
+    " M bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+    " M bayesfilter/highdim/ledh_canonical_score_tf.py",
+    " M bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+    " M bayesfilter/highdim/ledh_marginal_weights_tf.py",
+    "M  bayesfilter/inference/__init__.py",
+    "M  bayesfilter/inference/hmc_tensorflow_tuning.py",
+    "M  bayesfilter/inference/hmc_tuning_dispatch.py",
+    "M  bayesfilter/inference/tuning_contract.py",
+    " M bayesfilter/testing/marginal_weight_campaign.py",
+    " M docs/chapters/ch19c_dpf_implementation_literature.tex",
+    "M  docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md",
+    " M docs/references.bib",
+    " M scripts/diagnose_marginal_weight_campaign.py",
+    " M tests/highdim/test_ledh_marginal_weights.py"
+  ],
+  "untracked_count": 28976,
+  "cpu_gpu": "Focused engineering tests deliberately CPU-only with CUDA hidden before import; no new GPU experiment",
+  "plan": "docs/plans/ledh-main-merge-score-check-2026-10-09.md",
+  "started_at": "20261009T053052Z",
+  "merged_head": "7ed1d1ecd339a2a9a6314a430f11d436a6e4aad1",
+  "preservation_stash": "1f5dc7092b208bc1418ab4257903d9911e239ddc",
+  "verification_command": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_ledh_marginal_weights.py tests/highdim/test_ledh_marginal_main_integration.py tests/highdim/test_covariance_proposal.py tests/test_ledh_independent_reporting.py tests/test_ledh_independent_validation.py",
+  "environment_overrides": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "TF_CPP_MIN_LOG_LEVEL": "2"
+  },
+  "verification_log": "docs/plans/artifacts/ledh-main-merge-20261009T053052Z/pytest.log",
+  "tensorflow_distribution_version": "2.20.0.dev0+selfbuilt",
+  "verification_timeout_seconds": 900,
+  "random_seeds": "Fixed fixture seeds in the listed test sources; no new scientific datasets generated.",
+  "verification_source_sha256": {
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "c5811e8e9b9579732bee17b21674d75d1c020761f65f24b4ef7905e0afa529f1",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "909d74e0f911bab47310bec18c5886ffe045cc663239d90d5706988ff4b0fba4",
+    "tests/highdim/test_ledh_marginal_weights.py": "735f6129fc81fbcb6cbb5e3e22708399b2af84ad8a8d60f64c23d00bbf648178",
+    "tests/highdim/test_ledh_marginal_main_integration.py": "12636d41b19349068c985136f7438809af4b0429fafa14605811ec0c7fa8f354",
+    "tests/highdim/test_covariance_proposal.py": "f39d6396a4d0806a651280bce9f2e5c4da80968538ce576a93e7caddb4376c34",
+    "tests/test_ledh_independent_reporting.py": "5104c0f193f9bbbb00ead7928be95c70940b21a1f1017ca5c776ae042111083f",
+    "tests/test_ledh_independent_validation.py": "fbc8cfdc1b615d209c7cde2e5979299dc7b05baacde492cea2de61c76645647a"
+  },
+  "completed_at_utc": "2026-10-09T07:43:56.169291+00:00",
+  "final_head": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "result_file": "docs/plans/ledh-main-merge-score-results-2026-10-09.md",
+  "status": "bounded_integration_complete",
+  "data_version": "Fixed test fixtures and immutable saved comparisons; no newly simulated research dataset",
+  "verification_attempts": [
+    "pytest-result.json",
+    "verification-repair-01/result.json"
+  ],
+  "verification_summary": {
+    "initial_passed": 38,
+    "initial_failed": 9,
+    "affected_rerun_passed": 20,
+    "distinct_tests_successfully_covered": 47,
+    "commit_hook_passes": [
+      3,
+      3
+    ]
+  },
+  "verification_compute_seconds": 382.04006402995435,
+  "verification_budget_seconds": 1800,
+  "repair_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "commands": [
+    "git merge --no-ff --no-edit --no-stat 285b43e111124b0f3337f81032905591b9a54324",
+    "git stash apply --index --quiet 1f5dc7092b208bc1418ab4257903d9911e239ddc",
+    "git commit --only bayesfilter/highdim/covariance_proposal_tf.py -m 'Adapt covariance proposal to per-cloud quadrature validity'",
+    "git fetch --no-auto-maintenance origin main"
+  ],
+  "remote_main_at_final_fetch": "b1ccb8678c1ca68811eaa301bd4e1fd368e4bc23",
+  "main_at_final_check": "285b43e111124b0f3337f81032905591b9a54324",
+  "final_worktree_source_sha256": {
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "c5811e8e9b9579732bee17b21674d75d1c020761f65f24b4ef7905e0afa529f1",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "41407b43419f958316fbdcf6a32b0ed53f1978954f162eb723cbfea92b5e189c",
+    "tests/highdim/test_ledh_marginal_weights.py": "735f6129fc81fbcb6cbb5e3e22708399b2af84ad8a8d60f64c23d00bbf648178",
+    "tests/highdim/test_ledh_marginal_main_integration.py": "12636d41b19349068c985136f7438809af4b0429fafa14605811ec0c7fa8f354",
+    "tests/highdim/test_covariance_proposal.py": "f39d6396a4d0806a651280bce9f2e5c4da80968538ce576a93e7caddb4376c34",
+    "tests/test_ledh_independent_reporting.py": "5104c0f193f9bbbb00ead7928be95c70940b21a1f1017ca5c776ae042111083f",
+    "tests/test_ledh_independent_validation.py": "fbc8cfdc1b615d209c7cde2e5979299dc7b05baacde492cea2de61c76645647a"
+  },
+  "worktree_contains_preserved_uncommitted_edits": true,
+  "verification_budget_remaining_seconds": 1417.9599359700455
+}

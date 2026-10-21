@@ -327,6 +327,7 @@ def canonical_batch_fused_value_score(
         # observability lane because adding TensorFlow outputs can change an
         # XLA graph and therefore alter floating-point operation ordering.
         if return_all_correction_diagnostics:
+            status_signature['pushed_covariance_precision_repair_count'] = tf.TensorSpec([horizon], tf.int32)
             correction_diagnostics = higher_moment_diagnostic_signature(dimension, dtype)
         else:
             correction_diagnostics = {
@@ -385,6 +386,9 @@ def canonical_batch_fused_value_score(
                 status.update(filtering_mean=tf.stack(means),
                               filtering_covariance=tf.stack(covs),filtering_ess=tf.stack(esses),
                               post_reset_mean=tf.stack(reset_means),post_reset_covariance=tf.stack(reset_covs))
+                if return_all_correction_diagnostics:
+                    status['pushed_covariance_precision_repair_count'] = tf.stack(
+                        [step['pushed_covariance_precision_repair_count'] for step in trace])
                 for key, spec in correction_diagnostics.items():
                     # A disabled correction has no computed diagnostic. Explicit
                     # sentinels preserve that distinction from a healthy zero.

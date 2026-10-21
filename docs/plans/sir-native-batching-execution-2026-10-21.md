@@ -6,10 +6,13 @@
 `f6bb90a00`. Native B/all-P model, proposal, reset and correction algebra,
 packed pair contractions, and optional native-batched sharding are implemented.
 The old/new full-horizon FP64 scores agree within 4.35e-11 relative L2.
-Uniform FP32 remains unpromoted: maximum old/new score difference is 2.274%,
-and the worst row differs from the FP64 recurrence by 5.769% (old) and 8.057%
-(native), exceeding the unchanged 1% criterion. FP64 is a diagnostic reference
-for this finite filter, not an exact model-likelihood oracle or a new default.
+The owner has retired the fixed 1% scientific acceptance gate. Maximum old/new
+FP32 score difference is still 2.274%; the worst FP64-relative differences remain
+5.769% (old) and 8.057% (native). These are arithmetic diagnostics, not automatic
+scientific vetoes. Use the
+[reference and uncertainty policy](sir-batching-materiality-policy-2026-10-21.md).
+The nominal-point change is accepted as immaterial for continuing integration;
+broader statistical equivalence is unmeasured. FP32 remains requested.
 
 GPU B4/8/16/32 complete. B64 completes two evaluations within about 8 GiB
 but reaches the repeat-budget cap. B128 exceeds the 12 GiB allocator cap;
@@ -20,11 +23,13 @@ have ended. The isolated source-tree regression passes 119 tests. No HMC or
 NeuTra optimizer update has been run. Training adapter/whole-update parity
 remains in the parent integration plan.
 
-This bounded batching execution is complete, with numerical promotion withheld.
-The result and next repair are recorded in
-[the result note](sir-native-batching-results-2026-10-21.md). The next research
-action is target-preserving FP32 score localization within the parent plan,
-followed by matched full-horizon remeasurement; it has not been launched here.
+This bounded batching execution is complete. The percentage-only blocker is
+removed; this does not establish full training or inference readiness. The
+[result note](sir-native-batching-results-2026-10-21.md) records the revised
+interpretation. The next implementation step is the target-to-trainer adapter
+and whole-update parity/memory check in parent Phase 1. Reference comparisons
+with paired-design uncertainty accompany accuracy assessment; FP32 localization
+is no longer a mandatory preceding detour. No new training run is launched here.
 Recorded GPU arms use 45.89 minutes; CPU arms and logged tests use 57.83 minutes,
 both below the two-hour ceilings. The execution history,
 review, failed attempts and numerical evidence are retained under
@@ -44,12 +49,13 @@ diagnostics, not replacements for the analytical production score.
 
 Promotion requires executable multirow parity, constant graph structure across
 batch sizes, bounded compilation, and completed full-horizon measurements under
-resource limits. Likelihood difference is scaled by max(1, abs(reference));
-score difference uses vector L2 divided by max(1, reference L2), each <=1%.
-Primitive FP64 checks use 1e-8 relative/absolute, FP32 1e-4 with documented
-scale; exact status/steps, row permutation and isolation must agree. Near-zero
-component percentages cannot veto or promote. A precision mismatch above 1%
-blocks numerical promotion and triggers localization, not abandonment.
+resource limits. Likelihood and vector-scaled score percentages remain reporting
+metrics. Scientific materiality uses old/new errors against the Zhao–Cui adapted
+reference with estimation uncertainty, following the linked policy; neither an
+FP32/FP64 percentage nor an old/new percentage is an automatic veto. Primitive
+FP64 checks retain 1e-8 relative/absolute and FP32 1e-4 with documented scale for
+checking the algebra; exact status/steps, row permutation and isolation checks
+remain. These primitive checks do not certify model-likelihood accuracy.
 
 Explanatory diagnostics: compilation/warm latency, allocator/RSS peaks, graph
 count, CPU/GPU discrepancy, full per-parameter scores. No posterior correctness,
@@ -94,8 +100,9 @@ use, or the budget below. Preserve every attempt in a new output directory.
 Cheap engineering adversaries are the scalar reference, the old batched kernel,
 and repeated small native batches. Evaluate identical/distinct rows, one invalid
 row, small/large state scale and particle counts separately. These are
-implementation comparators, not competing statistical estimators; filter
-accuracy against Kalman/oracles is outside this unchanged-target optimization.
+implementation comparators, not competing statistical estimators. The revised
+materiality assessment additionally uses the saved adapted model reference;
+the present single-design capacity run cannot establish estimator uncertainty.
 
 ## Budget, environment, commands and artifacts
 

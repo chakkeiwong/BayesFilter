@@ -1039,6 +1039,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
             "tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members",
             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_rejects_identity_mass_fallback",
+            "tests/test_hmc_tensorflow_verified.py",
+            "scripts/qualify_hmc_tensorflow_verified.py",
         ),
         mass_capability="owned",
         step_size_capability="owned",

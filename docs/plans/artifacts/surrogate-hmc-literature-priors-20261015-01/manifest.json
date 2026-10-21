@@ -1,0 +1,58 @@
+{
+  "schema": "bayesfilter.literature_prior_adoption.v1",
+  "recorded_utc": "2026-10-15T07:33:55.100064+00:00",
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "git_branch": "ledh-graceful-failure-execution-20260917",
+  "working_tree": "contains uncommitted and untracked campaign files; source snapshot and hashes bind tested files",
+  "command": "CUDA_VISIBLE_DEVICES=-1 BAYESFILTER_PRELOAD_CUSTOM_OP=0 TF_NUM_INTRAOP_THREADS=4 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/test_surrogate_hmc_literature_priors.py tests/test_surrogate_hmc_five_model_master.py tests/test_surrogate_hmc_performance_repair.py > docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/pytest-attempt-02.log 2>&1",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "python": "3.11.15",
+  "versions": {
+    "tensorflow": "2.20.0.dev0+selfbuilt",
+    "tensorflow-probability": "0.25.0",
+    "pytest": "9.0.2"
+  },
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden before TensorFlow import: CUDA_VISIBLE_DEVICES=-1",
+  "jit_compile": "CPU XLA enabled in prior and consumer graph checks; orchestration tests use mocks",
+  "gpu_seconds_charged": 0,
+  "wall_seconds_reported_by_pytest": 27.05,
+  "earlier_focused_run_wall_seconds": 21.6,
+  "seeds": "Deterministic grids in prior tests; sampler fixture seeds are retained in the source test snapshot. No random scientific dataset generated.",
+  "data_version": "Controlled test fixtures from the archived test files; no campaign data changed",
+  "prior_id": "literature-model-priors-v1",
+  "status": "CPU_CORRECTNESS_AND_WIRING_PASS",
+  "tests": {
+    "passed": 184,
+    "warnings": 2,
+    "exit_code": 0,
+    "log": "docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/pytest-attempt-02.log",
+    "log_sha256": "0a6fc6846415f89358d6c0fb0c404d60f8515d195007e2f54ce3b3602f3f2a9a"
+  },
+  "source_sha256": {
+    "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "0e12581ec1c6b14ea1b9db40c3e14820848858635f46394442c26c747ce14991",
+    "scripts/run_surrogate_hmc_five_model_master.py": "8c7e151d14ca1d21d1f3327c4d0f4d9ff13d96e574b452998c131646d63aa9ba",
+    "scripts/run_surrogate_hmc_performance_repair.py": "0a953903c12bfc04a1ecc3dbf77fbbab96b0fcf92aaae6ca1ed5a0996feb145e",
+    "tests/test_surrogate_hmc_literature_priors.py": "dbf4e0ab5addde57da96a33555615dd236d56695d94db66af5d5c6b03b70dd62",
+    "tests/test_surrogate_hmc_five_model_master.py": "2c60d3bb20d318253013c8cbc593429278402e007fba455224a7bcf76eeee960",
+    "tests/test_surrogate_hmc_performance_repair.py": "88efdb23d08a25a7817ad319f6b3abd0f1ac967c621e68031313b0156d5e5e40"
+  },
+  "evidence_ledger": "docs/papers/surrogate-hmc-priors-2026-10-15/evidence-ledger.json",
+  "evidence_ledger_sha256": "7cfbe154a00de916196a8542ac2b2ee8670ef1500f26c874f758a6c86d028c51",
+  "plan": "docs/plans/surrogate-hmc-literature-priors-2026-10-15.md",
+  "result": "docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/result.md",
+  "output_artifacts": [
+    "docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/pytest-attempt-01.log",
+    "docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/pytest-attempt-02.log",
+    "docs/plans/artifacts/surrogate-hmc-literature-priors-20261015-01/source",
+    "docs/papers/surrogate-hmc-priors-2026-10-15"
+  ],
+  "remaining_gpu_seconds": 47849.122295826644,
+  "remaining_campaign_attempts": 11,
+  "nonclaims": [
+    "No new GPU filter or endpoint support test",
+    "No posterior sampling or convergence evidence",
+    "No superiority or prior-robustness claim"
+  ]
+}

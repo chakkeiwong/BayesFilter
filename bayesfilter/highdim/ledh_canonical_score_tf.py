@@ -406,6 +406,7 @@ def _value_and_analytical_score_impl(
         return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
 
     def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, status, total, d_total):
+        pushed_covariance_precision_repair_count = tf.constant(0, tf.int32)
         # Apply the fixed SQMC ancestry map used by the main score program.
         # The selected indices are part of the diagnostic trace so the realized
         # piecewise-constant program can be audited independently of its score.
@@ -636,12 +637,12 @@ def _value_and_analytical_score_impl(
                 value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(flow_value_valid))
             if gaussian_transition:
                 proposal_means, d_proposal_means, matrix, d_matrix = flow_outputs[6:]
-                ratio, d_ratio, mixture_valid, mixture_force_valid = marginal_prior_ratio_tangent(
+                ratio, d_ratio, mixture_valid, mixture_force_valid, pushed_covariance_precision_repair_count = marginal_prior_ratio_tangent(
                     children, d_children, anchors, d_anchors, process_covariance,
                     tf.zeros_like(process_covariance) if d_q is None else d_q,
                     proposal_means, d_proposal_means, matrix, d_matrix,
                     step_incoming_log_weights, d_step_incoming_log_weights,
-                    component_policy=importance_weight_policy)
+                    component_policy=importance_weight_policy, return_precision_diagnostics=True)
                 status = record_failure(status, mixture_valid, mixture_force_valid,
                     time=t, stage=FailureStage.WEIGHTS, value_code=FailureCode.FACTORIZATION)
             else:
@@ -914,6 +915,7 @@ def _value_and_analytical_score_impl(
                 "post_covariances_finite": tf.reduce_all(tf.math.is_finite(post_covs)),
                 "flow_states_finite": tf.reduce_all(tf.math.is_finite(children)),
                 "flow_tangents_finite": tf.reduce_all(tf.math.is_finite(d_children)),
+                "pushed_covariance_precision_repair_count": pushed_covariance_precision_repair_count,
                 "posterior_logits_finite": tf.reduce_all(tf.math.is_finite(logits)),
                 "reset_states_finite": tf.reduce_all(tf.math.is_finite(new_states)),
                 "reset_tangents_finite": tf.reduce_all(tf.math.is_finite(new_d_states)),

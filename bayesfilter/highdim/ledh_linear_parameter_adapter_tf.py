@@ -22,9 +22,15 @@ def stationary_covariance_and_tangent(f,q,d_f,d_q):
     q=tf.cast(q,dtype); d_f=tf.cast(d_f,dtype); d_q=tf.cast(d_q,dtype)
     finite=all_finite(f,q)
     safe_f=tf.where(finite,f,tf.zeros_like(f))
-    gram=tf.matmul(safe_f,safe_f,transpose_a=True)
+    # A residual checked against input-dtype epsilon must not itself use
+    # TF32 products. The derivative RHS needs the same precision. These are
+    # small state-space matrices; the particle filter and both solves retain
+    # their input dtype and the caller's TF32 policy.
+    work_dtype=tf.float64 if dtype==tf.float32 else dtype
+    work_f=tf.cast(safe_f,work_dtype)
+    gram=tf.matmul(work_f,work_f,transpose_a=True)
     norm_squared=tf.reduce_max(tf.linalg.eigvalsh(gram))
-    stable=finite & (norm_squared < tf.constant(1.,dtype))
+    stable=finite & (norm_squared < tf.constant(1.,work_dtype))
     q_valid,_=safe_cholesky(q,"stationary_process")
     allowed=stable & q_valid
     kron=tf.reshape(tf.einsum("ij,kl->ikjl",safe_f,safe_f),[n*n,n*n])
@@ -34,16 +40,21 @@ def stationary_covariance_and_tangent(f,q,d_f,d_q):
     p=tf.reshape(tf.linalg.solve(operator,tf.reshape(rhs,[n*n,1])),[n,n])
     p=(p+tf.transpose(p))*tf.constant(.5,dtype)
     p_valid,_=safe_cholesky(p,"stationary_covariance")
-    residual=p-f@p@tf.transpose(f)-q
-    residual_scale=tf.maximum(tf.reduce_max(tf.abs(p))+tf.reduce_max(tf.abs(q)),
-                              tf.constant(1e-30,dtype))
+    work_p=tf.cast(p,work_dtype)
+    work_q=tf.cast(q,work_dtype)
+    residual=work_p-work_f@work_p@tf.transpose(work_f)-work_q
+    residual_scale=tf.maximum(tf.reduce_max(tf.abs(work_p))+tf.reduce_max(tf.abs(work_q)),
+                              tf.constant(1e-30,work_dtype))
     relative_residual=tf.reduce_max(tf.abs(residual))/residual_scale
     eps=2.**(-23 if dtype==tf.float32 else -52)
-    valid=allowed & p_valid & (relative_residual <= tf.constant(64*n*eps,dtype))
+    valid=allowed & p_valid & (relative_residual <= tf.constant(64*n*eps,work_dtype))
     tangent_input_valid=all_finite(d_f,d_q)
     safe_df=tf.where(tangent_input_valid,d_f,tf.zeros_like(d_f))
     safe_dq=tf.where(tangent_input_valid,d_q,tf.zeros_like(d_q))
-    d_rhs=safe_df@p@tf.transpose(safe_f)+safe_f@p@tf.transpose(safe_df)+safe_dq
+    work_df=tf.cast(safe_df,work_dtype)
+    d_rhs=tf.cast(work_df@work_p@tf.transpose(work_f)
+                  +work_f@work_p@tf.transpose(work_df)
+                  +tf.cast(safe_dq,work_dtype),dtype)
     dp=tf.reshape(tf.linalg.solve(operator,tf.reshape(d_rhs,[n*n,1])),[n,n])
     dp=(dp+tf.transpose(dp))*tf.constant(.5,dtype)
     # Nonfinite placeholders are confined to the model-to-core boundary.

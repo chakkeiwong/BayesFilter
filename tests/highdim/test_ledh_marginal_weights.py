@@ -69,3 +69,43 @@ def test_affine_bookkeeping_matches_actual_nonlinear_flow():
     tf.debugging.assert_equal(tf.reduce_all(vv & fv),True)
     tf.debugging.assert_near(x,mean+tf.linalg.matvec(b,innovation),atol=1e-12,rtol=1e-12)
     tf.debugging.assert_near(dx,dmean+tf.linalg.matvec(db,innovation)+tf.linalg.matvec(b,di),atol=1e-12,rtol=1e-12)
+
+    # The Gaussian pushforward additionally requires that its coefficients
+    # do not depend on this child's fresh innovation. Affine bookkeeping alone
+    # would not detect coefficients evaluated on the actual random child.
+    changed_innovation = -2.3*innovation
+    changed_di = 1.7*di
+    other = _flow_substeps_with_tangent(
+        model,anchors+changed_innovation,da+changed_di,anchors,da,p,dp,
+        spec["fixture"].observations[0],r,dr,rinv,-rinv@dr@rinv,
+        substeps=10,eye=tf.eye(4,dtype=tf.float64),return_affine=True)
+    tf.debugging.assert_equal(tf.reduce_all(other[4] & other[5]),True)
+    for original_coefficient,changed_coefficient in zip(out[6:],other[6:]):
+        tf.debugging.assert_near(original_coefficient,changed_coefficient,atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(other[0],mean+tf.linalg.matvec(b,changed_innovation),atol=1e-12,rtol=1e-12)
+    tf.debugging.assert_near(other[1],
+        dmean+tf.linalg.matvec(db,changed_innovation)+tf.linalg.matvec(b,changed_di),
+        atol=1e-12,rtol=1e-12)
+
+
+
+@pytest.mark.parametrize("dtype", [tf.float32, tf.float64])
+def test_precision_policy_keeps_invalid_covariance_invalid(dtype):
+    args=[tf.cast(x,dtype) for x in inputs()]
+    x,dx,m,dm,c,dc,lw,dlw=args
+    q=tf.linalg.diag(tf.constant([1.,1.,-1.],dtype))
+    b=tf.eye(3,batch_shape=[5],dtype=dtype)
+    result=marginal_prior_ratio_tangent(x,dx,m,dm,q,dc[0],m,dm,b,
+        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
+    assert not bool(result[2])
+    assert int(result[4])==0
+
+
+def test_fp64_precision_observability_preserves_identity_cancellation():
+    x,dx,m,dm,c,dc,lw,dlw=inputs()
+    b=tf.eye(3,batch_shape=[5],dtype=tf.float64)
+    result=marginal_prior_ratio_tangent(x,dx,m,dm,c[0],dc[0],m,dm,b,
+        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
+    assert int(result[4])==0 and bool(result[2] & result[3])
+    tf.debugging.assert_near(result[0],tf.zeros([5],tf.float64),atol=1e-13)
+    tf.debugging.assert_near(result[1],tf.zeros([5],tf.float64),atol=1e-13)

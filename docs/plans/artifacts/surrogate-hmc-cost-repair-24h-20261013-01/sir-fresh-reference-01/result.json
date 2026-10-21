@@ -1,0 +1,456 @@
+{
+  "schema": "sir_exact_point_reference_comparison_v1",
+  "status": "COMPLETE_WITH_RESOLVED_SCORE_DISCREPANCIES",
+  "comparison": {
+    "source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/ot-epsilon1-steps5-01/sir_d18/result.json",
+    "source_sha256": "68fc10733d8ba28c3dde9e0efd64b838c9868d0682e0f2d4a6c155bc3f697f2a",
+    "baseline": {
+      "value": -1676.2806814396563,
+      "score": [
+        -46.24422868673017,
+        -1.3257831440132581,
+        -13.302526448053706
+      ],
+      "valid": true,
+      "steps_completed": 50
+    },
+    "candidate": {
+      "value": -1676.4840312090114,
+      "score": [
+        4.421015114612653,
+        -20.980306316072685,
+        -6.4971909416381735
+      ],
+      "valid": true,
+      "steps_completed": 50
+    },
+    "theta": [
+      -0.017499999999999998,
+      -0.017499999999999998,
+      -0.017499999999999998
+    ],
+    "observation_sha256": "f676f6a0ead43065a5be75572d505e49340aba523063b9a80d6236e1ffa99190",
+    "parameter_names": [
+      "log_kappa_scale",
+      "log_nu_scale",
+      "log_observation_noise_scale"
+    ],
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "baseline_controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 0.5,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25,
+      "shared_gaussian_contraction": "direct"
+    },
+    "candidate_controls": {
+      "flow_steps": 16,
+      "reset_steps": 5,
+      "reset_epsilon": 1.0,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25,
+      "shared_gaussian_contraction": "direct"
+    },
+    "source_scope": {
+      "model": "sir_d18",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+      "horizon": 50,
+      "particles": 4032,
+      "state_dimension": 18,
+      "parameter_dimension": 3,
+      "dtype": "float64",
+      "tf32": false,
+      "jit_compile": true,
+      "force_batch_size": 2,
+      "precision_policy": "fp64_recursion_fp32_pairs",
+      "pairwise_dtype": "float32",
+      "tuning_seed_offset": 60,
+      "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+      "chunk_size": 2016,
+      "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+      "prior": {
+        "coordinates": "q",
+        "distribution": "independent_standard_normal",
+        "nominal": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scales": [
+          0.35,
+          0.35,
+          0.35
+        ],
+        "chart": "affine",
+        "jacobian": "prior is defined in q; no additional chart Jacobian"
+      },
+      "source_sha256": {
+        "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+        "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+        "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+        "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+        "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+        "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+        "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+        "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+        "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+        "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+        "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+        "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+        "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+        "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+        "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+        "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+        "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+        "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+        "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+        "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+        "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+        "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+        "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+        "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+        "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+        "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+        "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+        "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+        "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+        "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+        "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+        "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+      }
+    }
+  },
+  "reference_methods": {
+    "bootstrap": [
+      {
+        "model": "sir_d18",
+        "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+        "horizon": 50,
+        "data_seed": 26101401,
+        "observation_sha256": "f676f6a0ead43065a5be75572d505e49340aba523063b9a80d6236e1ffa99190",
+        "theta": [
+          -0.017499999999999998,
+          -0.017499999999999998,
+          -0.017499999999999998
+        ],
+        "parameter_names": [
+          "log_kappa_scale",
+          "log_nu_scale",
+          "log_observation_noise_scale"
+        ],
+        "source_worker": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/input",
+        "source_dataset_sha256": "637a118472b05061c614bfc49c465cb16430cbf2ab7fa3632e9508d56f3282c2",
+        "particles": 131072,
+        "log_likelihood": -1676.0492005870176,
+        "score": [
+          -4.834870244153753,
+          -11.005332985228494,
+          -6.142340914850065
+        ],
+        "jackknife_mcse_log_likelihood": 0.04970639231936795,
+        "jackknife_mcse_score": [
+          15.747570544919974,
+          4.912968686775819,
+          0.3840397102002064
+        ],
+        "mean_log_likelihood": -1676.0568399754084,
+        "sd_log_likelihood": 0.12910912827169432,
+        "replications": 8,
+        "between_replication_likelihood_ess": 7.867555775807184,
+        "minimum_particle_ess": 16662.076680214068,
+        "maximum_particle_weight": 0.0025502505697299173,
+        "minimum_final_distinct_initial_ancestors": 422.0,
+        "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/rung-131072-attempt-01",
+        "wall_seconds": 115.44499401119538
+      },
+      {
+        "model": "sir_d18",
+        "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+        "horizon": 50,
+        "data_seed": 26101401,
+        "observation_sha256": "f676f6a0ead43065a5be75572d505e49340aba523063b9a80d6236e1ffa99190",
+        "theta": [
+          -0.017499999999999998,
+          -0.017499999999999998,
+          -0.017499999999999998
+        ],
+        "parameter_names": [
+          "log_kappa_scale",
+          "log_nu_scale",
+          "log_observation_noise_scale"
+        ],
+        "source_worker": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/input",
+        "source_dataset_sha256": "637a118472b05061c614bfc49c465cb16430cbf2ab7fa3632e9508d56f3282c2",
+        "particles": 524288,
+        "log_likelihood": -1676.0881483278308,
+        "score": [
+          6.584325898578274,
+          -22.21032488608462,
+          -5.856094851623758
+        ],
+        "jackknife_mcse_log_likelihood": 0.017577827281341583,
+        "jackknife_mcse_score": [
+          5.473861353774977,
+          1.9284195782927736,
+          0.10745742363307433
+        ],
+        "mean_log_likelihood": -1676.090395764715,
+        "sd_log_likelihood": 0.06877977517857557,
+        "replications": 16,
+        "between_replication_likelihood_ess": 15.926425328727825,
+        "minimum_particle_ess": 64590.04151996041,
+        "maximum_particle_weight": 0.0006367457963367837,
+        "minimum_final_distinct_initial_ancestors": 1751.0,
+        "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/rung-524288-attempt-02",
+        "wall_seconds": 1704.5975886872038
+      }
+    ],
+    "trajectory": [
+      {
+        "particles": 8192,
+        "log_likelihood": -1676.0969188842826,
+        "score": [
+          12.210817404996682,
+          -23.852721655603442,
+          -5.945207780562076
+        ],
+        "jackknife_mcse_log_likelihood": 0.010380295234215828,
+        "jackknife_mcse_score": [
+          4.745392074388874,
+          3.465741677981949,
+          0.08263372968989306
+        ],
+        "replications": 8,
+        "between_replication_likelihood_ess": 7.993968709709964,
+        "minimum_importance_ess": 545.4001307723127,
+        "maximum_weight": 0.03055538904306094,
+        "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/trajectory-8192-attempt-04",
+        "wall_seconds": 16.525470276130363
+      },
+      {
+        "particles": 32768,
+        "log_likelihood": -1676.0799936274948,
+        "score": [
+          10.85026303380313,
+          -22.312967297280135,
+          -5.937195946246275
+        ],
+        "jackknife_mcse_log_likelihood": 0.0032473793024217143,
+        "jackknife_mcse_score": [
+          3.646803611499223,
+          2.3836183419672583,
+          0.02967255288107342
+        ],
+        "replications": 16,
+        "between_replication_likelihood_ess": 15.997470677272632,
+        "minimum_importance_ess": 740.3525585426812,
+        "maximum_weight": 0.03261484122483542,
+        "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/trajectory-32768-attempt-05",
+        "wall_seconds": 46.38877426716499
+      },
+      {
+        "particles": 131072,
+        "log_likelihood": -1676.085220594165,
+        "score": [
+          13.016542143104655,
+          -24.25586948058174,
+          -5.990260908906204
+        ],
+        "jackknife_mcse_log_likelihood": 0.0028640511238678824,
+        "jackknife_mcse_score": [
+          1.7045158650166206,
+          1.2978319319964027,
+          0.01749382180373277
+        ],
+        "replications": 16,
+        "between_replication_likelihood_ess": 15.99803227071807,
+        "minimum_importance_ess": 4772.520120220252,
+        "maximum_weight": 0.008536853440509142,
+        "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/trajectory-131072-attempt-06",
+        "wall_seconds": 159.94540304597467
+      }
+    ]
+  },
+  "reference_role": "finite_MC_model_reference_not_exact_oracle",
+  "final_reference": {
+    "particles": 131072,
+    "log_likelihood": -1676.085220594165,
+    "score": [
+      13.016542143104655,
+      -24.25586948058174,
+      -5.990260908906204
+    ],
+    "jackknife_mcse_log_likelihood": 0.0028640511238678824,
+    "jackknife_mcse_score": [
+      1.7045158650166206,
+      1.2978319319964027,
+      0.01749382180373277
+    ],
+    "replications": 16,
+    "between_replication_likelihood_ess": 15.99803227071807,
+    "minimum_importance_ess": 4772.520120220252,
+    "maximum_weight": 0.008536853440509142,
+    "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/trajectory-131072-attempt-06",
+    "wall_seconds": 159.94540304597467
+  },
+  "arms": {
+    "baseline": {
+      "signed_error": [
+        -0.1954608454911977,
+        -59.260770829834826,
+        22.930086336568483,
+        -7.312265539147503
+      ],
+      "reference_mcse": [
+        0.0028640511238678824,
+        1.7045158650166206,
+        1.2978319319964027,
+        0.01749382180373277
+      ],
+      "same_method_shift": [
+        0.005226966670306865,
+        2.1662791093015255,
+        1.9429021833016051,
+        0.05306496265992866
+      ],
+      "uncertainty_allowance": [
+        0.013819120041910512,
+        7.279826704351387,
+        5.836397979290814,
+        0.10554642807112698
+      ],
+      "materiality_tolerance": [
+        16.760852205941653,
+        0.13016542143104654,
+        0.2425586948058174,
+        0.05990260908906204
+      ],
+      "materiality_screen": [
+        false,
+        true,
+        true,
+        true
+      ],
+      "resolved_vs_mcse_and_shift": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "score_relative_error_percent": [
+        455.272761216599,
+        94.53417596481286,
+        122.06923288225673
+      ],
+      "likelihood_ratio": 0.822455545776654
+    },
+    "candidate": {
+      "signed_error": [
+        -0.39881061484629754,
+        -8.595527028492,
+        3.2755631645090553,
+        -0.5069300327319697
+      ],
+      "reference_mcse": [
+        0.0028640511238678824,
+        1.7045158650166206,
+        1.2978319319964027,
+        0.01749382180373277
+      ],
+      "same_method_shift": [
+        0.005226966670306865,
+        2.1662791093015255,
+        1.9429021833016051,
+        0.05306496265992866
+      ],
+      "uncertainty_allowance": [
+        0.013819120041910512,
+        7.279826704351387,
+        5.836397979290814,
+        0.10554642807112698
+      ],
+      "materiality_tolerance": [
+        16.760852205941653,
+        0.13016542143104654,
+        0.2425586948058174,
+        0.05990260908906204
+      ],
+      "materiality_screen": [
+        false,
+        true,
+        false,
+        true
+      ],
+      "resolved_vs_mcse_and_shift": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "score_relative_error_percent": [
+        66.035410433833,
+        13.504208402553195,
+        8.462570169160344
+      ],
+      "likelihood_ratio": 0.6711177890644376
+    }
+  },
+  "cross_method": {
+    "difference": [
+      0.002927733665728738,
+      6.432216244526381,
+      -2.0455445944971196,
+      -0.1341660572824459
+    ],
+    "combined_mcse": [
+      0.017809626632043843,
+      5.7331084460739605,
+      2.324471938667446,
+      0.10887208868740765
+    ],
+    "mcse_units": [
+      0.16439051341261887,
+      1.1219421898309232,
+      0.8800039959483325,
+      1.232327393549526
+    ]
+  },
+  "interrupted_bootstrap": {
+    "status": "INTERRUPTED_FOR_VARIANCE_REPAIR",
+    "completed_replications": 2,
+    "rows": [
+      {
+        "seed": 261014301,
+        "log_likelihood": -1676.0224484555508,
+        "score": [
+          -3.7814975870731775,
+          -20.74673903845546,
+          -6.208455817574597
+        ]
+      },
+      {
+        "seed": 261014302,
+        "log_likelihood": -1676.0665277586145,
+        "score": [
+          4.087194228232844,
+          -17.41554320431862,
+          -5.9646515203083625
+        ]
+      }
+    ]
+  },
+  "diagnostic_wall_seconds": 3124.81155544566,
+  "remaining_campaign_seconds": 51669.67999007064,
+  "conclusions": {
+    "old_score_error": "resolved for all three components",
+    "new_score_error": "resolved for kappa and observation noise; nu unresolved",
+    "default_promotion": false,
+    "posterior_impact": "not measured",
+    "implementation_bug": "not established"
+  }
+}

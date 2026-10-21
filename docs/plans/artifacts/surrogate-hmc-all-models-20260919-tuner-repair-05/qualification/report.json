@@ -1,0 +1,250 @@
+{
+  "admission_supported": false,
+  "allocator": {
+    "current": 75008,
+    "peak": 16852480
+  },
+  "classification": "diagnostic_only",
+  "compile_and_first_seconds": 32.094132696976885,
+  "consumer": {
+    "batch_size": 4,
+    "classification": "full_DCTR_consumer_diagnostic_not_tuning_admission",
+    "endpoint": {
+      "chart": "bounded_logit_Jacobian_once",
+      "implementation_sha256": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+      "law": "LG1-stationary-Q1-R.5-transition-before-observation",
+      "observations_sha256": "8ec89ff39afd88cd76716b46175f7e54f5f3e58fefd7ca2189596bce1ac9ade2",
+      "prior": "Uniform(-.95,.95)"
+    },
+    "endpoint_identity": "bca45d72edb77a468f859955b5aa18932760082fb5435ea22d8e18182cf25e34",
+    "fixture": {
+      "chunk_policy": {
+        "col_blocks": 1,
+        "col_chunk_size": 1024,
+        "num_particles": 1024,
+        "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "row_blocks": 1,
+        "row_chunk_size": 1024
+      },
+      "coordinate_map": "lower+(upper-lower)*sigmoid(z); full log Jacobian once",
+      "d": 1,
+      "derivative": "analytical_recursive_all_parameter_dependencies",
+      "draw_design": "iid_gaussian",
+      "dtype": "float32",
+      "initial_law": "stationary mean zero; separate per-particle UKF design covariance P0",
+      "input_sha256": {
+        "base": "a44108087f5c4f44b3dba66f4ee38290658e2ec716c718a90dac658de26ba021",
+        "noise": "c57d4f4d9242d52088681c552c577b75ba6329fa47e2281b0c0769baae069230",
+        "observations": "67da573be7570869f60f3f90e7352e632fdaf3fa9d1b5f6847f2fed14c146ad5",
+        "residual_design": "6db29f12761a7dc63f15649633c5de1d9cf65096c46d4c71517f5f6c6cad97de"
+      },
+      "jit_compile": true,
+      "model_id": "LG1",
+      "n": 1024,
+      "p": 1,
+      "parameterization": "F=a*A,Q=exp(2*b)*Qbase; LG1 fixed Q",
+      "priors": {
+        "family": "independent_uniform",
+        "lower": [
+          -0.95
+        ],
+        "upper": [
+          0.95
+        ]
+      },
+      "reset_contract_id": "contract_e_chol_v1",
+      "route": "canonical_batch_fused_value_score",
+      "row_mass_normalization": "actual shared Contract E implementation",
+      "schema": "bayesfilter.ledh.graceful_fixture.v1",
+      "seeds": {
+        "20": [
+          -1413187327,
+          20
+        ],
+        "21": [
+          -1413187327,
+          21
+        ],
+        "22": [
+          -1413187327,
+          22
+        ]
+      },
+      "settings": {
+        "coordinate_cap": 16.0,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.1,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 8,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 8,
+        "substeps": 10
+      },
+      "source_sha256": {
+        "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+        "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+        "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+        "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+        "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+        "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+        "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+        "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+        "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+        "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+        "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+        "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+        "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+        "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+        "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+        "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+        "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c"
+      },
+      "t": 10,
+      "tf32": true
+    },
+    "force_identity": "9ddf1fdb08c0dee8b9c7a97370c85d48ebef682395ae30070c8e0c3966a1ac6d:fp64-in-fp32-force",
+    "force_semantics": "deterministic_position_only_proposal_field",
+    "jit_compile": true,
+    "precision_classification": "FP64_INTEGRATOR_FP32_DCTR"
+  },
+  "data": {
+    "attempt": 4,
+    "classification": "synthetic_fixture",
+    "generation": "CPU TensorFlow tiny diagnostic generation; not training",
+    "horizon": 10,
+    "initial_state": [
+      0.5654716471099493
+    ],
+    "model_id": "LG1",
+    "observations": [
+      [
+        0.9907854629404818
+      ],
+      [
+        -0.10805486601598652
+      ],
+      [
+        2.1370802437564556
+      ],
+      [
+        1.9636456605154478
+      ],
+      [
+        2.3301194340683504
+      ],
+      [
+        1.2114512649004443
+      ],
+      [
+        3.878410313207645
+      ],
+      [
+        3.4816874247956244
+      ],
+      [
+        2.7751237600362844
+      ],
+      [
+        -0.03302892026729509
+      ]
+    ],
+    "partition": "diagnostic",
+    "replicate": 0,
+    "seeds": {
+      "1": [
+        -1413187327,
+        1
+      ],
+      "2": [
+        -1413187327,
+        2
+      ],
+      "3": [
+        -1413187327,
+        3
+      ]
+    },
+    "states": [
+      [
+        0.7186791244986895
+      ],
+      [
+        -0.236146494949372
+      ],
+      [
+        1.6107334298552693
+      ],
+      [
+        2.1456644180705453
+      ],
+      [
+        2.2100300307209437
+      ],
+      [
+        2.3122785948917413
+      ],
+      [
+        2.5862872119625018
+      ],
+      [
+        2.157684940550356
+      ],
+      [
+        2.6730051517939453
+      ],
+      [
+        0.8099607615450621
+      ]
+    ],
+    "transition_before_observation": true,
+    "truth": [
+      0.8
+    ]
+  },
+  "diagnostic_rejected": true,
+  "finite_second_state": true,
+  "health_passed": true,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "source_hashes": {
+    "hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+    "hmc_tensorflow_tuning.py": "06c83a6519d041408dbf28790a4d171b9413bada96947c3ed2decdde083d3986",
+    "hmc_tensorflow_verified.py": "c19a3964cdfdf625ed0b890841a4f10463b1273de18b0f00d9adbc7dc2f0ab64",
+    "hmc_tuning_dispatch.py": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9",
+    "neural_force_hmc.py": "0ed5197967a89a82b41ba675fb2c6be3d4ca9dc29e8b08cbd0c71018f3c136b2",
+    "tuning_contract.py": "4247a88e706ed2b2443fe1fdd9e0544cc2fed9d59990f7111ac79185c7d62295"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true,
+  "three_transition_steady_seconds": 1.9727913429960608
+}

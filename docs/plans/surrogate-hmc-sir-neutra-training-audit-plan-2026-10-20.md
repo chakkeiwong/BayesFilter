@@ -19,7 +19,10 @@ row/permutation, sharding and public-entry regressions.
 
 Full-size old/new FP64 scores agree within 4.35e-11 relative vector norm, but
 FP32 row 3 differs by 5.769% (old) and 8.057% (native) from this common
-reference. The 1% FP32 score criterion remains unmet. Bounded capacity testing
+reference. The owner has retired the 1% scientific acceptance criterion:
+[compare against the adapted Zhao–Cui reference with uncertainty](sir-batching-materiality-policy-2026-10-21.md).
+The nominal batching change is accepted as immaterial for continuation; the
+other rows lack matched reference/replication evidence. Bounded capacity testing
 is complete: GPU B32 uses 4.04 GiB, and logical B128/native S4 completes in
 0.761 GiB with exact B4 output parity. CPU B16/B32 reach their 600-second caps
 without a completed evaluation. See the
@@ -30,8 +33,9 @@ The original capacity benchmark remains comparison evidence in
 No optimizer update or HMC campaign is part of this batching execution. The
 matched target-to-trainer adapter, complete optimizer memory check and trained
 SIR map remain missing. This is a Phase 1 prerequisite, not completion of the
-whole integration plan. The next repair is FP32 score stability under the same
-finite target and 1% criterion, before the target-to-trainer adapter is admitted.
+whole integration plan. The next implementation step is the Phase 1
+target-to-trainer adapter and complete-update checks. FP32/FP64 discrepancies
+remain reported diagnostics, not a percentage-based prerequisite for that work.
 
 The prior paper, author-source and consumer-call-chain audit is complete: 57
 CPU tests passed, one optional historical-artifact check skipped, and the
@@ -284,8 +288,10 @@ and qualify the implementation reference. The results are recorded below.
 The capacity benchmark exposed incomplete native batching and large temporary
 tensors in the target it would consume. Apply the
 [shared batching repair design](sir-native-batching-repair-design-2026-10-20.md)
-within this phase. The native implementation now exists, but the full-size
-FP32 precision veto in the execution plan must be resolved before admission.
+within this phase. The native implementation now exists. The former full-size
+percentage-only FP32 veto is retired by the owner materiality correction;
+retain implementation invariants and reference/uncertainty reporting while
+proceeding with the adapter and complete-update checks below.
 
 Add a small campaign adapter module, proposed path
 `bayesfilter/testing/surrogate_hmc_sir_neutra.py`, using the existing SIR case,

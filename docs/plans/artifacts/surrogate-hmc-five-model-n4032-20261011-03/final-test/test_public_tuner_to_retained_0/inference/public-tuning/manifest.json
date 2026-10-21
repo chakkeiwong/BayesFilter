@@ -1,0 +1,1567 @@
+{
+  "adapter_signature": "a794fed443543671e93addf066a7c76aa52d57ed0e102510464342f9d0b9a9b3:3a283897fef10013fe1b8b35130a86d3da1bdb4e6b79a9d2c6eb814367e562b7",
+  "artifact_authority": true,
+  "checks": {
+    "fresh_rhat": true,
+    "nomination_passed": true,
+    "sequential_health": true,
+    "verification_all_chains_moved": true,
+    "verification_endpoint_valid": true,
+    "verification_energy_valid": true,
+    "verification_finite": true,
+    "verification_no_divergences": true,
+    "verification_no_force_fallback": true,
+    "warmup_all_chains_moved": true,
+    "warmup_endpoint_valid": true,
+    "warmup_energy_valid": true,
+    "warmup_finite": true,
+    "warmup_no_divergences": true,
+    "warmup_no_force_fallback": true,
+    "warmup_readiness": true
+  },
+  "config": {
+    "check_every_results": 1000,
+    "chunk_results": 250,
+    "energy_error_max": 1000.0,
+    "fresh_seed": [
+      6111121,
+      71
+    ],
+    "initial_chain_positions": [
+      [
+        -0.75,
+        -0.75
+      ],
+      [
+        -0.25,
+        -0.25
+      ],
+      [
+        0.25,
+        0.25
+      ],
+      [
+        0.75,
+        0.75
+      ]
+    ],
+    "initialization_provenance": "four dispersed benchmark-prior starts; readiness must be measured",
+    "nomination": {
+      "acceptance_policy": {
+        "boundaries": "inclusive",
+        "chain_count": 4,
+        "chain_weighting": "equal_chain_means",
+        "nan_or_positive_infinity_log_acceptance": "invalid",
+        "negative_infinity_log_acceptance": "probability_zero",
+        "overall_band": [
+          0.5,
+          1.0
+        ],
+        "per_chain_band": [
+          0.3,
+          1.0
+        ],
+        "schema": "bayesfilter.four_chain_mean_band_acceptance.v1"
+      },
+      "admission_supported": false,
+      "artifact_authority": false,
+      "budget_provenance": "five-model N4032 master enforces the owner-selected wall budget",
+      "candidate_initial_position_policy": "explicit_four_chain_bank_required",
+      "candidate_policy_metadata_role": "historical_graph_helper_only; active candidate stages use shared search/execution configs",
+      "candidate_selection": "first_passing_predeclared_candidate",
+      "chain_count": 4,
+      "chain_execution_mode": "tf_function",
+      "covariance_jitter": 0.0,
+      "dtype": "float64",
+      "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+      "eigenvalue_floor": 1.4210854715202004e-14,
+      "energy_error_max": 1000.0,
+      "evidence_role": "candidate",
+      "fresh_rhat_verification": "not_part_of_tuning_handoff",
+      "geometry_provenance": "identity prior covariance, own-target windows with 10 percent prior shrinkage",
+      "handoff_eligibility": "result_dependent_candidate_screen",
+      "initial_chain_state_policy": "explicit_four_chain_bank_or_diagnostic_single_position_replication",
+      "initial_step_size": 0.01,
+      "initial_step_size_provenance": "small standardized-coordinate hypothesis, adapted on own target",
+      "mass_shrinkage": 0.1,
+      "mass_window_leapfrog_steps": 1,
+      "mass_window_results": [
+        128,
+        256
+      ],
+      "max_condition_number": 67108864.0,
+      "max_leapfrog_steps": 4,
+      "max_step_size": null,
+      "mechanics_handoff_supported": true,
+      "metric_rank_eligible": true,
+      "metric_state_count_by_window": [
+        512,
+        1024
+      ],
+      "nonclaims": [
+        "diagnostic_only results cannot issue a tuning handoff",
+        "candidate handoff authorizes only the same frozen mechanics",
+        "R-hat and ESS are retained-run explanatory diagnostics",
+        "the route is not XLA qualified",
+        "no retained posterior convergence claim"
+      ],
+      "numerical_backend": "tensorflow_only",
+      "parameter_dimension": 2,
+      "posterior_admission_authority": false,
+      "ranking_claim": false,
+      "rhat_role": "retained_explanatory_only",
+      "schema": "bayesfilter.tensorflow_hmc_tuning.v3",
+      "seed": [
+        6111117,
+        61
+      ],
+      "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+      "step_adaptation_results": 256,
+      "step_repair_factor": 2.0,
+      "target_accept_prob": 0.7,
+      "target_scope": "a794fed443543671e93addf066a7c76aa52d57ed0e102510464342f9d0b9a9b3",
+      "target_status_trace_policy": "none",
+      "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+      "trajectory_candidates": [
+        1,
+        2,
+        4
+      ],
+      "use_xla": true,
+      "verification_repair_rounds": 1,
+      "verification_results": 128,
+      "xla_mode": "requested_full_chain_compilation",
+      "xla_qualification": "requires_external_qualification"
+    },
+    "resume_manifest": null,
+    "verification_max_results": 20000,
+    "verification_results": 1000,
+    "warmup_check_window_results": 1000,
+    "warmup_max_results": 10000,
+    "warmup_results": 2000,
+    "warmup_rhat_max": 1.05
+  },
+  "endpoint_status_fields": [
+    "value_valid",
+    "force_valid",
+    "outside_declared_support",
+    "value_failure_code",
+    "force_failure_code",
+    "first_failure_time",
+    "first_failure_stage",
+    "first_failure_particle",
+    "numerical_failure",
+    "force_fallback",
+    "coordinate_boundary_rounding"
+  ],
+  "handoff_eligible": true,
+  "jit_compile": true,
+  "nomination_manifest_sha256": "8d80c05e8e6c0438d145f75dbfacddbfeac8cb6dc0fc0c7914f446c0bc848dbe",
+  "numerical_backend": "tensorflow_only",
+  "passed": true,
+  "posterior_convergence_claim": false,
+  "rhat": {
+    "bulk": {
+      "path": "rhat-bulk.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "f2e19347aad3cd1e93ab85afc5564571e2554cd1c77d83070fa71c1124c19ed6"
+    },
+    "folded": {
+      "path": "rhat-folded.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "10bb91e2940ea4ffe5062974ac823a30cd65ef63610936561532cb4dfbd09ff3"
+    },
+    "maximum": {
+      "path": "rhat-maximum.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "10bb91e2940ea4ffe5062974ac823a30cd65ef63610936561532cb4dfbd09ff3"
+    }
+  },
+  "rhat_jit_compile": false,
+  "rhat_threshold": 1.01,
+  "runner_binding": {
+    "affine_log_jacobian_convention": "constant_omitted",
+    "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+    "artifact_authority": false,
+    "backend": "tensorflow_probability",
+    "binding_hash": "3a283897fef10013fe1b8b35130a86d3da1bdb4e6b79a9d2c6eb814367e562b7",
+    "coordinate_scope": "raw",
+    "dtype": "float64",
+    "endpoint_target_coordinate_system": "raw",
+    "endpoint_target_identity": "a794fed443543671e93addf066a7c76aa52d57ed0e102510464342f9d0b9a9b3:independent-reference",
+    "endpoint_target_includes_chart_log_jacobian": false,
+    "force_identity": "a794fed443543671e93addf066a7c76aa52d57ed0e102510464342f9d0b9a9b3:analytical-fp32",
+    "force_semantics": "deterministic_position_only_proposal_field",
+    "required_diagnostic_fields": [
+      "finite_sample_count",
+      "nonfinite_sample_count",
+      "log_accept_ratio_finite_count",
+      "log_accept_ratio_nonfinite_count",
+      "maximum_absolute_delta_h",
+      "target_log_prob_finite_count",
+      "target_log_prob_nonfinite_count",
+      "divergence_count",
+      "force_fallback_count"
+    ],
+    "required_metadata_fields": [
+      "force_identity",
+      "force_semantics",
+      "target_identity",
+      "target_coordinate_system",
+      "target_includes_chart_log_jacobian",
+      "affine_log_jacobian_convention",
+      "coordinate_route",
+      "target_scope",
+      "chain_execution_mode"
+    ],
+    "requires_native_affine_mass": true,
+    "runner_identity": "bayesfilter.inference.neural_force_hmc.run_full_chain_neural_force_hmc",
+    "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+    "source_dependency_closure": {
+      "files": [
+        {
+          "path": "bayesfilter/inference/neural_force_hmc.py",
+          "sha256": "c1551b1280c70256d7c311170854608867e60ad7142774e29d76a2923972c3f6"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+          "sha256": "8854bef168fb35422c5aa0a6407cac64cdd8483a47041c83b51d40b01e5be72a"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+          "sha256": "99e6aaec56bebfe29c8873e6d0d9390b67b3e771318cd922f5045ef22e3b8c65"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+          "sha256": "527f65336eafdb2f9c9ee76bd7e401672c455e11daa97b27acdb9b21ff14c634"
+        },
+        {
+          "path": "bayesfilter/inference/hmc.py",
+          "sha256": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tuning.py",
+          "sha256": "ce0ae3a34f0c8193f57093b9f0ec8bcfc411cee681ef6da30ed3872ad866490f"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_coordinates.py",
+          "sha256": "ca8e6512ea968c7351f1d3ad90ff3b79bef556a25c6010a700faad706112a154"
+        },
+        {
+          "path": "bayesfilter/inference/tuning_contract.py",
+          "sha256": "81913fe51b230501b39276cf3554e3e3df164f8de0d08073006e152127ccc639"
+        },
+        {
+          "path": "bayesfilter/inference/posterior_adapter.py",
+          "sha256": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33"
+        },
+        {
+          "path": "bayesfilter/inference/__init__.py",
+          "sha256": "eb1f96b8a3fb59859ff96839da5178b10a637e8f736ee1c94f6bf0a79c89437f"
+        },
+        {
+          "path": "bayesfilter/__init__.py",
+          "sha256": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd"
+        }
+      ],
+      "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+    },
+    "supported_chain_execution_modes": [
+      "tf_function",
+      "eager"
+    ],
+    "supported_target_status_trace_policies": [
+      "none"
+    ],
+    "supports_arbitrary_fixed_leapfrog_count": true,
+    "supports_arbitrary_fixed_step_size": true,
+    "target_scope": "a794fed443543671e93addf066a7c76aa52d57ed0e102510464342f9d0b9a9b3",
+    "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+    "tensor_kernel_factory_available": true,
+    "xla_capable": true
+  },
+  "schema": "bayesfilter.verified_tensorflow_hmc.v2",
+  "sequence": {
+    "chunks": [
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-000-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "5375cf650da882ee57a2b5d05a2ffa80df790032be26ec86f3ad2f2857bdcc14"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-000-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "68f0c055e838adde02101125106f054262d7d2063e73ec3c4ba9e7112e8b935f"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-000-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-000-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-000-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6a4c0549170da7245c758024100c33bf4bcc8e3dd25e8f0af156f47e55867686"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-000-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-000-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-000-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "919aa4653db74d558e1fe08b33a6e28951455aaa06e84395490350b8e20c7a94"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-000-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "72adcaa5ceaaa2ca25f0cc597bd9bf167bdb7519a737fe243c42d4a7398b257c"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-000-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "3dbf427cb3a7a9c1b327e8937dd5e7bca5e0c5f7099ff442ce474b92a9474ea8"
+            }
+          }
+        },
+        "count": 250,
+        "index": 0,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          0
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-001-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "6a4c0549170da7245c758024100c33bf4bcc8e3dd25e8f0af156f47e55867686"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-001-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "a96d19b6038017adcc5c75fccdff31397980d09f97767854acaa0fa2077365b5"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-001-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-001-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-001-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "d9296b67fc76c18356ec0a82ddc9016bf14bce89eda70bc599adf84c607b61a3"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-001-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-001-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-001-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "9f5a2e09378f404ffcf9261d3eca60e3067d41e613429057193a1198a4cd9909"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-001-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "e92dfebb55b54bc53615a71f5c02493aa20f0ff5aedc87cc0ef2c301aad57228"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-001-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "f0b9c8ee57b3564a350fd98f43bfac1417c8264b10a98dab8e990073001bd84c"
+            }
+          }
+        },
+        "count": 250,
+        "index": 1,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          1
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-002-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "d9296b67fc76c18356ec0a82ddc9016bf14bce89eda70bc599adf84c607b61a3"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-002-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "0f5ba56baae13f4d55b415b5b063b1ea212f33b164786b0d0ebaca1c554cc0de"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-002-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-002-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-002-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "7112755b15247d06489c29b6cf91b67b4d7a6ff0a1f282ad347d957c7e7b8e31"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-002-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-002-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-002-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "68841ec2493dceacd03f3a608aa01e3b6857be31c6754507fe4109fc0f68e0ff"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-002-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "72a79acf723f9f4cc31624c5b3b6e3890bee4124efaff23b406b966018ba57b7"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-002-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "ced4d5c9334586c548bc1e41da5abb9bdcf73439064228e3dc4d7400d368dbee"
+            }
+          }
+        },
+        "count": 250,
+        "index": 2,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          2
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-003-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "7112755b15247d06489c29b6cf91b67b4d7a6ff0a1f282ad347d957c7e7b8e31"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-003-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "f2735be88614998e61df9e3717c4f56542c9d1688f70899015deccb8e4be9866"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-003-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-003-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-003-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "5b823714507b13c9b3402f440984c2abafd507ec62ca4b9ea4cc76619fd7c30c"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-003-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-003-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-003-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "95c8a58a6049fab22b166eeb1b6a6c1951318bfcccb1f89ee7b5ac7a91f70690"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-003-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "7e21a04b47a5a26433fb8038e0537db9a9d1c845b118a17f35157159451db7c8"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-003-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "aa5b99be320a0c401d8fd7a2fad9ada48d532823ece1d293a7d628c7a5352a9d"
+            }
+          }
+        },
+        "count": 250,
+        "index": 3,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          3
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-004-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "5b823714507b13c9b3402f440984c2abafd507ec62ca4b9ea4cc76619fd7c30c"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-004-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "d0c7518ae1c3374ba5a7f75d214e455637ce2a62b833bed3e4962bc5ea91c7e2"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-004-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-004-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-004-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "252056caa6e6e2d270a025b53520fcd3fec76b2dd86a9d65ea4689885908e3a8"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-004-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-004-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-004-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "731fbdce7671be36cee48342ef53e493e59f5c7e8c3c1dd1d17e00dd3a496e26"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-004-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "3cdf7b29ccb57f3ffdfdb8559dc2294136f3f78afd28dc2b7404683fdece1648"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-004-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "c641f0b807d44918630cc2401e21340d21df62692bd97d3c0d6a4c01030023f5"
+            }
+          }
+        },
+        "count": 250,
+        "index": 4,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          4
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-005-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "252056caa6e6e2d270a025b53520fcd3fec76b2dd86a9d65ea4689885908e3a8"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-005-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "29005ec2b7066d5b0e393fe6149a63754be9eb3d620b090951a6d9b5180a209a"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-005-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-005-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-005-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "ce83f96c054476e8859b0fbcf5aa10d2790fcccb48fd629400b0bcd477cb57b1"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-005-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-005-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-005-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "9293b87a8cf9fb11f27fa8a07805b982cf492f8cdfb3c5830ede7f15cd422928"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-005-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "8f100a33aac73686eed734036bf1eedf070d7c4a37a030322aa83873400540ad"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-005-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "0bb7dc3697d55e1d615fcf3d497334a66c254f98fdf68ad534900b8e81c5e9e0"
+            }
+          }
+        },
+        "count": 250,
+        "index": 5,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          5
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-006-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "ce83f96c054476e8859b0fbcf5aa10d2790fcccb48fd629400b0bcd477cb57b1"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-006-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "5ad0f06a8c8ed83e3431f4bb6bdd1a16ab72b3eda8b6da91baef7c8ec513696c"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-006-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-006-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-006-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "aba287c1110b975dae06e6c2ffeaaa0ca8138f201e012cea88a0fe7939740b7c"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-006-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-006-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-006-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "fb812b13cf60a84cc99aa0154af2b0e4156f4cacfd077999fa48d8f047bc7dae"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-006-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "84e1f694a877e220e6d79b2db01412a04cb8714de0182d4f78226b04f3b9bf81"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-006-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "2f1dfc91c35e5803b0158049d4d68e203c9f1652e99a04832a2130873f8b7c00"
+            }
+          }
+        },
+        "count": 250,
+        "index": 6,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          6
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-warmup-007-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "aba287c1110b975dae06e6c2ffeaaa0ca8138f201e012cea88a0fe7939740b7c"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-warmup-007-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "3c45584e99c2da092887b2faee7b7160dcea4cf1b23aae82a580ef821180da80"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-warmup-007-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-warmup-007-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-warmup-007-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "b07e2f83b54ea9f3910e66dc92be5ef73ae7ab355baf86be32ce65f1b6c55597"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-warmup-007-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-warmup-007-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-warmup-007-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "2c3247bf3777415c482fd9f5eb27f01c4bd61f0392b4bd1ea474d25b9790c82f"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-warmup-007-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "e1907af792e068c0d4f1d58cc70431712cb4bb8daf6bc270f69f1447f3320101"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-warmup-007-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "a1ab4c9065f0ea98185c8f8f0dfeeab2346bdddab5d9f116ed6004ecd7d2cec5"
+            }
+          }
+        },
+        "count": 250,
+        "index": 7,
+        "phase": "warmup",
+        "seed": [
+          1686202841,
+          7
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-verification-000-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "b07e2f83b54ea9f3910e66dc92be5ef73ae7ab355baf86be32ce65f1b6c55597"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-verification-000-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "5528b98b250fc245b2679689137798cfd861c81b4da86ff874af638ced292d0f"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-verification-000-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-verification-000-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-verification-000-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "fa24d08dd86c3a668cc6c414965e1fe7d7d40e481c0f6ff18a70b50f18b158b0"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-verification-000-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-verification-000-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-verification-000-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "ac2cb83392d8609a820f30621a9da7c1ed172f628498a5ea03fbfd0834e30220"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-verification-000-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "b07ad45c3204c60ab3b5495d66f54bf328319f219f0643f87f9bc056a2517cba"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-verification-000-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "3b438747d6a0d62e7c11f4635e3dbcdb14cc991c990ab308f9811aa940bd42db"
+            }
+          }
+        },
+        "count": 250,
+        "index": 0,
+        "phase": "verification",
+        "seed": [
+          1686202841,
+          100000
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-verification-001-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "fa24d08dd86c3a668cc6c414965e1fe7d7d40e481c0f6ff18a70b50f18b158b0"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-verification-001-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "ef0939084834804973fbdb069f69d1bcfd2783bad5b95ef3705b60e849e097a4"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-verification-001-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-verification-001-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-verification-001-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "34dd7c5d7c810be31a1f1134be209b3a2bb0df15fe3d982992d499486bd55d79"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-verification-001-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-verification-001-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-verification-001-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "bdeee877200eef49dd6b53ec318039db6597c38a69fb648638d1ac3083675490"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-verification-001-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "182ffd88b917c8fe58e99c208456596dfd3c9e5945db0ba10b7ac604fe426304"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-verification-001-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "c2b0b686732c880daa3a339a9ad9b8011d6e1cd67ae6996b454a6cbce6782ecc"
+            }
+          }
+        },
+        "count": 250,
+        "index": 1,
+        "phase": "verification",
+        "seed": [
+          1686202841,
+          100001
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-verification-002-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "34dd7c5d7c810be31a1f1134be209b3a2bb0df15fe3d982992d499486bd55d79"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-verification-002-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "25619a9fa0749f042d3584d16271036c9745b81719dcddb131d11fad4b15690c"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-verification-002-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-verification-002-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-verification-002-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "43190caedea2c13196f54e0876c65178afa72260f9f7d4f9df56e5826b540b70"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-verification-002-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-verification-002-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-verification-002-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "46db3b86256bde074f952f595e4859b4f8a4b77100a54af2c2bd67d8a93304e2"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-verification-002-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "0256f5d1ee7f52b3382fcbf1a3abac92b985fff054fa66f79cab3f2beb95c514"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-verification-002-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "8e0693e4339215d439736a3fd58a30e61debf0fc5b627d40e7f891cd45345ab1"
+            }
+          }
+        },
+        "count": 250,
+        "index": 2,
+        "phase": "verification",
+        "seed": [
+          1686202841,
+          100002
+        ]
+      },
+      {
+        "archive": {
+          "initial": {
+            "path": "sequence-verification-003-initial.tfbin",
+            "serialization": "tf.io.serialize_tensor",
+            "sha256": "43190caedea2c13196f54e0876c65178afa72260f9f7d4f9df56e5826b540b70"
+          },
+          "tensors": {
+            "delta_h": {
+              "dtype": "float64",
+              "path": "sequence-verification-003-delta_h.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "e4d22b2ae1d200d02aea2e7aa75a38509317aa65ab83bbbcaaaced0e545032be"
+            },
+            "divergence": {
+              "dtype": "bool",
+              "path": "sequence-verification-003-divergence.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "endpoint_status": {
+              "dtype": "int32",
+              "path": "sequence-verification-003-endpoint_status.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "6dc067cd49fd8616a430fbc088715513e6dfaea344841fa2e5b29eb0d6da104a"
+            },
+            "final_state": {
+              "dtype": "float64",
+              "path": "sequence-verification-003-final_state.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "e90aee24a786def2e9709099d8275a332740c75ea5a3a96d2bb855f608af9388"
+            },
+            "final_step_size": {
+              "dtype": "float64",
+              "path": "sequence-verification-003-final_step_size.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+            },
+            "force_fallback": {
+              "dtype": "bool",
+              "path": "sequence-verification-003-force_fallback.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "82954758ecb4728f7a3daf170d07c30659327c7b95cf9533a13bb4b3612b080a"
+            },
+            "is_accepted": {
+              "dtype": "bool",
+              "path": "sequence-verification-003-is_accepted.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "791db42633e15b42857e9245acc1589879ba41fb2c77bb47a90f0bc53c08a106"
+            },
+            "log_accept_ratio": {
+              "dtype": "float64",
+              "path": "sequence-verification-003-log_accept_ratio.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "65512ba3685f26a1167ace965f487846d85fa95f8b4d5442f46b28045c527ad2"
+            },
+            "states": {
+              "dtype": "float64",
+              "path": "sequence-verification-003-states.tfbin",
+              "serialization": "tf.io.serialize_tensor",
+              "sha256": "489d352fa0cadda90240ed60210f0e3723ae300d7d98a0c28b423eb752f75c3e"
+            }
+          }
+        },
+        "count": 250,
+        "index": 3,
+        "phase": "verification",
+        "seed": [
+          1686202841,
+          100003
+        ]
+      }
+    ],
+    "counts": {
+      "verification": 1000,
+      "warmup": 2000
+    },
+    "events": [
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 250,
+        "index": 0,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 500,
+        "index": 1,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 750,
+        "index": 2,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 1000,
+        "index": 3,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 1250,
+        "index": 4,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 1500,
+        "index": 5,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 1750,
+        "index": 6,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      },
+      {
+        "check_due": true,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 2000,
+        "index": 7,
+        "passed": true,
+        "phase": "warmup",
+        "rhat": {
+          "bulk": [
+            1.0014695009783,
+            1.0021101683149407
+          ],
+          "folded": [
+            1.0007562469395972,
+            1.0010890742862006
+          ],
+          "maximum": [
+            1.0014695009783,
+            1.0021101683149407
+          ]
+        },
+        "rhat_draws_per_chain": 1000,
+        "threshold": 1.05
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 250,
+        "index": 0,
+        "passed": false,
+        "phase": "verification",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 500,
+        "index": 1,
+        "passed": false,
+        "phase": "verification",
+        "rhat": null
+      },
+      {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 750,
+        "index": 2,
+        "passed": false,
+        "phase": "verification",
+        "rhat": null
+      },
+      {
+        "check_due": true,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "count": 1000,
+        "index": 3,
+        "passed": true,
+        "phase": "verification",
+        "rhat": {
+          "bulk": [
+            0.9996939026850056,
+            0.999955706889043
+          ],
+          "folded": [
+            1.0009431931663644,
+            1.0011183889716346
+          ],
+          "maximum": [
+            1.0009431931663644,
+            1.0011183889716346
+          ]
+        },
+        "rhat_draws_per_chain": 1000,
+        "threshold": 1.01
+      }
+    ],
+    "passed": true,
+    "status": "VERIFIED",
+    "used_seeds": [
+      [
+        1686202841,
+        0
+      ],
+      [
+        1686202841,
+        1
+      ],
+      [
+        1686202841,
+        2
+      ],
+      [
+        1686202841,
+        3
+      ],
+      [
+        1686202841,
+        4
+      ],
+      [
+        1686202841,
+        5
+      ],
+      [
+        1686202841,
+        6
+      ],
+      [
+        1686202841,
+        7
+      ],
+      [
+        1686202841,
+        100000
+      ],
+      [
+        1686202841,
+        100001
+      ],
+      [
+        1686202841,
+        100002
+      ],
+      [
+        1686202841,
+        100003
+      ]
+    ],
+    "warmup_ready": true
+  },
+  "source_hashes": {
+    "hmc_posterior_diagnostics.py": "2ee511aa5708745778bce81c053e41b65384a41260294507a6f4a6d4d169b839",
+    "hmc_sequential_verification.py": "a4905b2111eac2d9c5f4ac2dae2eee33dc6ea6b16e61e35645d269ead104f25f",
+    "hmc_tensorflow_resume.py": "24077e3e3c742d57ae107b87abfd76fd6af62905c0fac797cbb90313d91f7359",
+    "hmc_tensorflow_tuning.py": "99e6aaec56bebfe29c8873e6d0d9390b67b3e771318cd922f5045ef22e3b8c65",
+    "hmc_tensorflow_verified.py": "5e93cf8d99a3ac39b10c3cb2b9e0f975c3e9bb26e393f253e371a9dfe4904957",
+    "hmc_tuning_dispatch.py": "8854bef168fb35422c5aa0a6407cac64cdd8483a47041c83b51d40b01e5be72a",
+    "neural_force_hmc.py": "c1551b1280c70256d7c311170854608867e60ad7142774e29d76a2923972c3f6",
+    "tuning_contract.py": "81913fe51b230501b39276cf3554e3e3df164f8de0d08073006e152127ccc639"
+  },
+  "verification": {
+    "delta_h": {
+      "dtype": "float64",
+      "path": "verification-delta_h.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "8cfdd2da40f66e711c6442116b3e11e484086b26f39f627f12dd940505d769a5"
+    },
+    "divergence": {
+      "dtype": "bool",
+      "path": "verification-divergence.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "ca76015ef676534c266b60679a616555963273908c9ef36e9f70254609debb3b"
+    },
+    "endpoint_status": {
+      "dtype": "int32",
+      "path": "verification-endpoint_status.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "c17ceaf731983b278b38e0f5393130b19381f295ddd4178a16a50509706d1f8f"
+    },
+    "final_state": {
+      "dtype": "float64",
+      "path": "verification-final_state.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "e90aee24a786def2e9709099d8275a332740c75ea5a3a96d2bb855f608af9388"
+    },
+    "final_step_size": {
+      "dtype": "float64",
+      "path": "verification-final_step_size.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+    },
+    "force_fallback": {
+      "dtype": "bool",
+      "path": "verification-force_fallback.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "ca76015ef676534c266b60679a616555963273908c9ef36e9f70254609debb3b"
+    },
+    "is_accepted": {
+      "dtype": "bool",
+      "path": "verification-is_accepted.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "c1181af714a8bde9ac13c46ca2ee50114853be7584ad0c711b93d32033bdfaec"
+    },
+    "log_accept_ratio": {
+      "dtype": "float64",
+      "path": "verification-log_accept_ratio.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "262ab7076b3e9be947ca1ab72117e857ad99d95b0d99d0d3a011cf8c54752abc"
+    },
+    "states": {
+      "dtype": "float64",
+      "path": "verification-states.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "855c5201944dc57357465ef7316fe6ad00ff0d11963af14409c17d13a345720b"
+    }
+  },
+  "warmup": {
+    "delta_h": {
+      "dtype": "float64",
+      "path": "warmup-delta_h.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "96bcee601287e29f3c3e76a2cddb18943502fd2e122455347c7a4285036d30c7"
+    },
+    "divergence": {
+      "dtype": "bool",
+      "path": "warmup-divergence.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "8d5ba0e71b9c0b90c0faeffaa210c14a25156b58bc586dc613d80a7325de31d9"
+    },
+    "endpoint_status": {
+      "dtype": "int32",
+      "path": "warmup-endpoint_status.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "f0bc723f67601c888754ddc6ae5f52758c50adce67eb014c6d3dcb526405f068"
+    },
+    "final_state": {
+      "dtype": "float64",
+      "path": "warmup-final_state.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "b07e2f83b54ea9f3910e66dc92be5ef73ae7ab355baf86be32ce65f1b6c55597"
+    },
+    "final_step_size": {
+      "dtype": "float64",
+      "path": "warmup-final_step_size.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "dd5443302b066e31200e79e6f0b3c15f07025ba62eeb07b2bad932f04e87ef3d"
+    },
+    "force_fallback": {
+      "dtype": "bool",
+      "path": "warmup-force_fallback.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "8d5ba0e71b9c0b90c0faeffaa210c14a25156b58bc586dc613d80a7325de31d9"
+    },
+    "is_accepted": {
+      "dtype": "bool",
+      "path": "warmup-is_accepted.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "930148cbccbc2ac67943c8de96f31f21245e8fa3804c748fda9860c584258097"
+    },
+    "log_accept_ratio": {
+      "dtype": "float64",
+      "path": "warmup-log_accept_ratio.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "b6a7ce6930ceafa59876ad79c3844350d6be6821bcbcc861b8b5759d89aa8dfa"
+    },
+    "states": {
+      "dtype": "float64",
+      "path": "warmup-states.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "492f337e9950ce6f2f40bce8309e5bf561e89540c82f3abb7550e0404ea9252c"
+    }
+  }
+}

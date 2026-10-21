@@ -3,7 +3,10 @@
 Reviewed against the saved executed baseline in
 artifacts/sir-fp32-batch-capacity-20261020-02/gpu-b4/source. This is a local
 implementation review, not an independent reviewer verdict or posterior result.
-The execution plan is sir-native-batching-execution-2026-10-21.md.
+The execution plan is sir-native-batching-execution-2026-10-21.md. The
+[owner materiality correction](sir-batching-materiality-policy-2026-10-21.md)
+supersedes this review's former percentage-based numerical veto; the measured
+discrepancies and implementation findings remain unchanged.
 
 ## Mathematical target and call chain
 
@@ -79,9 +82,11 @@ and native FP64 scores differ by at most 4.35e-11 in relative vector norm on
 the four fixed parameter rows. It does not establish FP32 equivalence. Row 3
 differs from the common FP64 reference by 5.769% for the old program and
 8.057% for the native program. Native versus old FP32 differs by 2.274%,
-above the owner's 1% criterion. Small likelihood discrepancies cannot waive
-a materially inaccurate score. No clipping, damping, altered target, relaxed
-tolerance, or FP64 default has been introduced to hide this finding.
+which triggered the former 1% criterion. That scientific veto is now retired:
+this arithmetic difference alone does not establish material deterioration
+against the model reference. Retain both likelihood and score diagnostics and
+evaluate their reference errors with uncertainty. No clipping, damping,
+altered target or FP64 default has been introduced.
 
 ## Defects found by review and tests
 
@@ -132,10 +137,12 @@ evaluations, but its arm reaches the time cap before the full repeat set.
 
 Native graph structure, algebra, failed-row isolation and public-entry wiring
 pass the executed checks. Large-batch memory measurements are meaningful as
-engineering diagnostics. Uniform FP32 numerical promotion fails the stated
-score criterion, so neither default readiness nor serious NeuTra training is
-established. The strongest alternative explanation for the apparent performance
-gain is varying device/CPU contention; report timings descriptively. The
-weakest correctness evidence is full-horizon FP32 stability. A measured,
-target-preserving FP32 repair and a fresh matched full-horizon comparison are
-needed before closing that numerical issue.
+engineering diagnostics. The percentage-only scientific blocker is removed;
+the nominal old/new change is accepted as immaterial for continuing integration.
+This does not establish serious NeuTra training readiness: the adapter and
+complete update remain untested. The strongest alternative explanation for the
+apparent performance gain is varying device/CPU contention; report timings
+descriptively. The broader accuracy uncertainty is the absence of paired
+independent designs and matched model references away from the nominal point.
+Carry that uncertainty into later accuracy checks without requiring a separate
+FP32 localization campaign before the planned adapter work.

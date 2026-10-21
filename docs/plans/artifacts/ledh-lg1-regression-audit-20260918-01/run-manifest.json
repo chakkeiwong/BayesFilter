@@ -1,0 +1,273 @@
+{
+  "schema": "bayesfilter.ledh.regression_audit.v1",
+  "classification": "debugging_only_no_new_calibration_candidate",
+  "baseline_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "execution_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "plan": "docs/plans/ledh-lg1-regression-audit-2026-09-18.md",
+  "result": "docs/plans/ledh-lg1-regression-audit-result-2026-09-18.md",
+  "data_version": "LG1-calibration-02.json from original campaign; content SHA-256 below",
+  "data_sha256": "acb129f82e69f204c12a7604d434f486e3100c052930e64e4e7bd9365e7a6c0e",
+  "input_sha256": "3425b7bdba722d9b4b210bc431ee42b90a74cecbef38f5c10fe838fb84cb0582",
+  "seeds": {
+    "20": [
+      1896973560,
+      20
+    ],
+    "21": [
+      1896973560,
+      21
+    ],
+    "22": [
+      1896973560,
+      22
+    ]
+  },
+  "settings": {
+    "substeps": 3,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 2.0,
+    "reset_sinkhorn_steps": 8,
+    "reset_balance_steps": 8,
+    "reset_ridge": 1e-05,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.001,
+    "correction_lm_scale_floor": 1e-06,
+    "correction_trust_radius": 0.1,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 16.0,
+    "coordinate_cap_power": 8
+  },
+  "scope": {
+    "phi": -0.9,
+    "N": 1024,
+    "T": 10,
+    "state_dimension": 1,
+    "parameter_dimension": 1,
+    "dtype": "float32",
+    "tf32": true,
+    "jit_compile": true,
+    "row_chunk": 1024,
+    "column_chunk": 1024,
+    "draw_design": "scrambled_halton_gaussian"
+  },
+  "native_library": {
+    "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/_symmetric_sylvester_ops.so",
+    "sha256": "0f00cb79c64df7fecd51cc77b6b85222436d1a30e8df9b2ce271192ee394620d",
+    "same_for_both_revisions": true
+  },
+  "runs": [
+    {
+      "label": "prepare",
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 BAYESFILTER_OP_LIB_DIR=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops timeout 180 /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic.py --mode prepare --repo /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917 --campaign docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01 --out docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 --label prepare > docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/prepare.log 2>&1",
+      "workdir": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 0,
+      "timeout_seconds": 180,
+      "gpu": false,
+      "cpu_only_gpu_intentionally_hidden": true,
+      "recorded_in_script_seconds": 5.121548495983006,
+      "filter_evaluation_completed": false,
+      "failure_classification": null,
+      "memory_policy": null,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/prepare.json",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/prepare.log"
+    },
+    {
+      "label": "baseline",
+      "command": "CUDA_VISIBLE_DEVICES=GPU-68251639-fe82-8f81-3ccc-2953c32e805b TF_FORCE_GPU_ALLOW_GROWTH=true TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 BAYESFILTER_OP_LIB_DIR=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops timeout 195 /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic.py --mode core --repo /tmp/ledh-lg1-regression-20260918-01/baseline --campaign docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01 --out docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 --label baseline > docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline.log 2>&1",
+      "workdir": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 0,
+      "timeout_seconds": 195,
+      "gpu": true,
+      "cpu_only_gpu_intentionally_hidden": false,
+      "recorded_in_script_seconds": 11.04400419301237,
+      "filter_evaluation_completed": true,
+      "failure_classification": null,
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline.json",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline.log"
+    },
+    {
+      "label": "current",
+      "command": "CUDA_VISIBLE_DEVICES=GPU-68251639-fe82-8f81-3ccc-2953c32e805b TF_FORCE_GPU_ALLOW_GROWTH=true TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 BAYESFILTER_OP_LIB_DIR=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops timeout 195 /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic.py --mode core --repo /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917 --campaign docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01 --out docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 --label current > docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current.log 2>&1",
+      "workdir": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 0,
+      "timeout_seconds": 195,
+      "gpu": true,
+      "cpu_only_gpu_intentionally_hidden": false,
+      "recorded_in_script_seconds": 13.313683030981338,
+      "filter_evaluation_completed": true,
+      "failure_classification": null,
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current.json",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current.log"
+    },
+    {
+      "label": "consumer",
+      "command": "CUDA_VISIBLE_DEVICES=GPU-68251639-fe82-8f81-3ccc-2953c32e805b TF_FORCE_GPU_ALLOW_GROWTH=true TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 BAYESFILTER_OP_LIB_DIR=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops timeout 195 /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic.py --mode wrapper --repo /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917 --campaign docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01 --out docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 --label consumer > docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer.log 2>&1",
+      "workdir": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 1,
+      "timeout_seconds": 195,
+      "gpu": true,
+      "cpu_only_gpu_intentionally_hidden": false,
+      "recorded_in_script_seconds": null,
+      "filter_evaluation_completed": false,
+      "failure_classification": "pre_evaluation_harness_input_equality_CPU_GPU_whitening",
+      "memory_policy": null,
+      "result": null,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer.log"
+    },
+    {
+      "label": "consumer-fixed",
+      "command": "CUDA_VISIBLE_DEVICES=GPU-68251639-fe82-8f81-3ccc-2953c32e805b TF_FORCE_GPU_ALLOW_GROWTH=true TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 BAYESFILTER_OP_LIB_DIR=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops timeout 195 /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic-v2.py --mode wrapper --repo /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917 --campaign docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01 --out docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 --label consumer-fixed > docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer-fixed.log 2>&1",
+      "workdir": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 0,
+      "timeout_seconds": 195,
+      "gpu": true,
+      "cpu_only_gpu_intentionally_hidden": false,
+      "recorded_in_script_seconds": 18.03438957600156,
+      "filter_evaluation_completed": true,
+      "failure_classification": null,
+      "memory_policy": {
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "mode": "memory_growth",
+        "physical_devices": [
+          {
+            "device": "/physical_device:GPU:0",
+            "device_details": {
+              "compute_capability": [
+                8,
+                9
+              ],
+              "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+            },
+            "memory_growth": true
+          }
+        ],
+        "all_physical_devices_memory_growth": true,
+        "full_device_preallocation_disabled": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "configured_before_logical_device_initialization": true,
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer-fixed.json",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer-fixed.log"
+    }
+  ],
+  "postprocessing": {
+    "command": "CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=1 OMP_NUM_THREADS=2 timeout 60 /home/chakwong/anaconda3/envs/tftwogpu/bin/python /tmp/ledh-lg1-regression-20260918-01/compare.py /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01 /tmp/ledh-lg1-regression-20260918-01/comparison.json > /tmp/ledh-lg1-regression-20260918-01/comparison.log 2>&1",
+    "exit_code": 0,
+    "seconds": 2.645098765991861,
+    "cpu_only_gpu_intentionally_hidden": true
+  },
+  "static_wiring_check": {
+    "command": "python /tmp/ledh-lg1-regression-20260918-01/earlier_success_check.py /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917 /tmp/ledh-lg1-regression-20260918-01/earlier-success-call-chain.json",
+    "exit_code": 0
+  },
+  "accounting": {
+    "gpu_budget_seconds": 600,
+    "cpu_budget_seconds": 180,
+    "successful_gpu_in_script_seconds": 42.392076799995266,
+    "failed_gpu_process_charge_seconds": 195,
+    "successful_gpu_startup_reserve_seconds": 6,
+    "gpu_charged_seconds": 243.39207679999527,
+    "cpu_in_script_seconds": 7.766647261974867,
+    "cpu_setup_reporting_reserve_seconds": 30,
+    "cpu_charged_seconds": 37.76664726197487,
+    "gpu_unused_seconds": 356.60792320000473,
+    "cpu_unused_seconds": 142.23335273802513,
+    "budget_closed": true,
+    "process_launches": 5,
+    "gpu_process_launches": 4,
+    "gpu_filter_evaluations": 3,
+    "qualification": "Successful times are in-script elapsed measurements; reserves cover unmetered startup and the failed process conservatively. Approval wait time is not compute time."
+  },
+  "decision": {
+    "parity_pass": true,
+    "covariance_accuracy_pass": false,
+    "new_regression_explains_replayed_failure": false,
+    "global_regression_absence_established": false,
+    "posterior_or_default_promotion": false
+  },
+  "artifact_sha256": {
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline-children.tensor": "31fcef1b1f35a3833630c91b410f72e4ef3816aa37f01b8a465c1c1e425dfdc3",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline-posterior_weights.tensor": "0d244969f93cf90ea0af0113fec493220024dcddc7da1f1447916abd0b66962e",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline-predicted_covariances.tensor": "974aa6100d799cf16cbb3b93101cc0c59515752c6fe4ef0c870405a7c8a15b13",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline-states_after_reset.tensor": "96b15a2e92853ddbfe9cc65d2580411767cd680e8fa2ad28355ec1b7bffdd0b2",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline.json": "db3d88ad9378c2bc24f3a23108cff138e709b4cf7c7b5508071e546475d9b18f",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/baseline.log": "6689724f9c4ffc91c705b1bb17558ad05597c5fc0b2815cd1f5d1a8976035d50",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/checkpoint.md": "25629a607f0eb79c317305447e3fff951b6f47dbea0ab2e312ed5c5258b17baf",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/compare.py": "df0521e3fa9a99e7d2d816ea64175db317ad91e51cabcda162514b7c6f939cd5",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/comparison.json": "3257d1edc7731250c9fd8e82fb874a948c0a5b77de89f6c9d571d8b35a1b68ca",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/comparison.log": "f24c8cf5e4cf74d553108542314932709857031f3786497ec3b59a4891a52d0f",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer-fixed.json": "666d31155f7555b1e663f91fb9618abecb53025e162737ba54587ddac50f5445",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer-fixed.log": "9dbd6c20dfcfbbb612d17522007b9e7b0666ee8eb637ade2545fce555536a2da",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/consumer.log": "f8a47106ea7c00c502544c09f11e8f63b49bde9884566e97f9af109d371cb510",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current-children.tensor": "f8d042c7d8efc10515307382a3a95900b3259817b03a6a082b820913054d7582",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current-posterior_weights.tensor": "d6a8e8028339f704f1f4863c7305397acd6bd5b1a47a1c258c6736ac2a3eb5c7",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current-predicted_covariances.tensor": "9876a5450820b974b688da1c5f5d06e1090526fff893482803812fd737af0248",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current-states_after_reset.tensor": "b6a111c8381a61675941f91507271dd690e4916b37493b98d2899b88defd7de5",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current.json": "c92b1b9f19015307e943c172765086fcf5a151ce89f0873f8cdccffe5e043c72",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/current.log": "d71c13723769aa8b341d255163a777d51e8b48108b29669cf4505c4f0f1c79f5",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic-v2.py": "ed9fd6bdc16226d550f0cae5dc2f48faf8b5d148f0f8c4ed4b20f7ed3fabadfe",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/diagnostic.py": "92ca0a28b97a38ddbb1e2fe05b5bfbde221fdd66169562cd477bc0cc6609fc93",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/earlier-success-call-chain.json": "083a630296c12418671258041fa7472482392ec647517ad7680d752d3d7e1f35",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/earlier_success_check.py": "217765f5528eab7d1f6070a5d64d04414b57f91c0aeb431e2364fd4961bf4c06",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/inputs.json": "3425b7bdba722d9b4b210bc431ee42b90a74cecbef38f5c10fe838fb84cb0582",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/prepare.json": "818b045b3931cef376e4025eeda3dca73f4a42f17b68f8ca8389adc37abee869",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/prepare.log": "9f72b0241d9b30a93665c2cb51ca391a881b532a0d76284a45804ff9534c08a2",
+    "docs/plans/ledh-lg1-regression-audit-2026-09-18.md": "6b3c3aa082b3c147a60c2202cf2a15a5d43d19fc1ccdd16c0098a6c8137aa96c",
+    "docs/plans/ledh-lg1-regression-audit-result-2026-09-18.md": "e8496ea5aac2a499f86ef68f1878349a1ad899371b96ddcdfa96bc5d4f2dcbff",
+    "docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md": "90ad22fb1987074fb87b51843c39b39dee6613e8c5849e7a18a1bb463e3416e5"
+  }
+}

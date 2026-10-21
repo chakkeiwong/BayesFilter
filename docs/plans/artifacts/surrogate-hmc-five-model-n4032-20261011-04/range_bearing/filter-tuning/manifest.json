@@ -1,0 +1,115 @@
+{
+  "schema": "bayesfilter.five_model_hmc_stage.v1",
+  "model": "range_bearing",
+  "phase": "filter-tuning",
+  "particles": 4032,
+  "filter_dtype": "float32",
+  "tf32": false,
+  "jit_compile": true,
+  "device": "GPU",
+  "cpu_only": false,
+  "started_utc": "2026-10-10T18:49:25.023645+00:00",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+    "stage-worker",
+    "--model",
+    "range_bearing",
+    "--phase",
+    "filter-tuning",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/filter-tuning",
+    "--gpu",
+    "1"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-n4032-master-2026-10-11.md",
+  "output": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-04/range_bearing/filter-tuning",
+  "prior_choice": null,
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "source_sha256": {
+    "scripts/run_surrogate_hmc_five_model_master.py": "83e129a1190b3062a26dd6f0f9904300768d7a3b1d559429c37b6e614a49a7ea",
+    "docs/plans/surrogate-hmc-five-model-n4032-master-2026-10-11.md": "10ffb5df69f76891ed7f83f14765ba640726492abb1df25bffefd90a5f511aa9",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "62c4d53e4fb7d6571a94c254840fff1dca64bff77dd9131b9f6a23d39b2ac30a",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+    "docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-02/N4032/tuning.json": "0eac7dfd4a79db21e59e2677d4024f8cbdc637994ac761c901d0787b53c219d3",
+    "docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-02/N4032/data/1704-t20.json": "f2e8f99d54d91cf221fa7f9cd0741c2327371f487374fb42277ad8abb5945b0d",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274"
+  },
+  "gpu_trust_basis": "escalated_local_GPU_execution",
+  "status": "FILTER_SCOPE_REPAIR_REQUIRED",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "scope": {
+    "model": "range_bearing",
+    "target_id": "m13_range_bearing",
+    "horizon": 20,
+    "particles": 4032,
+    "state_dimension": 4,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "f2e8f99d54d91cf221fa7f9cd0741c2327371f487374fb42277ad8abb5945b0d",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.0,
+        0.0
+      ],
+      "scales": [
+        0.6931471805599453,
+        0.6931471805599453
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "62c4d53e4fb7d6571a94c254840fff1dca64bff77dd9131b9f6a23d39b2ac30a",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486"
+    }
+  },
+  "tf32_effective": false,
+  "gpu_allocator": {
+    "current": 17408,
+    "peak": 274711296
+  },
+  "finished_utc": "2026-10-10T18:51:09.232112+00:00",
+  "wall_seconds": 104.20849471678957
+}

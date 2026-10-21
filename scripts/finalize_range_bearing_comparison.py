@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""Fixed-path CPU diagnostics and reporting for the N=1008 comparison."""
+import argparse,hashlib,json,os,subprocess,sys,time
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+SOURCE=ROOT/"docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06"
+OUT=ROOT/"docs/plans/artifacts/ledh-range-bearing-covariance-20261009-07"
+REGRESSION=ROOT/"docs/plans/artifacts/ledh-range-bearing-report-regression-20261010-02"
+PLAN=ROOT/"docs/plans/ledh-range-bearing-covariance-comparison-2026-10-09.md"
+RESULT=ROOT/"docs/plans/ledh-range-bearing-covariance-results-2026-10-09.md"
+CHECKPOINT=ROOT/"docs/plans/ledh-main-merge-active-checkpoint.md"
+def load(path):return json.loads(path.read_text())
+def checks():
+ REGRESSION.mkdir(exist_ok=False)
+ env=dict(os.environ,CUDA_VISIBLE_DEVICES="-1",TF_CPP_MIN_LOG_LEVEL="2")
+ command=[sys.executable,"-B","-m","pytest","-q",str(ROOT/"tests/diagnostics/test_range_bearing_covariance_report.py")]
+ start=time.monotonic()
+ with (REGRESSION/"tests.log").open("w") as stream:
+  run=subprocess.run(command,cwd=ROOT,env=env,stdout=stream,stderr=subprocess.STDOUT)
+ manifest=dict(command=command,exit_code=run.returncode,wall_seconds=time.monotonic()-start,cpu_only=True,gpu_intentionally_hidden=True,role="synthetic reporting regression; no numerical-method claim",source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/"scripts/run_range_bearing_covariance_comparison.py",ROOT/"tests/diagnostics/test_range_bearing_covariance_report.py"]})
+ (REGRESSION/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+ print(json.dumps(dict(exit_code=run.returncode,artifact=str(REGRESSION),wall_seconds=manifest["wall_seconds"])))
+ print("\n".join((REGRESSION/"tests.log").read_text().splitlines()[-3:]))
+ if run.returncode:raise SystemExit(run.returncode)
+def finalize():
+ report=load(OUT/"report.json")
+ if not report["complete"] or load(REGRESSION/"manifest.json")["exit_code"]!=0:raise ValueError("Missing valid primary comparison or reporting checks")
+ manifest=load(OUT/"compare-manifest.json");execution=load(OUT/"execution.json")
+ rows=[json.loads(line) for line in (OUT/"compare.jsonl").read_text().splitlines()]
+ index={(r["data_seed"],r["point"],r["arm"],r["seed"]):r for r in rows}
+ max_difference=0.
+ for row in [json.loads(line) for line in (SOURCE/"compare.jsonl").read_text().splitlines()]:
+  other=index[(row["data_seed"],row["point"],row["arm"],row["seed"])]
+  if row["valid"]!=other["valid"]:raise ValueError("Repeated validity changed")
+  if row["valid"]:max_difference=max(max_difference,abs(row["value"]-other["value"]),*(abs(a-b) for a,b in zip(row["score"],other["score"])))
+ budget=1039.3125746508595+load(SOURCE/"execution.json")["elapsed_seconds"]+execution["elapsed_seconds"]+load(ROOT/"docs/plans/artifacts/ledh-range-bearing-centering-regression-20261009-01/manifest.json")["wall_seconds"]
+ text="""# Tuned N=1008 range-bearing result
+
+The new covariance-guided defensive-mixture filter has conditional evidence of
+smaller score error than the tuned previous marginal-mixture LEDH route at the
+difficult parameter point on two of three datasets. It is not uniformly better:
+truth-point differences are unresolved, the third difficult cell has high
+variance, and the simple prior proposal has lower observed mean error in four
+cells. This is a filtering/value/score diagnostic preparing surrogate-HMC
+testing. No HMC chain was run here.
+
+## Target and tuning
+
+M13 is the existing wrapped range-bearing constant-velocity model: state
+dimension 4, observation dimension 2, parameter dimension 2, T=20, N=1008, K=N.
+Parameters are log process/observation noise scales. Truth is (0,0); the difficult
+point is (-0.73272085,-0.01465508). Shared model callback value/tangent parity is
+exact in the executable check. The intended score is the derivative of the model
+log marginal likelihood. The filters compute analytical total derivatives of
+their own finite fixed-design value programs. Equality to the model score is
+not established; the bootstrap/Fisher reference retains finite-particle bias.
+
+Both arms were tuned for this exact FP64/TF32-off GPU/XLA scope on calibration
+datasets 18010/18011 and validation datasets 18012/18013, then frozen before
+held-out datasets 1704/18020/18021. New controls: 16 flow steps, 80 reset steps,
+epsilon 1, correction_steps 0; beta=(0.1,0.0251769507,0.8748230493). This does not
+test optional GenUT moment correction. Previous-arm selected controls 1 are
+preserved in tuning.json. Validation differences among 40/80/120 reset steps
+were about 1e-10; selecting 80 is not evidence that 80 is intrinsically better.
+
+## Conditional results
+
+Errors are mean score-L2 distances to the same independent FP64 reference,
+over eight paired fixed designs. Negative paired new-minus-old intervals
+favor the new method.
+
+| Data | Point | New error | Previous error | Prior error | Paired 95% interval | Interpretation |
+|---|---|---:|---:|---:|---|---|
+"""
+ for c in report["cells"]:
+  a=c["arms"];lo,hi=c["paired_95_student_interval"]
+  verdict="conditional improvement" if c["verdict"]=="conditional_score_improvement_with_reference_sensitivity" else "no supported ranking"
+  text+=f'| {c["data_seed"]} | {"truth" if c["point"]==0 else "difficult"} | {a["new"]["mean_score_error"]:.4f} | {a["old"]["mean_score_error"]:.4f} | {a["prior"]["mean_score_error"]:.4f} | [{lo:.3f}, {hi:.3f}] | {verdict} |\n'
+ text+="""
+The two supported difficult cells have about 79% and 94% smaller observed mean
+score errors. The third has about 97% smaller mean error, but high variance
+leaves its interval crossing zero. Mean absolute log-likelihood errors are
+smaller for the new arm in all six cells; value differences are descriptive.
+
+These are nominal small-sample Student intervals, conditional on each dataset.
+The predeclared extension from four to eight designs did not retune. These are
+exploratory intervals, without sequential/multiplicity correction; they do not
+establish an across-dataset or all-regime ranking. Each sensitivity envelope
+expands by twice the larger of the reference refinement displacement and three
+score-MCSE vector norms. That is not a rigorous bound on reference particle bias.
+
+Independent references have 16 bootstrap/Fisher replicates at N=16384 and
+65536, plus same-N1008 references for the cheap comparator. Raw values, scores,
+replicate references and uncertainty remain in the final artifact directory.
+
+| Data | Point | Score MCSE components | Reference refinement displacement |
+|---|---|---|---:|
+"""
+ for c in report["cells"]:
+  ms=c["reference"]["mcse"]
+  text+=f'| {c["data_seed"]} | {c["point"]} | ({ms[1]:.4f}, {ms[2]:.4f}) | {c["reference_score_refinement"]:.4f} |\n'
+ text+=f"""
+## Numerical validity and interpretation
+
+All 48 new and 48 previous evaluations satisfy the validity guards. The first
+four designs reproduce exactly in the extension (maximum difference
+{max_difference}). The global-guide adversary fails 5/48 evaluations, all at
+the difficult point; its partial means cannot pass its screen. That failure
+does not invalidate complete primary pairs. The prior adversary is valid 48/48
+and has lower descriptive mean error in four cells: the declared broad-promotion
+veto, not a statistical ranking. Neither method uniformly dominates heuristics.
+
+Before repair, FP32/TF32 failed covariance restoration; FP32 without TF32 and
+FP64 failed mean restoration. More reset iterations alone did not repair it.
+The shared reset now explicitly recentres transformed deviations and their
+analytical tangents, an identity in exact arithmetic; guards stay unchanged.
+Existing healthy reset/recursive finite-derivative tests, including LGSSM/KSC,
+pass 20/20. M13 N1008 FP32-no-TF32 T20 smoke passes; FP64 T2 finite differences
+have maximum scaled errors 1.29e-8 and 2.83e-9. Repaired FP32/TF32 has not had a
+fresh tuned held-out run, so the supported result is FP64 diagnostic evidence.
+
+Reporter completeness was repaired to separate primary and heuristic arms.
+The initial four-design report withheld two primary intervals solely because
+global-guide failed. Prior artifacts remain preserved; corrected eight-design
+report has separate primary/heuristic flags. Five synthetic reporter tests pass.
+The first synthetic fixture accidentally made the bootstrap adversary exact,
+correctly firing a veto; that fixture was repaired and both attempts retained.
+
+## Decisions
+
+| Decision | Primary criterion | Veto status | Main uncertainty | Next justified action | Not concluded |
+|---|---|---|---|---|---|
+| Scoped comparison completed | Six complete eight-design primary cells | New/previous pass | Conditional finite-design uncertainty | Preserve result | HMC convergence or posterior accuracy |
+| Help in some difficult cases | Two negative reference-sensitive intervals | No primary validity failure | Sequential look, multiplicity, reference bias | Candidate for later target-specific testing | Uniform or all-model improvement |
+| Broad/default promotion withheld | Truth unresolved; third difficult cell variable | Prior losses in four cells; guide screen incomplete | Generalization/FP32 | Fresh tuned FP32 scope is a remaining item | Default readiness |
+
+| Inference status | Verdict |
+|---|---|
+| Hard veto screen | New/previous pass 48/48; global-guide fails 5/48 |
+| Statistically supported ranking | Exploratory conditional evidence in two difficult cells, subject to Student/reference assumptions |
+| Descriptive-only differences | Other cells, value errors, runtime, heuristic means |
+| Default-readiness | Not established |
+| Next evidence needed | Repaired FP32/TF32 scope; independent replication/heuristics before broad promotion; actual HMC for posterior claims |
+
+## Provenance and terminal audit
+
+Interpreter: /home/chakwong/anaconda3/envs/tftwogpu/bin/python.
+TensorFlow {manifest["tensorflow"]}, escalated RTX4080SUPER GPU0, XLA,
+FP64/TF32off; verified memory growth. HEAD {manifest["git_commit"]};
+dirty-source checksums preserved in each worker manifest. Extension checked all
+numerical dependency hashes against original tuning before reuse. Peak final
+TF allocator {manifest["allocator"]["peak"]} bytes. Original comparison
+536.404s; extension {execution["elapsed_seconds"]:.3f}s. Aggregate numerical
+attempts plus healthy CPU regression about {budget:.3f}s ({budget/60:.2f}min)
+of 4h: 23 numerical workers plus one healthy CPU regression. Routine reporting
+tests are separately logged. The planned four-to-eight design stopping point
+is reached; unused time does not require launching HMC.
+
+Original tuning/checks: artifacts/ledh-range-bearing-covariance-20261009-06/.
+Final report/raw rows/references/manifests:
+artifacts/ledh-range-bearing-covariance-20261009-07/.
+Healthy reset regression:
+artifacts/ledh-range-bearing-centering-regression-20261009-01/.
+Reporter regression:
+artifacts/ledh-range-bearing-report-regression-20261010-02/.
+Exact commands are in execution.json and worker manifests.
+
+Skeptical audit: comparator is the tuned previous repair, not the earlier broken
+score; heldout cannot retune; derivative parity is not model-score accuracy;
+FP64 is not relabelled FP32; failed heuristics do not erase primary pairs; simple
+prior losses remain prominent. Strongest alternative explanation is heavy-tailed
+previous-filter errors in selected difficult regimes, controlled by defensive
+sampling that can also work with a simple prior proposal. New local flow
+necessity is unproved. Fresh default-precision or independent data reversing
+contrasts would overturn promotion arguments. Genealogical reference bias and
+small paired sample size are the weakest accuracy evidence.
+"""
+ RESULT.write_text(text)
+ with PLAN.open("a") as stream:
+  stream.write("\n\n## Terminal execution\n\nAttempt06 passed fresh FP64 tuning after the shared centring repair. Primary\npairs all valid; reporting separation repaired an incorrect dependence on the\nfailed global-guide screen, without altering samples or criteria. Attempt07\nexecuted the predeclared eight-design extension with unchanged frozen tuning\nand verified numerical dependency hashes. No heldout retuning, data/method\nchange or budget expansion. Its audit checks identical baseline/scope/reference,\nseparate primary validity and no posterior inference from filtering metrics.\nIt produced192rows and six complete primary cells; first-four replication is\nexact. Five global-guide failures remain explicit. The planned eight-design\nstopping point is reached. Final scientific interpretation:\n"+RESULT.name+".\n")
+ CHECKPOINT.write_text(f"""# Active checkpoint: range-bearing scope completed
+Question:new covariance-guided proposal helps M13 with tuning/N>=1008?
+Checkout:BayesFilter-ledh-graceful-failure-execution-20260917; same-named branch;
+HEAD{manifest["git_commit"]}; preserve unrelated dirty/staged work.
+Stage:terminal N1008,T20,d4,m2,p2,FP64/TF32off GPU/XLA diagnostic; eight paired
+designs in six cells. All48new/48previous valid. Two difficult cells have nominal
+conditional improvement; truth unresolved; third difficult cell high variance.
+Prior error lower descriptively in four cells; global-guide invalid5/48.
+No HMC/default/all-model promotion. Shared recentering passes20healthy tests;
+reporter passes5synthetic tests.
+Result:{RESULT.relative_to(ROOT)}.
+Plan:{PLAN.relative_to(ROOT)}.
+Evidence:docs/plans/artifacts/ledh-range-bearing-covariance-20261009-07/.
+Budget:numerical+healthy regression~{budget:.3f}s/14400;23numerical+1healthy workers.
+Next:user-directed subsequent scope. Current four-to-eight diagnostic is complete.
+Execution preference:direct interpreter -B absolute-script subcommand. Grouped
+narrow rules via scripts/install_range_bearing_execution_rules.py. Avoid heredocs,
+env-prefixes/redirections; do not disable global approval or sandbox.
+""")
+ print(json.dumps(dict(result=str(RESULT),primary_complete=report["complete"],repeat_max_difference=max_difference)))
+def main():
+ parser=argparse.ArgumentParser(description=__doc__)
+ parser.add_argument("action",choices=["checks","finalize","status"])
+ args=parser.parse_args()
+ if args.action=="checks":checks()
+ elif args.action=="finalize":finalize()
+ else:
+  r=load(OUT/"report.json");print(json.dumps(dict(primary_complete=r["complete"],rows=r["heldout_rows"],heuristic_suite_complete=r["heuristic_suite_complete"],result_exists=RESULT.exists())))
+if __name__=="__main__":main()

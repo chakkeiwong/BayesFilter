@@ -67,8 +67,11 @@ def specification(name, dtype=tf.float32):
     t = int(horizon)
     if kind.startswith("lg"):
         d = int(kind[2:])
-        a = tf.eye(d, dtype=dtype) if d == 1 else tf.constant(
-            [[.6, .1, 0.], [.1, .6, .1], [0., .1, .6]], dtype)
+        if d < 1:
+            raise ValueError("LGSSM dimension must be positive")
+        a = (tf.eye(d, dtype=dtype) if d == 1 else
+             .6*tf.eye(d, dtype=dtype) + .1*tf.linalg.diag(tf.ones([d-1], dtype), k=1)
+             + .1*tf.linalg.diag(tf.ones([d-1], dtype), k=-1))
         q, h, r = tf.eye(d, dtype=dtype), tf.eye(d, dtype=dtype), .5*tf.eye(d, dtype=dtype)
         points = [[.4], [.8], [.9]] if d == 1 else [[1., 0.], [.8, -.5], [1.2, .3]]
         model = linear_gaussian_parameter_model(a, q, h, r, infer_process_scale=d > 1)
@@ -98,18 +101,19 @@ def controls(index):
     return settings
 
 
-def dataset(spec, partition):
+def dataset(spec, partition, *, dataset_id=None):
     """Small CPU-only fixed-input generation exception; no transport training."""
     role = PARTITIONS[partition]
+    epoch = 20261005 if dataset_id is None else 20261006 + 7919*(dataset_id+1)
     with tf.device("/CPU:0"):
         if spec["kind"] == "m13":
-            seed = 1704 if partition == "claim" else 20261005 + role
+            seed = (1704 if partition == "claim" else 20261005 + role) if dataset_id is None else epoch + role
             return tf.cast(range_fixture(spec["t"], seed).observations, tf.float64)
         truth = tf.constant(spec["truth"], tf.float64)
         model = specification(spec["name"], tf.float64)["model"]
         mean, covariance = model.initial_distribution_fn(truth)
         random = tf.random.stateless_normal([spec["t"]+1, spec["d"]+spec["m"]+1],
-                                            [20261005, role*1000+spec["d"]*100+spec["t"]], dtype=tf.float64)
+                                            [epoch, role*1000+spec["d"]*100+spec["t"]], dtype=tf.float64)
         x = mean + tf.linalg.matvec(tf.linalg.cholesky(covariance), random[0, :spec["d"]])
         values = []
         mixture = ksc_1998_log_chi_square_mixture() if spec["kind"] == "ksc" else None
@@ -119,7 +123,7 @@ def dataset(spec, partition):
                 tf.linalg.cholesky(q), random[i+1, :spec["d"]])
             if mixture is not None:
                 component = tf.random.stateless_categorical(tf.math.log(mixture.weights)[None], 1,
-                    [20261005+role, i+100*spec["t"]])[0, 0]
+                    [epoch+role, i+100*spec["t"]])[0, 0]
                 y = (x + 2*tf.math.log(truth[1]) + tf.gather(mixture.means, component)
                      + tf.sqrt(tf.gather(mixture.variances, component))*random[i+1, spec["d"]])
             else:
@@ -129,9 +133,10 @@ def dataset(spec, partition):
         return tf.stack(values)
 
 
-def designs(spec, n, partition, replicate, dtype=tf.float32):
+def designs(spec, n, partition, replicate, dtype=tf.float32, *, dataset_id=None):
     role = PARTITIONS[partition]
-    seed = [20261005+role, 100000*spec["d"]+1000*spec["t"]+replicate]
+    epoch = 20261005 if dataset_id is None else 20261006 + 7919*(dataset_id+1)
+    seed = [epoch+role, 100000*spec["d"]+1000*spec["t"]+replicate]
     with tf.device("/CPU:0"):
         z = tf.random.stateless_normal([spec["t"]+2, n, spec["d"]], seed, dtype=tf.float64)
         base, noise, reset = z[0], z[1:-1], z[-1]
@@ -166,15 +171,33 @@ def compile_filter(spec, n, setting, policy, dtype=tf.float32):
     return evaluate
 
 
-def kalman_reference(spec, observed):
+def compile_reference(evaluate, spec, dtype, observed, dynamic_observations=False, seeded=False):
+    """Build a stable pure numerical graph after host-side fixture validation."""
+    theta_spec = tf.TensorSpec([spec["p"]], dtype)
+    seed_spec = tf.TensorSpec([2], tf.int32)
+    if dynamic_observations:
+        signature = [theta_spec, tf.TensorSpec([spec["t"], spec["m"]], dtype)]
+        if seeded:
+            signature.append(seed_spec)
+        return tf.function(evaluate, input_signature=signature, jit_compile=True, autograph=False)
+    if seeded:
+        def bound(theta, seed):
+            return evaluate(theta, observed, seed)
+        signature = [theta_spec, seed_spec]
+    else:
+        def bound(theta):
+            return evaluate(theta, observed)
+        signature = [theta_spec]
+    return tf.function(bound, input_signature=signature, jit_compile=True, autograph=False)
+
+
+def kalman_reference(spec, observed, *, dynamic_observations=False, dtype=tf.float64):
     """Independent covariance Kalman likelihood; AD is reference-only."""
-    dtype = tf.float64
     d, p = spec["d"], spec["p"]
     a, base_q, h, r = (tf.cast(spec[k], dtype) for k in ("a", "q", "h", "r"))
     eye = tf.eye(d*d, dtype=dtype)
 
-    @tf.function(input_signature=[tf.TensorSpec([p], dtype)], jit_compile=True, autograph=False)
-    def evaluate(theta):
+    def evaluate(theta, observed):
         with tf.GradientTape() as tape:
             tape.watch(theta)
             f, q = theta[0]*a, base_q*(tf.exp(2*theta[1]) if p == 2 else 1.)
@@ -195,10 +218,10 @@ def kalman_reference(spec, observed):
                 mean += tf.linalg.matvec(gain, residual)
                 covariance -= gain@s@tf.transpose(gain)
         return dict(value=total, score=tape.gradient(total, theta))
-    return evaluate
+    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=False)
 
 
-def ksc_grid_reference(spec, observed, cells=512, extent=18.):
+def ksc_grid_reference(spec, observed, cells=512, extent=18., *, dynamic_observations=False):
     """Independent 1D forward integration and analytical density derivatives."""
     dtype = tf.float64
     mixture = ksc_1998_log_chi_square_mixture()
@@ -206,8 +229,7 @@ def ksc_grid_reference(spec, observed, cells=512, extent=18.):
     x = -tf.constant(extent, dtype) + (tf.cast(tf.range(cells), dtype)+.5)*dx
     log2pi = tf.constant(math.log(2*math.pi), dtype)
 
-    @tf.function(input_signature=[tf.TensorSpec([2], dtype)], jit_compile=True, autograph=False)
-    def evaluate(theta):
+    def evaluate(theta, observed):
         gamma, beta = theta[0], theta[1]
         variance = 1/(1-gamma*gamma)
         initial = tf.exp(-.5*x*x/variance)/tf.sqrt(2*tf.constant(math.pi, dtype)*variance)*dx
@@ -237,17 +259,15 @@ def ksc_grid_reference(spec, observed, cells=512, extent=18.):
         _, _, _, value, score = tf.while_loop(lambda i, *_: i < spec["t"], body,
             (tf.constant(0), initial, initial_d, tf.zeros([], dtype), tf.zeros([2], dtype)))
         return dict(value=value, score=score)
-    return evaluate
+    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=False)
 
 
-def bootstrap_reference(spec, observed, n):
+def bootstrap_reference(spec, observed, n, *, dynamic_observations=False, dtype=tf.float64):
     """Cheap no-flow particle-filter adversary; value only, no score claim."""
-    model = specification(spec["name"], tf.float64)["model"]
-    dtype = tf.float64
+    model = specification(spec["name"], dtype)["model"]
     d, p, t = spec["d"], spec["p"], spec["t"]
 
-    @tf.function(input_signature=[tf.TensorSpec([p], dtype), tf.TensorSpec([2], tf.int32)], jit_compile=True, autograph=False)
-    def evaluate(theta, seed):
+    def evaluate(theta, observed, seed):
         if spec["kind"] == "m13":
             mean, covariance = tf.cast(spec["fixture"].m0, dtype), tf.cast(spec["fixture"].P0, dtype)
         else:
@@ -273,16 +293,15 @@ def bootstrap_reference(spec, observed, n):
             indices = tf.searchsorted(cdf, u, side="right")
             return i+1, tf.gather(x, indices), value
         return tf.while_loop(lambda i, *_: i < t, body, (tf.constant(0), x, tf.zeros([], dtype)))[2]
-    return evaluate
+    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=True)
 
 
-def m13_fisher_reference(spec, observed, n=32768, replicates=16):
+def m13_fisher_reference(spec, observed, n=32768, replicates=16, *, dynamic_observations=False):
     """Independent genealogical Fisher score; MC variance and particle bias remain."""
     dtype = tf.float64
     a,q0,r0,m0,p0 = (tf.cast(getattr(spec["fixture"],k),dtype) for k in ("A","Q","R","m0","P0"))
     pi = tf.constant(math.pi,dtype)
-    @tf.function(input_signature=[tf.TensorSpec([2],dtype),tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
-    def evaluate(theta,seed):
+    def evaluate(theta, observed, seed):
         x = m0+tf.random.stateless_normal([replicates,n,4],seed,dtype=dtype)@tf.transpose(tf.linalg.cholesky(p0))
         qchol = tf.linalg.cholesky(q0)*tf.exp(theta[0])
         sigma = tf.sqrt(tf.linalg.diag_part(r0))*tf.exp(theta[1])
@@ -315,7 +334,7 @@ def m13_fisher_reference(spec, observed, n=32768, replicates=16):
         jack = tf.concat([leave_value[:,None],leave_score],axis=1)
         mcse = tf.sqrt((replicates-1)*tf.reduce_mean((jack-tf.reduce_mean(jack,axis=0))**2,axis=0))
         return dict(value=mean_value,score=mean_score,mcse=mcse,replicate_values=value,replicate_scores=score)
-    return evaluate
+    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=True)
 
 
 def references(spec, observed, *, claim=False):
