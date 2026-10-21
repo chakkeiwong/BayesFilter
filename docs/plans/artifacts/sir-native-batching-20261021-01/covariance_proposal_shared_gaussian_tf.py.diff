@@ -1,0 +1,23 @@
+--- saved/bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py
++++ bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py
+@@ -93,9 +93,17 @@
+                     +tf.reduce_sum(m*mp,-1)[:,None,:]
+                     -2*tf.linalg.matmul(zp,m,transpose_b=True))
+             else:
+-                residual=xv[:,:,None]-mu[:,None]
+-                solved=tf.linalg.matvec(precision[:,None,None],residual)
+-                mahal=tf.reduce_sum(residual*solved,-1)
++                # Sum direct coordinate differences without a [B,K,K,D] tensor.
++                # Center before the linear transform to preserve translations.
++                origin=xv[:,:1]
++                xp=tf.linalg.matmul(xv-origin,precision)
++                mp=tf.linalg.matmul(mu-origin,precision)
++                def coordinate(c,total):
++                    delta=xv[:,:,c,None]-mu[:,None,:,c]
++                    projected=xp[:,:,c,None]-mp[:,None,:,c]
++                    return c+1,total+delta*projected
++                _,mahal=tf.while_loop(lambda c,*_:c<d,coordinate,
++                    (0,tf.zeros([batch,k,k],dtype)),parallel_iterations=1)
+             terms=norm[:,None,None]-.5*mahal
+             primal=tf.reduce_logsumexp(terms,-1)
+             weights=tf.nn.softmax(terms,-1)

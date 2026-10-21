@@ -1,0 +1,167 @@
+--- saved/bayesfilter/highdim/covariance_proposal_score_batch_tf.py
++++ bayesfilter/highdim/covariance_proposal_score_batch_tf.py
+@@ -1,8 +1,8 @@
+ """Shared batch particle kernels for analytical covariance-proposal scores.
+ 
+ The leading model-position batch is retained in mixture and transport algebra.
+-Small model callback/map assemblies use a fixed trace-time tuple because the
+-model protocol takes one parameter vector. No complete filter is row-mapped.
++Model laws, proposals and reset preserve B and every parameter direction.
++No scalar target or model body is mapped over sample rows.
+ Single-row and multi-row endpoints both call this same recurrence.
+ """
+ import math
+@@ -11,7 +11,7 @@
+ from bayesfilter.highdim.analytical_jet_tf import Jet, mm, mv, stack, exp, logsumexp, cholesky_tangent
+ from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
+ from bayesfilter.highdim.covariance_proposal_score_tf import (
+-    Models, build_maps, draw_from_maps, observation_density, recolour, tile, jet_tile)
++    build_maps, draw_from_maps, recolour, tile, jet_tile)
+ from bayesfilter.highdim.covariance_proposal_tf import (
+     TRACE_FIELDS, VALIDITY_FIELDS, covariance_restoration_tolerance)
+ 
+@@ -93,8 +93,13 @@
+     epsilon=tf.constant(controls.reset_epsilon,dtype)
+     def cost(index,cache):
+         i=index//blocks; j=index%blocks
+-        delta=tile(x.v,i,k,1)[:,:,None]-tile(x.v,j,k,1)[:,None]
+-        return index+1,cache.write(index,-tf.reduce_sum(delta*delta,-1)/epsilon)
++        xi=tile(x.v,i,k,1); xj=tile(x.v,j,k,1)
++        def coordinate(c,total):
++            delta=xi[:,:,c,None]-xj[:,None,:,c]
++            return c+1,total+delta*delta
++        _,distance=tf.while_loop(lambda c,*_:c<d,coordinate,
++            (0,tf.zeros([batch,k,k],dtype)),parallel_iterations=1)
++        return index+1,cache.write(index,-distance/epsilon)
+     _,cache=tf.while_loop(lambda i,*_:i<blocks*blocks,cost,(0,cache),parallel_iterations=1)
+     # Shared position/tangent origins cancel exactly in pairwise differences.
+     # Centring prevents large absolute states from destroying FP32 derivatives.
+@@ -140,18 +145,39 @@
+     out=tf.TensorArray(dtype,blocks,element_shape=[batch,k,d]); dout=tf.TensorArray(dtype,blocks,element_shape=[p,batch,k,d]); columns=tf.TensorArray(dtype,blocks,element_shape=[batch,k])
+     def output(j,out,dout,columns):
+         def source(i,y,dy,col,dcol):
+-            xi=tile(x.v,i,k,1); xj=tile(x.v,j,k,1)
++            xi=tile(centred_x,i,k,1); xj=tile(centred_x,j,k,1)
+             di=tile(centred_t,i,k,2); dj=tile(centred_t,j,k,2)
+-            delta=xi[:,:,None]-xj[:,None]
+-            derivative=(-2/epsilon)*(tf.einsum("bijd,pbid->pbij",delta,di)-tf.einsum("bijd,pbjd->pbij",delta,dj))
+-            cost_tile=Jet(cache.read(i*blocks+j),derivative)
+-            trans=exp(cost_tile+jet_tile(alpha,i,k,1)[:,:,None]-jet_tile(normalizer,j,k,1)[:,None])
+-            # Normalize the centered primal AND its total derivative.
+-            # This is identical in real arithmetic to sum_i T_ij*x_i.
+-            local=Jet(tile(centred_x,i,k,1),tile(centred_t,i,k,2))
+-            contribution=mm(trans.transpose(),local)
+-            mass=trans.sum(1)
+-            return i+1,y+contribution.v,dy+contribution.t,col+mass.v,dcol+mass.t
++            ai=jet_tile(alpha,i,k,1); normal=jet_tile(normalizer,j,k,1)
++            trans=tf.exp(cache.read(i*blocks+j)+ai.v[:,:,None]-normal.v[:,None])
++            # dC_ij=-2/epsilon*(xi-xj)'(di-dj). Contract its four
++            # terms with T before adding parameter axes: no [P,B,K,K].
++            radial_i=tile(radial,i,k,2); radial_j=tile(radial,j,k,2)
++            def pack(t):
++                # [P,B,K,...] -> [B,K,P*...]
++                return tf.reshape(tf.transpose(t,[1,2,0,*range(3,t.shape.rank)]),[batch,k,-1])
++            features=tf.concat([xi,pack(di),pack(ai.t),pack(radial_i),
++                pack(xi[None]*ai.t[...,None]),pack(xi[None]*radial_i[...,None]),
++                pack(xi[None,...,:,None]*di[...,None,:]),
++                tf.reshape(xi[:,:,:,None]*xi[:,:,None,:],[batch,k,d*d])],-1)
++            average=tf.linalg.matmul(trans,features,transpose_a=True)
++            cursor=0
++            def take(width):
++                nonlocal cursor
++                part=average[:,:,cursor:cursor+width]; cursor+=width
++                return part
++            def unpack(width,shape):
++                part=tf.reshape(take(width),[batch,k,p,*shape])
++                return tf.transpose(part,[2,0,1,*range(3,part.shape.rank)])
++            value=take(d); mean_di=unpack(p*d,[d]); mean_da=unpack(p,[])
++            mean_radial=unpack(p,[]); mean_xda=unpack(p*d,[d]); mean_xradial=unpack(p*d,[d])
++            mean_xdi=unpack(p*d*d,[d,d]); mean_xx=tf.reshape(take(d*d),[batch,k,d,d])
++            mass=tf.reduce_sum(trans,1)
++            dmass=mean_da-normal.t*mass[None]-2/epsilon*(
++                mean_radial+radial_j*mass[None]-tf.reduce_sum(value[None]*dj,-1)-tf.reduce_sum(xj[None]*mean_di,-1))
++            derivative=mean_di+mean_xda-normal.t[...,None]*value[None]-2/epsilon*(
++                mean_xradial+radial_j[...,None]*value[None]
++                -tf.linalg.matvec(mean_xx[None],dj)-tf.linalg.matvec(mean_xdi,xj[None]))
++            return i+1,y+value,dy+derivative,col+mass,dcol+dmass
+         _,y,dy,col,dcol=tf.while_loop(lambda i,*_:i<blocks,source,
+             (0,tf.zeros([batch,k,d],dtype),tf.zeros([p,batch,k,d],dtype),
+              tf.zeros([batch,k],dtype),tf.zeros([p,batch,k],dtype)),parallel_iterations=1)
+@@ -208,8 +234,7 @@
+     mu,p=moments(x,exp(logw))
+     y,rowerr,colerr=precision_transport(x,logw,controls,precision_policy)
+     ym,sy=moments(y,x.constant(tf.fill([batch,n],tf.constant(1./n,x.v.dtype))))
+-    factors=[recolour(p[b],sy[b]) for b in range(batch)]
+-    ar=stack([f[0] for f in factors]); valid=tf.stack([f[1] for f in factors]); margin=tf.stack([f[2] for f in factors])
++    ar,valid,margin=recolour(p,sy,batch_ndims=1)
+     centered=mv(ar[:,None],y-ym[:,None]); centered=centered-centered.mean(1)[:,None]
+     z=mu[:,None]+centered
+     return z,mu,p,valid,tf.stack([margin,rowerr,tf.reduce_max(tf.linalg.norm(z.v-y.v,axis=2),1),colerr],1)
+@@ -244,13 +269,9 @@
+     sig=[tf.TensorSpec([batch,p],dtype),tf.TensorSpec([horizon,o],dtype),tf.TensorSpec([n,d],dtype),tf.TensorSpec([horizon,n,d],dtype),tf.TensorSpec([horizon,n,2],dtype),tf.TensorSpec([3],dtype)]
+     @tf.function(input_signature=sig,jit_compile=jit_compile,autograph=False)
+     def program(theta,observations,initial,innovations,uniforms,beta):
+-        directions=tf.eye(p,dtype=dtype)
+-        models=tuple(Models(spec,theta[b],directions) for b in range(batch))
+-        clouds=[]
+-        for b in range(batch):
+-            initialized=[spec.initial_cloud(theta[b],initial,directions[k]) for k in range(p)]
+-            clouds.append(Jet(initialized[0][0],tf.stack([v[2] for v in initialized])))
+-        x=stack(clouds)
++        from bayesfilter.highdim.covariance_proposal_native_models_tf import NativeModels
++        models=NativeModels(spec,theta)
++        x=models.initial_cloud(initial)
+         trace=tf.TensorArray(dtype,horizon,element_shape=[batch,len(TRACE_FIELDS)]).unstack(tf.fill([horizon,batch,len(TRACE_FIELDS)],tf.constant(float("nan"),dtype)))
+         score_trace=tf.TensorArray(dtype,horizon,element_shape=[batch,p]).unstack(tf.fill([horizon,batch,p],tf.constant(float("nan"),dtype)))
+         validity_trace=tf.TensorArray(tf.bool,horizon,element_shape=[batch,len(VALIDITY_FIELDS)]).unstack(tf.zeros([horizon,batch,len(VALIDITY_FIELDS)],tf.bool))
+@@ -261,17 +282,20 @@
+             ancestors=ancestors.unstack(tf.fill([horizon,batch,n,d],tf.constant(float("nan"),dtype)))
+         def step(t,xv,xt,ell,score,valid,completed,trace,score_trace,ancestors,validity_trace):
+             if record_history:
+-                ancestors=ancestors.write(t,xv)
++                # History after a row stops is unavailable, independently of
++                # whether other rows (or other shards) continue to execute.
++                ancestors=ancestors.write(t,tf.where(valid[:,None,None],xv,
++                    tf.constant(float("nan"),dtype)))
+             x=Jet(xv,xt)
+-            maps=tuple(build_maps(models[b],x[b],observations[t],controls) for b in range(batch))
++            maps=build_maps(models,x,observations[t],controls)
+             indices = None if prepared_indices is None else tuple(value[t] for value in prepared_indices)
+-            child=stack([draw_from_maps(m,beta,uniforms[t],innovations[t],indices=indices) for m in maps])
+-            means=stack([m[0] for m in maps]); cov=stack([m[1] for m in maps])
+-            density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or all(model.constant_observation_jacobian for model in models),contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
++            child=draw_from_maps(maps,beta,uniforms[t],innovations[t],indices=indices)
++            means,cov=maps[:2]
++            density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or models.constant_observation_jacobian,contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
+             densities=stack([part[0] for part in density_parts],-1)
+             vd=tf.reduce_all(tf.stack([part[1] for part in density_parts]),0)
+             lq=logsumexp(densities+tf.math.log(beta)[None,None],-1)
+-            lg=stack([observation_density(models[b],child[b],observations[t]) for b in range(batch)])
++            lg=models.observation_density(child,observations[t])
+             lr=lg+densities[:,:,0]-lq
+             normalizer=logsumexp(lr,1)
+             inc=normalizer-tf.math.log(tf.cast(n,dtype)); logw=lr-normalizer[:,None]; w=exp(logw)
+@@ -279,8 +303,7 @@
+             reset_particles=z.v; cd=tf.zeros([batch,3],dtype)
+             if controls.correction_steps:
+                 from bayesfilter.highdim.covariance_proposal_score_moments_tf import repair_moments
+-                corrections=[repair_moments(child[b],w[b],z[b],mu[b],pw[b],controls) for b in range(batch)]
+-                z=stack([c[0] for c in corrections]); cd=tf.stack([c[1] for c in corrections])
++                z,cd=repair_moments(child,w,z,mu,pw,controls)
+             zm,zp=moments(z,x.constant(tf.fill([batch,n],tf.constant(1./n,dtype))))
+             eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
+             mean_error=tf.reduce_max(tf.abs(zm.v-mu.v),1)
+@@ -290,11 +313,11 @@
+             coordinate_move=tf.reduce_max(tf.abs(z.v-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw.v))[:,None],[1,2])
+             cap=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
+             checks=tf.stack([mean_ok,covariance_ok,cd[:,0]<=cap,coordinate_move<=cap,
+-                tf.reduce_all(tf.math.is_finite(cd),1),tf.stack([m[6] for m in maps]),vd,vr,
++                tf.reduce_all(tf.math.is_finite(cd),1),maps[6],vd,vr,
+                 tf.reduce_all(tf.math.is_finite(z.v),[1,2]),tf.reduce_all(tf.math.is_finite(z.t),[0,2,3]),
+                 tf.math.is_finite(inc.v),tf.reduce_all(tf.math.is_finite(inc.t),0)],1)
+             good=tf.reduce_all(checks,1)
+-            row=tf.stack([inc.v,inc.t[0],1/tf.reduce_sum(w.v*w.v,1),tf.reduce_max(w.v,1),tf.reduce_max(tf.exp(densities.v[:,:,0]-lq.v),1),mean_error,cov_error,rd[:,0],tf.stack([m[7] for m in maps]),tf.stack([m[8] for m in maps]),cd[:,0],cd[:,1],cd[:,2],tf.cast(good,dtype),rd[:,1],rd[:,2],rd[:,3],coordinate_move],1)
++            row=tf.stack([inc.v,inc.t[0],1/tf.reduce_sum(w.v*w.v,1),tf.reduce_max(w.v,1),tf.reduce_max(tf.exp(densities.v[:,:,0]-lq.v),1),mean_error,cov_error,rd[:,0],maps[7],maps[8],cd[:,0],cd[:,1],cd[:,2],tf.cast(good,dtype),rd[:,1],rd[:,2],rd[:,3],coordinate_move],1)
+             # Freeze failed rows after their first failing step. Healthy rows
+             # continue independently; a bad row cannot poison another chain.
+             accepted=valid & good

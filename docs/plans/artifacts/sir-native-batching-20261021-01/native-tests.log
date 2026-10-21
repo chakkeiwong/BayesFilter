@@ -1,0 +1,32 @@
+.................F
+=================================== FAILURES ===================================
+_____________ test_native_graph_body_does_not_grow_with_batch_size _____________
+
+    def test_native_graph_body_does_not_grow_with_batch_size():
+        spec,_,_,_,_=fixture('sir_d18')
+        counts=[]
+        for b in (1,2,4,8):
+            f=make_batched_score_filter(spec,32,2,ProposalControls(flow_steps=2),tf.float32,True,b)
+            graph=f.get_concrete_function().graph.as_graph_def()
+            counts.append(len(graph.node)+sum(len(fn.node_def) for fn in graph.library.function))
+>       assert max(counts)-min(counts)<=5,counts
+E       AssertionError: [7151, 7191, 7209, 7211]
+E       assert (7211 - 7151) <= 5
+E        +  where 7211 = max([7151, 7191, 7209, 7211])
+E        +  and   7151 = min([7151, 7191, 7209, 7211])
+
+tests/highdim/test_covariance_proposal_native_batch.py:96: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_native_batch.py::test_native_graph_body_does_not_grow_with_batch_size
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 17 passed, 2 warnings in 119.85s (0:01:59)

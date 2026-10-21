@@ -38,3 +38,18 @@ def test_resource_observers_report_bytes_without_framework():
     assert bench.meminfo()["MemTotal"] > 1024 ** 3
     assert bench.process_memory(999999999) == {}
     assert bench.PLAN.is_file() and bench.SELECTION.is_file()
+
+
+def test_frozen_preparation_matches_executed_input_hashes():
+    import os
+    os.environ.setdefault('CUDA_VISIBLE_DEVICES', '-1')
+    import hashlib
+    import tensorflow as tf
+    baseline = json.loads((bench.ROOT /
+        'docs/plans/artifacts/sir-fp32-batch-capacity-20261020-02/gpu-b4/result.json').read_text())
+    with tf.device('/CPU:0'):
+        case, _, inputs = bench.prepare_inputs(tf, 4)
+    hashes = [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest() for x in inputs]
+    assert hashes == baseline['input_hashes']
+    assert case.spec.target_id == baseline['target_id']
+    assert case.horizon == baseline['horizon']

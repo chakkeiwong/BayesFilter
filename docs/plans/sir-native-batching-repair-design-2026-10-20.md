@@ -2,14 +2,14 @@
 
 ## Current checkpoint
 
-2026-10-20: code audit and repair design complete. The owner asks what is wrong
-with batching and how to change it. No numerical implementation or defaults
-were changed for this design, and no further GPU benchmark or training was
-launched. This work belongs within Phase 1 of the existing
-[SIR NeuTra integration plan](surrogate-hmc-sir-neutra-training-audit-plan-2026-10-20.md).
-The preceding capacity benchmark is finished. Implementation and its numerical
-and performance checks remain outstanding; this document does not allocate a
-new long-run budget.
+2026-10-21: baseline/design committed as f6bb90a00. The owner authorized
+implementation and testing. Follow the
+[execution plan](sir-native-batching-execution-2026-10-21.md) for the current
+checkpoint, bounded compute and results. Native batching, memory contractions
+and optional batched sharding are implemented; numerical and capacity findings
+are recorded there. The earlier audit below describes the saved baseline,
+not the repaired source. Full training-step integration remains in the parent
+SIR NeuTra plan; callback memory fit alone does not complete it.
 
 ## What the audit established
 

@@ -7,30 +7,31 @@ evidence for a new long training run. Existing unrelated changes are preserved.
 
 ## Active checkpoint
 
-Current owner request: explain the batching defect and how to repair it.
-The code audit and [repair design](sir-native-batching-repair-design-2026-10-20.md)
-are complete. Graph nodes grow exactly as 3410+5009*B; scalar model/proposal
-interfaces duplicate graph bodies, and density plus transport retain large
-pairwise temporaries. Next implementation step within Phase 1 is to generalize
-the shared batch/all-parameter callbacks and reset helpers while preserving
-per-row validity, then separately check memory-saving contractions and the
-observed score discrepancy. These repairs have not yet been implemented.
+2026-10-21: the owner authorized committing the baseline, implementing the
+batching repair, reviewing the plan and executing it. The implementation and
+bounded capacity diagnostics are tracked in
+[the active execution plan](sir-native-batching-execution-2026-10-21.md).
+Native model/proposal/reset operations and all-parameter propagation now retain
+B without tracing a model body per row. Shared Gaussian and transport contractions
+avoid pair-by-state/sensitivity intermediates; optional native batched sharding
+is implemented. The isolated source-tree suite passed 119 checks, including
+row/permutation, sharding and public-entry regressions.
 
-All ten preceding capacity-benchmark attempts are finished; no worker remains
-running. See
-[the result note](sir-fp32-batch-capacity-results-2026-10-20.md) and
-`docs/plans/artifacts/sir-fp32-batch-capacity-20261020-02/summary.json`.
-The finished manifest supersedes the final `active.json` heartbeat.
-GPU batches 4/8/16 completed; GPU 32 failed on a 21.04 GiB single allocation;
-GPU 64 timed out during compilation and GPU 128 reached the available-host-RAM
-guard. Only CPU batch 4 completed within the per-arm allowance. Attempt 02
-consumed 5,128.2 monotonic seconds of its 6,480-second allocation; UTC endpoints
-span 5,576.6 seconds, an unexplained timing discrepancy recorded in the note.
-All requested attempts are closed, so unused time is not a new execution phase.
-One matched CPU/GPU score differs by 8.274% in relative vector norm; capacity
-results do not admit the uniform-FP32 score numerically. A complete training-step
-capacity check is still required after the callback repairs. No new GPU run
-or training was launched by the batching audit, and it allocates no new budget.
+Full-size old/new FP64 scores agree within 4.35e-11 relative vector norm, but
+FP32 row 3 differs by 5.769% (old) and 8.057% (native) from this common
+reference. The 1% FP32 score criterion remains unmet. Bounded capacity testing
+is complete: GPU B32 uses 4.04 GiB, and logical B128/native S4 completes in
+0.761 GiB with exact B4 output parity. CPU B16/B32 reach their 600-second caps
+without a completed evaluation. See the
+[batching result](sir-native-batching-results-2026-10-21.md).
+These are engineering diagnostics, not numerical or training admission.
+The original capacity benchmark remains comparison evidence in
+[sir-fp32-batch-capacity-results-2026-10-20.md](sir-fp32-batch-capacity-results-2026-10-20.md).
+No optimizer update or HMC campaign is part of this batching execution. The
+matched target-to-trainer adapter, complete optimizer memory check and trained
+SIR map remain missing. This is a Phase 1 prerequisite, not completion of the
+whole integration plan. The next repair is FP32 score stability under the same
+finite target and 1% criterion, before the target-to-trainer adapter is admitted.
 
 The prior paper, author-source and consumer-call-chain audit is complete: 57
 CPU tests passed, one optional historical-artifact check skipped, and the
@@ -283,7 +284,8 @@ and qualify the implementation reference. The results are recorded below.
 The capacity benchmark exposed incomplete native batching and large temporary
 tensors in the target it would consume. Apply the
 [shared batching repair design](sir-native-batching-repair-design-2026-10-20.md)
-within this phase; constructing the adapter alone does not repair its kernel.
+within this phase. The native implementation now exists, but the full-size
+FP32 precision veto in the execution plan must be resolved before admission.
 
 Add a small campaign adapter module, proposed path
 `bayesfilter/testing/surrogate_hmc_sir_neutra.py`, using the existing SIR case,

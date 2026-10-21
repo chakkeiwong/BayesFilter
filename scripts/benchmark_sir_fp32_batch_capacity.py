@@ -8,7 +8,7 @@ import; GPU children require the supervisor to have trusted device access.
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, replace
+from dataclasses import asdict
 import datetime as dt
 import hashlib
 import json
@@ -23,6 +23,7 @@ import subprocess
 import sys
 import time
 import traceback
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 PLAN = ROOT / "docs/plans/sir-fp32-batch-capacity-benchmark-2026-10-20.md"
@@ -32,6 +33,46 @@ SELECTION = ROOT / (
     "sir_d18/filter-selection.json")
 GPU_UUID = "GPU-68251639-fe82-8f81-3ccc-2953c32e805b"
 GIB = 1024 ** 3
+PARTICLES = 4032
+DATA = ROOT / 'docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831/dataset.json'
+
+
+def prepare_inputs(tf, batch_size, reference_fp64=False):
+    """Reproduce the frozen likelihood workload without importing HMC code.
+
+    The q-to-theta scale .35 and seed are those of the executed baseline.
+    No prior density, sampler, tuning or training is evaluated here.
+    """
+    from bayesfilter.highdim.sqmc_nonlinear_tf import NonlinearSQMCSpec
+    from bayesfilter.highdim.sqmc_campaign_tf import random_inputs
+    from bayesfilter.highdim.covariance_proposal_tf import ProposalControls
+    spec = NonlinearSQMCSpec('sir_d18')
+    saved = json.loads(DATA.read_text())
+    if saved['target_id'] != spec.target_id or saved['data_seed'] != 26100831:
+        raise ValueError('target/data identity mismatch')
+    observed64 = tf.constant(saved['observations'], tf.float64)
+    if hashlib.sha256(tf.io.serialize_tensor(observed64).numpy()).hexdigest() != saved['observation_sha256']:
+        raise ValueError('observation checksum mismatch')
+    if observed64.shape != (50, 9):
+        raise ValueError('frozen SIR horizon/observation shape changed')
+    selected = json.loads(SELECTION.read_text())['selected']
+    beta = tf.constant(selected['beta'], tf.float32)
+    controls = ProposalControls(**selected['controls'])
+    seed = 261008301
+    design = random_inputs('iid_dual_cap', seed, PARTICLES, spec.dimension, 50,
+                           tf.float64, jit_compile=True)
+    uniforms = tf.random.stateless_uniform([50, PARTICLES, 2], [seed, 991], dtype=tf.float64)
+    fixed = tuple(tf.cast(x, tf.float32) for x in (*design[:2], uniforms))
+    qbank = tf.constant([[0., 0., 0.], [.05, 0., 0.], [0., .05, 0.], [0., 0., .05]], tf.float32)
+    q = tf.gather(qbank, tf.range(batch_size) % 4)
+    theta = spec.default_theta(tf.float32) + tf.constant([.35] * 3, tf.float32) * q
+    observed = tf.cast(observed64, tf.float32)
+    inputs = (theta, observed, *fixed, beta)
+    if reference_fp64:
+        inputs = tuple(tf.cast(x, tf.float64) for x in inputs)
+    case = SimpleNamespace(spec=spec, horizon=50, p=spec.parameter_count,
+                           controls=controls, beta=beta, observations=observed, data_path=DATA)
+    return case, qbank, inputs
 
 
 def stamp():
@@ -161,25 +202,47 @@ def worker(args):
         if record["tf32"]:
             raise RuntimeError("FP32-only benchmark requires TF32 off")
         checkpoint("input_preparation_on_cpu")
-        from bayesfilter.testing import surrogate_hmc_five_model as runtime
         from bayesfilter.highdim.covariance_proposal_tf import ProposalControls, VALIDITY_FIELDS
         from bayesfilter.highdim.covariance_proposal_score_batch_tf import make_batched_score_filter
-        selected = json.loads(SELECTION.read_text())
+        if args.diagnostic_kernel_variant == "baseline":
+            import importlib.util
+            base = ROOT / "docs/plans/artifacts/sir-fp32-batch-capacity-20261020-02/gpu-b4/source"
+            for module_name in ("covariance_proposal_score_tf", "covariance_proposal_shared_gaussian_tf", "covariance_proposal_score_batch_tf"):
+                fullname = "bayesfilter.highdim." + module_name
+                path = base / "bayesfilter/highdim" / (module_name + ".py")
+                spec = importlib.util.spec_from_file_location(fullname, path)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[fullname] = module
+                spec.loader.exec_module(module)
+            make_batched_score_filter = sys.modules[fullname].make_batched_score_filter
+        if args.diagnostic_kernel_variant not in ("current", "baseline"):
+            # Diagnostic ablation only: preserve native model/maps while replaying
+            # the previously executed pair arithmetic. Never a training route.
+            import importlib.util
+            from bayesfilter.highdim import covariance_proposal_score_batch_tf as kernels
+            from bayesfilter.highdim import covariance_proposal_shared_gaussian_tf as shared
+            sources = {}
+            if args.diagnostic_kernel_variant in ("phase1", "direct_transport"):
+                sources["transport"] = ROOT / "docs/plans/artifacts/sir-native-batching-20261021-01/phase1-source/covariance_proposal_score_batch_tf.py"
+            if args.diagnostic_kernel_variant in ("phase1", "direct_density"):
+                sources["density"] = ROOT / "docs/plans/artifacts/sir-fp32-batch-capacity-20261020-02/gpu-b4/source/bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py"
+            record["diagnostic_kernel_sources"] = {str(p.relative_to(ROOT)): digest(p) for p in sources.values()}
+            for name, path in sources.items():
+                spec = importlib.util.spec_from_file_location("_diagnostic_" + name, path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                if name == "transport":
+                    kernels.transport = module.transport
+                else:
+                    shared.shared_gaussian_mixture = module.shared_gaussian_mixture
+        record["diagnostic_kernel_variant"] = args.diagnostic_kernel_variant
         with tf.device("/CPU:0"):
-            case = runtime.load_case("sir_d18")
-            case = runtime.configure_prior(case, runtime.priors.PRIOR_ID)
-            # This is explicitly a workload baseline, not exact-scope admission.
-            case = replace(case, controls=ProposalControls(**selected["selected"]["controls"]),
-                           beta=tf.constant(selected["selected"]["beta"], tf.float32))
-            case = runtime.configure_precision(case, "uniform")
-            qbank = tf.constant([[0., 0., 0.], [.05, 0., 0.], [0., .05, 0.], [0., 0., .05]], tf.float32)
-            q = tf.gather(qbank, tf.range(args.batch) % 4)
-            theta, _ = case.chart(q)
-            cpu_inputs = (theta, case.observations, *case.fixed, case.beta)
+            case, qbank, cpu_inputs = prepare_inputs(tf, args.batch, args.reference_fp64)
+            theta = cpu_inputs[0]
             input_hashes = [hashlib.sha256(tf.io.serialize_tensor(x).numpy()).hexdigest()
                             for x in cpu_inputs]
         record.update(
-            particles=runtime.N, horizon=case.horizon, state_dimension=case.spec.dimension,
+            particles=PARTICLES, horizon=case.horizon, state_dimension=case.spec.dimension,
             observation_dimension=int(case.observations.shape[1]), parameter_count=case.p,
             controls=asdict(case.controls), beta=case.beta.numpy().tolist(),
             target_id=case.spec.target_id, selection=str(SELECTION), selection_sha256=digest(SELECTION),
@@ -188,14 +251,26 @@ def worker(args):
             parameter_bank_q=qbank.numpy().tolist(), parameter_rows=theta.numpy().tolist(),
             input_hashes=input_hashes, chunk_size=2016, record_history=False,
             source_sha256=source_hashes(), input_preparation_fp64_outside_timed_kernel=True)
-        if any(x.dtype != tf.float32 for x in cpu_inputs):
-            raise RuntimeError("non-FP32 kernel input")
+        dtype = tf.float64 if args.reference_fp64 else tf.float32
+        record.update(dtype=dtype.name, reference_fp64=args.reference_fp64)
+        if any(x.dtype != dtype for x in cpu_inputs):
+            raise RuntimeError("kernel input does not match declared precision")
+        factory_kwargs = {}
+        if args.shard_size:
+            if args.diagnostic_kernel_variant != "current":
+                raise ValueError("sharding is available only for the native candidate")
+            from bayesfilter.highdim.covariance_proposal_score_sharded_tf import make_sharded_score_filter
+            make_batched_score_filter = make_sharded_score_filter
+            factory_kwargs["shard_size"] = args.shard_size
+        record.update(native_shard_size=args.shard_size or args.batch,
+                      sample_wise_target_loop=False,
+                      logical_batch_size=args.batch)
         with tf.device(placement):
             inputs = tuple(tf.identity(x) for x in cpu_inputs)
             program = make_batched_score_filter(
-                case.spec, runtime.N, case.horizon, case.controls, tf.float32,
+                case.spec, PARTICLES, case.horizon, case.controls, dtype,
                 jit_compile=True, batch_size=args.batch, precision_policy="uniform",
-                fixed_draw_design=(case.beta,case.fixed[2]))
+                fixed_draw_design=(cpu_inputs[5],cpu_inputs[4]), **factory_kwargs)
             inputs = inputs[:4]
             record["draw_design"] = "exact_integer_indices_prepared_once_on_cpu_same_shared_authority"
             checkpoint("tracing")
@@ -226,7 +301,7 @@ def worker(args):
                 snapshot.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / relative, snapshot)
             del nodes, graph
-            if fp64_runtime or any(x.dtype == tf.float64 for x in concrete.inputs):
+            if not args.reference_fp64 and (fp64_runtime or any(x.dtype == tf.float64 for x in concrete.inputs)):
                 raise RuntimeError("FP64 arithmetic found in timed filter graph")
 
             def allocator():
@@ -243,7 +318,7 @@ def worker(args):
 
             reset_peak()
             record["allocator_before_execution"] = allocator()
-            for index in range(4):
+            for index in range(args.repetitions):
                 checkpoint("compile_and_first_execution" if index == 0 else f"warmed_execution_{index}")
                 if index == 1:
                     reset_peak()
@@ -277,9 +352,18 @@ def worker(args):
                     allocator=allocator(), host_process_memory=process_memory(os.getpid()),
                     full_filter_rows_per_second=args.batch/elapsed if full else None)
                 record["measurements"].append(measurement)
+                if index == 0:
+                    save(args.output / "time-traces.json", {key: result[key].numpy().tolist()
+                        for key in ("trace", "score_trace", "validity_trace")})
                 del result, flags
                 checkpoint("measurement_saved")
             warmed = record["measurements"][1:]
+            if not warmed:
+                full = all(x["full_horizon_valid"] for x in record["measurements"])
+                status = "COMPLETED_REFERENCE" if args.reference_fp64 else "COMPLETED_SINGLE_DIAGNOSTIC"
+                record.update(status=status if full else "COMPLETED_TRUNCATED_OR_INVALID")
+                checkpoint("complete")
+                return 0
             median = statistics.median(x["seconds"] for x in warmed)
             full = all(x["full_horizon_valid"] for x in warmed)
             record.update(status="COMPLETED_FULL_HORIZON" if full else "COMPLETED_TRUNCATED_OR_INVALID",
@@ -316,7 +400,8 @@ def run(args):
                     total_budget_seconds=args.total_seconds, per_arm_seconds=args.arm_seconds,
                     rss_limit_bytes=24*GIB, minimum_system_available_bytes=6*GIB,
                     gpu_allocator_limit_mib=args.gpu_limit_mib,
-                    gpu_snapshot_before=gpu_snapshot(), memory_before=meminfo(),
+                    gpu_snapshot_before=gpu_snapshot() if args.devices != "cpu" else None,
+                    memory_before=meminfo(),
                     cpu_info=subprocess.check_output(["lscpu"], text=True),
                     git_commit=subprocess.check_output(
                         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
@@ -324,6 +409,8 @@ def run(args):
     arms = [("cpu", b) for b in (4, 8, 16, 32)] + [("gpu", b) for b in (4, 8, 16, 32, 64, 128)]
     if args.devices != "both":
         arms = [(d, b) for d, b in arms if d == args.devices]
+    if args.batches:
+        arms = [(d,b) for d,b in arms if b in args.batches]
     save(args.output / "manifest.json", manifest)
     for device, batch in arms:
         if time.monotonic()-started >= args.total_seconds:
@@ -333,7 +420,13 @@ def run(args):
         out = args.output / name
         command = [sys.executable, str(Path(__file__).resolve()), "worker", "--output", str(out),
                    "--device", device, "--batch", str(batch), "--gpu", args.gpu,
-                   "--gpu-limit-mib", str(args.gpu_limit_mib)]
+                   "--gpu-limit-mib", str(args.gpu_limit_mib), "--plan", str(PLAN),
+                   "--diagnostic-kernel-variant", args.diagnostic_kernel_variant]
+        command += ["--repetitions", str(args.repetitions)]
+        if args.shard_size:
+            command += ["--shard-size", str(args.shard_size)]
+        if args.reference_fp64:
+            command += ["--reference-fp64"]
         before_gpu = gpu_snapshot() if device == "gpu" else None
         print(json.dumps({"event": "starting", "arm": name, "utc": stamp()}), flush=True)
         arm_started = time.monotonic()
@@ -389,26 +482,39 @@ def run(args):
             "arm", "exit_code", "stop_reason", "wall_seconds", "worker_status", "last_phase")}), flush=True)
     manifest.update(finished_utc=stamp(), wall_seconds=time.monotonic()-started,
                     realtime_wall_seconds=time.time()-started_realtime,
-                    memory_after=meminfo(), gpu_snapshot_after=gpu_snapshot())
+                    memory_after=meminfo(),
+                    gpu_snapshot_after=gpu_snapshot() if args.devices != "cpu" else None)
     save(args.output / "manifest.json", manifest)
     return 0
 
 
 def main():
+    global PLAN
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("run", "worker"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", choices=("cpu", "gpu"), default="cpu")
     parser.add_argument("--devices", choices=("both", "cpu", "gpu"), default="both")
     parser.add_argument("--batch", type=int, default=4)
+    parser.add_argument("--batches", type=int, nargs="+", choices=(4,8,16,32,64,128))
+    parser.add_argument("--plan", type=Path, default=PLAN)
+    parser.add_argument("--diagnostic-kernel-variant", choices=("current", "baseline", "phase1", "direct_transport", "direct_density"), default="current")
+    parser.add_argument("--reference-fp64", action="store_true", help="Independent precision diagnostic; excluded from FP32 performance comparison")
+    parser.add_argument("--repetitions", type=int, choices=(1,2,3,4), default=4)
+    parser.add_argument("--shard-size", type=int, default=0,
+                        help="Optional native batched shard size; zero evaluates the full batch")
     parser.add_argument("--gpu", default=GPU_UUID)
     parser.add_argument("--gpu-limit-mib", type=int, default=12288)
     parser.add_argument("--total-seconds", type=int, default=6600)
     parser.add_argument("--arm-seconds", type=int, default=600)
     args = parser.parse_args()
+    PLAN = args.plan.resolve()
     args.output = args.output.resolve()
     if args.batch < 2 or min(args.gpu_limit_mib, args.total_seconds, args.arm_seconds) <= 0:
         parser.error("positive limits and batch size > 1 are required")
+    if args.shard_size and (args.shard_size < 2 or
+                           (args.command == "worker" and args.shard_size > args.batch)):
+        parser.error("native shards must contain at least two rows and fit the logical batch")
     return worker(args) if args.command == "worker" else run(args)
 
 

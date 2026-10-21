@@ -1,0 +1,46 @@
+{
+  "path": "/tmp/sir-native-clean-_thurvri",
+  "base_commit": "f6bb90a00da87e2093aabded18e1372bfe493535",
+  "overlay_files": [
+    "bayesfilter/highdim/analytical_jet_tf.py",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py",
+    "bayesfilter/highdim/covariance_proposal_score_moments_tf.py",
+    "bayesfilter/highdim/covariance_proposal_score_sharded_tf.py",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py",
+    "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py",
+    "bayesfilter/highdim/covariance_proposal_tf.py",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py",
+    "docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831/dataset.json",
+    "docs/plans/artifacts/sir-fp32-batch-capacity-20261020-02/gpu-b4/result.json",
+    "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/literature-prior-other-four-advance-01/sir_d18/filter-tuning/sir_d18/filter-selection.json",
+    "docs/plans/sir-fp32-batch-capacity-benchmark-2026-10-20.md",
+    "scripts/benchmark_sir_fp32_batch_capacity.py",
+    "tests/highdim/test_covariance_proposal.py",
+    "tests/highdim/test_covariance_proposal_compact_maps.py",
+    "tests/highdim/test_covariance_proposal_native_batch.py",
+    "tests/highdim/test_covariance_proposal_packed_score.py",
+    "tests/highdim/test_covariance_proposal_precision_guard.py",
+    "tests/highdim/test_covariance_proposal_sharded_batch.py",
+    "tests/highdim/test_covariance_proposal_shared_gaussian.py",
+    "tests/highdim/test_covariance_proposal_tuning_callchain.py",
+    "tests/test_covariance_proposal_fixed_design.py",
+    "tests/test_sir_fp32_capacity_diagnostic.py"
+  ],
+  "compiled_environment_prerequisite": {
+    "path": "bayesfilter/ops/_symmetric_sylvester_ops.so",
+    "sha256": "0f00cb79c64df7fecd51cc77b6b85222436d1a30e8df9b2ce271192ee394620d",
+    "note": "Existing locally built TensorFlow custom op, copied as an environment prerequisite. Source under bayesfilter/ops and CMakeLists.txt; no binary committed."
+  },
+  "excluded_legacy_integration_test": "tests/highdim/test_covariance_proposal_compact_maps.py imports the unrelated, uncommitted surrogate_hmc_five_model campaign and diagnostic harness. It passed in the working-tree regression but is not part of this scoped commit. Native model/full-filter and shared Gaussian tests exercise the repaired map algebra independently.",
+  "final_test_result": {
+    "passed": 119,
+    "warnings": 2,
+    "seconds": 403.32,
+    "log": "isolated-tests.log",
+    "cpu_only": true
+  }
+}

@@ -20,6 +20,34 @@ TRACE_FIELDS = ("log_increment", "score_increment", "ess", "max_weight", "max_pr
                 "moment_loss_after", "valid", "sinkhorn_row_error", "reset_displacement",
                 "sinkhorn_column_error", "correction_coordinate_displacement")
 
+
+VALIDITY_FIELDS = ("mean", "covariance", "correction_l2", "correction_coordinate",
+                   "correction_finite", "proposal_maps", "density", "reset",
+                   "particle_value", "particle_tangent", "increment_value",
+                   "increment_tangent")
+
+
+def covariance_restoration_tolerance(n, d, dtype):
+    """Roundoff allowance for two covariance sums; FP32 owner ceiling is 1%.
+
+    The FP64 accumulation allowance is 2*sqrt(d)*gamma_(N+2), in addition
+    to the existing matrix-operation margin. It is not a bound on the whole
+    centering/factorization pipeline; its other validity checks remain active.
+    """
+    dtype = tf.as_dtype(dtype)
+    if n < 1 or d < 1 or dtype not in (tf.float32, tf.float64):
+        raise ValueError("require positive sizes and FP32 or FP64")
+    if dtype == tf.float32:
+        return tf.constant(.01, dtype)
+    eps = 2.220446049250313e-16
+    if (n + 2)*eps >= 1:
+        raise ValueError("covariance accumulation roundoff bound is undefined")
+    coefficient = tf.constant((n + 2)*eps, dtype)
+    gamma = coefficient/(1 - coefficient)
+    return tf.minimum(tf.constant(.01, dtype),
+                      tf.constant(100*eps*d, dtype) +
+                      2*tf.sqrt(tf.cast(d, dtype))*gamma)
+
 @dataclass(frozen=True)
 class ProposalControls:
     flow_steps: int = 16
@@ -29,7 +57,10 @@ class ProposalControls:
     correction_basis: int = 4
     correction_rate: float = 0.1
     correction_radius: float = 0.25
+    shared_gaussian_contraction: str = "direct"
     def __post_init__(self):
+        if self.shared_gaussian_contraction not in ("direct", "matrix"):
+            raise ValueError("unknown shared Gaussian contraction")
         if min(self.flow_steps, self.reset_steps, self.correction_basis) < 1:
             raise ValueError("iteration counts/basis must be positive")
         if self.correction_steps < 0 or not all(math.isfinite(v) and v>0 for v in (self.reset_epsilon,self.correction_rate,self.correction_radius)):
@@ -161,23 +192,37 @@ def observation_density(model,theta,x,dx,y):
     dr=None if model.observation_covariance_tangent_fn is None else model.observation_covariance_tangent_fn(theta)
     return _gaussian_log_density_and_tangent(tf.broadcast_to(y,tf.shape(mean)),tf.zeros_like(mean),mean,dmean,tf.linalg.cholesky(r),d_covariance=dr)
 
+def fixed_design_indices(beta, uniforms, n):
+    """Select fixed mixture/ancestor indices consistently across precision.
+
+    The inverse-CDF ancestor is floor(N*u). FP32 multiplication can round a
+    value just below an integer up to that integer, changing the discrete
+    design. Binary64 represents the product of an FP32 uniform and N<=2**24
+    exactly. Cast before multiplying; use the same arithmetic for mixture
+    thresholds. Continuous maps and analytical derivatives keep their dtype.
+    Equal represented inputs then select equal branches in every score lane.
+    """
+    design = tf.cast(uniforms, tf.float64)
+    thresholds = tf.cumsum(tf.cast(beta, tf.float64))[:-1]
+    component = tf.reduce_sum(tf.cast(design[:, 0, None] >= thresholds[None, :], tf.int32), -1)
+    ancestor = tf.minimum(tf.cast(design[:, 1] * tf.cast(n, tf.float64), tf.int32), n-1)
+    return component, ancestor
+
+
 def draw_from_maps(maps,beta,uniforms,normals):
     means,dm,cov,dcov,a,da,c,dc,m,dmu,l,dl,*_=maps
     n=normals.shape[0]
-    b=tf.reduce_sum(tf.cast(uniforms[:,0,None]>=tf.cumsum(beta)[None,:-1],tf.int32),-1)
-    j=tf.minimum(tf.cast(uniforms[:,1]*tf.cast(n,uniforms.dtype),tf.int32),n-1)
+    b,j=fixed_design_indices(beta,uniforms,n)
     ij=tf.stack([b,j],-1)
     u=tf.gather(m,j)+mv(l,normals); du=tf.gather(dmu,j)+mv(dl,normals)
     ab=tf.gather_nd(a,ij); dab=tf.gather_nd(da,ij)
     return mv(ab,u)+tf.gather_nd(c,ij),mv(dab,u)+mv(ab,du)+tf.gather_nd(dc,ij)
 
-def reset_cloud(x,dx,logw,dlogw,controls):
-    """Algorithm 2: finite log-Sinkhorn, actual column normalization, Cholesky."""
+def _dense_reset_transport(x,dx,logw,dlogw,controls):
+    """Single policy block of the finite transport, preserving dense arithmetic."""
     n,d=x.shape; dtype=x.dtype
     if select_transport_chunks(n).row_chunk_size != n:
-        raise ValueError("dense candidate reset limited to N<=3000; streaming extension not implemented")
-    w=tf.exp(logw); dw=w*dlogw
-    mu,dmu,p,dp=moments(x,dx,w,dw)
+        raise ValueError("Dense transport requires one policy-compliant block")
     delta=x[:,None]-x[None]; ddelta=dx[:,None]-dx[None]
     lk=-tf.reduce_sum(delta*delta,-1)/tf.cast(controls.reset_epsilon,dtype)
     dlk=-2*tf.reduce_sum(delta*ddelta,-1)/tf.cast(controls.reset_epsilon,dtype)
@@ -196,14 +241,33 @@ def reset_cloud(x,dx,logw,dlogw,controls):
     dtrans=trans*(dlogpi-tf.reduce_sum(trans*dlogpi,0,keepdims=True))
     y=tf.einsum('ij,id->jd',trans,x)
     dy=tf.einsum('ij,id->jd',dtrans,x)+tf.einsum('ij,id->jd',trans,dx)
+    rowerr=tf.reduce_max(tf.abs(tf.reduce_sum(tf.exp(logpi),1)-tf.exp(logw)))
+    colerr=tf.reduce_max(tf.abs(tf.reduce_sum(trans,axis=0)-1))
+    return y,dy,rowerr,colerr
+
+def reset_cloud(x,dx,logw,dlogw,controls):
+    """Algorithm 2: finite log-Sinkhorn, actual column normalization, Cholesky."""
+    n,d=x.shape; dtype=x.dtype
+    w=tf.exp(logw); dw=w*dlogw
+    mu,dmu,p,dp=moments(x,dx,w,dw)
+    if select_transport_chunks(n).row_chunk_size == n:
+        y,dy,rowerr,colerr=_dense_reset_transport(x,dx,logw,dlogw,controls)
+    else:
+        from bayesfilter.highdim.covariance_proposal_transport_tf import tiled_sinkhorn_barycentres
+        y,dy,rowerr,colerr=tiled_sinkhorn_barycentres(x,dx,logw,dlogw,controls)
     unif=tf.fill([n],tf.constant(1./n,dtype)); zero=tf.zeros([n],dtype)
     ym,dym,sy,dsy=moments(y,dy,unif,zero)
     ar,dar,valid,margin=recolour(p,dp,sy,dsy)
     e=y-ym; de=dy-dym
-    z=mu+mv(ar,e); dz=dmu+mv(dar,e)+mv(ar,de)
+    # Recentring is the identity in exact arithmetic, but prevents the
+    # recolouring map from amplifying cancellation in the computed mean.
+    # Differentiate the same centring operation in the analytical tangent.
+    centred=mv(ar,e); dcentred=mv(dar,e)+mv(ar,de)
+    centred-=tf.reduce_mean(centred,axis=0)
+    dcentred-=tf.reduce_mean(dcentred,axis=0)
+    z=mu+centred; dz=dmu+dcentred
     zm,_,zp,_=moments(z,dz,unif,zero)
-    rowerr=tf.reduce_max(tf.abs(tf.reduce_sum(tf.exp(logpi),1)-w))
-    diagnostics=tf.stack([tf.reduce_max(tf.abs(zm-mu)),tf.linalg.norm(zp-p)/tf.maximum(tf.linalg.norm(p),tf.constant(1.e-30,dtype)),margin,rowerr,tf.reduce_max(tf.linalg.norm(z-y,axis=1)),tf.reduce_max(tf.abs(tf.reduce_sum(trans,axis=0)-1))])
+    diagnostics=tf.stack([tf.reduce_max(tf.abs(zm-mu)),tf.linalg.norm(zp-p)/tf.maximum(tf.linalg.norm(p),tf.constant(1.e-30,dtype)),margin,rowerr,tf.reduce_max(tf.linalg.norm(z-y,axis=1)),colerr])
     return z,dz,mu,dmu,p,dp,valid,diagnostics
 
 def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True):
@@ -241,7 +305,12 @@ def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True):
             eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
             mean_error=tf.reduce_max(tf.abs(zm-mu))
             cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
-            moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & (cov_error<=100*eps*d)
+            # Owner precision policy (2026-10-10): allow 1% relative covariance
+            # restoration error for FP32, including TF32 matrix products. Only
+            # rejection changes; accepted values and analytical tangents do not.
+            # FP64 also accounts for accumulation over the particle cloud.
+            covariance_tolerance=covariance_restoration_tolerance(n,d,dtype)
+            moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & tf.math.is_finite(cov_error) & (cov_error<=covariance_tolerance)
             coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
             cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
             cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
