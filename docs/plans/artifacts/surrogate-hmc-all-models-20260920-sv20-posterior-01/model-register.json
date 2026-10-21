@@ -1,0 +1,1129 @@
+{
+  "all_models_validated": false,
+  "coverage_complete": false,
+  "families": [
+    {
+      "family": "linear Gaussian",
+      "id": "M01",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "resolved posterior comparisons",
+        "heuristic comparisons",
+        "remaining linear scopes"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "PARTIAL_LINEAR_IMPLEMENTATION",
+      "variant_status": {
+        "LG1": "REFERENCE_CONTROL_TUNING_SAMPLING_AVAILABLE",
+        "LG2": "REFERENCE_CONSUMER_CALIBRATION_AVAILABLE",
+        "LG20": "SCOPE_UNRESOLVED",
+        "LG4": "SCOPE_UNRESOLVED",
+        "diagonal": "SCOPE_UNRESOLVED",
+        "triangular-all-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "LG1",
+        "LG2",
+        "LG4",
+        "LG20",
+        "diagonal",
+        "triangular-all-parameter"
+      ]
+    },
+    {
+      "executed_stage": "P3-SV20-posterior",
+      "family": "actual stochastic volatility",
+      "id": "M02",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "actual-SV DCTR consumer",
+        "scope-specific tuning",
+        "retained inference",
+        "heuristic comparisons",
+        "remaining SV variants"
+      ],
+      "role": "model_inference",
+      "scope_results": {
+        "comparisons": {
+          "B/R": "NOT_RUN",
+          "C/D": "NOT_RUN",
+          "C/R": "NOT_RUN",
+          "D/R": "NOT_RUN"
+        },
+        "posterior_reference": {
+          "allocator": {
+            "current": 2898176,
+            "peak": 848696064
+          },
+          "checks": {
+            "domain_mass": true,
+            "full_prior_latent_refinement": true,
+            "function_refinement": true
+          },
+          "cpu_worker_seconds": 134.685692,
+          "forecast": {
+            "batch_counts": [
+              699,
+              521,
+              521
+            ],
+            "factor": 3.0,
+            "measurements": [
+              {
+                "cpu_worker_seconds": 0.026257000000001085,
+                "wall_seconds": 0.028338333999272436
+              },
+              {
+                "cpu_worker_seconds": 0.08234899999999978,
+                "wall_seconds": 0.08878885599551722
+              },
+              {
+                "cpu_worker_seconds": 0.12823100000000043,
+                "wall_seconds": 0.13891969301039353
+              }
+            ],
+            "remaining": {
+              "cpu_worker_seconds": 444.1974690000026,
+              "wall_seconds": 475.3339484927128
+            }
+          },
+          "function_names": [
+            "standardized_gamma",
+            "standardized_beta",
+            "centered_gamma_second_moment",
+            "centered_beta_second_moment",
+            "standardized_cross_moment",
+            "gamma_cdf_q10",
+            "gamma_cdf_q50",
+            "gamma_cdf_q90",
+            "beta_cdf_q10",
+            "beta_cdf_q50",
+            "beta_cdf_q90",
+            "predictive_abs_y21_le_0.25",
+            "predictive_abs_y21_le_1.0"
+          ],
+          "grids": [
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-0-density.tfbin",
+                  "sha256": "dc37d24708e08a9edc5e11527be416f6dc01c5fa4d0a82e54e6d3c5e34abaa26"
+                },
+                "knots": {
+                  "path": "grid-0-knots.tfbin",
+                  "sha256": "7e93c8d2a011cf770a1d5eb662184d075b70f9b6cce9fc2dc05cdcb9e0beb581"
+                },
+                "likelihood": {
+                  "path": "grid-0-likelihood.tfbin",
+                  "sha256": "cc7b31ca91f261dc4a6534abcdfdc97a2fe7e0c63b13389885665afe81a9362f"
+                },
+                "predictive": {
+                  "path": "grid-0-predictive.tfbin",
+                  "sha256": "59ea1a392db215d0e1cbc083e48d2c766e8c5e61f56296ed5d30f224047fbf41"
+                }
+              },
+              "latent_grid": [
+                512,
+                16.0
+              ],
+              "log_evidence": -21.04011256315622,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "parameter_intervals": 16,
+              "wall_seconds": 0.4939757029642351
+            },
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-1-density.tfbin",
+                  "sha256": "3cb756d7619bc61ac41432fb3c0a6a029c36a5107e87ae3430bbde2306e13e15"
+                },
+                "knots": {
+                  "path": "grid-1-knots.tfbin",
+                  "sha256": "f745c142f9c06796030a3753c26d4afd095f41ff32f7ac2951c7a47dab00cf89"
+                },
+                "likelihood": {
+                  "path": "grid-1-likelihood.tfbin",
+                  "sha256": "e9e40560823a504900220ce77e23ac00be99e3174c23cf046e326756f36e3433"
+                },
+                "predictive": {
+                  "path": "grid-1-predictive.tfbin",
+                  "sha256": "7a2ed42f5d9e428dcd46785ae13f06571000fc11acd7855d3050223d5daa92ef"
+                }
+              },
+              "latent_grid": [
+                512,
+                16.0
+              ],
+              "log_evidence": -21.038840607027232,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "parameter_intervals": 32,
+              "wall_seconds": 1.216959517041687
+            },
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-2-density.tfbin",
+                  "sha256": "dec08eab909a86f41ff873eedd170c13fbf823709fb554800c078c72b51ff673"
+                },
+                "knots": {
+                  "path": "grid-2-knots.tfbin",
+                  "sha256": "2882184ca7bfa8d552136e18712c71de136dc54f1f64bca38dbd5a2877a43433"
+                },
+                "likelihood": {
+                  "path": "grid-2-likelihood.tfbin",
+                  "sha256": "cc4cdb6b88dcaf88add15288b71ffc2c303738ecf4bf3e7ce249b4723d1dc2b5"
+                },
+                "predictive": {
+                  "path": "grid-2-predictive.tfbin",
+                  "sha256": "2857ad0d19e3afda876045b129ef49daf563a59f681e7a4b2b863995ef5c5bab"
+                }
+              },
+              "latent_grid": [
+                512,
+                16.0
+              ],
+              "log_evidence": -21.038522708630396,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "parameter_intervals": 64,
+              "wall_seconds": 4.052606995974202
+            },
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-3-density.tfbin",
+                  "sha256": "aa9d7e95b41f31c7a481616847c47dd17b033c0e9281d88c4319f17e68f5de45"
+                },
+                "knots": {
+                  "path": "grid-3-knots.tfbin",
+                  "sha256": "c942f9439afd0cfb21df4206178111f08d8eec5c30aeae9e73ac57cfea747a51"
+                },
+                "likelihood": {
+                  "path": "grid-3-likelihood.tfbin",
+                  "sha256": "e6a3909832b0bf4cdfdbdbd73be36c5f1b8f5688ff37267517e91bb48ef2e0fc"
+                },
+                "predictive": {
+                  "path": "grid-3-predictive.tfbin",
+                  "sha256": "a812107b7a8b1b40f3f45e336a53d4cb7bab7f1ec9b9863f110fbfefbeee7f84"
+                }
+              },
+              "latent_grid": [
+                512,
+                16.0
+              ],
+              "log_evidence": -21.03844323880039,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "parameter_intervals": 128,
+              "wall_seconds": 15.905407748010475
+            },
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-4-density.tfbin",
+                  "sha256": "44a6337456c60e60375750e30f1b3e8eb1dd26196f81c14cfa794c830e4b2aa7"
+                },
+                "knots": {
+                  "path": "grid-4-knots.tfbin",
+                  "sha256": "c942f9439afd0cfb21df4206178111f08d8eec5c30aeae9e73ac57cfea747a51"
+                },
+                "likelihood": {
+                  "path": "grid-4-likelihood.tfbin",
+                  "sha256": "0cef62bf043abf3c731b18553b2fcc3badc2c0700c70b985052cab3178c71ac2"
+                },
+                "predictive": {
+                  "path": "grid-4-predictive.tfbin",
+                  "sha256": "54b49549176203306f5fb1bde8d7af477c6e26abef114c80d71ccce31227c499"
+                }
+              },
+              "latent_grid": [
+                1024,
+                16.0
+              ],
+              "log_evidence": -21.03844323880039,
+              "maximum_predicted_domain_loss": 3.077538224260934e-12,
+              "parameter_intervals": 128,
+              "wall_seconds": 46.69361976097571
+            },
+            {
+              "arrays": {
+                "density": {
+                  "path": "grid-5-density.tfbin",
+                  "sha256": "d95b77d03daaca8342b68a10d3e26759b4a1f25a2f449febba08c13949cdd5d2"
+                },
+                "knots": {
+                  "path": "grid-5-knots.tfbin",
+                  "sha256": "c942f9439afd0cfb21df4206178111f08d8eec5c30aeae9e73ac57cfea747a51"
+                },
+                "likelihood": {
+                  "path": "grid-5-likelihood.tfbin",
+                  "sha256": "220968d47b1861d30fdb29ace75ecf449e6700ca12f4472aba0ffcd9998a95a0"
+                },
+                "predictive": {
+                  "path": "grid-5-predictive.tfbin",
+                  "sha256": "43fa4acff781237d58e5967bb54a8bc74a21951a186635ac00265664d196cd99"
+                }
+              },
+              "latent_grid": [
+                1280,
+                20.0
+              ],
+              "log_evidence": -21.03844323880039,
+              "maximum_predicted_domain_loss": 3.3306690738754696e-16,
+              "parameter_intervals": 128,
+              "wall_seconds": 72.86487343598856
+            }
+          ],
+          "heuristic_dominance": "NOT_RUN",
+          "margins": [
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.02,
+            0.03,
+            0.03
+          ],
+          "maximum_full_prior_likelihood_changes": [
+            1.4210854715202004e-14,
+            1.4210854715202004e-14
+          ],
+          "numerical_refinement": {
+            "allowance": [
+              0.0008116049781845738,
+              0.0002450270249079555,
+              0.0013461117165509684,
+              0.0006241353394016436,
+              0.00011911843674032238,
+              2.4974050832515804e-05,
+              7.223581841087068e-05,
+              1.626882075767e-05,
+              0.0010854447402150191,
+              0.00010207987949029107,
+              0.00018230359656223882,
+              1.1386082882869353e-05,
+              1.3791167079890698e-05
+            ],
+            "changes": [
+              [
+                0.0016261064926261764,
+                0.000494019282408765,
+                0.0026960208926820606,
+                0.0012447974091100988,
+                0.00023675690312600396,
+                5.128114499457215e-05,
+                0.00014324374467700185,
+                3.1114653868180575e-05,
+                0.002120353729494706,
+                0.00023483210583402636,
+                0.00036532818352430496,
+                2.293062334257634e-05,
+                2.7755228614978478e-05
+              ],
+              [
+                0.00040580248909227214,
+                0.0001225135124539318,
+                0.0006730558582754842,
+                0.00031206766970059974,
+                5.955921837014384e-05,
+                1.2487025416257902e-05,
+                3.611790920532432e-05,
+                8.134410378501933e-06,
+                0.0005427223701074957,
+                5.1039939745145535e-05,
+                9.115179828100839e-05,
+                5.693041441323654e-06,
+                6.895583539612282e-06
+              ],
+              [
+                0.00010140790989463834,
+                3.056469950559107e-05,
+                0.00016819962609093686,
+                7.806519504227616e-05,
+                1.4917347577265289e-05,
+                3.137144809414738e-06,
+                9.239529908833255e-06,
+                2.1828889135155904e-06,
+                0.00013604438708357536,
+                9.791913549384024e-06,
+                2.2820722278993344e-05,
+                1.420795969708788e-06,
+                1.7212289901147315e-06
+              ],
+              [
+                1.474514954580286e-17,
+                4.5936290795495216e-17,
+                0.0,
+                2.220446049250313e-16,
+                1.734723475976807e-17,
+                0.0,
+                1.1102230246251565e-16,
+                3.3306690738754696e-16,
+                1.3877787807814457e-17,
+                0.0,
+                1.1102230246251565e-16,
+                5.551115123125783e-17,
+                3.3306690738754696e-16
+              ],
+              [
+                1.3444106938820255e-17,
+                2.72405795836983e-18,
+                0.0,
+                0.0,
+                3.469446951953614e-18,
+                0.0,
+                0.0,
+                1.1102230246251565e-16,
+                1.3877787807814457e-17,
+                0.0,
+                1.1102230246251565e-16,
+                1.1102230246251565e-16,
+                0.0
+              ]
+            ],
+            "contraction": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "cuts": [
+              [
+                0.1716546838940748,
+                0.4433731298161948,
+                0.7548771774514629
+              ],
+              [
+                0.41792451123177343,
+                0.5930464966152711,
+                0.7983041990732314
+              ]
+            ],
+            "expectations": [
+              [
+                -0.0021333168916132152,
+                -0.0006470974943684092,
+                1.0035372763770485,
+                1.0016349302738532,
+                0.008658244529553435,
+                0.10006690531521989,
+                0.5001886011837908,
+                0.8999585680468403,
+                0.102799120486686,
+                0.4997043360408718,
+                0.8995206992959156,
+                0.37429688687321383,
+                0.8514663102414197
+              ],
+              [
+                -0.0005072103989870388,
+                -0.00015307821195964413,
+                1.0008412554843664,
+                1.000390132864743,
+                0.00842148762642743,
+                0.10001562417022532,
+                0.5000453574391138,
+                0.8999896827007084,
+                0.1006787667571913,
+                0.4999391681467058,
+                0.8998860274794399,
+                0.37427395624987125,
+                0.8514385550128047
+              ],
+              [
+                -0.00010140790989476671,
+                -3.056469950571232e-05,
+                1.000168199626091,
+                1.0000780651950425,
+                0.008361928408057287,
+                0.10000313714480906,
+                0.5000092395299085,
+                0.899997817111087,
+                0.1001360443870838,
+                0.49999020808645095,
+                0.8999771792777209,
+                0.37426826320842993,
+                0.8514316594292651
+              ],
+              [
+                -1.2836953722228372e-16,
+                -1.2124768420176957e-16,
+                1.0,
+                1.0000000000000002,
+                0.008347011060480022,
+                0.09999999999999964,
+                0.49999999999999967,
+                0.9000000000000005,
+                0.10000000000000023,
+                0.5000000000000003,
+                0.8999999999999999,
+                0.3742668424124602,
+                0.851429938200275
+              ],
+              [
+                -1.4311468676808659e-16,
+                -7.531139340627435e-17,
+                1.0,
+                1.0,
+                0.008347011060480004,
+                0.09999999999999964,
+                0.49999999999999956,
+                0.9000000000000001,
+                0.10000000000000021,
+                0.5000000000000003,
+                0.8999999999999998,
+                0.3742668424124603,
+                0.8514299382002753
+              ],
+              [
+                -1.2967057982926633e-16,
+                -7.258733544790452e-17,
+                1.0,
+                1.0,
+                0.008347011060480008,
+                0.09999999999999964,
+                0.49999999999999956,
+                0.9000000000000002,
+                0.10000000000000023,
+                0.5000000000000003,
+                0.8999999999999999,
+                0.37426684241246017,
+                0.8514299382002753
+              ]
+            ],
+            "means": [
+              0.45417816488751894,
+              0.5991168401957934
+            ],
+            "precision": [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            "qualified": true,
+            "scales": [
+              0.2117826098145738,
+              0.14193327853118
+            ]
+          },
+          "plan": "docs/plans/surrogate-hmc-sv20-posterior-2026-09-20.md",
+          "qualified": true,
+          "scope": "SV20-attempt1",
+          "status": "QUALIFIED_MODEL_POSTERIOR_REFERENCE",
+          "surrogate_hmc_tested": false,
+          "wall_seconds": 151.68734397599474
+        },
+        "posterior_reference_qualified": true,
+        "reference": {
+          "allocator": {
+            "current": 985600,
+            "peak": 135203072
+          },
+          "checks": {
+            "chart_prior_chain_rule": true,
+            "domain_mass": true,
+            "domain_refinement": true,
+            "independent_T1": true,
+            "independent_T2": true,
+            "mesh_refinement": true,
+            "replay": true,
+            "row_independence": true,
+            "total_score_finite_difference": true
+          },
+          "classification": "independent likelihood reference preparation",
+          "cpu_worker_seconds": 6.893967,
+          "domain_refinement": {
+            "maximum_log_likelihood_change": 7.105427357601002e-15,
+            "maximum_relative_score_change": 1.7371311616401425e-15
+          },
+          "grids": [
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-128-12-log_likelihood.tfbin",
+                  "sha256": "1ac032cd404575b11712f3693f791b25e8431ea1bcc0102e9859ee7f23fa71b3"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-128-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "86c42d8a4f332fa318e0ac1629ae81de185fa4170fd07f0039279a76508a0e11"
+                },
+                "score": {
+                  "path": "grid-128-12-score.tfbin",
+                  "sha256": "5a2d30d44b64f3fa7feed01ddd6c9347df33b61e023be44736934c37fc40e25f"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 128,
+              "maximum_predicted_domain_loss": 1.7154186815471206e-07,
+              "wall_seconds": 0.8900216660113074
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-256-12-log_likelihood.tfbin",
+                  "sha256": "6362955a451bd59359e1c4b6f12797bf9656efc6181751a55124c187202e382e"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-256-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "8b1a4414ddb52e34600cfaaaad222b43927fda0c0f36f92156c65cbeb75f0430"
+                },
+                "score": {
+                  "path": "grid-256-12-score.tfbin",
+                  "sha256": "3c84deb6ebcec68edf799e6966549341c6e518984746d2baf66e1245a350b970"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 256,
+              "maximum_predicted_domain_loss": 1.6955341219926368e-07,
+              "wall_seconds": 0.35532934102229774
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-512-12-log_likelihood.tfbin",
+                  "sha256": "2cb33058de2281c37612e9f85fedf974613f52efd9ca220b51ce36d0ab5c9315"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-512-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "759b4273412e1b4ed0046bf9321d4f40b3f01edc165bb85fb48004faf5c546d5"
+                },
+                "score": {
+                  "path": "grid-512-12-score.tfbin",
+                  "sha256": "3f4d2b4e0e542a0040fa7f6dcd5d7be372c08c6afa45a153eb6504b443d94009"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 512,
+              "maximum_predicted_domain_loss": 1.690550353039555e-07,
+              "wall_seconds": 0.3667435289826244
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-512-16-log_likelihood.tfbin",
+                  "sha256": "89aacdec0b2c4c1ca2c6983ee9e8159a9bc77a0447b352408d32b3aa73354d02"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-512-16-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "ee56c60affa1dd3c364fc518ea935a752d08fd7bdde0689e9e92c03a734fb2f1"
+                },
+                "score": {
+                  "path": "grid-512-16-score.tfbin",
+                  "sha256": "e2666892b0eef9f67e22bbf2b665a927fc52545cd7fd01b575fbddc05bcaba81"
+                }
+              },
+              "half_width": 16.0,
+              "intervals": 512,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "wall_seconds": 0.35587886499706656
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-1024-16-log_likelihood.tfbin",
+                  "sha256": "4e5fb690284afecec4df449dfa4f14a8d3c1a1f374342d2ee1f300a32200a84f"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-1024-16-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "83fa26577b4fdbac0ba3d27f06552cb2eba16868f212de10ead801f8ef4ee035"
+                },
+                "score": {
+                  "path": "grid-1024-16-score.tfbin",
+                  "sha256": "6971ef253531d61e4bff720a708b51933f1284486356d8862c6880df1926c8eb"
+                }
+              },
+              "half_width": 16.0,
+              "intervals": 1024,
+              "maximum_predicted_domain_loss": 3.077538224260934e-12,
+              "wall_seconds": 0.5301365189952776
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-1280-20-log_likelihood.tfbin",
+                  "sha256": "f7d7c0710ab8b2749e1b02ffde642bbe9ed6f9987d63b48681ac342ca5ae0185"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-1280-20-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "891997b85efa6a220cbf47fb84f43510b4943fd781c28a0afa4bd5f3adc255ec"
+                },
+                "score": {
+                  "path": "grid-1280-20-score.tfbin",
+                  "sha256": "e647730ee55ec51529a58562074c06433b09fdb1926c1f18a0ddd6fef852f6bf"
+                }
+              },
+              "half_width": 20.0,
+              "intervals": 1280,
+              "maximum_predicted_domain_loss": 2.220446049250313e-16,
+              "wall_seconds": 0.481067651999183
+            }
+          ],
+          "heuristic_dominance": "NOT_RUN",
+          "maximum_finite_difference_relative_error": 1.1162237315749047e-09,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "mesh_refinement": {
+            "maximum_log_likelihood_change": 3.552713678800501e-15,
+            "maximum_relative_score_change": 2.9779391342402494e-15
+          },
+          "next_action": "Full-prior posterior refinement and separate actual-SV DCTR consumer qualification",
+          "partitions": {
+            "calibration": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/calibration/data.json",
+              "data_sha256": "4648ab3a318df5e82ab7625684cdca0bf261df7b5a239d213f46c2c8b4763284"
+            },
+            "claim": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/claim/data.json",
+              "data_sha256": "31b0493b7bf9c5b8ffe173fa5e44a9f9d32b1c64702dfae8954cae56a54e04c4"
+            },
+            "validation": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/validation/data.json",
+              "data_sha256": "6201be3a2dd16ac60b568203211c497ea09b5b56dffdfb51c5a522cbf4fe0d2f"
+            }
+          },
+          "plan": "docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md",
+          "posterior_reference_qualified": false,
+          "probes": [
+            [
+              0.1,
+              0.1
+            ],
+            [
+              0.1,
+              0.5
+            ],
+            [
+              0.1,
+              0.9
+            ],
+            [
+              0.5,
+              0.1
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.9
+            ],
+            [
+              0.9,
+              0.1
+            ],
+            [
+              0.9,
+              0.5
+            ],
+            [
+              0.9,
+              0.9
+            ],
+            [
+              0.6,
+              0.4
+            ],
+            [
+              0.2,
+              0.8
+            ],
+            [
+              0.8,
+              0.2
+            ]
+          ],
+          "qualified": true,
+          "retained_inference": false,
+          "scope": "SV20-attempt1",
+          "short_reference": {
+            "1": {
+              "grid_difference": 2.886579864025407e-15,
+              "hermite_refinement": 2.1862067711708733e-11
+            },
+            "2": {
+              "grid_difference": 9.769962616701378e-15,
+              "hermite_refinement": 1.1546319456101628e-14
+            }
+          },
+          "status": "QUALIFIED_LIKELIHOOD_PROBES",
+          "wall_seconds": 9.327038543997332
+        },
+        "role": "model_reference_preparation",
+        "surrogate_hmc_tested": false
+      },
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "REFERENCE_PREPARATION_AVAILABLE",
+      "variant_status": {
+        "SV20": "LIKELIHOOD_REFERENCE_PREPARATION_AVAILABLE",
+        "SV40": "SCOPE_UNRESOLVED",
+        "real-data": "SCOPE_UNRESOLVED",
+        "synthetic": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "synthetic",
+        "real-data",
+        "SV20",
+        "SV40"
+      ]
+    },
+    {
+      "family": "transformed stochastic volatility",
+      "id": "M03",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "KSC-mixture": "SCOPE_UNRESOLVED",
+        "exact-transformed": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "exact-transformed",
+        "KSC-mixture"
+      ]
+    },
+    {
+      "family": "generalized stochastic volatility",
+      "id": "M04",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "native-two-state": "SCOPE_UNRESOLVED",
+        "prior-mean-projection": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "prior-mean-projection",
+        "native-two-state"
+      ]
+    },
+    {
+      "family": "predator-prey",
+      "id": "M05",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "PP20-restricted": "SCOPE_UNRESOLVED",
+        "six-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "six-parameter",
+        "PP20-restricted"
+      ]
+    },
+    {
+      "family": "Austria SIR",
+      "id": "M06",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "physical-clipped": "SCOPE_UNRESOLVED",
+        "preclip-distinct-law": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "physical-clipped",
+        "preclip-distinct-law"
+      ]
+    },
+    {
+      "family": "coupled nonlinear",
+      "id": "M07",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "coupled-state": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "coupled-state"
+      ]
+    },
+    {
+      "family": "structural",
+      "id": "M08",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "AR1-quadratic-completion": "SCOPE_UNRESOLVED",
+        "AR2": "SCOPE_UNRESOLVED",
+        "affine": "SCOPE_UNRESOLVED",
+        "nonlinear-five-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "affine",
+        "AR2",
+        "nonlinear-five-parameter",
+        "AR1-quadratic-completion"
+      ]
+    },
+    {
+      "family": "accumulation and growth",
+      "id": "M09",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "model-B": "SCOPE_UNRESOLVED",
+        "model-C": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "model-B",
+        "model-C"
+      ]
+    },
+    {
+      "family": "nonlinear score-study",
+      "id": "M10",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "concrete-score-study": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "concrete-score-study"
+      ]
+    },
+    {
+      "family": "SSL-LSTM",
+      "id": "M11",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "complexity-ladder": "SCOPE_UNRESOLVED",
+        "fixed": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "fixed",
+        "complexity-ladder"
+      ]
+    },
+    {
+      "family": "hard-bound macrofinancial",
+      "id": "M12",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "hard-bound": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "hard-bound"
+      ]
+    },
+    {
+      "family": "range-bearing",
+      "id": "M13",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "range-bearing": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "range-bearing"
+      ]
+    },
+    {
+      "family": "BGS",
+      "id": "M14",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "concrete-upstream-instance-required": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "concrete-upstream-instance-required"
+      ]
+    },
+    {
+      "family": "Gaussian mechanism controls",
+      "id": "C01",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "ANISOTROPIC_CONTROL_IMPLEMENTED",
+      "variant_status": {
+        "anisotropic": "TUNING_AND_RETAINED_COMPARISON_AVAILABLE",
+        "d100": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "anisotropic",
+        "d100"
+      ]
+    },
+    {
+      "family": "non-Gaussian mechanism controls",
+      "id": "C02",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "banana": "SCOPE_UNRESOLVED",
+        "funnel": "SCOPE_UNRESOLVED",
+        "mixture": "SCOPE_UNRESOLVED",
+        "varying-hessian": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "funnel",
+        "banana",
+        "mixture",
+        "varying-hessian"
+      ]
+    },
+    {
+      "family": "German-credit posterior",
+      "id": "C03",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "data-version-required": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "data-version-required"
+      ]
+    }
+  ],
+  "question": "Does imperfect full-DCTR surrogate HMC recover model parameter posteriors?",
+  "schema": "bayesfilter.surrogate_hmc_master.v1"
+}

@@ -62,6 +62,8 @@ def _execution(config, *, seed, policy, status, use_xla, warmup=0, preparation_e
     if config is not None:
         if not isinstance(config, HMCCandidateExecutionConfig):
             raise TypeError("execution_config must be HMCCandidateExecutionConfig")
+        if config.transition_profile is not None:
+            raise ValueError("modern profiles require explicitly prepared geometry and HMCControllerConfig; automatic HMC epsilon preparation is not a modern-method bound")
         if config.use_xla != use_xla or config.target_status_trace_policy != status:
             raise ValueError("preparation and candidate execution policies disagree")
         return replace(config, preparation_elapsed_seconds=preparation_elapsed)

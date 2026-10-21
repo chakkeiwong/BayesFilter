@@ -1,0 +1,61 @@
+.......................................F................................ [ 47%]
+........................................................................ [ 94%]
+.........                                                                [100%]
+=================================== FAILURES ===================================
+___ test_advance_subset_preserves_order_and_does_not_repeat_completed_model ____
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-6/test_advance_subset_preserves_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7d1c154b8c50>
+
+    def test_advance_subset_preserves_order_and_does_not_repeat_completed_model(tmp_path, monkeypatch):
+        evidence = tmp_path / "precision.json"
+        master.save(evidence, dict(models=[dict(model=m, status="PRECISION_PASS")
+                                          for m in master.MODELS]))
+        monkeypatch.setattr(master, "campaign_remaining",
+                            lambda path: (dict(max_attempts=10, attempts=[]), 1000.))
+        calls = []
+        def fake_run(child):
+            calls.append((child.model, child.filter_tuning))
+            master.save(child.output / child.model / "result.json", dict(
+                status="FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC" if child.filter_tuning
+                else "PASS_HMC_MECHANICS_ONLY"))
+            return 0
+        monkeypatch.setattr(master, "run", fake_run)
+        args = arguments(tmp_path, model=None, models=["ksc", "range_bearing"],
+            command="advance", precision_results=evidence, campaign_ledger=tmp_path/"ledger.json")
+>       assert master.advance(args) == 0
+               ^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_performance_repair.py:295: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/run_surrogate_hmc_performance_repair.py:1141: in advance
+    code=run(child)
+         ^^^^^^^^^^
+tests/test_surrogate_hmc_performance_repair.py:288: in fake_run
+    master.save(child.output / child.model / "result.json", dict(
+scripts/run_surrogate_hmc_performance_repair.py:44: in save
+    temporary.write_text(json.dumps(clean(value),indent=2,allow_nan=False)+"\n")
+../anaconda3/envs/tftwogpu/lib/python3.11/pathlib.py:1078: in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/pytest-of-chakwong/pytest-6/test_advance_subset_preserves_0/run/ksc/filter-tuning/ksc/result.tmp')
+mode = 'w', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-chakwong/pytest-6/test_advance_subset_preserves_0/run/ksc/filter-tuning/ksc/result.tmp'
+
+../anaconda3/envs/tftwogpu/lib/python3.11/pathlib.py:1044: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_performance_repair.py::test_advance_subset_preserves_order_and_does_not_repeat_completed_model
+1 failed, 152 passed in 0.84s

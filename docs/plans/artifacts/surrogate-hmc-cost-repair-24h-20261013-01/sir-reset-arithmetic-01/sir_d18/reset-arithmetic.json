@@ -1,0 +1,2073 @@
+{
+  "schema": "surrogate_hmc_reset_arithmetic_v1",
+  "status": "RESET_ARITHMETIC_LOCALIZED",
+  "evidence_role": "identical_input_reset_primitive_localization_only",
+  "source": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18",
+  "particles": 4032,
+  "state_dimension": 18,
+  "parameter_count": 3,
+  "batch_size": 2,
+  "source_sha256": "800cf00b28ac5020437460ea7932f07520cd3797a1f3d5a82f1bba428b688bc9",
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "cpu_only": false,
+  "jit_compile": true,
+  "stages": [
+    {
+      "observation": 1,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.507579560211525e-05,
+            "maximum_scaled": 5.356246192485605e-08,
+            "per_row_maximum_absolute": [
+              1.507579560211525e-05,
+              1.486967784103399e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.353571422524994e-08,
+              5.356246192485605e-08
+            ],
+            "relative_l2": [
+              1.7478864416456984e-08,
+              1.842473760205461e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.0052892740475272e-06,
+            "maximum_scaled": 5.936525632188605e-08,
+            "per_row_maximum_absolute": [
+              1.0052892740475272e-06,
+              9.49150461337922e-07
+            ],
+            "per_row_maximum_scaled": [
+              5.173701125903121e-08,
+              5.936525632188605e-08
+            ],
+            "relative_l2": [
+              2.4394384910291105e-08,
+              2.925605410270227e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 7.423723538568794e-06,
+            "maximum_scaled": 2.1430274479742596e-06,
+            "per_row_maximum_absolute": [
+              5.264550476002938e-06,
+              7.423723538568794e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.6081256641126167e-06,
+              2.1430274479742596e-06
+            ],
+            "relative_l2": [
+              6.558443942540932e-07,
+              8.386376522740072e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 6.4942839719250856e-06,
+            "maximum_scaled": 1.6647532433950407e-06,
+            "per_row_maximum_absolute": [
+              6.4051059140979305e-06,
+              6.4942839719250856e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.6647532433950407e-06,
+              1.290443689136587e-06
+            ],
+            "relative_l2": [
+              5.793710325844848e-07,
+              6.38392495880742e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.4715033671564015e-06,
+            "maximum_scaled": 1.1946410790476082e-07,
+            "per_row_maximum_absolute": [
+              1.4715033671564015e-06,
+              1.2109955491723667e-06
+            ],
+            "per_row_maximum_scaled": [
+              9.60689636819929e-08,
+              1.1946410790476082e-07
+            ],
+            "relative_l2": [
+              3.2969339442278284e-11,
+              2.5845006700410478e-11
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.2101858466451176e-06,
+            "maximum_scaled": 7.721683684036624e-08,
+            "per_row_maximum_absolute": [
+              1.2101858466451176e-06,
+              1.0284856486464378e-06
+            ],
+            "per_row_maximum_scaled": [
+              7.721683684036624e-08,
+              7.49727755108926e-08
+            ],
+            "relative_l2": [
+              1.0416197023132473e-09,
+              1.0068612140549248e-09
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.2617262598269008e-05,
+            "maximum_scaled": 3.772265724899545e-07,
+            "per_row_maximum_absolute": [
+              1.2617262598269008e-05,
+              8.038112071062642e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.772265724899545e-07,
+              3.323826377966264e-07
+            ],
+            "relative_l2": [
+              1.859592391941491e-08,
+              1.145597834772938e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 4.8014852644939765e-06,
+            "maximum_scaled": 2.635382025677121e-07,
+            "per_row_maximum_absolute": [
+              4.8014852644939765e-06,
+              4.727689034922378e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.635382025677121e-07,
+              2.516992006358184e-07
+            ],
+            "relative_l2": [
+              1.131143817352562e-07,
+              1.255199551544484e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 1.1377353890118513e-05,
+            "maximum_scaled": 2.9661418609550187e-06,
+            "per_row_maximum_absolute": [
+              1.1377353890118513e-05,
+              1.0381186383856544e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.721625937719165e-06,
+              2.9661418609550187e-06
+            ],
+            "relative_l2": [
+              1.4083653564153052e-06,
+              1.5911345450812622e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.940025166291548e-05,
+            "maximum_scaled": 3.4992195700130447e-06,
+            "per_row_maximum_absolute": [
+              1.940025166291548e-05,
+              1.2667115075082336e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.4992195700130447e-06,
+              2.8166143131841e-06
+            ],
+            "relative_l2": [
+              1.3154667008111612e-06,
+              1.1720303259644956e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 3.3538911788869724e-07,
+            "maximum_scaled": 3.3538911788869724e-07,
+            "per_row_maximum_absolute": [
+              1.4379959683077925e-07,
+              3.3538911788869724e-07
+            ],
+            "per_row_maximum_scaled": [
+              1.4379959683077925e-07,
+              3.3538911788869724e-07
+            ],
+            "relative_l2": [
+              8.871786821556558e-08,
+              1.3952567148502147e-07
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 5.925011753726839e-07,
+            "maximum_scaled": 5.925011753726839e-07,
+            "per_row_maximum_absolute": [
+              5.925011753726839e-07,
+              3.969794404277971e-07
+            ],
+            "per_row_maximum_scaled": [
+              5.925011753726839e-07,
+              3.969794404277971e-07
+            ],
+            "relative_l2": [
+              1.1125225643382072e-06,
+              1.011701780583519e-06
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.5636293085208308e-05,
+            "maximum_scaled": 1.4984518778135295e-07,
+            "per_row_maximum_absolute": [
+              1.5636293085208308e-05,
+              1.5589655561143445e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.4984518778135295e-07,
+              1.3441407968279498e-07
+            ],
+            "relative_l2": [
+              1.84019914592864e-08,
+              1.8369499825553235e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.5442991561087638e-06,
+            "maximum_scaled": 2.441004410340752e-07,
+            "per_row_maximum_absolute": [
+              1.5442991561087638e-06,
+              1.4812343529513328e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.441004410340752e-07,
+              1.4066162891726772e-07
+            ],
+            "relative_l2": [
+              2.634842566709819e-08,
+              2.656816496630815e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 3.607403937166964e-05,
+          "maximum_scaled": 3.314306018832737e-06,
+          "per_row_maximum_absolute": [
+            3.5710138547528913e-05,
+            3.607403937166964e-05
+          ],
+          "per_row_maximum_scaled": [
+            1.8147510533179973e-06,
+            3.314306018832737e-06
+          ],
+          "relative_l2": [
+            2.6057332502047578e-08,
+            2.7543512343816776e-08
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 3.26982056932934e-05,
+          "maximum_scaled": 4.430170958278411e-06,
+          "per_row_maximum_absolute": [
+            2.9530756359363863e-05,
+            3.26982056932934e-05
+          ],
+          "per_row_maximum_scaled": [
+            3.2890779350363734e-06,
+            4.430170958278411e-06
+          ],
+          "relative_l2": [
+            2.12031936315353e-07,
+            2.050761791525907e-07
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "5d114cb19d598f3984bd674fa0d51a1265d60eb1cf8d9aab981e1cf545c5e3c6",
+        "child_tangent": "68f18d7c165960b8f9935cf70e6e6638415ead14125c4316a9f941739ab3b143",
+        "log_weights": "4761506d6cd341e4f6736f6a7469c5c3cb65b3c4f5bce685648da4c66720744e",
+        "log_weight_tangent": "c0268217546008c2291effbd43f0f1321bbd3a7c504190faf1258aff965be86b"
+      },
+      "relative_covariance_margin": [
+        0.20904354751110077,
+        0.20794473588466644
+      ],
+      "maximum_particle_tangent": 30.999868392944336,
+      "maximum_transport_tangent": 30.999868392944336
+    },
+    {
+      "observation": 2,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.4884465997511143e-05,
+            "maximum_scaled": 5.941246188821969e-08,
+            "per_row_maximum_absolute": [
+              1.4884465997511143e-05,
+              1.3187904244205129e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.2272977645797523e-08,
+              5.941246188821969e-08
+            ],
+            "relative_l2": [
+              2.1321802669262603e-08,
+              1.836634107023131e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 3.2922433632620596e-06,
+            "maximum_scaled": 2.8906616966750676e-07,
+            "per_row_maximum_absolute": [
+              3.289912996251587e-06,
+              3.2922433632620596e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.5168588398287522e-07,
+              2.8906616966750676e-07
+            ],
+            "relative_l2": [
+              2.331700245614322e-08,
+              3.2628843188730124e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 3.19841790705766e-05,
+            "maximum_scaled": 2.5978057551142035e-06,
+            "per_row_maximum_absolute": [
+              2.299758637214211e-05,
+              3.19841790705766e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.135153318691699e-06,
+              2.5978057551142035e-06
+            ],
+            "relative_l2": [
+              1.0013737811097415e-06,
+              1.0442920737911002e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 9.181910268551974e-05,
+            "maximum_scaled": 4.1172929898802835e-06,
+            "per_row_maximum_absolute": [
+              9.181910268551974e-05,
+              4.2313856155828944e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.8053102468783564e-06,
+              4.1172929898802835e-06
+            ],
+            "relative_l2": [
+              7.438321749612599e-07,
+              5.560838954634276e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 9.409401809534756e-05,
+            "maximum_scaled": 3.920792826002587e-06,
+            "per_row_maximum_absolute": [
+              9.409401809534756e-05,
+              8.472382833701886e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.290913350780641e-06,
+              3.920792826002587e-06
+            ],
+            "relative_l2": [
+              5.964599346629618e-09,
+              6.150428098266683e-09
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022391841821502112,
+            "maximum_scaled": 0.0032925180919747277,
+            "per_row_maximum_absolute": [
+              0.013013247723961285,
+              0.022391841821502112
+            ],
+            "per_row_maximum_scaled": [
+              0.0015059030036326249,
+              0.0032925180919747277
+            ],
+            "relative_l2": [
+              3.6618030850223023e-06,
+              4.399668805102581e-06
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.7923022085142293e-05,
+            "maximum_scaled": 3.3542568416873685e-07,
+            "per_row_maximum_absolute": [
+              1.7923022085142293e-05,
+              1.6257876438885432e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.530391781814123e-07,
+              3.3542568416873685e-07
+            ],
+            "relative_l2": [
+              2.3214893163652674e-08,
+              1.9915221055323683e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.5861458209087687e-05,
+            "maximum_scaled": 5.396459946682697e-07,
+            "per_row_maximum_absolute": [
+              1.4848179247906046e-05,
+              1.5861458209087687e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.396459946682697e-07,
+              5.311347410774658e-07
+            ],
+            "relative_l2": [
+              1.0933415657054542e-07,
+              1.1344944259163164e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 3.935502285479231e-05,
+            "maximum_scaled": 2.463561865466849e-06,
+            "per_row_maximum_absolute": [
+              3.935502285479231e-05,
+              3.053627650650981e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.463561865466849e-06,
+              2.3469234270622937e-06
+            ],
+            "relative_l2": [
+              1.374246452871253e-06,
+              1.1137189303379984e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 8.812530175816846e-05,
+            "maximum_scaled": 3.6752449845162497e-06,
+            "per_row_maximum_absolute": [
+              8.812530175816846e-05,
+              8.123463275211407e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.4021926689622344e-06,
+              3.6752449845162497e-06
+            ],
+            "relative_l2": [
+              1.3070212633340402e-06,
+              1.0546001885458323e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 7.396615505916859e-07,
+            "maximum_scaled": 7.396615505916859e-07,
+            "per_row_maximum_absolute": [
+              6.80831756638689e-07,
+              7.396615505916859e-07
+            ],
+            "per_row_maximum_scaled": [
+              6.80831756638689e-07,
+              7.396615505916859e-07
+            ],
+            "relative_l2": [
+              3.679243961316881e-07,
+              4.0607862152113964e-07
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.7488127397047304e-06,
+            "maximum_scaled": 1.7488127397047304e-06,
+            "per_row_maximum_absolute": [
+              1.7488127397047304e-06,
+              1.396058918023968e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.7488127397047304e-06,
+              1.396058918023968e-06
+            ],
+            "relative_l2": [
+              9.172006501214471e-07,
+              6.343719548117617e-07
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.6093155124963232e-05,
+            "maximum_scaled": 9.371671147307234e-08,
+            "per_row_maximum_absolute": [
+              1.6093155124963232e-05,
+              1.589787740385873e-05
+            ],
+            "per_row_maximum_scaled": [
+              9.371671147307234e-08,
+              9.049819309440043e-08
+            ],
+            "relative_l2": [
+              1.9220463118245017e-08,
+              1.9284106006168603e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.045011195965344e-05,
+            "maximum_scaled": 4.657809753894071e-06,
+            "per_row_maximum_absolute": [
+              6.045011195965344e-05,
+              5.3108018050807004e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.5379956942269317e-06,
+              4.657809753894071e-06
+            ],
+            "relative_l2": [
+              2.9942468257411646e-08,
+              2.9360354434777016e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.00011214229266442999,
+          "maximum_scaled": 4.165509353679254e-06,
+          "per_row_maximum_absolute": [
+            0.00011214229266442999,
+            9.519240342470425e-05
+          ],
+          "per_row_maximum_scaled": [
+            2.826742555085922e-06,
+            4.165509353679254e-06
+          ],
+          "relative_l2": [
+            3.475628352102026e-08,
+            3.857009746238742e-08
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.022002106943148192,
+          "maximum_scaled": 0.002411958912063028,
+          "per_row_maximum_absolute": [
+            0.012666540084865119,
+            0.022002106943148192
+          ],
+          "per_row_maximum_scaled": [
+            0.002411958912063028,
+            0.0022546166161987458
+          ],
+          "relative_l2": [
+            3.937609949022948e-06,
+            4.861091563290988e-06
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "45bfdb79f115e3376b6bf08403da4f4367c9de36d1b4dc78d8c22852f7983268",
+        "child_tangent": "a41378072c804b1d0ab7f55b07104822a2339aeccf092b8c3f52fbef43c3c8d7",
+        "log_weights": "c5c1cc6f1848e62682e3aa95d55651e31cd7e254a0f2c3d97bf3712e2331f4d1",
+        "log_weight_tangent": "9a6c34d02be28ef20261f02f4851ecc66fe2d240a268e6ed80655187128a0a02"
+      },
+      "relative_covariance_margin": [
+        0.059462498873472214,
+        0.05896119028329849
+      ],
+      "maximum_particle_tangent": 103.0578842163086,
+      "maximum_transport_tangent": 848.8133544921875
+    },
+    {
+      "observation": 3,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.4373478904872172e-05,
+            "maximum_scaled": 3.4408894476467276e-08,
+            "per_row_maximum_absolute": [
+              1.4373478904872172e-05,
+              1.4076318279876432e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.379114046909232e-08,
+              3.4408894476467276e-08
+            ],
+            "relative_l2": [
+              2.1739532121344356e-08,
+              2.0467805107526024e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 8.390346124542702e-06,
+            "maximum_scaled": 1.1764074923092949e-06,
+            "per_row_maximum_absolute": [
+              6.921554614791603e-06,
+              8.390346124542702e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.1764074923092949e-06,
+              1.1123494889631047e-06
+            ],
+            "relative_l2": [
+              2.9609612392446326e-08,
+              4.239133161213706e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00010546553708934425,
+            "maximum_scaled": 3.4428539388827685e-06,
+            "per_row_maximum_absolute": [
+              0.00010546553708934425,
+              5.287944770060449e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.132478037376485e-06,
+              3.4428539388827685e-06
+            ],
+            "relative_l2": [
+              1.1790461649146122e-06,
+              7.096648690712037e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.00012026583613078401,
+            "maximum_scaled": 4.333340199133612e-05,
+            "per_row_maximum_absolute": [
+              0.00010265717014590336,
+              0.00012026583613078401
+            ],
+            "per_row_maximum_scaled": [
+              4.333340199133612e-05,
+              1.9286359869141734e-05
+            ],
+            "relative_l2": [
+              6.375814074853833e-07,
+              6.630962909344973e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0010332075538599383,
+            "maximum_scaled": 1.3166181711897337e-05,
+            "per_row_maximum_absolute": [
+              0.0008393048886432553,
+              0.0010332075538599383
+            ],
+            "per_row_maximum_scaled": [
+              1.3166181711897337e-05,
+              1.2509380893143904e-05
+            ],
+            "relative_l2": [
+              2.488789554401113e-08,
+              2.986203700391538e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 2.5529558927501057,
+            "maximum_scaled": 0.006213751089391915,
+            "per_row_maximum_absolute": [
+              2.5529558927501057,
+              2.4643269274311024
+            ],
+            "per_row_maximum_scaled": [
+              0.00535656193989098,
+              0.006213751089391915
+            ],
+            "relative_l2": [
+              9.364106799574897e-05,
+              9.51894925182395e-05
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 2.49166336629969e-05,
+            "maximum_scaled": 2.4357340589142226e-07,
+            "per_row_maximum_absolute": [
+              1.609136188562843e-05,
+              2.49166336629969e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.4357340589142226e-07,
+              2.3578272539863615e-07
+            ],
+            "relative_l2": [
+              2.8603302697643247e-08,
+              3.38910408610624e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 3.207675985095193e-05,
+            "maximum_scaled": 2.270401818549317e-06,
+            "per_row_maximum_absolute": [
+              3.207675985095193e-05,
+              2.9092743204728322e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.7095831036786616e-06,
+              2.270401818549317e-06
+            ],
+            "relative_l2": [
+              1.0543241453433021e-07,
+              9.982340019471678e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.0001315708751405964,
+            "maximum_scaled": 4.473357089676778e-06,
+            "per_row_maximum_absolute": [
+              9.555267696725878e-05,
+              0.0001315708751405964
+            ],
+            "per_row_maximum_scaled": [
+              4.243688053149701e-06,
+              4.473357089676778e-06
+            ],
+            "relative_l2": [
+              1.4262787867324217e-06,
+              1.4436258725685534e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.00031972910971944657,
+            "maximum_scaled": 1.7802461725132503e-05,
+            "per_row_maximum_absolute": [
+              0.00031972910971944657,
+              0.00029096752913915225
+            ],
+            "per_row_maximum_scaled": [
+              1.606899749129198e-05,
+              1.7802461725132503e-05
+            ],
+            "relative_l2": [
+              1.3265244776809976e-06,
+              1.3610703516881015e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 2.01985308445618e-06,
+            "maximum_scaled": 2.01985308445618e-06,
+            "per_row_maximum_absolute": [
+              2.01985308445618e-06,
+              8.45200066046381e-07
+            ],
+            "per_row_maximum_scaled": [
+              2.01985308445618e-06,
+              8.45200066046381e-07
+            ],
+            "relative_l2": [
+              1.039924895287583e-06,
+              4.2254848287974174e-07
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.1772265260834303e-05,
+            "maximum_scaled": 8.070973560092565e-06,
+            "per_row_maximum_absolute": [
+              1.1772265260834303e-05,
+              1.0116449250974213e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.629541683169931e-06,
+              8.070973560092565e-06
+            ],
+            "relative_l2": [
+              1.100699670848159e-06,
+              8.850008261316588e-07
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.695586638561508e-05,
+            "maximum_scaled": 1.1486902845014726e-07,
+            "per_row_maximum_absolute": [
+              1.695586638561508e-05,
+              1.652493625670104e-05
+            ],
+            "per_row_maximum_scaled": [
+              8.670994834185289e-08,
+              1.1486902845014726e-07
+            ],
+            "relative_l2": [
+              2.0757841274799023e-08,
+              2.071911980679279e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0006732555611961288,
+            "maximum_scaled": 1.4954073014296496e-05,
+            "per_row_maximum_absolute": [
+              0.0006732555611961288,
+              0.00047825303227000404
+            ],
+            "per_row_maximum_scaled": [
+              6.415575981577604e-06,
+              1.4954073014296496e-05
+            ],
+            "relative_l2": [
+              4.504338290701359e-08,
+              4.0357112181317955e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0008974663982144193,
+          "maximum_scaled": 1.40128045553003e-05,
+          "per_row_maximum_absolute": [
+            0.0007471441740563023,
+            0.0008974663982144193
+          ],
+          "per_row_maximum_scaled": [
+            1.40128045553003e-05,
+            1.2805371701499489e-05
+          ],
+          "relative_l2": [
+            6.599663148603554e-08,
+            5.8696061207194504e-08
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 2.2678994778916604,
+          "maximum_scaled": 0.016308205893295735,
+          "per_row_maximum_absolute": [
+            2.2678994778916604,
+            2.1750595925477683
+          ],
+          "per_row_maximum_scaled": [
+            0.006103811159761108,
+            0.016308205893295735
+          ],
+          "relative_l2": [
+            9.18039562433702e-05,
+            9.807462249378289e-05
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "c761037d2991fe2e484ee2aca65c2844975a268a5488c3f33dc5138a80e68152",
+        "child_tangent": "0ba3de48afe3277b7328aa4fac22fc9ea110b045153e317cec9710f998efa408",
+        "log_weights": "01dc439f010097f2413f6deeb552818d5fa45609382fc4a912818405225dd157",
+        "log_weight_tangent": "4fe5b8ed1b646bc0d1498f5095fad955322ba0f43de3cdf82168ff5e430a96e5"
+      },
+      "relative_covariance_margin": [
+        0.023378942161798477,
+        0.023129833862185478
+      ],
+      "maximum_particle_tangent": 1405.150146484375,
+      "maximum_transport_tangent": 12662.78125
+    },
+    {
+      "observation": 4,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.526138373719732e-05,
+            "maximum_scaled": 7.40476340934053e-08,
+            "per_row_maximum_absolute": [
+              1.526138373719732e-05,
+              1.3773955743090482e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.879158001258161e-08,
+              7.40476340934053e-08
+            ],
+            "relative_l2": [
+              2.6288738590594954e-08,
+              2.6578257681656945e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.2955154517158007e-05,
+            "maximum_scaled": 3.13184368394559e-06,
+            "per_row_maximum_absolute": [
+              1.2955154517158007e-05,
+              9.01524305163548e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.13184368394559e-06,
+              8.539377460888763e-07
+            ],
+            "relative_l2": [
+              3.980427700708579e-08,
+              3.8303436092950155e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00017696383447685093,
+            "maximum_scaled": 2.9616816819011405e-06,
+            "per_row_maximum_absolute": [
+              0.00012966813578429992,
+              0.00017696383447685093
+            ],
+            "per_row_maximum_scaled": [
+              2.9616816819011405e-06,
+              2.792565722500724e-06
+            ],
+            "relative_l2": [
+              8.266434024145599e-07,
+              9.378956644431238e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0004177484913725493,
+            "maximum_scaled": 0.00010611000823264207,
+            "per_row_maximum_absolute": [
+              0.00029947674374852795,
+              0.0004177484913725493
+            ],
+            "per_row_maximum_scaled": [
+              4.8563463328044065e-05,
+              0.00010611000823264207
+            ],
+            "relative_l2": [
+              6.506334576885468e-07,
+              7.034788322891953e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00074826941261108,
+            "maximum_scaled": 9.713186707038544e-06,
+            "per_row_maximum_absolute": [
+              0.00033723721372780346,
+              0.00074826941261108
+            ],
+            "per_row_maximum_scaled": [
+              4.568738067766577e-06,
+              9.713186707038544e-06
+            ],
+            "relative_l2": [
+              2.3141346064064893e-08,
+              2.5895296390590834e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.55855496507138,
+            "maximum_scaled": 0.014430114710862085,
+            "per_row_maximum_absolute": [
+              6.55855496507138,
+              4.475612478934636
+            ],
+            "per_row_maximum_scaled": [
+              0.004998992337927759,
+              0.014430114710862085
+            ],
+            "relative_l2": [
+              3.554955077262288e-05,
+              6.283182697783812e-05
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 2.9647161056800542e-05,
+            "maximum_scaled": 2.6475536251314114e-07,
+            "per_row_maximum_absolute": [
+              1.3025980081238231e-05,
+              2.9647161056800542e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.6475536251314114e-07,
+              2.227166326647992e-07
+            ],
+            "relative_l2": [
+              2.828752745347636e-08,
+              4.281342384355826e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 9.263129436476447e-05,
+            "maximum_scaled": 4.9568239521846635e-06,
+            "per_row_maximum_absolute": [
+              9.263129436476447e-05,
+              5.3799341515059496e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.150073171192527e-06,
+              4.9568239521846635e-06
+            ],
+            "relative_l2": [
+              2.1543802102986775e-07,
+              1.0838080379531522e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00029352100587232144,
+            "maximum_scaled": 3.6070293225651207e-06,
+            "per_row_maximum_absolute": [
+              0.00029352100587232144,
+              0.0001685438651790605
+            ],
+            "per_row_maximum_scaled": [
+              3.2798999376471016e-06,
+              3.6070293225651207e-06
+            ],
+            "relative_l2": [
+              1.745063257813027e-06,
+              1.3539761075946588e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0013844439389458785,
+            "maximum_scaled": 5.208847629578628e-05,
+            "per_row_maximum_absolute": [
+              0.0013844439389458785,
+              0.0007775390711231012
+            ],
+            "per_row_maximum_scaled": [
+              2.4094759742152436e-05,
+              5.208847629578628e-05
+            ],
+            "relative_l2": [
+              1.361776028353456e-06,
+              1.5055519776871296e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 3.488850534472121e-06,
+            "maximum_scaled": 3.4274502871843275e-06,
+            "per_row_maximum_absolute": [
+              1.0101206232571158e-06,
+              3.488850534472121e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.0101206232571158e-06,
+              3.4274502871843275e-06
+            ],
+            "relative_l2": [
+              7.621355146658085e-07,
+              1.6369559574638352e-06
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.950761361323998e-05,
+            "maximum_scaled": 1.1927002541378684e-05,
+            "per_row_maximum_absolute": [
+              6.950761361323998e-05,
+              5.452758778101696e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.1927002541378684e-05,
+              9.840425177141488e-06
+            ],
+            "relative_l2": [
+              1.2002693074911551e-06,
+              2.2748969431337457e-06
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.707751636104149e-05,
+            "maximum_scaled": 9.055395763901083e-08,
+            "per_row_maximum_absolute": [
+              1.707751636104149e-05,
+              1.6663660971971694e-05
+            ],
+            "per_row_maximum_scaled": [
+              7.872508424208915e-08,
+              9.055395763901083e-08
+            ],
+            "relative_l2": [
+              2.3143673762757993e-08,
+              2.3195439114282123e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022404570976505056,
+            "maximum_scaled": 5.200784747216858e-05,
+            "per_row_maximum_absolute": [
+              0.022404570976505056,
+              0.003605672885896638
+            ],
+            "per_row_maximum_scaled": [
+              5.200784747216858e-05,
+              1.7904078106312227e-05
+            ],
+            "relative_l2": [
+              6.938144117456723e-08,
+              4.5840013679159103e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0005111348307309527,
+          "maximum_scaled": 9.344995478991374e-06,
+          "per_row_maximum_absolute": [
+            0.00041587915069385417,
+            0.0005111348307309527
+          ],
+          "per_row_maximum_scaled": [
+            6.303367070858058e-06,
+            9.344995478991374e-06
+          ],
+          "relative_l2": [
+            8.510919411988184e-08,
+            1.0255022826558413e-07
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 7.431772244803142,
+          "maximum_scaled": 0.02712749770080336,
+          "per_row_maximum_absolute": [
+            7.431772244803142,
+            2.954509116214467
+          ],
+          "per_row_maximum_scaled": [
+            0.02712749770080336,
+            0.014130107483481424
+          ],
+          "relative_l2": [
+            3.498308277261487e-05,
+            5.800129018323401e-05
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "31dd94894410e2c587df18c7c7198b52d69a18b744efbe4eaa48627f03907ab5",
+        "child_tangent": "80d23df4accbf33d09e4c94f4a318988a23cd0ed5b2dcead4b82c2d5cefcf201",
+        "log_weights": "f9c6f4a3996a4581ea4f7ae486d79123017546a9fae0203112369ea76672a6b6",
+        "log_weight_tangent": "ad0debf0908a687f3305fc37b514fa83f3b52b52ef19bbbf03809dbb93d775c6"
+      },
+      "relative_covariance_margin": [
+        0.011631175875663757,
+        0.011494320817291737
+      ],
+      "maximum_particle_tangent": 18958.232421875,
+      "maximum_transport_tangent": 200080.03125
+    },
+    {
+      "observation": 5,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.349199118294564e-05,
+            "maximum_scaled": 4.818704127078068e-08,
+            "per_row_maximum_absolute": [
+              1.2770344937962363e-05,
+              1.349199118294564e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.530548648649838e-08,
+              4.818704127078068e-08
+            ],
+            "relative_l2": [
+              1.779994367320903e-08,
+              3.1452544083244304e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 3.8998655668365245e-05,
+            "maximum_scaled": 5.564145503456075e-06,
+            "per_row_maximum_absolute": [
+              3.8998655668365245e-05,
+              3.309490546143934e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.406884775759587e-06,
+              5.564145503456075e-06
+            ],
+            "relative_l2": [
+              6.260972859616885e-08,
+              6.2536697661855e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.0001891009247145803,
+            "maximum_scaled": 4.457565959863163e-06,
+            "per_row_maximum_absolute": [
+              0.00011008565179793095,
+              0.0001891009247145803
+            ],
+            "per_row_maximum_scaled": [
+              4.457565959863163e-06,
+              4.283966488438651e-06
+            ],
+            "relative_l2": [
+              8.104654256488243e-07,
+              9.31100487209752e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0007952506673234438,
+            "maximum_scaled": 9.36199014844874e-05,
+            "per_row_maximum_absolute": [
+              0.0007952506673234438,
+              0.0005844054884960315
+            ],
+            "per_row_maximum_scaled": [
+              9.36199014844874e-05,
+              5.6946337219746085e-05
+            ],
+            "relative_l2": [
+              9.262099450398904e-07,
+              6.631588693828764e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0015296285226895634,
+            "maximum_scaled": 1.1080959898484128e-05,
+            "per_row_maximum_absolute": [
+              0.0005069074978791832,
+              0.0015296285226895634
+            ],
+            "per_row_maximum_scaled": [
+              6.235800132983895e-06,
+              1.1080959898484128e-05
+            ],
+            "relative_l2": [
+              3.2931911825142646e-08,
+              5.4849494871756326e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 19.152543520147447,
+            "maximum_scaled": 0.040349681804144666,
+            "per_row_maximum_absolute": [
+              6.17628804101696,
+              19.152543520147447
+            ],
+            "per_row_maximum_scaled": [
+              0.040349681804144666,
+              0.015794782923581014
+            ],
+            "relative_l2": [
+              4.435529773974823e-05,
+              0.00012075482124763319
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 3.82453675342731e-05,
+            "maximum_scaled": 2.68368343741332e-07,
+            "per_row_maximum_absolute": [
+              2.844371488208708e-05,
+              3.82453675342731e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.68368343741332e-07,
+              2.5579906912691646e-07
+            ],
+            "relative_l2": [
+              5.339669424687709e-08,
+              6.389660444567425e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0002106333530491611,
+            "maximum_scaled": 2.9729943259891374e-05,
+            "per_row_maximum_absolute": [
+              0.0002106333530491611,
+              0.00015967611244604996
+            ],
+            "per_row_maximum_scaled": [
+              2.9729943259891374e-05,
+              1.0812970557608595e-05
+            ],
+            "relative_l2": [
+              3.489302140005583e-07,
+              2.296784787890155e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00027789472932227,
+            "maximum_scaled": 4.560011722199273e-06,
+            "per_row_maximum_absolute": [
+              0.00027789472932227,
+              0.00019567547781207395
+            ],
+            "per_row_maximum_scaled": [
+              4.560011722199273e-06,
+              3.451697322836598e-06
+            ],
+            "relative_l2": [
+              1.3950631540706594e-06,
+              1.0708993900201936e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0015296384739258428,
+            "maximum_scaled": 0.000126902731732633,
+            "per_row_maximum_absolute": [
+              0.0015296384739258428,
+              0.00148290748643376
+            ],
+            "per_row_maximum_scaled": [
+              0.000126902731732633,
+              6.957263213806773e-05
+            ],
+            "relative_l2": [
+              1.497818340588414e-06,
+              1.4400427661920098e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 2.2763100953060444e-06,
+            "maximum_scaled": 2.2420322871152547e-06,
+            "per_row_maximum_absolute": [
+              8.216081146539267e-07,
+              2.2763100953060444e-06
+            ],
+            "per_row_maximum_scaled": [
+              8.216081146539267e-07,
+              2.2420322871152547e-06
+            ],
+            "relative_l2": [
+              5.850775818292599e-07,
+              1.1616406387516565e-06
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.917770152625735e-05,
+            "maximum_scaled": 2.7216724778678092e-05,
+            "per_row_maximum_absolute": [
+              3.695768830525026e-05,
+              6.917770152625735e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.649420314339985e-05,
+              2.7216724778678092e-05
+            ],
+            "relative_l2": [
+              8.955365821540074e-07,
+              9.106940809424637e-07
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.7396552607351623e-05,
+            "maximum_scaled": 8.701528185224731e-08,
+            "per_row_maximum_absolute": [
+              1.7121695861987973e-05,
+              1.7396552607351623e-05
+            ],
+            "per_row_maximum_scaled": [
+              8.701528185224731e-08,
+              6.956353657772481e-08
+            ],
+            "relative_l2": [
+              2.686703223275868e-08,
+              2.6885363328392628e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.011147256154799834,
+            "maximum_scaled": 4.786344909034082e-05,
+            "per_row_maximum_absolute": [
+              0.011147256154799834,
+              0.00740436915657483
+            ],
+            "per_row_maximum_scaled": [
+              4.786344909034082e-05,
+              3.931367540076133e-05
+            ],
+            "relative_l2": [
+              5.723043858030375e-08,
+              4.555660727897703e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0020841315098891755,
+          "maximum_scaled": 1.0541342103528761e-05,
+          "per_row_maximum_absolute": [
+            0.0004298466313912286,
+            0.0020841315098891755
+          ],
+          "per_row_maximum_scaled": [
+            3.354175881649427e-06,
+            1.0541342103528761e-05
+          ],
+          "relative_l2": [
+            1.1569782043572386e-07,
+            9.604227728723562e-08
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 26.62325813336065,
+          "maximum_scaled": 0.05745321474182674,
+          "per_row_maximum_absolute": [
+            5.251334731972747,
+            26.62325813336065
+          ],
+          "per_row_maximum_scaled": [
+            0.028792976954911266,
+            0.05745321474182674
+          ],
+          "relative_l2": [
+            4.912897019651555e-05,
+            0.00013047509707100148
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "de1f09ae1c9d6066af58672223f152d016afc3fe6d28a7c66c0ce17ad92bba84",
+        "child_tangent": "546be407c1b85a9f222c71c22c2785af0c7f2762f7459f926282d48a51434c57",
+        "log_weights": "d8b9caaf167c5a2dda932a75c23264c05d37b8708839d94b74765c9fadf906a0",
+        "log_weight_tangent": "7251e5f52442997d5a7c132fdd71179784e09ed9b1b3892f6006bdbb33483c9b"
+      },
+      "relative_covariance_margin": [
+        0.00916486419737339,
+        0.008961647748947144
+      ],
+      "maximum_particle_tangent": 224060.296875,
+      "maximum_transport_tangent": 224060.296875
+    },
+    {
+      "observation": 6,
+      "local": {
+        "weighted_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 1.4121209062523121e-05,
+            "maximum_scaled": 5.448208403690102e-08,
+            "per_row_maximum_absolute": [
+              1.4121209062523121e-05,
+              1.3640909514833766e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.448208403690102e-08,
+              4.731361048796171e-08
+            ],
+            "relative_l2": [
+              2.0864321480649498e-08,
+              2.8081612609001083e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 4.971676787590695e-05,
+            "maximum_scaled": 1.823256659042917e-06,
+            "per_row_maximum_absolute": [
+              4.971676787590695e-05,
+              1.98923078187363e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.823256659042917e-06,
+              1.0725160753528768e-06
+            ],
+            "relative_l2": [
+              5.8148056363735254e-08,
+              4.0020203485883634e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00024918493096492966,
+            "maximum_scaled": 5.755537031748581e-06,
+            "per_row_maximum_absolute": [
+              0.00016158673223287678,
+              0.00024918493096492966
+            ],
+            "per_row_maximum_scaled": [
+              5.755537031748581e-06,
+              2.5221032548711472e-06
+            ],
+            "relative_l2": [
+              1.0318466797712413e-06,
+              1.1112846827482272e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0011127781078812404,
+            "maximum_scaled": 0.0001669459401525143,
+            "per_row_maximum_absolute": [
+              0.0011127781078812404,
+              0.0007010201869661614
+            ],
+            "per_row_maximum_scaled": [
+              8.492454686646516e-05,
+              0.0001669459401525143
+            ],
+            "relative_l2": [
+              6.320841061064554e-07,
+              7.970591938565184e-07
+            ]
+          }
+        },
+        "transport": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0004958893366335815,
+            "maximum_scaled": 3.8333455348295294e-06,
+            "per_row_maximum_absolute": [
+              0.0003658862779047922,
+              0.0004958893366335815
+            ],
+            "per_row_maximum_scaled": [
+              2.778433883366673e-06,
+              3.8333455348295294e-06
+            ],
+            "relative_l2": [
+              2.0499528309927145e-08,
+              3.2058463494164375e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 7.900935181489331,
+            "maximum_scaled": 0.033163024128512575,
+            "per_row_maximum_absolute": [
+              7.756231179606402,
+              7.900935181489331
+            ],
+            "per_row_maximum_scaled": [
+              0.027858563053456464,
+              0.033163024128512575
+            ],
+            "relative_l2": [
+              3.8563133823170335e-05,
+              5.9982297627473424e-05
+            ]
+          }
+        },
+        "transported_moments": {
+          "mean": {
+            "finite": true,
+            "maximum_absolute": 3.852163033002398e-05,
+            "maximum_scaled": 1.67612218552579e-07,
+            "per_row_maximum_absolute": [
+              2.7891189233741898e-05,
+              3.852163033002398e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.67612218552579e-07,
+              1.604218883107681e-07
+            ],
+            "relative_l2": [
+              5.4284392455985514e-08,
+              5.430238558599606e-08
+            ]
+          },
+          "mean_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0003926564767198215,
+            "maximum_scaled": 2.3352721324698678e-05,
+            "per_row_maximum_absolute": [
+              0.0003926564767198215,
+              0.00019210293129390266
+            ],
+            "per_row_maximum_scaled": [
+              1.8083766882301598e-05,
+              2.3352721324698678e-05
+            ],
+            "relative_l2": [
+              5.499847220144563e-07,
+              2.709037111598599e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 0.00033749721691833656,
+            "maximum_scaled": 4.072050537295402e-06,
+            "per_row_maximum_absolute": [
+              0.0002119500393433782,
+              0.00033749721691833656
+            ],
+            "per_row_maximum_scaled": [
+              4.072050537295402e-06,
+              3.570882960836734e-06
+            ],
+            "relative_l2": [
+              1.3702027710206437e-06,
+              1.604230055829793e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.002637665228348851,
+            "maximum_scaled": 0.0005417595433314659,
+            "per_row_maximum_absolute": [
+              0.002637665228348851,
+              0.0023671755743635003
+            ],
+            "per_row_maximum_scaled": [
+              0.0005417595433314659,
+              8.607766742052547e-05
+            ],
+            "relative_l2": [
+              1.6359160132802676e-06,
+              1.572268824999285e-06
+            ]
+          }
+        },
+        "recolour": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.3971617092156663e-06,
+            "maximum_scaled": 1.3971617092156663e-06,
+            "per_row_maximum_absolute": [
+              1.2508739498651167e-06,
+              1.3971617092156663e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.2508739498651167e-06,
+              1.3971617092156663e-06
+            ],
+            "relative_l2": [
+              5.79566917670727e-07,
+              5.323758457384317e-07
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0001308179645036489,
+            "maximum_scaled": 4.2468772879833416e-05,
+            "per_row_maximum_absolute": [
+              0.0001308179645036489,
+              4.832330696480369e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.2468772879833416e-05,
+              2.1893056486033124e-05
+            ],
+            "relative_l2": [
+              7.722113380317887e-07,
+              6.721316252124695e-07
+            ]
+          }
+        },
+        "restore": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 1.7977264008095517e-05,
+            "maximum_scaled": 7.264451008008589e-08,
+            "per_row_maximum_absolute": [
+              1.7977264008095517e-05,
+              1.7102170147609286e-05
+            ],
+            "per_row_maximum_scaled": [
+              7.264451008008589e-08,
+              6.587005039086991e-08
+            ],
+            "relative_l2": [
+              2.577359725532986e-08,
+              2.5846227492514743e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.008138646313454956,
+            "maximum_scaled": 6.27275538742029e-05,
+            "per_row_maximum_absolute": [
+              0.008138646313454956,
+              0.007307072650291957
+            ],
+            "per_row_maximum_scaled": [
+              6.27275538742029e-05,
+              3.7495556689379604e-05
+            ],
+            "relative_l2": [
+              5.50732774941325e-08,
+              5.430316021331831e-08
+            ]
+          }
+        }
+      },
+      "healthy": true,
+      "full_reset": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0004942478735756595,
+          "maximum_scaled": 3.4830590246522986e-06,
+          "per_row_maximum_absolute": [
+            0.0004942478735756595,
+            0.0004607831266980611
+          ],
+          "per_row_maximum_scaled": [
+            3.4830590246522986e-06,
+            3.070886399600561e-06
+          ],
+          "relative_l2": [
+            6.356191283108207e-08,
+            8.052754101497986e-08
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 11.044073866243707,
+          "maximum_scaled": 0.036726766462045334,
+          "per_row_maximum_absolute": [
+            11.044073866243707,
+            6.05752657391713
+          ],
+          "per_row_maximum_scaled": [
+            0.036726766462045334,
+            0.02828474324083885
+          ],
+          "relative_l2": [
+            4.004245234308259e-05,
+            5.7049290952782736e-05
+          ]
+        }
+      },
+      "staged_vs_fused": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        }
+      },
+      "input_sha256": {
+        "child": "784a3d8c77a09ddc595e3502894683fc2e87fadc6bf2136b003da398f11834bd",
+        "child_tangent": "efc90d03d4266695f8563bce6fbe3751c8abd3d74726485fc68a11cdac0f40e7",
+        "log_weights": "23794d76457dc0361a6785d62044fb2956414d3ad7c523bc9fce908177b5a15c",
+        "log_weight_tangent": "852b1a12550810fba5679c41a78e0db0c7e3139939ddf7b97285c1227b48d7c1"
+      },
+      "relative_covariance_margin": [
+        0.012445908971130848,
+        0.012255615554749966
+      ],
+      "maximum_particle_tangent": 162726.640625,
+      "maximum_transport_tangent": 183254.59375
+    }
+  ],
+  "posterior_complete": false,
+  "wall_seconds": 39.09697773098014,
+  "trace_counts": {
+    "float32": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "float64": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  }
+}

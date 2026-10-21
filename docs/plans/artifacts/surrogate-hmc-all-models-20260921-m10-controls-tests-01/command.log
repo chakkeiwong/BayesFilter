@@ -1,0 +1,129 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /home/chakwong/anaconda3/envs/tftwogpu/bin/python
+cachedir: .pytest_cache
+rootdir: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 16 items
+
+tests/test_surrogate_hmc_nonlinear_consumer.py::test_model_law_and_all_analytical_callback_derivatives PASSED [  6%]
+tests/test_surrogate_hmc_nonlinear_consumer.py::test_prior_failure_codes_and_typed_shared_engine_wiring PASSED [ 12%]
+tests/test_surrogate_hmc_nonlinear_consumer.py::test_local_endpoint_never_turns_prior_tails_into_support_rejection PASSED [ 18%]
+tests/test_surrogate_hmc_nonlinear_consumer.py::test_incomplete_canonical_controls_rejected PASSED [ 25%]
+tests/test_surrogate_hmc_nonlinear_consumer.py::test_partition_roles_are_preserved_and_claim_data_cannot_select_controls PASSED [ 31%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_retry_charges_standalone_master_and_test_costs_once PASSED [ 37%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_scientific_failure_is_not_an_infrastructure_retry PASSED [ 43%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_reusing_preparation_preserves_dependency_execution PASSED [ 50%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_master_selects_cpu_stage_without_posterior_promotion FAILED [ 56%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_consumer_accounting_combines_standalone_and_mixed_master_once PASSED [ 62%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_consumer_reuse_rejects_missing_check_and_source_drift PASSED [ 68%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_master_reuses_mechanics_without_sampling PASSED [ 75%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_posterior_budget_counts_mixed_children_once_and_tests_only_in_family PASSED [ 81%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_posterior_reuse_checks_precision_source_data_and_grids PASSED [ 87%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_master_reuses_posterior_without_hmc_authority PASSED [ 93%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_qualified_history_checks_numerical_source_and_data PASSED [100%]
+
+=================================== FAILURES ===================================
+________ test_m10_master_selects_cpu_stage_without_posterior_promotion _________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-120/test_m10_master_selects_cpu_st0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x771a636d7b90>
+capsys = <_pytest.capture.CaptureFixture object at 0x771a636d5c10>
+
+    def test_m10_master_selects_cpu_stage_without_posterior_promotion(tmp_path, monkeypatch, capsys):
+        monkeypatch.setattr(program, 'm10_posterior_state', lambda root: dict(qualified=None))
+        monkeypatch.setattr(program, 'm10_reference_state', lambda root: dict(
+            wall_seconds=300., cpu_worker_seconds=300., qualified=None))
+>       assert program.main(['--stage', 'P3-M10-reference', '--scope', 'M10',
+                             '--output', str(tmp_path/'unused'), '--dry-run']) == 0
+
+tests/test_surrogate_hmc_nonlinear_master.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:927: in main
+    m10_mechanics_state = m10_consumer_state(ROOT) if include_m10 else {}
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+root = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917')
+
+    def m10_consumer_state(root, *, for_requalification=False):
+        """Account for whole master children once and reuse only checked mechanics."""
+        root = Path(root)
+        script = "qualify_surrogate_hmc_nonlinear_consumer.py"
+        family = dict(gpu_seconds=0., cpu_worker_seconds=0.)
+        stage = dict(family)
+        reports = []
+        for path in root.glob("docs/plans/artifacts/surrogate-hmc-all-models-*/accounting.json"):
+            payload = json.loads(path.read_text())
+            jobs = payload.get("jobs", [])
+            charge = payload.get("charged_this_run", payload.get("charged", {}))
+            if "-m10-" in path.parent.name:
+                for key in family:
+                    family[key] += float(charge[key])
+            else:
+                for job in jobs:
+                    if any("surrogate_hmc_nonlinear" in str(arg) for arg in job.get("command", [])):
+                        for key in family:
+                            family[key] += float(job.get(key, 0.))
+            if "-m10-consumer-" in path.parent.name and "-tests-" not in path.parent.name and not jobs:
+                manifest = json.loads((path.parent/"run-manifest.json").read_text())
+                if any(Path(arg).name == script for arg in manifest.get("command", [])):
+                    reports.append(path.parent/"report.json")
+                    for key in stage:
+                        stage[key] += float(charge[key])
+            for job in jobs:
+                command = job.get("command", [])
+                if any(Path(arg).name == script for arg in command):
+                    reports.append(Path(command[command.index("--output")+1])/"report.json")
+                    for key in stage:
+                        stage[key] += float(job[key])
+        if not all(math.isfinite(v) and v >= 0 for v in (*family.values(), *stage.values())):
+            raise ValueError("invalid M10 consumer accounting")
+        qualified = None
+        superseded = []
+        for path in sorted(set(reports)):
+            if not path.exists():
+                continue
+            report = json.loads(path.read_text())
+            if report.get("status") == "QUALIFICATION_FAILED":
+                raise ValueError("M10 mechanics failure requires a prospective repair plan")
+            if report.get("status") != "QUALIFIED_CONSUMER_MECHANICS":
+                continue
+            if (report.get("qualified") is not True or set(report.get("checks", {})) != M10_CONSUMER_CHECKS
+                    or any(v is not True for v in report["checks"].values())):
+                raise ValueError("incomplete M10 mechanics checks")
+            manifest = json.loads((path.parent/"run-manifest.json").read_text())
+            # Bind the numerical implementation, independently of later orchestration edits.
+            required = {"bayesfilter/testing/surrogate_hmc_nonlinear_consumer.py",
+                        "bayesfilter/inference/neural_force_hmc.py"}
+            sources = manifest["source_hashes"]
+            if not required <= sources.keys():
+                raise ValueError("missing M10 mechanics source provenance")
+            if any(name.startswith("bayesfilter/") and file_hash(root/name) != digest
+                   for name, digest in sources.items()):
+                superseded.append(str(path.resolve()))
+                continue
+            if file_hash(Path(manifest["data_file"])) != manifest["data_sha256"]:
+                raise ValueError("M10 consumer data changed")
+            if file_hash(Path(manifest["parent_reference"])/"run-manifest.json") != manifest["parent_manifest_sha256"]:
+                raise ValueError("M10 consumer reference binding changed")
+            qualified = dict(report=str(path.resolve()), report_sha256=file_hash(path),
+                role="consumer_mechanics", posterior_reference_qualified=False, authorizes_new_inference=False)
+        if superseded and qualified is None and not for_requalification:
+>           raise ValueError("M10 numerical consumer source changed; requalification required")
+E           ValueError: M10 numerical consumer source changed; requalification required
+
+bayesfilter/inference/surrogate_hmc_program.py:615: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_nonlinear_master.py::test_m10_master_selects_cpu_stage_without_posterior_promotion
+=================== 1 failed, 15 passed, 2 warnings in 5.81s ===================

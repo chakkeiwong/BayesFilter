@@ -243,7 +243,8 @@ class ProgressObserver:
         evidence = ()
         partial = ()
         if checkpoint is not None:
-            if checkpoint.get("schema") != "bayesfilter.hmc_numerical_tuning_checkpoint.v1":
+            if checkpoint.get("schema") not in {"bayesfilter.hmc_numerical_tuning_checkpoint.v1",
+                                                "bayesfilter.hmc_numerical_tuning_checkpoint.v2"}:
                 raise ProgressEvidenceError("unknown tuning checkpoint schema")
             body = {k: v for k, v in checkpoint.items() if k != "content_hash"}
             encoded = json.dumps(body, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -271,13 +272,53 @@ class ProgressObserver:
                 posterior.append((str(directory.relative_to(self.root)), self.bundle_cache[directory][1]))
             except (OSError, ValueError, KeyError, TypeError) as exc:
                 raise ProgressEvidenceError(f"invalid committed posterior progress: {directory}: {exc}") from exc
+        closeout = self._read(self.root / "closeout_progress.json")
+        completions = set()
+        if closeout is not None:
+            if closeout.get("schema") != "bayesfilter.hmc_closeout_progress.v1":
+                raise ProgressEvidenceError("unknown closeout progress schema")
+            try:
+                for phase, identity in closeout["completions"]:
+                    if phase not in CLOSEOUT_PHASES or not isinstance(identity, str) or not identity:
+                        raise ValueError("invalid completion identity")
+                    completions.add((phase, identity))
+                if ("closeout_started", "search") not in completions:
+                    raise ValueError("closeout has no tuning-return boundary")
+            except (KeyError, ValueError, TypeError) as exc:
+                raise ProgressEvidenceError("malformed closeout progress") from exc
         signature = (tuple(("preparation", *phase) for phase in sorted(phases))
                      + tuple(("evidence", h) for h in evidence)
                      + tuple(("partial", h) for h in partial)
-                     + tuple(("posterior", *p) for p in posterior))
+                     + tuple(("posterior", *p) for p in posterior)
+                     + tuple(("closeout", *p) for p in sorted(completions)))
         return {"signature": signature,
                 "preparation_completions": len(phases), "evidence_count": len(evidence),
-                "partial_chunks": len(partial), "posterior_chunks": len(posterior)}
+                "partial_chunks": len(partial), "posterior_chunks": len(posterior),
+                "closeout_completions": len(completions)}
+
+
+CLOSEOUT_PHASES = {"closeout_started", "member_export_complete", "evidence_replay_complete",
+                   "member_reload_complete", "checkpoint_reload_complete", "accounting_complete"}
+
+
+class CloseoutProgress:
+    """Atomic completion identities; timing/duplicate callbacks buy no allowance."""
+
+    def __init__(self, root):
+        self.path = Path(root) / "closeout_progress.json"
+        self.completions = set()
+
+    def __call__(self, phase, identity):
+        if phase not in CLOSEOUT_PHASES or not isinstance(identity, str) or not identity:
+            raise ValueError("invalid closeout completion")
+        if not self.completions and (phase, identity) != ("closeout_started", "search"):
+            return  # Evidence analysis during tuning is covered by its checkpoint.
+        completion = (phase, identity)
+        if completion not in self.completions:
+            from .storage import write_json
+            self.completions.add(completion)
+            write_json(self.path, {"schema": "bayesfilter.hmc_closeout_progress.v1",
+                                  "completions": sorted(self.completions)})
 
 
 def numerical_progress_snapshot(root):

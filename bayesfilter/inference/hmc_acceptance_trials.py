@@ -6,6 +6,8 @@ This module does not create a public tuning entry point or grant artifact author
 """
 from __future__ import annotations
 
+from .hmc_transition_spec import candidate_gradient_work
+
 import time
 from collections.abc import Mapping
 from typing import Any
@@ -29,6 +31,16 @@ def validate_execution_protocol(search, execution):
     declared = None if search is None else search.replicated_acceptance_policy
     if replicated != (declared is not None) or (replicated and declared != policy):
         raise ValueError("search and execution must declare the same replicated acceptance policy")
+    profile = getattr(execution, "transition_profile", None)
+    if replicated and profile is not None:
+        from .hmc_acceptance_protocol import replicated_evidence_preflight
+        report = replicated_evidence_preflight(policy,
+            evidence_rungs=search.evidence_rungs, candidate_cap=search.max_candidates,
+            leapfrog_steps=tuple(l for l, eps in search.epsilon_by_l for _ in eps),
+            max_gradient_work=search.max_gradient_work, pilot_enabled=search.pilot_enabled,
+            transition_profile=profile)
+        if not report["first_cohort_fundable"]:
+            raise ValueError("modern transition primary cohort and fresh verification cannot be funded")
 
 
 def work_seed(runtime, work):
@@ -65,11 +77,11 @@ def initialize_seed_registry(runtime, result):
     runtime._trial_seed_registry = {}
     if isinstance(result, Mapping):
         works = {w["work_item_id"]: HMCWorkItem.from_payload(w) for w in result["work_items"]}
-        steps = {c["candidate_id"]: c["leapfrog_steps"] for c in result["candidates"]}
+        costs = {c["candidate_id"]: candidate_gradient_work(c) for c in result["candidates"]}
         events = result["accounting_events"]
     else:
         works = {w.work_item_id: w for w in result.work_items}
-        steps = {c.candidate_id: c.leapfrog_steps for c in result.candidates}
+        costs = {c.candidate_id: candidate_gradient_work(c) for c in result.candidates}
         events = result.accounting_events
     # These inputs are fixed during this validation. Rebuild the local maps on
     # every call so a later replay cannot reuse trust in changed evidence.
@@ -102,7 +114,7 @@ def initialize_seed_registry(runtime, result):
                 transitions = count * runtime.config.acceptance_policy.chain_count
                 if (type(event.get("transitions")) is not int
                         or event["transitions"] != transitions
-                        or event.get("gradient_work") != transitions * (steps[work.candidate_id]+1)):
+                        or event.get("gradient_work") != transitions * costs[work.candidate_id]):
                     raise ValueError("attempted trial cost differs from frozen chunk extent")
                 attempted.add((work.work_item_id, ordinal, within, tuple(event["seed"])))
                 _register_chunk_seed(runtime, work, event["seed"], event["trial_ordinal"], event["trial_chunk_index"])
@@ -172,7 +184,7 @@ def work_cost(runtime, work, candidate, *, remaining=True):
     if count < 0:
         raise ValueError("partial work exceeds the replicated allocation")
     transitions = count * runtime.config.acceptance_policy.chain_count
-    return {"transitions": transitions, "gradient_work": transitions * (candidate.leapfrog_steps+1),
+    return {"transitions": transitions, "gradient_work": transitions * candidate_gradient_work(candidate),
             "cost_basis": "complete independent trials including every discarded prefix",
             "charge_mode": "chunk", "leapfrog_steps": candidate.leapfrog_steps}
 

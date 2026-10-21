@@ -1,0 +1,2338 @@
+{
+  "active_phase": null,
+  "attempts": [
+    {
+      "attempt": 2,
+      "directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-public-tuning-02",
+      "execution": "COMPLETED",
+      "result": {
+        "confirmation_data_used": false,
+        "consumer_sha256": "7f0afe6cd12423578b1119b76b22fa7d2e4eb5756bce6e16a82102d59e81620b",
+        "continuation_veto": false,
+        "controls": {
+          "coordinate_cap": 16000.0,
+          "coordinate_cap_power": 8,
+          "correction_lm_damping": 1e-06,
+          "correction_lm_scale_floor": 1e-09,
+          "correction_steps": 2,
+          "correction_strength": 0.2,
+          "correction_trust_radius": 100.0,
+          "pairwise_rms_cap": 2000.0,
+          "pairwise_steps": 2,
+          "pairwise_strength": 0.02,
+          "reset_balance_steps": 8,
+          "reset_epsilon": 2.0,
+          "reset_policy": "contract_e",
+          "reset_ridge": 1e-08,
+          "reset_sinkhorn_steps": 8,
+          "substeps": 10
+        },
+        "data_seed": 1704,
+        "data_sha256": "c4d460a239da426b5ec761a1758215532ee29b602e8e03c3f5dbdd0dda6dec78",
+        "device": "gpu",
+        "energy_repair_probe": {
+          "energy_error_max": 1000.0,
+          "passed": true,
+          "probe_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/energy-step-probe-03/report.json",
+          "probe_sha256": "46a5727ffb2e5ac1da8907fec2af44e879cf6b48bfe3847bbf4e5672a70d9494",
+          "receipt_sha256": "d04ef80431b163d111a89ca8eec4620ef65e5eaf7e80e901d66c1cb0b518fd0a",
+          "role": "discarded health screen only; no convergence or posterior claim",
+          "step_cap": 0.474576987756098
+        },
+        "exact_score_admission": false,
+        "gpu_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "inference_launched": true,
+        "initialization_repair": {
+          "center": [
+            0.1142719217478099,
+            -0.16352644352858037
+          ],
+          "covariance": [
+            [
+              0.11242473649687747,
+              -0.014595633358299836
+            ],
+            [
+              -0.014595633358299836,
+              0.0725648587447519
+            ]
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-initialization-repair-2026-09-27.md",
+          "posterior_qualification": false,
+          "retained_draws_used": 0,
+          "rwm_report_sha256": "dec45e052c2d13266eeefb11251a4986b5bf2ba4c14e9a88333e0149191357c9",
+          "source": "discarded RWM metric warmup only",
+          "warmup_sha256": "20c15a9cd3da13d8fa045ecddce2319fd801da43277ed4fbeb2c1c67942a74fe"
+        },
+        "memory_policy": {
+          "all_physical_devices_memory_growth": true,
+          "configured_before_logical_device_initialization": true,
+          "full_device_preallocation_disabled": true,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "device_details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "memory_growth": true
+            },
+            {
+              "device": "/physical_device:GPU:1",
+              "device_details": {
+                "compute_capability": [
+                  12,
+                  0
+                ],
+                "device_name": "NVIDIA GeForce RTX 5080"
+              },
+              "memory_growth": true
+            }
+          ],
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "metric_protection": {
+          "healthy_max_change": 0.0,
+          "justification": "C=.9 E+.1 P0 >= .1 P0; zero additive jitter; epsilon floor is backup",
+          "passed": true,
+          "rank_one_eigenvalues": [
+            0.048045301391820144,
+            0.4804530139182014
+          ]
+        },
+        "mixing_repair": {
+          "adaptation_acceptance_target": 0.7,
+          "attempt": 2,
+          "endpoint_changed": false,
+          "force_changed": false,
+          "hypothesis_order": "first uses the screened mixture; second keeps that mixture and caps the fixed base step after the archived energy veto",
+          "max_step_size": 0.474576987756098,
+          "nomination_energy_error_max": 1000.0,
+          "nomination_overall_acceptance_band": [
+            0.5,
+            0.85
+          ],
+          "nomination_per_chain_band": [
+            0.05,
+            1.0
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+          "posterior_qualified": false,
+          "rationale": "constant independent step mixture retains small escape moves alongside larger exploration moves; both laws passed two discarded M13 health probes",
+          "role": "nomination hypothesis only; fresh readiness, verification, ESS and posterior criteria unchanged",
+          "second_attempt_trigger": "reviewed energy-veto diagnosis and completed fresh-binding repair probe; one full attempt remains",
+          "step_multipliers": [
+            0.125,
+            1.0
+          ],
+          "step_probabilities": [
+            0.5,
+            0.5
+          ],
+          "step_repair_factor": 2.0,
+          "verification_step_repair_rounds": 2
+        },
+        "multiplier": 0.001,
+        "next_action": "Existing master: refresh the phase plan with the terminal cause; no retained launch.",
+        "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+        "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+        "posterior_qualified": false,
+        "qualified": false,
+        "ranking_supported": false,
+        "runner_binding": {
+          "affine_log_jacobian_convention": "constant_omitted",
+          "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+          "artifact_authority": false,
+          "backend": "tensorflow_probability",
+          "binding_hash": "d46683cf0f042dcba99da8798405f749b7c7928143346372b01d61d28b19fbac",
+          "coordinate_scope": "raw",
+          "dtype": "float64",
+          "endpoint_target_coordinate_system": "raw",
+          "endpoint_target_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:fp64-endpoint",
+          "endpoint_target_includes_chart_log_jacobian": false,
+          "force_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:canonical-fp32-force",
+          "force_semantics": "deterministic_position_only_proposal_field",
+          "required_diagnostic_fields": [
+            "finite_sample_count",
+            "nonfinite_sample_count",
+            "log_accept_ratio_finite_count",
+            "log_accept_ratio_nonfinite_count",
+            "maximum_absolute_delta_h",
+            "target_log_prob_finite_count",
+            "target_log_prob_nonfinite_count",
+            "divergence_count",
+            "force_fallback_count"
+          ],
+          "required_metadata_fields": [
+            "force_identity",
+            "force_semantics",
+            "target_identity",
+            "target_coordinate_system",
+            "target_includes_chart_log_jacobian",
+            "affine_log_jacobian_convention",
+            "coordinate_route",
+            "target_scope",
+            "chain_execution_mode"
+          ],
+          "requires_native_affine_mass": true,
+          "runner_identity": "bayesfilter.testing.surrogate_hmc_m13_step_mixture.verified_native_tensorflow_step_mixture",
+          "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+          "source_dependency_closure": {
+            "files": [
+              {
+                "path": "bayesfilter/inference/neural_force_hmc.py",
+                "sha256": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+                "sha256": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+                "sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                "sha256": "2958593e966823c245e116f57d53f9d455e0b9ea67a60d75cbbd3bf0da8dddf7"
+              },
+              {
+                "path": "bayesfilter/inference/hmc.py",
+                "sha256": "8750c0ee3f8bed10aec8fd85b508087093a16ac4830e753259b30d840a69727a"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning.py",
+                "sha256": "fbf6411288a36fc79ccc840b3f315260827a847a492beab5e729789279ae54c5"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_coordinates.py",
+                "sha256": "59965bf5e1b8f5d0e00ced7ad69ca00b8cbc3147216e17f4749e5c2c208dca3f"
+              },
+              {
+                "path": "bayesfilter/inference/tuning_contract.py",
+                "sha256": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+              },
+              {
+                "path": "bayesfilter/inference/posterior_adapter.py",
+                "sha256": "9bd0e5d834f7a51ac9778dbbdb9c63c1b1ea435dff65bbf409a636220e28bd7e"
+              },
+              {
+                "path": "bayesfilter/inference/__init__.py",
+                "sha256": "ca0cbee95446550988a044173e76edbd4faf4ad56467f3236a0574118a918f20"
+              },
+              {
+                "path": "bayesfilter/__init__.py",
+                "sha256": "b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85"
+              },
+              {
+                "path": "bayesfilter/testing/surrogate_hmc_m13_step_mixture.py",
+                "sha256": "9ba5d0ef5d6a6fb343c144d577789a7e6f41f836703ad076a3241c978439509d"
+              }
+            ],
+            "fixed_step_mixture": {
+              "base_binding_hash": "deecc506636f924d35c592b8c90ed3f9e38165ca49b1ea14715bb36a61af1e3d",
+              "choices": "independent_per_chain_per_transition_stateless",
+              "endpoint_changed": false,
+              "execution_lane": "verified_native_tensorflow_only",
+              "force_changed": false,
+              "multipliers": [
+                0.125,
+                1.0
+              ],
+              "probabilities": [
+                0.5,
+                0.5
+              ],
+              "schema": "bayesfilter.m13_fixed_step_mixture.v1"
+            },
+            "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+          },
+          "supported_chain_execution_modes": [
+            "tf_function"
+          ],
+          "supported_target_status_trace_policies": [
+            "none"
+          ],
+          "supports_arbitrary_fixed_leapfrog_count": true,
+          "supports_arbitrary_fixed_step_size": true,
+          "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+          "tensor_kernel_factory_available": true,
+          "xla_capable": true
+        },
+        "selection_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json",
+        "selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+        "sequential_recovery": true,
+        "source_compatibility": {
+          "changed_dependencies": [
+            "bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "bayesfilter/inference/hmc_tensorflow_verified.py"
+          ],
+          "changed_dependency": "bayesfilter/inference/hmc_tensorflow_verified.py",
+          "current_sha256": "46687b1a00bce5c5c515bbc73c0b59dd8a3831748bf5d077b194917c04754f4c",
+          "decisions_recomputed": true,
+          "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_verified.py",
+          "native_nomination_compatibility": {
+            "control_execution_unchanged": true,
+            "current_sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956",
+            "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "original_sha256": "8eaa6ab82acdb615d4459f438d345653a1387d4557c61ee6bdebe1818c0e56dd",
+            "reason": "nomination guards and summaries are unreachable from fixed control probes"
+          },
+          "original_evidence_preserved": true,
+          "original_selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "original_sha256": "c64b76994a1fe572129ddb370c08b131c1d6344a79f4639c2ad93dc5845b2ec0",
+          "posterior_qualified": false,
+          "reason": "control caller already ANDs the identical force-fallback predicate; reviewed nomination-only edits are unreachable from its fixed kernel",
+          "selected_controls_unchanged": true
+        },
+        "status": "M13_PUBLIC_TUNING_BUDGET_EXHAUSTED",
+        "target_manifest": {
+          "alias_limit_role": "numerical_validity_not_parameter_support",
+          "alias_policy": {
+            "aliases_each_side": 4,
+            "maximum_conditional_sigma": 3.141592653589793,
+            "omitted_mass_upper_bound": 2.2571768119076845e-19,
+            "tail_mass_tolerance": 1e-14
+          },
+          "chunk_policy": {
+            "col_blocks": 2,
+            "col_chunk_size": 2048,
+            "num_particles": 4096,
+            "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "row_blocks": 2,
+            "row_chunk_size": 2048
+          },
+          "control_status": "diagnostic_warm_start_not_scope_tuned",
+          "design_partition": 9,
+          "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+          "dtype": "float32",
+          "fixture": {
+            "A": [
+              [
+                1.0,
+                0.0,
+                0.1,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "P0": [
+              [
+                0.04,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.04,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.01,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.01
+              ]
+            ],
+            "Q": [
+              [
+                0.0015,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0015,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0008,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0008
+              ]
+            ],
+            "R": [
+              [
+                0.0144,
+                0.0
+              ],
+              [
+                0.0,
+                0.0016
+              ]
+            ],
+            "backend": "tensorflow_tensorflow_probability",
+            "fixture_generation_seed": 1704,
+            "horizon": 20,
+            "initial_distribution": "x_0 ~ Normal(m0, P0)",
+            "m0": [
+              1.2,
+              0.7,
+              0.18,
+              -0.06
+            ],
+            "model_checksum": "d7ffac6570279076ba756dbf41d12f222c84001ea9799c4aef223e4f8853192b",
+            "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+            "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+            "reference_status": "UKF is approximate for this nonlinear fixture.",
+            "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+          },
+          "horizon": 20,
+          "innovation_dimension": 4,
+          "input_sha256": {
+            "initial_covariances": "e1b2f42f9534eb4b3cbbcba20d6ce609e23ac0a2ff6b71ccd8bac00be440444b",
+            "initial_states": "a17d8cde223cdcd434c627e0e7de5c81166c4f397d430c26a182dd61fa13a7a0",
+            "noises": "9ee39bdb00e3ee31c265b6506eee313074d099445f7a89b717e222ab9362a273",
+            "observations": "5b6d09af81ff35618f10880dbcf987889266f8280cdfc02d838e984bca132c44",
+            "reset_design": "e1144573f3a3048334e2c02ba8ab20ae33462d9e4a17e0d931f9323f6aec90af"
+          },
+          "jit_compile": true,
+          "model_id": "M13",
+          "observation_dimension": 2,
+          "observation_law": "wrapped_correlated_gaussian",
+          "parameter_dimension": 2,
+          "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+          "particle_count": 4096,
+          "prior": null,
+          "quantity": "finite_canonical_log_likelihood_only",
+          "reset_contract_id": "contract_e_chol_v1",
+          "route": "canonical_batch_fused_value_score",
+          "score_engine": "analytical_recursive_all_parameter_dependencies",
+          "seeds": {
+            "20": [
+              965417124,
+              20
+            ],
+            "22": [
+              965417124,
+              22
+            ]
+          },
+          "settings": {
+            "coordinate_cap": 16000.0,
+            "coordinate_cap_power": 8,
+            "correction_lm_damping": 1e-06,
+            "correction_lm_scale_floor": 1e-09,
+            "correction_steps": 2,
+            "correction_strength": 0.2,
+            "correction_trust_radius": 100.0,
+            "pairwise_rms_cap": 2000.0,
+            "pairwise_steps": 2,
+            "pairwise_strength": 0.02,
+            "reset_balance_steps": 8,
+            "reset_epsilon": 2.0,
+            "reset_policy": "contract_e",
+            "reset_ridge": 1e-08,
+            "reset_sinkhorn_steps": 8,
+            "substeps": 10
+          },
+          "source_sha256": {
+            "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+            "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+            "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+            "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+            "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+            "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+            "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+            "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+            "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+            "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+            "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+            "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+            "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+            "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+            "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+            "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+            "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+            "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+            "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+            "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+          },
+          "state_dimension": 4,
+          "tf32": true,
+          "transition_before_observation": true
+        },
+        "tensorflow": "2.20.0-dev0+selfbuilt",
+        "tuning": {
+          "adaptation_force_fallback_count": 8,
+          "checks": {
+            "fresh_rhat": false,
+            "nomination_passed": true,
+            "sequential_health": true,
+            "verification_all_chains_moved": true,
+            "verification_endpoint_valid": true,
+            "verification_energy_valid": true,
+            "verification_finite": true,
+            "verification_no_divergences": true,
+            "verification_no_force_fallback": true,
+            "warmup_all_chains_moved": true,
+            "warmup_endpoint_valid": true,
+            "warmup_energy_valid": true,
+            "warmup_finite": true,
+            "warmup_no_divergences": true,
+            "warmup_no_force_fallback": true,
+            "warmup_readiness": true
+          },
+          "covariance": [
+            [
+              0.0973912153031943,
+              -0.010875044869704531
+            ],
+            [
+              -0.010875044869704531,
+              0.06986348780889506
+            ]
+          ],
+          "draws_per_chain": {
+            "verification": 2250,
+            "warmup": 9000
+          },
+          "fresh_force_fallback_counts": {
+            "verification": 0,
+            "warmup": 0
+          },
+          "leapfrog_steps": 1,
+          "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-public-tuning-02/tuning/manifest.json",
+          "manifest_sha256": "77a631bf227c081c1c5e7c8188fa9e5e9b162a1f8ecae50ede75f46785984869",
+          "nomination_force_fallback_count": 0,
+          "passed": false,
+          "rhat": {
+            "bulk": [
+              1.0448821386442864,
+              1.017008440035793
+            ],
+            "folded": [
+              1.005797075806921,
+              1.0094130593689215
+            ],
+            "maximum": [
+              1.0448821386442864,
+              1.017008440035793
+            ]
+          },
+          "sequential_status": "BUDGET_EXHAUSTED",
+          "step_size": 0.40096758280116385,
+          "wall_seconds": 84761.146484892,
+          "warmup_ready": true
+        },
+        "tuning_config": {
+          "check_every_results": 1000,
+          "chunk_results": 250,
+          "energy_error_max": 1000.0,
+          "fresh_seed": [
+            20260929,
+            3202
+          ],
+          "initial_chain_positions": [
+            [
+              -0.22102605989967553,
+              -0.38583434670768396
+            ],
+            [
+              -0.22102605989967553,
+              0.1458421290084731
+            ],
+            [
+              0.44956990339529534,
+              -0.47289501606563383
+            ],
+            [
+              0.44956990339529534,
+              0.05878145965052323
+            ]
+          ],
+          "initialization_provenance": "four covariance-scale starts from discarded same-target RWM metric warmup; no retained draws",
+          "nomination": {
+            "acceptance_policy": {
+              "boundaries": "inclusive",
+              "chain_count": 4,
+              "chain_weighting": "equal_chain_means",
+              "nan_or_positive_infinity_log_acceptance": "invalid",
+              "negative_infinity_log_acceptance": "probability_zero",
+              "overall_band": [
+                0.5,
+                0.85
+              ],
+              "per_chain_band": [
+                0.05,
+                1.0
+              ],
+              "schema": "bayesfilter.four_chain_mean_band_acceptance.v1"
+            },
+            "admission_supported": false,
+            "artifact_authority": false,
+            "budget_provenance": "additional48-hour allocation; master enforces32-hour aggregate tuning cap and reserves10 hours for posterior assessment",
+            "candidate_selection": "first_passing_predeclared_candidate",
+            "chain_count": 4,
+            "chain_execution_mode": "tf_function",
+            "covariance_jitter": 0.0,
+            "dtype": "float64",
+            "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+            "eigenvalue_floor": 6.827647978272486e-15,
+            "energy_error_max": 1000.0,
+            "evidence_role": "diagnostic_candidate_screen",
+            "fresh_rhat_verification": "not_implemented",
+            "geometry_provenance": "prior covariance warm start; own-target windowed covariance, 10 percent prior shrinkage",
+            "handoff_eligibility": "not_supported",
+            "initial_chain_state_policy": "four_identical_zero_states_in_current_affine_coordinates",
+            "initial_step_size": 0.2,
+            "initial_step_size_provenance": "independent .2 warm start; frozen nomination step capped at half the failed attempt1 step after the dedicated energy-repair screen",
+            "mass_shrinkage": 0.1,
+            "mass_window_leapfrog_steps": 1,
+            "mass_window_results": [
+              128,
+              256
+            ],
+            "max_condition_number": 67108864.0,
+            "max_leapfrog_steps": 4,
+            "max_step_size": 0.474576987756098,
+            "metric_rank_eligible": true,
+            "metric_state_count_by_window": [
+              512,
+              1024
+            ],
+            "nonclaims": [
+              "the diagnostic screen cannot issue a tuning handoff",
+              "fresh tuning R-hat and retained ESS are not computed",
+              "the route is not XLA qualified",
+              "no retained posterior convergence claim"
+            ],
+            "numerical_backend": "tensorflow_only",
+            "parameter_dimension": 2,
+            "ranking_claim": false,
+            "rhat_role": "not_computed",
+            "schema": "bayesfilter.tensorflow_hmc_tuning.v1",
+            "seed": [
+              20260929,
+              3201
+            ],
+            "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+            "step_adaptation_results": 256,
+            "step_repair_factor": 2.0,
+            "target_accept_prob": 0.7,
+            "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+            "target_status_trace_policy": "none",
+            "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+            "trajectory_candidates": [
+              1,
+              2,
+              4
+            ],
+            "use_xla": true,
+            "verification_repair_rounds": 2,
+            "verification_results": 128,
+            "xla_mode": "diagnostic_xla",
+            "xla_qualification": "not_implemented"
+          },
+          "verification_max_results": 10000,
+          "verification_results": 1000,
+          "warmup_check_window_results": 1000,
+          "warmup_max_results": 10000,
+          "warmup_results": 2000,
+          "warmup_rhat_max": 1.05
+        }
+      }
+    }
+  ],
+  "last_phase": "m13-public-tuning",
+  "master_complete": false,
+  "next_phase_plan": {
+    "allocation": "surrogate_hmc_m13_48h_20260929",
+    "automatic": false,
+    "candidate_rejected": false,
+    "deadline": "2026-09-30T16:27:39+00:00",
+    "part_of_existing_master": true,
+    "phase": "review_candidate",
+    "reason": "M13_PUBLIC_TUNING_BUDGET_EXHAUSTED",
+    "refreshed_at": "2026-09-30T06:37:46.615952+00:00",
+    "remaining_budget": {
+      "cpu_worker_seconds": 60366.47428800001,
+      "gpu_seconds": 62805.73785923602
+    },
+    "research_direction_rejected": false,
+    "retained_policy": "calibrated cumulative looks1000/2000/4000/6000/8000/10000, ESS and posterior equivalence",
+    "scientific_goal": "test surrogate HMC on the frozen M13 target",
+    "terminal": true,
+    "verification_policy": "cumulative >=1000 Rhat<=1.01, max10000 per chain",
+    "warmup_policy": ">=2000, latest1000 Rhat<=1.05, max10000 per chain"
+  },
+  "pilot_qualified": false,
+  "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+  "scientific_goal": "testing surrogate HMC",
+  "source_unchanged": true,
+  "stages": {
+    "gpu-smoke": {
+      "directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/gpu-smoke",
+      "execution": "COMPLETED",
+      "result": {
+        "allocator": {
+          "current": 861184,
+          "peak": 4074752
+        },
+        "arms": {
+          "exact": {
+            "artifact_and_continuation_checks": true,
+            "checks": {
+              "fresh_rhat": true,
+              "nomination_passed": true,
+              "sequential_health": true,
+              "verification_all_chains_moved": true,
+              "verification_endpoint_valid": true,
+              "verification_energy_valid": true,
+              "verification_finite": true,
+              "verification_no_divergences": true,
+              "verification_no_force_fallback": true,
+              "warmup_all_chains_moved": true,
+              "warmup_endpoint_valid": true,
+              "warmup_energy_valid": true,
+              "warmup_finite": true,
+              "warmup_no_divergences": true,
+              "warmup_no_force_fallback": true,
+              "warmup_readiness": true
+            },
+            "endpoint_flag_archive_wiring": "PASS",
+            "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/gpu-smoke/qualification/exact/tuning/manifest.json",
+            "mean": [
+              -0.013276837774851039,
+              -0.00045009702696750597
+            ],
+            "mean_diagnostics": {
+              "mcse_sd_ratio": [
+                0.014415466327522693,
+                0.015375175272773642
+              ],
+              "mean_mcse": [
+                0.01449390414065016,
+                0.015396622440438889
+              ],
+              "per_chain_ess": [
+                [
+                  1135.5234802018392,
+                  1149.0474126255097
+                ],
+                [
+                  1254.1570324481193,
+                  826.3075772272817
+                ],
+                [
+                  1220.7834181964345,
+                  903.640923929835
+                ],
+                [
+                  1176.5000670242885,
+                  1131.6552787598869
+                ]
+              ],
+              "per_chain_mean": [
+                [
+                  -0.010747929733390222,
+                  -0.0006425549117605547
+                ],
+                [
+                  -0.0240141697450484,
+                  0.03579917908742179
+                ],
+                [
+                  0.004347340730470142,
+                  -0.048459217465490693
+                ],
+                [
+                  -0.022692592351435673,
+                  0.011502205181959445
+                ]
+              ],
+              "per_chain_mean_mcse": [
+                [
+                  0.02936972879313473,
+                  0.02978226908999433
+                ],
+                [
+                  0.02885158528801534,
+                  0.034968609461581465
+                ],
+                [
+                  0.02905440955883395,
+                  0.03357149090309669
+                ],
+                [
+                  0.029017783263612904,
+                  0.029138985070198627
+                ]
+              ],
+              "per_chain_sd": [
+                [
+                  0.9896872962248484,
+                  1.0095475004367052
+                ],
+                [
+                  1.0217523373783803,
+                  1.0051924788498658
+                ],
+                [
+                  1.0151526788464216,
+                  1.0091798583140859
+                ],
+                [
+                  0.9953142242816311,
+                  0.9802379172307442
+                ]
+              ],
+              "pooled_mean": [
+                -0.013276837774851034,
+                -0.00045009702696750597
+              ],
+              "pooled_mean_ess": [
+                4812.188246331832,
+                4230.189757649957
+              ],
+              "posterior_sd": [
+                1.005441226204227,
+                1.001394921832418
+              ]
+            },
+            "parity_max": 0.0,
+            "passed": true,
+            "rhat": {
+              "bulk": [
+                1.0003525837304303,
+                1.0002012578430333
+              ],
+              "folded": [
+                1.0001635463499994,
+                1.0001635981068464
+              ],
+              "maximum": [
+                1.0003525837304303,
+                1.0002012578430333
+              ]
+            },
+            "selected_L": 1,
+            "selected_step": 1.2563496411101254,
+            "tuning_seconds": 25.299337628996,
+            "variance": [
+              1.0107856953436407,
+              1.002666440498071
+            ]
+          },
+          "imperfect_rotational": {
+            "artifact_and_continuation_checks": true,
+            "checks": {
+              "fresh_rhat": true,
+              "nomination_passed": true,
+              "sequential_health": true,
+              "verification_all_chains_moved": true,
+              "verification_endpoint_valid": true,
+              "verification_energy_valid": true,
+              "verification_finite": true,
+              "verification_no_divergences": true,
+              "verification_no_force_fallback": true,
+              "warmup_all_chains_moved": true,
+              "warmup_endpoint_valid": true,
+              "warmup_energy_valid": true,
+              "warmup_finite": true,
+              "warmup_no_divergences": true,
+              "warmup_no_force_fallback": true,
+              "warmup_readiness": true
+            },
+            "endpoint_flag_archive_wiring": "PASS",
+            "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/gpu-smoke/qualification/imperfect_rotational/tuning/manifest.json",
+            "mean": [
+              -0.01144187317941464,
+              0.00712283322257196
+            ],
+            "mean_diagnostics": {
+              "mcse_sd_ratio": [
+                0.016192816091019857,
+                0.01625466046511032
+              ],
+              "mean_mcse": [
+                0.016243397567717588,
+                0.01618818024111303
+              ],
+              "per_chain_ess": [
+                [
+                  948.0796887543047,
+                  1143.7689841360655
+                ],
+                [
+                  831.2280371735924,
+                  777.4847826052141
+                ],
+                [
+                  932.6595441746995,
+                  1019.615048301611
+                ],
+                [
+                  938.8190517789943,
+                  1106.3213420305324
+                ]
+              ],
+              "per_chain_mean": [
+                [
+                  -0.013985993140094705,
+                  0.012820663476398353
+                ],
+                [
+                  -0.010782836207897982,
+                  0.04777015788710907
+                ],
+                [
+                  0.017263729304626857,
+                  -0.04778231555843322
+                ],
+                [
+                  -0.0382623926742927,
+                  0.01568282708521364
+                ]
+              ],
+              "per_chain_mean_mcse": [
+                [
+                  0.0317881640129523,
+                  0.030097632582901455
+                ],
+                [
+                  0.03483138291318717,
+                  0.03575506581234604
+                ],
+                [
+                  0.033291498084926416,
+                  0.030996350813500252
+                ],
+                [
+                  0.03303928425653822,
+                  0.029371131058172177
+                ]
+              ],
+              "per_chain_sd": [
+                [
+                  0.9787862649658862,
+                  1.017891514591274
+                ],
+                [
+                  1.0042244924690487,
+                  0.9969733066884494
+                ],
+                [
+                  1.016704879417773,
+                  0.9897572366679238
+                ],
+                [
+                  1.0123287655607185,
+                  0.9769252088194885
+                ]
+              ],
+              "pooled_mean": [
+                -0.011441873179414632,
+                0.007122833222571953
+              ],
+              "pooled_mean_ess": [
+                3813.776454195484,
+                3784.8109858795306
+              ],
+              "posterior_sd": [
+                1.0031236985842,
+                0.9959100822720974
+              ]
+            },
+            "parity_max": 0.0,
+            "passed": true,
+            "rhat": {
+              "bulk": [
+                1.0009275921357532,
+                1.000261092403512
+              ],
+              "folded": [
+                1.000267556293945,
+                1.000493563064518
+              ],
+              "maximum": [
+                1.0009275921357532,
+                1.000493563064518
+              ]
+            },
+            "selected_L": 1,
+            "selected_step": 1.2067436435033696,
+            "tuning_seconds": 24.237238138040993,
+            "variance": [
+              1.006131372516912,
+              0.9917129123597195
+            ]
+          }
+        },
+        "jit_compile": true,
+        "memory_policy": {
+          "all_physical_devices_memory_growth": true,
+          "configured_before_logical_device_initialization": true,
+          "full_device_preallocation_disabled": true,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "device_details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "memory_growth": true
+            },
+            {
+              "device": "/physical_device:GPU:1",
+              "device_details": {
+                "compute_capability": [
+                  12,
+                  0
+                ],
+                "device_name": "NVIDIA GeForce RTX 5080"
+              },
+              "memory_growth": true
+            }
+          ],
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "purpose": "public tuner qualification; no model inference claim",
+        "source_hashes": {
+          "hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+          "hmc_sequential_verification.py": "a4905b2111eac2d9c5f4ac2dae2eee33dc6ea6b16e61e35645d269ead104f25f",
+          "hmc_tensorflow_tuning.py": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956",
+          "hmc_tensorflow_verified.py": "46687b1a00bce5c5c515bbc73c0b59dd8a3831748bf5d077b194917c04754f4c",
+          "hmc_tuning_dispatch.py": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9",
+          "neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+          "tuning_contract.py": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+        },
+        "tensorflow": "2.20.0-dev0+selfbuilt"
+      }
+    },
+    "m13-preflight": {
+      "directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-preflight",
+      "execution": "COMPLETED",
+      "result": {
+        "controls": {
+          "coordinate_cap": 16000.0,
+          "coordinate_cap_power": 8,
+          "correction_lm_damping": 1e-06,
+          "correction_lm_scale_floor": 1e-09,
+          "correction_steps": 2,
+          "correction_strength": 0.2,
+          "correction_trust_radius": 100.0,
+          "pairwise_rms_cap": 2000.0,
+          "pairwise_steps": 2,
+          "pairwise_strength": 0.02,
+          "reset_balance_steps": 8,
+          "reset_epsilon": 2.0,
+          "reset_policy": "contract_e",
+          "reset_ridge": 1e-08,
+          "reset_sinkhorn_steps": 8,
+          "substeps": 10
+        },
+        "data_seed": 1704,
+        "device": "gpu",
+        "gpu_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "inference_launched": false,
+        "initialization_repair": {
+          "center": [
+            0.1142719217478099,
+            -0.16352644352858037
+          ],
+          "covariance": [
+            [
+              0.11242473649687747,
+              -0.014595633358299836
+            ],
+            [
+              -0.014595633358299836,
+              0.0725648587447519
+            ]
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-initialization-repair-2026-09-27.md",
+          "posterior_qualification": false,
+          "retained_draws_used": 0,
+          "rwm_report_sha256": "dec45e052c2d13266eeefb11251a4986b5bf2ba4c14e9a88333e0149191357c9",
+          "source": "discarded RWM metric warmup only",
+          "warmup_sha256": "20c15a9cd3da13d8fa045ecddce2319fd801da43277ed4fbeb2c1c67942a74fe"
+        },
+        "memory_policy": {
+          "all_physical_devices_memory_growth": true,
+          "configured_before_logical_device_initialization": true,
+          "full_device_preallocation_disabled": true,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "device_details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "memory_growth": true
+            },
+            {
+              "device": "/physical_device:GPU:1",
+              "device_details": {
+                "compute_capability": [
+                  12,
+                  0
+                ],
+                "device_name": "NVIDIA GeForce RTX 5080"
+              },
+              "memory_growth": true
+            }
+          ],
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "metric_protection": {
+          "healthy_max_change": 0.0,
+          "justification": "C=.9 E+.1 P0 >= .1 P0; zero additive jitter; epsilon floor is backup",
+          "passed": true,
+          "rank_one_eigenvalues": [
+            0.048045301391820144,
+            0.4804530139182014
+          ]
+        },
+        "mixing_repair": {
+          "adaptation_acceptance_target": 0.7,
+          "attempt": 2,
+          "endpoint_changed": false,
+          "force_changed": false,
+          "hypothesis_order": "first uses the screened mixture; second keeps that mixture and caps the fixed base step after the archived energy veto",
+          "max_step_size": 0.474576987756098,
+          "nomination_energy_error_max": 1000.0,
+          "nomination_overall_acceptance_band": [
+            0.5,
+            0.85
+          ],
+          "nomination_per_chain_band": [
+            0.05,
+            1.0
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+          "posterior_qualified": false,
+          "rationale": "constant independent step mixture retains small escape moves alongside larger exploration moves; both laws passed two discarded M13 health probes",
+          "role": "nomination hypothesis only; fresh readiness, verification, ESS and posterior criteria unchanged",
+          "second_attempt_trigger": "reviewed energy-veto diagnosis and completed fresh-binding repair probe; one full attempt remains",
+          "step_multipliers": [
+            0.125,
+            1.0
+          ],
+          "step_probabilities": [
+            0.5,
+            0.5
+          ],
+          "step_repair_factor": 2.0,
+          "verification_step_repair_rounds": 2
+        },
+        "mixture_probe": {
+          "energy_error_max": 1000.0,
+          "passed": true,
+          "probe_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/energy-step-probe-03/report.json",
+          "probe_sha256": "46a5727ffb2e5ac1da8907fec2af44e879cf6b48bfe3847bbf4e5672a70d9494",
+          "receipt_sha256": "d04ef80431b163d111a89ca8eec4620ef65e5eaf7e80e901d66c1cb0b518fd0a",
+          "role": "discarded health screen only; no convergence or posterior claim",
+          "step_cap": 0.474576987756098
+        },
+        "multiplier": 0.001,
+        "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+        "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+        "posterior_qualified": false,
+        "reference_sha256": "4055592d76c0d116cc432d6055865c4e6226e76694fb1df941e01619083fbb82",
+        "runner_binding": {
+          "affine_log_jacobian_convention": "constant_omitted",
+          "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+          "artifact_authority": false,
+          "backend": "tensorflow_probability",
+          "binding_hash": "d46683cf0f042dcba99da8798405f749b7c7928143346372b01d61d28b19fbac",
+          "coordinate_scope": "raw",
+          "dtype": "float64",
+          "endpoint_target_coordinate_system": "raw",
+          "endpoint_target_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:fp64-endpoint",
+          "endpoint_target_includes_chart_log_jacobian": false,
+          "force_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:canonical-fp32-force",
+          "force_semantics": "deterministic_position_only_proposal_field",
+          "required_diagnostic_fields": [
+            "finite_sample_count",
+            "nonfinite_sample_count",
+            "log_accept_ratio_finite_count",
+            "log_accept_ratio_nonfinite_count",
+            "maximum_absolute_delta_h",
+            "target_log_prob_finite_count",
+            "target_log_prob_nonfinite_count",
+            "divergence_count",
+            "force_fallback_count"
+          ],
+          "required_metadata_fields": [
+            "force_identity",
+            "force_semantics",
+            "target_identity",
+            "target_coordinate_system",
+            "target_includes_chart_log_jacobian",
+            "affine_log_jacobian_convention",
+            "coordinate_route",
+            "target_scope",
+            "chain_execution_mode"
+          ],
+          "requires_native_affine_mass": true,
+          "runner_identity": "bayesfilter.testing.surrogate_hmc_m13_step_mixture.verified_native_tensorflow_step_mixture",
+          "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+          "source_dependency_closure": {
+            "files": [
+              {
+                "path": "bayesfilter/inference/neural_force_hmc.py",
+                "sha256": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+                "sha256": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+                "sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                "sha256": "2958593e966823c245e116f57d53f9d455e0b9ea67a60d75cbbd3bf0da8dddf7"
+              },
+              {
+                "path": "bayesfilter/inference/hmc.py",
+                "sha256": "8750c0ee3f8bed10aec8fd85b508087093a16ac4830e753259b30d840a69727a"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning.py",
+                "sha256": "fbf6411288a36fc79ccc840b3f315260827a847a492beab5e729789279ae54c5"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_coordinates.py",
+                "sha256": "59965bf5e1b8f5d0e00ced7ad69ca00b8cbc3147216e17f4749e5c2c208dca3f"
+              },
+              {
+                "path": "bayesfilter/inference/tuning_contract.py",
+                "sha256": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+              },
+              {
+                "path": "bayesfilter/inference/posterior_adapter.py",
+                "sha256": "9bd0e5d834f7a51ac9778dbbdb9c63c1b1ea435dff65bbf409a636220e28bd7e"
+              },
+              {
+                "path": "bayesfilter/inference/__init__.py",
+                "sha256": "ca0cbee95446550988a044173e76edbd4faf4ad56467f3236a0574118a918f20"
+              },
+              {
+                "path": "bayesfilter/__init__.py",
+                "sha256": "b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85"
+              },
+              {
+                "path": "bayesfilter/testing/surrogate_hmc_m13_step_mixture.py",
+                "sha256": "9ba5d0ef5d6a6fb343c144d577789a7e6f41f836703ad076a3241c978439509d"
+              }
+            ],
+            "fixed_step_mixture": {
+              "base_binding_hash": "deecc506636f924d35c592b8c90ed3f9e38165ca49b1ea14715bb36a61af1e3d",
+              "choices": "independent_per_chain_per_transition_stateless",
+              "endpoint_changed": false,
+              "execution_lane": "verified_native_tensorflow_only",
+              "force_changed": false,
+              "multipliers": [
+                0.125,
+                1.0
+              ],
+              "probabilities": [
+                0.5,
+                0.5
+              ],
+              "schema": "bayesfilter.m13_fixed_step_mixture.v1"
+            },
+            "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+          },
+          "supported_chain_execution_modes": [
+            "tf_function"
+          ],
+          "supported_target_status_trace_policies": [
+            "none"
+          ],
+          "supports_arbitrary_fixed_leapfrog_count": true,
+          "supports_arbitrary_fixed_step_size": true,
+          "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+          "tensor_kernel_factory_available": true,
+          "xla_capable": true
+        },
+        "selection_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json",
+        "selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+        "source_compatibility": {
+          "changed_dependencies": [
+            "bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "bayesfilter/inference/hmc_tensorflow_verified.py"
+          ],
+          "changed_dependency": "bayesfilter/inference/hmc_tensorflow_verified.py",
+          "current_sha256": "46687b1a00bce5c5c515bbc73c0b59dd8a3831748bf5d077b194917c04754f4c",
+          "decisions_recomputed": true,
+          "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_verified.py",
+          "native_nomination_compatibility": {
+            "control_execution_unchanged": true,
+            "current_sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956",
+            "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "original_sha256": "8eaa6ab82acdb615d4459f438d345653a1387d4557c61ee6bdebe1818c0e56dd",
+            "reason": "nomination guards and summaries are unreachable from fixed control probes"
+          },
+          "original_evidence_preserved": true,
+          "original_selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "original_sha256": "c64b76994a1fe572129ddb370c08b131c1d6344a79f4639c2ad93dc5845b2ec0",
+          "posterior_qualified": false,
+          "reason": "control caller already ANDs the identical force-fallback predicate; reviewed nomination-only edits are unreachable from its fixed kernel",
+          "selected_controls_unchanged": true
+        },
+        "status": "PASS",
+        "target_manifest": {
+          "alias_limit_role": "numerical_validity_not_parameter_support",
+          "alias_policy": {
+            "aliases_each_side": 4,
+            "maximum_conditional_sigma": 3.141592653589793,
+            "omitted_mass_upper_bound": 2.2571768119076845e-19,
+            "tail_mass_tolerance": 1e-14
+          },
+          "chunk_policy": {
+            "col_blocks": 2,
+            "col_chunk_size": 2048,
+            "num_particles": 4096,
+            "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "row_blocks": 2,
+            "row_chunk_size": 2048
+          },
+          "control_status": "diagnostic_warm_start_not_scope_tuned",
+          "design_partition": 9,
+          "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+          "dtype": "float32",
+          "fixture": {
+            "A": [
+              [
+                1.0,
+                0.0,
+                0.1,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "P0": [
+              [
+                0.04,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.04,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.01,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.01
+              ]
+            ],
+            "Q": [
+              [
+                0.0015,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0015,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0008,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0008
+              ]
+            ],
+            "R": [
+              [
+                0.0144,
+                0.0
+              ],
+              [
+                0.0,
+                0.0016
+              ]
+            ],
+            "backend": "tensorflow_tensorflow_probability",
+            "fixture_generation_seed": 1704,
+            "horizon": 20,
+            "initial_distribution": "x_0 ~ Normal(m0, P0)",
+            "m0": [
+              1.2,
+              0.7,
+              0.18,
+              -0.06
+            ],
+            "model_checksum": "d7ffac6570279076ba756dbf41d12f222c84001ea9799c4aef223e4f8853192b",
+            "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+            "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+            "reference_status": "UKF is approximate for this nonlinear fixture.",
+            "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+          },
+          "horizon": 20,
+          "innovation_dimension": 4,
+          "input_sha256": {
+            "initial_covariances": "e1b2f42f9534eb4b3cbbcba20d6ce609e23ac0a2ff6b71ccd8bac00be440444b",
+            "initial_states": "a17d8cde223cdcd434c627e0e7de5c81166c4f397d430c26a182dd61fa13a7a0",
+            "noises": "9ee39bdb00e3ee31c265b6506eee313074d099445f7a89b717e222ab9362a273",
+            "observations": "5b6d09af81ff35618f10880dbcf987889266f8280cdfc02d838e984bca132c44",
+            "reset_design": "e1144573f3a3048334e2c02ba8ab20ae33462d9e4a17e0d931f9323f6aec90af"
+          },
+          "jit_compile": true,
+          "model_id": "M13",
+          "observation_dimension": 2,
+          "observation_law": "wrapped_correlated_gaussian",
+          "parameter_dimension": 2,
+          "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+          "particle_count": 4096,
+          "prior": null,
+          "quantity": "finite_canonical_log_likelihood_only",
+          "reset_contract_id": "contract_e_chol_v1",
+          "route": "canonical_batch_fused_value_score",
+          "score_engine": "analytical_recursive_all_parameter_dependencies",
+          "seeds": {
+            "20": [
+              965417124,
+              20
+            ],
+            "22": [
+              965417124,
+              22
+            ]
+          },
+          "settings": {
+            "coordinate_cap": 16000.0,
+            "coordinate_cap_power": 8,
+            "correction_lm_damping": 1e-06,
+            "correction_lm_scale_floor": 1e-09,
+            "correction_steps": 2,
+            "correction_strength": 0.2,
+            "correction_trust_radius": 100.0,
+            "pairwise_rms_cap": 2000.0,
+            "pairwise_steps": 2,
+            "pairwise_strength": 0.02,
+            "reset_balance_steps": 8,
+            "reset_epsilon": 2.0,
+            "reset_policy": "contract_e",
+            "reset_ridge": 1e-08,
+            "reset_sinkhorn_steps": 8,
+            "substeps": 10
+          },
+          "source_sha256": {
+            "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+            "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+            "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+            "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+            "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+            "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+            "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+            "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+            "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+            "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+            "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+            "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+            "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+            "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+            "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+            "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+            "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+            "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+            "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+            "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+          },
+          "state_dimension": 4,
+          "tf32": true,
+          "transition_before_observation": true
+        },
+        "tensorflow": "2.20.0-dev0+selfbuilt",
+        "tuning_config": {
+          "check_every_results": 1000,
+          "chunk_results": 250,
+          "energy_error_max": 1000.0,
+          "fresh_seed": [
+            20260929,
+            3202
+          ],
+          "initial_chain_positions": [
+            [
+              -0.22102605989967553,
+              -0.38583434670768396
+            ],
+            [
+              -0.22102605989967553,
+              0.1458421290084731
+            ],
+            [
+              0.44956990339529534,
+              -0.47289501606563383
+            ],
+            [
+              0.44956990339529534,
+              0.05878145965052323
+            ]
+          ],
+          "initialization_provenance": "four covariance-scale starts from discarded same-target RWM metric warmup; no retained draws",
+          "nomination": {
+            "acceptance_policy": {
+              "boundaries": "inclusive",
+              "chain_count": 4,
+              "chain_weighting": "equal_chain_means",
+              "nan_or_positive_infinity_log_acceptance": "invalid",
+              "negative_infinity_log_acceptance": "probability_zero",
+              "overall_band": [
+                0.5,
+                0.85
+              ],
+              "per_chain_band": [
+                0.05,
+                1.0
+              ],
+              "schema": "bayesfilter.four_chain_mean_band_acceptance.v1"
+            },
+            "admission_supported": false,
+            "artifact_authority": false,
+            "budget_provenance": "additional48-hour allocation; master enforces32-hour aggregate tuning cap and reserves10 hours for posterior assessment",
+            "candidate_selection": "first_passing_predeclared_candidate",
+            "chain_count": 4,
+            "chain_execution_mode": "tf_function",
+            "covariance_jitter": 0.0,
+            "dtype": "float64",
+            "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+            "eigenvalue_floor": 6.827647978272486e-15,
+            "energy_error_max": 1000.0,
+            "evidence_role": "diagnostic_candidate_screen",
+            "fresh_rhat_verification": "not_implemented",
+            "geometry_provenance": "prior covariance warm start; own-target windowed covariance, 10 percent prior shrinkage",
+            "handoff_eligibility": "not_supported",
+            "initial_chain_state_policy": "four_identical_zero_states_in_current_affine_coordinates",
+            "initial_step_size": 0.2,
+            "initial_step_size_provenance": "independent .2 warm start; frozen nomination step capped at half the failed attempt1 step after the dedicated energy-repair screen",
+            "mass_shrinkage": 0.1,
+            "mass_window_leapfrog_steps": 1,
+            "mass_window_results": [
+              128,
+              256
+            ],
+            "max_condition_number": 67108864.0,
+            "max_leapfrog_steps": 4,
+            "max_step_size": 0.474576987756098,
+            "metric_rank_eligible": true,
+            "metric_state_count_by_window": [
+              512,
+              1024
+            ],
+            "nonclaims": [
+              "the diagnostic screen cannot issue a tuning handoff",
+              "fresh tuning R-hat and retained ESS are not computed",
+              "the route is not XLA qualified",
+              "no retained posterior convergence claim"
+            ],
+            "numerical_backend": "tensorflow_only",
+            "parameter_dimension": 2,
+            "ranking_claim": false,
+            "rhat_role": "not_computed",
+            "schema": "bayesfilter.tensorflow_hmc_tuning.v1",
+            "seed": [
+              20260929,
+              3201
+            ],
+            "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+            "step_adaptation_results": 256,
+            "step_repair_factor": 2.0,
+            "target_accept_prob": 0.7,
+            "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+            "target_status_trace_policy": "none",
+            "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+            "trajectory_candidates": [
+              1,
+              2,
+              4
+            ],
+            "use_xla": true,
+            "verification_repair_rounds": 2,
+            "verification_results": 128,
+            "xla_mode": "diagnostic_xla",
+            "xla_qualification": "not_implemented"
+          },
+          "verification_max_results": 10000,
+          "verification_results": 1000,
+          "warmup_check_window_results": 1000,
+          "warmup_max_results": 10000,
+          "warmup_results": 2000,
+          "warmup_rhat_max": 1.05
+        }
+      }
+    },
+    "m13-public-tuning": {
+      "directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-public-tuning-02",
+      "execution": "COMPLETED",
+      "result": {
+        "confirmation_data_used": false,
+        "consumer_sha256": "7f0afe6cd12423578b1119b76b22fa7d2e4eb5756bce6e16a82102d59e81620b",
+        "continuation_veto": false,
+        "controls": {
+          "coordinate_cap": 16000.0,
+          "coordinate_cap_power": 8,
+          "correction_lm_damping": 1e-06,
+          "correction_lm_scale_floor": 1e-09,
+          "correction_steps": 2,
+          "correction_strength": 0.2,
+          "correction_trust_radius": 100.0,
+          "pairwise_rms_cap": 2000.0,
+          "pairwise_steps": 2,
+          "pairwise_strength": 0.02,
+          "reset_balance_steps": 8,
+          "reset_epsilon": 2.0,
+          "reset_policy": "contract_e",
+          "reset_ridge": 1e-08,
+          "reset_sinkhorn_steps": 8,
+          "substeps": 10
+        },
+        "data_seed": 1704,
+        "data_sha256": "c4d460a239da426b5ec761a1758215532ee29b602e8e03c3f5dbdd0dda6dec78",
+        "device": "gpu",
+        "energy_repair_probe": {
+          "energy_error_max": 1000.0,
+          "passed": true,
+          "probe_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/energy-step-probe-03/report.json",
+          "probe_sha256": "46a5727ffb2e5ac1da8907fec2af44e879cf6b48bfe3847bbf4e5672a70d9494",
+          "receipt_sha256": "d04ef80431b163d111a89ca8eec4620ef65e5eaf7e80e901d66c1cb0b518fd0a",
+          "role": "discarded health screen only; no convergence or posterior claim",
+          "step_cap": 0.474576987756098
+        },
+        "exact_score_admission": false,
+        "gpu_trust_basis": "owner_designated_managed_session_visible_gpu_trusted",
+        "inference_launched": true,
+        "initialization_repair": {
+          "center": [
+            0.1142719217478099,
+            -0.16352644352858037
+          ],
+          "covariance": [
+            [
+              0.11242473649687747,
+              -0.014595633358299836
+            ],
+            [
+              -0.014595633358299836,
+              0.0725648587447519
+            ]
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-initialization-repair-2026-09-27.md",
+          "posterior_qualification": false,
+          "retained_draws_used": 0,
+          "rwm_report_sha256": "dec45e052c2d13266eeefb11251a4986b5bf2ba4c14e9a88333e0149191357c9",
+          "source": "discarded RWM metric warmup only",
+          "warmup_sha256": "20c15a9cd3da13d8fa045ecddce2319fd801da43277ed4fbeb2c1c67942a74fe"
+        },
+        "memory_policy": {
+          "all_physical_devices_memory_growth": true,
+          "configured_before_logical_device_initialization": true,
+          "full_device_preallocation_disabled": true,
+          "logical_device_memory_limit_required_for_hard_cap": true,
+          "memory_growth_is_hard_memory_cap": false,
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "device": "/physical_device:GPU:0",
+              "device_details": {
+                "compute_capability": [
+                  8,
+                  9
+                ],
+                "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+              },
+              "memory_growth": true
+            },
+            {
+              "device": "/physical_device:GPU:1",
+              "device_details": {
+                "compute_capability": [
+                  12,
+                  0
+                ],
+                "device_name": "NVIDIA GeForce RTX 5080"
+              },
+              "memory_growth": true
+            }
+          ],
+          "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+          "tf_force_gpu_allow_growth": "true"
+        },
+        "metric_protection": {
+          "healthy_max_change": 0.0,
+          "justification": "C=.9 E+.1 P0 >= .1 P0; zero additive jitter; epsilon floor is backup",
+          "passed": true,
+          "rank_one_eigenvalues": [
+            0.048045301391820144,
+            0.4804530139182014
+          ]
+        },
+        "mixing_repair": {
+          "adaptation_acceptance_target": 0.7,
+          "attempt": 2,
+          "endpoint_changed": false,
+          "force_changed": false,
+          "hypothesis_order": "first uses the screened mixture; second keeps that mixture and caps the fixed base step after the archived energy veto",
+          "max_step_size": 0.474576987756098,
+          "nomination_energy_error_max": 1000.0,
+          "nomination_overall_acceptance_band": [
+            0.5,
+            0.85
+          ],
+          "nomination_per_chain_band": [
+            0.05,
+            1.0
+          ],
+          "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+          "posterior_qualified": false,
+          "rationale": "constant independent step mixture retains small escape moves alongside larger exploration moves; both laws passed two discarded M13 health probes",
+          "role": "nomination hypothesis only; fresh readiness, verification, ESS and posterior criteria unchanged",
+          "second_attempt_trigger": "reviewed energy-veto diagnosis and completed fresh-binding repair probe; one full attempt remains",
+          "step_multipliers": [
+            0.125,
+            1.0
+          ],
+          "step_probabilities": [
+            0.5,
+            0.5
+          ],
+          "step_repair_factor": 2.0,
+          "verification_step_repair_rounds": 2
+        },
+        "multiplier": 0.001,
+        "next_action": "Existing master: refresh the phase plan with the terminal cause; no retained launch.",
+        "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+        "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+        "posterior_qualified": false,
+        "qualified": false,
+        "ranking_supported": false,
+        "runner_binding": {
+          "affine_log_jacobian_convention": "constant_omitted",
+          "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+          "artifact_authority": false,
+          "backend": "tensorflow_probability",
+          "binding_hash": "d46683cf0f042dcba99da8798405f749b7c7928143346372b01d61d28b19fbac",
+          "coordinate_scope": "raw",
+          "dtype": "float64",
+          "endpoint_target_coordinate_system": "raw",
+          "endpoint_target_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:fp64-endpoint",
+          "endpoint_target_includes_chart_log_jacobian": false,
+          "force_identity": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312:canonical-fp32-force",
+          "force_semantics": "deterministic_position_only_proposal_field",
+          "required_diagnostic_fields": [
+            "finite_sample_count",
+            "nonfinite_sample_count",
+            "log_accept_ratio_finite_count",
+            "log_accept_ratio_nonfinite_count",
+            "maximum_absolute_delta_h",
+            "target_log_prob_finite_count",
+            "target_log_prob_nonfinite_count",
+            "divergence_count",
+            "force_fallback_count"
+          ],
+          "required_metadata_fields": [
+            "force_identity",
+            "force_semantics",
+            "target_identity",
+            "target_coordinate_system",
+            "target_includes_chart_log_jacobian",
+            "affine_log_jacobian_convention",
+            "coordinate_route",
+            "target_scope",
+            "chain_execution_mode"
+          ],
+          "requires_native_affine_mass": true,
+          "runner_identity": "bayesfilter.testing.surrogate_hmc_m13_step_mixture.verified_native_tensorflow_step_mixture",
+          "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+          "source_dependency_closure": {
+            "files": [
+              {
+                "path": "bayesfilter/inference/neural_force_hmc.py",
+                "sha256": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+                "sha256": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+                "sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+                "sha256": "2958593e966823c245e116f57d53f9d455e0b9ea67a60d75cbbd3bf0da8dddf7"
+              },
+              {
+                "path": "bayesfilter/inference/hmc.py",
+                "sha256": "8750c0ee3f8bed10aec8fd85b508087093a16ac4830e753259b30d840a69727a"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_tuning.py",
+                "sha256": "fbf6411288a36fc79ccc840b3f315260827a847a492beab5e729789279ae54c5"
+              },
+              {
+                "path": "bayesfilter/inference/hmc_coordinates.py",
+                "sha256": "59965bf5e1b8f5d0e00ced7ad69ca00b8cbc3147216e17f4749e5c2c208dca3f"
+              },
+              {
+                "path": "bayesfilter/inference/tuning_contract.py",
+                "sha256": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+              },
+              {
+                "path": "bayesfilter/inference/posterior_adapter.py",
+                "sha256": "9bd0e5d834f7a51ac9778dbbdb9c63c1b1ea435dff65bbf409a636220e28bd7e"
+              },
+              {
+                "path": "bayesfilter/inference/__init__.py",
+                "sha256": "ca0cbee95446550988a044173e76edbd4faf4ad56467f3236a0574118a918f20"
+              },
+              {
+                "path": "bayesfilter/__init__.py",
+                "sha256": "b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85"
+              },
+              {
+                "path": "bayesfilter/testing/surrogate_hmc_m13_step_mixture.py",
+                "sha256": "9ba5d0ef5d6a6fb343c144d577789a7e6f41f836703ad076a3241c978439509d"
+              }
+            ],
+            "fixed_step_mixture": {
+              "base_binding_hash": "deecc506636f924d35c592b8c90ed3f9e38165ca49b1ea14715bb36a61af1e3d",
+              "choices": "independent_per_chain_per_transition_stateless",
+              "endpoint_changed": false,
+              "execution_lane": "verified_native_tensorflow_only",
+              "force_changed": false,
+              "multipliers": [
+                0.125,
+                1.0
+              ],
+              "probabilities": [
+                0.5,
+                0.5
+              ],
+              "schema": "bayesfilter.m13_fixed_step_mixture.v1"
+            },
+            "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+          },
+          "supported_chain_execution_modes": [
+            "tf_function"
+          ],
+          "supported_target_status_trace_policies": [
+            "none"
+          ],
+          "supports_arbitrary_fixed_leapfrog_count": true,
+          "supports_arbitrary_fixed_step_size": true,
+          "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+          "tensor_kernel_factory_available": true,
+          "xla_capable": true
+        },
+        "selection_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json",
+        "selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+        "sequential_recovery": true,
+        "source_compatibility": {
+          "changed_dependencies": [
+            "bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "bayesfilter/inference/hmc_tensorflow_verified.py"
+          ],
+          "changed_dependency": "bayesfilter/inference/hmc_tensorflow_verified.py",
+          "current_sha256": "46687b1a00bce5c5c515bbc73c0b59dd8a3831748bf5d077b194917c04754f4c",
+          "decisions_recomputed": true,
+          "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_verified.py",
+          "native_nomination_compatibility": {
+            "control_execution_unchanged": true,
+            "current_sha256": "d9ee3cd8a05f39ec2a3e37852428c7db84f3672f6b5e97afba67c30b0aa42956",
+            "historical_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/source/bayesfilter/inference/hmc_tensorflow_tuning.py",
+            "original_sha256": "8eaa6ab82acdb615d4459f438d345653a1387d4557c61ee6bdebe1818c0e56dd",
+            "reason": "nomination guards and summaries are unreachable from fixed control probes"
+          },
+          "original_evidence_preserved": true,
+          "original_selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+          "original_sha256": "c64b76994a1fe572129ddb370c08b131c1d6344a79f4639c2ad93dc5845b2ec0",
+          "posterior_qualified": false,
+          "reason": "control caller already ANDs the identical force-fallback predicate; reviewed nomination-only edits are unreachable from its fixed kernel",
+          "selected_controls_unchanged": true
+        },
+        "status": "M13_PUBLIC_TUNING_BUDGET_EXHAUSTED",
+        "target_manifest": {
+          "alias_limit_role": "numerical_validity_not_parameter_support",
+          "alias_policy": {
+            "aliases_each_side": 4,
+            "maximum_conditional_sigma": 3.141592653589793,
+            "omitted_mass_upper_bound": 2.2571768119076845e-19,
+            "tail_mass_tolerance": 1e-14
+          },
+          "chunk_policy": {
+            "col_blocks": 2,
+            "col_chunk_size": 2048,
+            "num_particles": 4096,
+            "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+            "row_blocks": 2,
+            "row_chunk_size": 2048
+          },
+          "control_status": "diagnostic_warm_start_not_scope_tuned",
+          "design_partition": 9,
+          "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+          "dtype": "float32",
+          "fixture": {
+            "A": [
+              [
+                1.0,
+                0.0,
+                0.1,
+                0.0
+              ],
+              [
+                0.0,
+                1.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                1.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "P0": [
+              [
+                0.04,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.04,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.01,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.01
+              ]
+            ],
+            "Q": [
+              [
+                0.0015,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0015,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0008,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0008
+              ]
+            ],
+            "R": [
+              [
+                0.0144,
+                0.0
+              ],
+              [
+                0.0,
+                0.0016
+              ]
+            ],
+            "backend": "tensorflow_tensorflow_probability",
+            "fixture_generation_seed": 1704,
+            "horizon": 20,
+            "initial_distribution": "x_0 ~ Normal(m0, P0)",
+            "m0": [
+              1.2,
+              0.7,
+              0.18,
+              -0.06
+            ],
+            "model_checksum": "d7ffac6570279076ba756dbf41d12f222c84001ea9799c4aef223e4f8853192b",
+            "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+            "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+            "reference_status": "UKF is approximate for this nonlinear fixture.",
+            "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+          },
+          "horizon": 20,
+          "innovation_dimension": 4,
+          "input_sha256": {
+            "initial_covariances": "e1b2f42f9534eb4b3cbbcba20d6ce609e23ac0a2ff6b71ccd8bac00be440444b",
+            "initial_states": "a17d8cde223cdcd434c627e0e7de5c81166c4f397d430c26a182dd61fa13a7a0",
+            "noises": "9ee39bdb00e3ee31c265b6506eee313074d099445f7a89b717e222ab9362a273",
+            "observations": "5b6d09af81ff35618f10880dbcf987889266f8280cdfc02d838e984bca132c44",
+            "reset_design": "e1144573f3a3048334e2c02ba8ab20ae33462d9e4a17e0d931f9323f6aec90af"
+          },
+          "jit_compile": true,
+          "model_id": "M13",
+          "observation_dimension": 2,
+          "observation_law": "wrapped_correlated_gaussian",
+          "parameter_dimension": 2,
+          "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+          "particle_count": 4096,
+          "prior": null,
+          "quantity": "finite_canonical_log_likelihood_only",
+          "reset_contract_id": "contract_e_chol_v1",
+          "route": "canonical_batch_fused_value_score",
+          "score_engine": "analytical_recursive_all_parameter_dependencies",
+          "seeds": {
+            "20": [
+              965417124,
+              20
+            ],
+            "22": [
+              965417124,
+              22
+            ]
+          },
+          "settings": {
+            "coordinate_cap": 16000.0,
+            "coordinate_cap_power": 8,
+            "correction_lm_damping": 1e-06,
+            "correction_lm_scale_floor": 1e-09,
+            "correction_steps": 2,
+            "correction_strength": 0.2,
+            "correction_trust_radius": 100.0,
+            "pairwise_rms_cap": 2000.0,
+            "pairwise_steps": 2,
+            "pairwise_strength": 0.02,
+            "reset_balance_steps": 8,
+            "reset_epsilon": 2.0,
+            "reset_policy": "contract_e",
+            "reset_ridge": 1e-08,
+            "reset_sinkhorn_steps": 8,
+            "substeps": 10
+          },
+          "source_sha256": {
+            "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+            "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+            "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+            "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+            "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+            "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+            "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+            "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+            "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+            "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+            "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+            "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+            "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+            "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+            "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+            "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+            "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+            "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+            "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+            "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+            "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+          },
+          "state_dimension": 4,
+          "tf32": true,
+          "transition_before_observation": true
+        },
+        "tensorflow": "2.20.0-dev0+selfbuilt",
+        "tuning": {
+          "adaptation_force_fallback_count": 8,
+          "checks": {
+            "fresh_rhat": false,
+            "nomination_passed": true,
+            "sequential_health": true,
+            "verification_all_chains_moved": true,
+            "verification_endpoint_valid": true,
+            "verification_energy_valid": true,
+            "verification_finite": true,
+            "verification_no_divergences": true,
+            "verification_no_force_fallback": true,
+            "warmup_all_chains_moved": true,
+            "warmup_endpoint_valid": true,
+            "warmup_energy_valid": true,
+            "warmup_finite": true,
+            "warmup_no_divergences": true,
+            "warmup_no_force_fallback": true,
+            "warmup_readiness": true
+          },
+          "covariance": [
+            [
+              0.0973912153031943,
+              -0.010875044869704531
+            ],
+            [
+              -0.010875044869704531,
+              0.06986348780889506
+            ]
+          ],
+          "draws_per_chain": {
+            "verification": 2250,
+            "warmup": 9000
+          },
+          "fresh_force_fallback_counts": {
+            "verification": 0,
+            "warmup": 0
+          },
+          "leapfrog_steps": 1,
+          "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-public-tuning-02/tuning/manifest.json",
+          "manifest_sha256": "77a631bf227c081c1c5e7c8188fa9e5e9b162a1f8ecae50ede75f46785984869",
+          "nomination_force_fallback_count": 0,
+          "passed": false,
+          "rhat": {
+            "bulk": [
+              1.0448821386442864,
+              1.017008440035793
+            ],
+            "folded": [
+              1.005797075806921,
+              1.0094130593689215
+            ],
+            "maximum": [
+              1.0448821386442864,
+              1.017008440035793
+            ]
+          },
+          "sequential_status": "BUDGET_EXHAUSTED",
+          "step_size": 0.40096758280116385,
+          "wall_seconds": 84761.146484892,
+          "warmup_ready": true
+        },
+        "tuning_config": {
+          "check_every_results": 1000,
+          "chunk_results": 250,
+          "energy_error_max": 1000.0,
+          "fresh_seed": [
+            20260929,
+            3202
+          ],
+          "initial_chain_positions": [
+            [
+              -0.22102605989967553,
+              -0.38583434670768396
+            ],
+            [
+              -0.22102605989967553,
+              0.1458421290084731
+            ],
+            [
+              0.44956990339529534,
+              -0.47289501606563383
+            ],
+            [
+              0.44956990339529534,
+              0.05878145965052323
+            ]
+          ],
+          "initialization_provenance": "four covariance-scale starts from discarded same-target RWM metric warmup; no retained draws",
+          "nomination": {
+            "acceptance_policy": {
+              "boundaries": "inclusive",
+              "chain_count": 4,
+              "chain_weighting": "equal_chain_means",
+              "nan_or_positive_infinity_log_acceptance": "invalid",
+              "negative_infinity_log_acceptance": "probability_zero",
+              "overall_band": [
+                0.5,
+                0.85
+              ],
+              "per_chain_band": [
+                0.05,
+                1.0
+              ],
+              "schema": "bayesfilter.four_chain_mean_band_acceptance.v1"
+            },
+            "admission_supported": false,
+            "artifact_authority": false,
+            "budget_provenance": "additional48-hour allocation; master enforces32-hour aggregate tuning cap and reserves10 hours for posterior assessment",
+            "candidate_selection": "first_passing_predeclared_candidate",
+            "chain_count": 4,
+            "chain_execution_mode": "tf_function",
+            "covariance_jitter": 0.0,
+            "dtype": "float64",
+            "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+            "eigenvalue_floor": 6.827647978272486e-15,
+            "energy_error_max": 1000.0,
+            "evidence_role": "diagnostic_candidate_screen",
+            "fresh_rhat_verification": "not_implemented",
+            "geometry_provenance": "prior covariance warm start; own-target windowed covariance, 10 percent prior shrinkage",
+            "handoff_eligibility": "not_supported",
+            "initial_chain_state_policy": "four_identical_zero_states_in_current_affine_coordinates",
+            "initial_step_size": 0.2,
+            "initial_step_size_provenance": "independent .2 warm start; frozen nomination step capped at half the failed attempt1 step after the dedicated energy-repair screen",
+            "mass_shrinkage": 0.1,
+            "mass_window_leapfrog_steps": 1,
+            "mass_window_results": [
+              128,
+              256
+            ],
+            "max_condition_number": 67108864.0,
+            "max_leapfrog_steps": 4,
+            "max_step_size": 0.474576987756098,
+            "metric_rank_eligible": true,
+            "metric_state_count_by_window": [
+              512,
+              1024
+            ],
+            "nonclaims": [
+              "the diagnostic screen cannot issue a tuning handoff",
+              "fresh tuning R-hat and retained ESS are not computed",
+              "the route is not XLA qualified",
+              "no retained posterior convergence claim"
+            ],
+            "numerical_backend": "tensorflow_only",
+            "parameter_dimension": 2,
+            "ranking_claim": false,
+            "rhat_role": "not_computed",
+            "schema": "bayesfilter.tensorflow_hmc_tuning.v1",
+            "seed": [
+              20260929,
+              3201
+            ],
+            "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+            "step_adaptation_results": 256,
+            "step_repair_factor": 2.0,
+            "target_accept_prob": 0.7,
+            "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+            "target_status_trace_policy": "none",
+            "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+            "trajectory_candidates": [
+              1,
+              2,
+              4
+            ],
+            "use_xla": true,
+            "verification_repair_rounds": 2,
+            "verification_results": 128,
+            "xla_mode": "diagnostic_xla",
+            "xla_qualification": "not_implemented"
+          },
+          "verification_max_results": 10000,
+          "verification_results": 1000,
+          "warmup_check_window_results": 1000,
+          "warmup_max_results": 10000,
+          "warmup_results": 2000,
+          "warmup_rhat_max": 1.05
+        }
+      }
+    },
+    "tests": {
+      "directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/tests",
+      "execution": "COMPLETED",
+      "result": {}
+    }
+  },
+  "status": "BOUNDED_PHASES_COMPLETE_CANDIDATE_NOT_QUALIFIED"
+}

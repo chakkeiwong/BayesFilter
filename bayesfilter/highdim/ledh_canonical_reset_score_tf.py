@@ -61,7 +61,7 @@ def sinkhorn_contract_e_reset_with_tangent(
         ridge=ridge,
         denominator_regularization=denominator_regularization,
     )
-    return result[0][0], result[1][0, 0], result[6]
+    return result[0][0], result[1][0, 0], result[6][0]
 
 
 def sinkhorn_contract_e_reset_triple_with_tangent(
@@ -119,7 +119,7 @@ def sinkhorn_contract_e_reset_triple_with_tangent(
         result[3][0, 0],
         result[4][0],
         result[5][0, 0],
-        result[6],
+        result[6][0],
     )
 
 

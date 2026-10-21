@@ -183,6 +183,8 @@ def _run_sequential_member(*, binding, candidate, initial_state, model_transform
         run_sequential_neutra_hmc, BatchedHMCConfig, _summarize_batched_hmc_output,
     )
     def run_chunk(state, count, seed, checkpoint_store, checkpoint_index):
+        from bayesfilter.runtime.execution_budget import require_execution_budget
+        require_execution_budget()
         started = time.monotonic()
         runtime = {"checkpoint_reused": True}
         binding.validate()
@@ -240,6 +242,8 @@ class HMCCandidateRetainedRunner:
 
     def _initialize_checked(self, checked, binding, claim_eligible):
         payload, candidate, endpoint = checked
+        if claim_eligible and binding.config.transition_profile is not None:
+            raise ValueError("modern transition profiles are experimental pending scoped statistical and GPU qualification")
         if claim_eligible and (not binding.config.use_xla or binding._runtime["device_type"] != "GPU"):
             raise ValueError("CPU or non-XLA exception is mechanics-only, not claim eligible")
         if claim_eligible and any("execution_failure" not in evidence and "GPU" not in evidence.get("samples_device", "")
@@ -530,6 +534,8 @@ def export_hmc_candidate_retained_runners(*, candidate_set_result: Any,
         path = root / (member.candidate.candidate_id.split(':')[-1] + '-member.json')
         exported[member.candidate.candidate_id] = _write_new(
             {**record, 'content_hash': _json_native_sha256(record)}, path)
+        from bayesfilter.runtime.execution_budget import report_execution_progress
+        report_execution_progress("member_export_complete", member.candidate.candidate_id)
     return exported
 
 
@@ -580,4 +586,6 @@ def load_hmc_candidate_retained_runners(paths, *, adapter: Any,
                     _tensor_payload(runner.initial_active_state) != member['verified_endpoint']):
                 raise ValueError('retained member or verified endpoint mismatch')
             runners[member['candidate_id']] = runner
+            from bayesfilter.runtime.execution_budget import report_execution_progress
+            report_execution_progress("member_reload_complete", member['candidate_id'])
     return runners

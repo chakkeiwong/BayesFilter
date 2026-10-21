@@ -1,0 +1,750 @@
+{
+  "status": "DIAGNOSTIC_FINISHED",
+  "model": "sir_d18",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "sir_d18",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-sir-precision-islands-20261012-01/sir_d18",
+    "--gpu",
+    "0",
+    "--batch-size",
+    "2",
+    "--paired-repeats",
+    "0",
+    "--offset",
+    "0.0",
+    "--score-only",
+    "--precision-islands",
+    "both_fp32",
+    "--shared-gaussian-contraction",
+    "direct",
+    "--fp64-reference",
+    "--debug-horizon",
+    "10"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-12T12:54:41.388805+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "evidence_role": "mixed_precision_arithmetic_localization",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+    "covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "source_snapshot": "docs/plans/artifacts/surrogate-hmc-sir-precision-islands-20261012-01/sir_d18/source",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "source_dependency_sha256": {
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "7b2a781983c7e2d627dc7b9b25335e413ea81f4975b82de02001dbe427c664fa",
+    "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "f18bd545fc0820dad91520001a2b045bcaf4cb46387541cac525cbbb46cc86e1",
+    "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+    "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+    "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+  },
+  "baseline_selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/sir_d18/filter-tuning/filter-selection.json",
+  "particles": 4032,
+  "horizon": 10,
+  "parameter_count": 3,
+  "state_dimension": 18,
+  "observation_dimension": 9,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "beta": [
+    0.10000000149011612,
+    0.06911444664001465,
+    0.830885648727417
+  ],
+  "offset": 0.0,
+  "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+  "gpu_devices": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "batch_size": 2,
+  "parameter_positions": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.003499999875202775,
+      0.003499999875202775,
+      0.003499999875202775
+    ]
+  ],
+  "precision_islands": {
+    "policy": "both_fp32",
+    "recurrence_dtype": "float64",
+    "gaussian_pair_dtype": "float32",
+    "transport_pair_dtype": "float32",
+    "centering_before_cast": true,
+    "evidence_role": "arithmetic_localization_only",
+    "runtime_module_patched": false,
+    "numerical_source_sha256": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+    "wrapper_sha256": "ac6020f0e2d78273ebdf6e1288dfe348a88ae73db9f4ec628045adcf3313b14d"
+  },
+  "new_first_call_seconds": 31.863811887800694,
+  "trace_fields": [
+    "log_increment",
+    "score_increment",
+    "ess",
+    "max_weight",
+    "max_prior_proposal_ratio",
+    "reset_mean_error",
+    "reset_covariance_relative_error",
+    "reset_margin",
+    "guide_margin",
+    "map_margin",
+    "correction_displacement",
+    "moment_loss_before",
+    "moment_loss_after",
+    "valid",
+    "sinkhorn_row_error",
+    "reset_displacement",
+    "sinkhorn_column_error",
+    "correction_coordinate_displacement"
+  ],
+  "candidate": {
+    "value": [
+      -342.6139374195156,
+      -342.87734086571857
+    ],
+    "score": [
+      [
+        -177.71182486522298,
+        110.08518465682337,
+        -5.407553823126812
+      ],
+      [
+        -200.1660721742727,
+        107.93916432512962,
+        1.6297863994586335
+      ]
+    ],
+    "score_trace": [
+      [
+        [
+          -0.8914168529224863,
+          0.3353285306376066,
+          -7.228535275929664
+        ],
+        [
+          1.4073179272725764,
+          -0.3595780041375656,
+          2.0735124711575157
+        ],
+        [
+          -1.7724384482601439,
+          0.1578512021918606,
+          0.4494080141505159
+        ],
+        [
+          -34.061134828395254,
+          15.23680790052721,
+          -0.981770191850236
+        ],
+        [
+          -25.76431746497869,
+          16.638566793171115,
+          0.5598451780037362
+        ],
+        [
+          -92.90979208533506,
+          71.43819505188964,
+          3.950340140546065
+        ],
+        [
+          -25.286273238646864,
+          40.170426099894144,
+          3.3172960884865046
+        ],
+        [
+          -5.990865349608704,
+          6.581617766480352,
+          -1.1443746040603275
+        ],
+        [
+          -8.108210218531458,
+          -48.87249409604036,
+          -0.4184556496241889
+        ],
+        [
+          15.665305694183093,
+          8.758463412209373,
+          -5.984819994006733
+        ]
+      ],
+      [
+        [
+          -0.9379400829974932,
+          0.35290658577975076,
+          -7.236368250218516
+        ],
+        [
+          0.9465516848726692,
+          -0.1787187848218517,
+          1.9991429054139707
+        ],
+        [
+          -3.434413086787446,
+          0.8540219304768955,
+          0.437938286697672
+        ],
+        [
+          -38.11026514364984,
+          17.110929046789174,
+          -0.9270167433347919
+        ],
+        [
+          -32.543907500557374,
+          19.76985345946307,
+          -0.290674888846898
+        ],
+        [
+          -111.90377574027532,
+          79.978343298466,
+          4.52642200106645
+        ],
+        [
+          -28.008568725646462,
+          41.21932434484768,
+          6.983931225979093
+        ],
+        [
+          -1.0562661923917425,
+          1.5034437276520216,
+          -1.182311814166511
+        ],
+        [
+          3.677958205748565,
+          -58.66473615840174,
+          0.03337322426005185
+        ],
+        [
+          11.204554407411724,
+          5.993796874878621,
+          -2.714649547391887
+        ]
+      ]
+    ],
+    "trace": [
+      [
+        [
+          -29.91167155455451,
+          -0.8914168529224863,
+          3865.31208560753,
+          0.0004255915112324343,
+          1.7130349884359555,
+          1.0658141036401503e-14,
+          2.5763597052842246e-15,
+          0.20904348491700606,
+          0.22748186711876472,
+          0.968261651461415,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.00017757571185939014,
+          0.655065011370165,
+          5.960464477539062e-07,
+          0.0
+        ],
+        [
+          -35.14152688091217,
+          1.4073179272725764,
+          1357.3887261334958,
+          0.003600437954130472,
+          4.440050759184153,
+          1.7763568394002505e-14,
+          2.6590659075929392e-15,
+          0.059462822266996826,
+          0.06391835775573139,
+          0.884683188797311,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0033524101600050926,
+          6.947693131388467,
+          1.1920928955078125e-05,
+          0.0
+        ],
+        [
+          -35.152793359360636,
+          -1.7724384482601439,
+          492.1324665506598,
+          0.017322540674035894,
+          3.270465021212146,
+          5.684341886080802e-14,
+          3.368519808691262e-15,
+          0.02337884777204947,
+          0.024534989199484,
+          0.7124390593457289,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.017074527218937874,
+          20.947997804420392,
+          2.9325485229492188e-05,
+          0.0
+        ],
+        [
+          -34.73597193217867,
+          -34.061134828395254,
+          541.8215384715712,
+          0.009704504067099207,
+          3.4533010405111715,
+          5.684341886080802e-14,
+          2.8720811511825468e-15,
+          0.011630801811514638,
+          0.01240519634282472,
+          0.5087110791538363,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.009331634268164635,
+          27.228286723211603,
+          4.8279762268066406e-05,
+          0.0
+        ],
+        [
+          -33.9053183880772,
+          -25.76431746497869,
+          800.8816948607744,
+          0.006060236649451721,
+          3.197954179815362,
+          5.684341886080802e-14,
+          3.0947504048994285e-15,
+          0.009164878979862104,
+          0.009584573586555876,
+          0.4007180542040753,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.005691520869731903,
+          25.481930196325642,
+          3.039836883544922e-05,
+          0.0
+        ],
+        [
+          -37.01025874625839,
+          -92.90979208533506,
+          462.81999998808504,
+          0.011288761420015166,
+          4.136730484865373,
+          8.526512829121202e-14,
+          2.240184869994444e-15,
+          0.012445898594478847,
+          0.012578849897397087,
+          0.5520361125289901,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.011040743440389633,
+          27.97849035351815,
+          4.1484832763671875e-05,
+          0.0
+        ],
+        [
+          -37.70021390892566,
+          -25.286273238646864,
+          895.4147734636321,
+          0.005977482652255409,
+          3.7404616894605494,
+          2.842170943040401e-14,
+          1.7492045873577793e-15,
+          0.018346994209950215,
+          0.02054173651150005,
+          0.6908959112290413,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.005729466676712036,
+          23.55825335341047,
+          2.9921531677246094e-05,
+          0.0
+        ],
+        [
+          -32.82583870535221,
+          -5.990865349608704,
+          2923.1726287059755,
+          0.0015899062115440476,
+          2.581901424771435,
+          2.842170943040401e-14,
+          3.0774862872462587e-15,
+          0.029852761888323625,
+          0.03202217718497629,
+          0.8644747527707122,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0013418900780379772,
+          3.255494150046622,
+          3.635883331298828e-06,
+          0.0
+        ],
+        [
+          -34.2360000231018,
+          -8.108210218531458,
+          2195.808276665232,
+          0.0021531577013683954,
+          2.879341460010855,
+          5.684341886080802e-14,
+          1.4272411826937126e-15,
+          0.05283412436760758,
+          0.05211953488421301,
+          0.9028878242001562,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0019051411654800177,
+          5.3414123166368634,
+          1.0728836059570312e-05,
+          0.0
+        ],
+        [
+          -31.9943439207944,
+          15.665305694183093,
+          3193.5106842168157,
+          0.0008983455558826486,
+          2.41586529411306,
+          1.4210854715202004e-14,
+          2.3121255035805635e-15,
+          0.08192841702249516,
+          0.08211367009686044,
+          0.8770272547292991,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0006503297481685877,
+          2.7257687004521585,
+          3.933906555175781e-06,
+          0.0
+        ]
+      ],
+      [
+        [
+          -29.938981992424317,
+          -0.9379400829974932,
+          3866.3085658862383,
+          0.0004255620704859044,
+          1.7072474666487623,
+          1.0658141036401503e-14,
+          2.0650371150359443e-15,
+          0.20794421545003802,
+          0.22632148652878198,
+          0.9684002984108373,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.00017754602595232427,
+          0.6539015979095906,
+          4.76837158203125e-07,
+          0.0
+        ],
+        [
+          -35.13122252687498,
+          0.9465516848726692,
+          1368.7581769199319,
+          0.003578770800017768,
+          4.412664198265165,
+          1.4210854715202004e-14,
+          2.1704100856972723e-15,
+          0.05896074128932805,
+          0.063354866429986,
+          0.8845168163302278,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0033307401463389397,
+          6.928403452491137,
+          1.430511474609375e-05,
+          0.0
+        ],
+        [
+          -35.15859670419754,
+          -3.434413086787446,
+          497.1988109063448,
+          0.01714687740301555,
+          3.2718168653896886,
+          5.684341886080802e-14,
+          2.807090114787711e-15,
+          0.023129784174430453,
+          0.024299192295766967,
+          0.7118236644826849,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.016898857429623604,
+          20.9706727743763,
+          2.6345252990722656e-05,
+          0.0
+        ],
+        [
+          -34.80912949492252,
+          -38.11026514364984,
+          532.7705520223736,
+          0.009722191471741233,
+          3.437992014946232,
+          5.684341886080802e-14,
+          2.1302164590625342e-15,
+          0.01149424309304366,
+          0.012286948727409364,
+          0.5074932222388453,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.009407615289092064,
+          27.704363231694522,
+          3.421306610107422e-05,
+          0.0
+        ],
+        [
+          -33.95001184299783,
+          -32.543907500557374,
+          808.0670829648486,
+          0.005813068508440346,
+          3.2108297149547225,
+          5.684341886080802e-14,
+          2.7584349168407644e-15,
+          0.008961822374538441,
+          0.009385622083811019,
+          0.39422579472791125,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.005565051455050707,
+          25.885741756831045,
+          5.7816505432128906e-05,
+          0.0
+        ],
+        [
+          -37.08091213685068,
+          -111.90377574027532,
+          453.1540541671287,
+          0.011849221510588788,
+          4.121573934944533,
+          8.526512829121202e-14,
+          1.956383453086724e-15,
+          0.012255559728395609,
+          0.012368752041809915,
+          0.5488007300215698,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.01160120777785778,
+          28.273374756028907,
+          5.257129669189453e-05,
+          0.0
+        ],
+        [
+          -37.640497588544974,
+          -28.008568725646462,
+          912.5469699222757,
+          0.005872685438288995,
+          3.7220185558242775,
+          2.842170943040401e-14,
+          1.931968951168443e-15,
+          0.01821688656397982,
+          0.020411517172934244,
+          0.6927214759077487,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.005624670535326004,
+          23.489866315909808,
+          2.5033950805664062e-05,
+          0.0
+        ],
+        [
+          -32.8217642267585,
+          -1.0562661923917425,
+          2931.3231687293437,
+          0.0015450668456008989,
+          2.55305801612075,
+          2.842170943040401e-14,
+          1.5984290463120465e-15,
+          0.02965148546366692,
+          0.03176039490195538,
+          0.8649273797565178,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0012970506213605404,
+          3.192743115202129,
+          6.4373016357421875e-06,
+          0.0
+        ],
+        [
+          -34.4005343076283,
+          3.677958205748565,
+          2159.3337581952774,
+          0.0022031148688739116,
+          2.9139872643396085,
+          5.684341886080802e-14,
+          1.8525680308416523e-15,
+          0.052377222663165496,
+          0.05170065023881359,
+          0.9009710867846054,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.00195509847253561,
+          5.5371134646922116,
+          1.4007091522216797e-05,
+          0.0
+        ],
+        [
+          -31.945690044518955,
+          11.204554407411724,
+          3215.115856801752,
+          0.0008828582781806387,
+          2.3497529011061418,
+          1.4210854715202004e-14,
+          2.49886687916055e-15,
+          0.08119081213656452,
+          0.08138604573189023,
+          0.8757806437220149,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0006348423776216805,
+          2.676722746835167,
+          3.0994415283203125e-06,
+          0.0
+        ]
+      ]
+    ],
+    "valid": [
+      true,
+      true
+    ],
+    "steps_completed": [
+      10,
+      10
+    ]
+  },
+  "final_particle_tangent_max_abs": [
+    [
+      50038.33796886431,
+      23347.56705398719,
+      9432.04497174952
+    ],
+    [
+      39448.76682067621,
+      14120.567633893077,
+      18532.024970903167
+    ]
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "scientific_status": "PRECISION_DIAGNOSTIC_NO_HMC_PROMOTION",
+  "baseline_healthy": true,
+  "performance_status": "NOT_MEASURED",
+  "wall_seconds": 35.60919023794122,
+  "peak_host_rss_bytes": 2024800256,
+  "allocator": {
+    "current": 37699840,
+    "peak": 1488919552
+  }
+}

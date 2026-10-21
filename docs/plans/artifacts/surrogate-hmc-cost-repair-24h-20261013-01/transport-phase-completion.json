@@ -1,0 +1,48 @@
+[
+  {
+    "model": "ksc",
+    "exit_code": 0,
+    "wall_seconds": 144.16128864209168,
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "scripts/run_surrogate_hmc_performance_repair.py",
+      "run",
+      "--model",
+      "ksc",
+      "--output",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/transport-paired-ksc-01",
+      "--covariance-baseline",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/mixture-source/covariance_proposal_score_batch_tf.py",
+      "--campaign-ledger",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/budget.json",
+      "--budget-seconds",
+      "1500",
+      "--per-model-timeout",
+      "1500"
+    ]
+  },
+  {
+    "model": "sir_d18",
+    "exit_code": 1,
+    "wall_seconds": 404.46136006200686,
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "scripts/run_surrogate_hmc_performance_repair.py",
+      "run",
+      "--model",
+      "sir_d18",
+      "--output",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/transport-paired-sir_d18-01",
+      "--covariance-baseline",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/mixture-source/covariance_proposal_score_batch_tf.py",
+      "--campaign-ledger",
+      "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/budget.json",
+      "--budget-seconds",
+      "1500",
+      "--per-model-timeout",
+      "1500",
+      "--runtime-precision",
+      "fp64_recursion_fp32_pairs"
+    ]
+  }
+]

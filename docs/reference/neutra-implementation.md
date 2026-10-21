@@ -51,6 +51,19 @@ The canonical IAF uses these explicit choices:
 | Conditioner width | Explicit, source-compatible width, justified for the target | `(16,16)` for q20 dimension 4; this is a local width choice, not the paper's dimension-wide profile |
 | Fixed outer affine | Explicit center and positive scales with provenance | Moments of 8,192 saved-baseline draws in the completed study; an initialization hypothesis, not posterior moments |
 
+An author-source audit on 2026-10-20 identified a parameterization difference
+that must be explicit. The local stage above follows Eq. (4) of the NeuTra
+paper. The maintained author code constructs
+`Invert(MaskedAutoregressiveFlow(...))`, whose forward operation with the same
+conditioner outputs is `(x-mu(x))*exp(-s(x))`, with log determinant `-sum(s)`.
+These are valid affine autoregressive constructions, but they are not identical
+maps for identical conditioner weights. An algebraic change of output functions
+can relate them; it does not establish identical finite networks or training
+trajectories. The canonical owner-designated profile remains unchanged. It
+must not be described as exact same-weight reproduction of that author code.
+See the [paper/source audit and numerical check](../plans/surrogate-hmc-sir-neutra-training-audit-plan-2026-10-20.md)
+and [pinned author source](../papers/neutra-author-source-20261020/neutra.py).
+
 `NeuTraTransportConfig.hoffman_author_iaf` selects the defining source options;
 its hidden widths default to `(dimension, dimension)`. The q20 study explicitly
 used `(16,16)`. Direct construction of `NeuTraTransportConfig(kind="iaf", ...)`

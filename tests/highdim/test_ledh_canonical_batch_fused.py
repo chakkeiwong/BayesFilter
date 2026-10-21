@@ -496,3 +496,44 @@ def test_annealed_full_union_is_tf_function_compilable():
     assert scores.shape == (2, 2)
     assert bool(tf.reduce_all(diagnostics["program_valid"]).numpy())
 
+
+
+def test_all_computed_correction_diagnostics_reach_batch_consumer():
+    """The consumer preserves the actual single-cloud diagnostic outputs."""
+    from bayesfilter.highdim.ledh_unified_correction_tf import higher_moment_diagnostic_signature
+    initial, covs, noises, observations = _fixture(211, n=16, horizon=1)
+    theta = tf.constant([.6], DTYPE)
+    value_ref, score_ref, trace, reference_status = canonical_value_and_analytical_score(
+        _single_model(),theta,initial,covs,noises,observations,flow_substeps=10,
+        with_score=True,return_trace=True,return_status=True,reset_design=_reset_design(16),**_FULL_UNION)
+    default_value, default_score, default_status = canonical_batch_fused_value_score(
+        _fused_model(),theta[None],tf.ones([1,1,1],DTYPE),initial,covs,noises,observations,
+        substeps=10,return_filter_moments=True,reset_design=_reset_design(16),**_FULL_UNION)
+    default_keys = {key for key in default_status if key.startswith("higher_moment_")}
+    assert default_keys == {
+        "higher_moment_maximum_coordinatewise_pre_cap_absolute",
+        "higher_moment_maximum_coordinatewise_post_cap_absolute",
+        "higher_moment_mean_coordinatewise_cap_displacement",
+        "higher_moment_fraction_coordinatewise_cap_active",
+        "higher_moment_minimum_coordinatewise_cap_derivative",
+    }
+    value, score, status = canonical_batch_fused_value_score(
+        _fused_model(),theta[None],tf.ones([1,1,1],DTYPE),initial,covs,noises,observations,
+        substeps=10,return_filter_moments=True,return_all_correction_diagnostics=True,
+        reset_design=_reset_design(16),**_FULL_UNION)
+    tf.debugging.assert_near(default_value,value,atol=1e-9,rtol=1e-8)
+    tf.debugging.assert_near(default_score,score,atol=1e-9,rtol=1e-8)
+    assert bool(reference_status["program_valid"] if "program_valid" in reference_status
+                else reference_status["value_valid"] & reference_status["force_valid"])
+    assert bool(status["program_valid"][0])
+    tf.debugging.assert_near(value[0],value_ref,atol=1e-9,rtol=1e-8)
+    tf.debugging.assert_near(score[0,0],score_ref[0],atol=1e-9,rtol=1e-8)
+    for key,spec in higher_moment_diagnostic_signature(2,DTYPE).items():
+        name = "higher_moment_"+key
+        assert name in trace[0] and name in status
+        expected = trace[0][name]
+        actual = status[name][0,0]
+        if spec.dtype.is_floating:
+            tf.debugging.assert_near(actual,expected,atol=1e-8,rtol=1e-7)
+        else:
+            tf.debugging.assert_equal(actual,expected)

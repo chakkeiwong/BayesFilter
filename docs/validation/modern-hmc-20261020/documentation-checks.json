@@ -1,0 +1,258 @@
+{
+  "scope": "Documentation preservation, compact-result reconciliation and build checks; no new stochastic run or diagnostic recomputation",
+  "git_baseline": "6d9e036c230484045364984ba51fb6487b105775",
+  "checked_utc": "2026-10-20T02:19:36.285582+00:00",
+  "policies": {
+    "global-scientific-coding-agent-policy.md": {
+      "path": "/home/ubuntu/python/claudecodex/policies/global-scientific-coding-agent-policy.md",
+      "sha256": "cdd556be45f3765cc05b6fd5086dec1e916324327a6e50a78956f2a235bd6e08"
+    },
+    "humanizer-ai-writing-patterns.md": {
+      "path": "/home/ubuntu/python/claudecodex/policies/humanizer-ai-writing-patterns.md",
+      "sha256": "523bcd9a71c76b568dfb9f316b9327a89f9d977407b57b6ff2a0e3f5b40c23af"
+    },
+    "scholarly-literature-audit-policy.md": {
+      "path": "/home/ubuntu/python/claudecodex/policies/scholarly-literature-audit-policy.md",
+      "sha256": "d48fbd27212fabfa230097b150d244e7ce046fbb022ba09f199b7895844f28b1"
+    }
+  },
+  "preservation": {
+    "docs/chapters/ch26g_modern_hmc_methods.tex": {
+      "baseline_sha256": "7ae77d5d787f15150a350b3b779873d8fe07ee1c436bce063635a899670f8bd9",
+      "updated_sha256": "6c47357716829e6ceff9a11f957f38871c4b9bd5a0d6bf50f8040ace7be1bc66",
+      "checks": {
+        "labels": {
+          "before": 133,
+          "after": 139,
+          "removed": []
+        },
+        "citation_commands": {
+          "before": 34,
+          "after": 34,
+          "removed": []
+        },
+        "equation_align_gather_multline_blocks": {
+          "before": 114,
+          "after": 116,
+          "removed": []
+        },
+        "bracket_display_blocks": {
+          "before": 2,
+          "after": 2,
+          "removed": []
+        }
+      }
+    },
+    "docs/chapters/ch21b_hmc_tuning_interfaces.tex": {
+      "baseline_sha256": "c0868c71c8e8603f7eb3e7a4eff28fe75afa231afad93129c74990ad6be0f3d8",
+      "updated_sha256": "bd2201952cac1172cd681ac0d3157d65e1bd14e4ff439010c7e2d9a625f42b0a",
+      "checks": {
+        "labels": {
+          "before": 13,
+          "after": 13,
+          "removed": []
+        },
+        "citation_commands": {
+          "before": 4,
+          "after": 4,
+          "removed": []
+        },
+        "equation_align_gather_multline_blocks": {
+          "before": 9,
+          "after": 9,
+          "removed": []
+        },
+        "bracket_display_blocks": {
+          "before": 8,
+          "after": 8,
+          "removed": []
+        }
+      }
+    },
+    "docs/chapters/ch25_diagnostics.tex": {
+      "baseline_sha256": "e07d855cec33dc1140eb677243179af1bdb83868a1430e6fe4e0523ed50d42e8",
+      "updated_sha256": "dabac92582fa2f71be137ce26af7e089f7b402eba10f1ccb6527e34551f8fda0",
+      "checks": {
+        "labels": {
+          "before": 7,
+          "after": 7,
+          "removed": []
+        },
+        "citation_commands": {
+          "before": 3,
+          "after": 3,
+          "removed": []
+        },
+        "equation_align_gather_multline_blocks": {
+          "before": 6,
+          "after": 6,
+          "removed": []
+        },
+        "bracket_display_blocks": {
+          "before": 0,
+          "after": 0,
+          "removed": []
+        }
+      }
+    }
+  },
+  "cohort_counts": {
+    "SGQF/fixed_hmc": {
+      "verified": 8,
+      "posterior_passed": 7,
+      "both_passed": 7,
+      "censored": 0
+    },
+    "SGQF/randomized_hmc": {
+      "verified": 8,
+      "posterior_passed": 6,
+      "both_passed": 5,
+      "censored": 0
+    },
+    "SGQF/snaper": {
+      "verified": 6,
+      "posterior_passed": 5,
+      "both_passed": 5,
+      "censored": 0
+    },
+    "SGQF/mams": {
+      "verified": 4,
+      "posterior_passed": 4,
+      "both_passed": 4,
+      "censored": 0
+    },
+    "SIR/fixed_hmc": {
+      "verified": 8,
+      "posterior_passed": 7,
+      "both_passed": 6,
+      "censored": 1
+    },
+    "SIR/randomized_hmc": {
+      "verified": 8,
+      "posterior_passed": 8,
+      "both_passed": 7,
+      "censored": 0
+    },
+    "SIR/snaper": {
+      "verified": 6,
+      "posterior_passed": 6,
+      "both_passed": 6,
+      "censored": 0
+    },
+    "SIR/mams": {
+      "verified": 2,
+      "posterior_passed": 2,
+      "both_passed": 2,
+      "censored": 0
+    }
+  },
+  "builds": {
+    "chapter": {
+      "command": "latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=/tmp/bayesfilter-latex-20261020/chapter modern_hmc_survey.tex",
+      "cwd": "/tmp/BayesFilter-modern-hmc-closeout-20261020/docs",
+      "pages": 46,
+      "pdf_sha256": "4b018af0b53370d9dfb1dc4ff416c70d5145aafb4730364543aeea21fb6aceed",
+      "log_sha256": "c78655b3ec1daf215cead852c2ba4cfa4b47195690d9033bae54193b38ee2abd",
+      "undefined_references_or_citations": 0,
+      "overfull_hbox": 0,
+      "underfull_hbox": 0,
+      "hyperref_warnings": 0
+    },
+    "monograph": {
+      "command": "latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=/tmp/bayesfilter-latex-20261020/monograph main.tex",
+      "cwd": "/tmp/BayesFilter-modern-hmc-closeout-20261020/docs",
+      "pages": 758,
+      "pdf_sha256": "13dbe3bca0a5053208f1d7e61651b00763051f84f7e34ca06145eb1685a6d284",
+      "log_sha256": "f7eca67c9fcce5ab73865655aaea1e2d084914f8c1b234648387ec6bfa1dc155",
+      "undefined_references_or_citations": 0,
+      "overfull_hbox": 222,
+      "underfull_hbox": 767,
+      "hyperref_warnings": 3
+    }
+  },
+  "tests": {
+    "post_merge": {
+      "summary": "356 passed, 2292 warnings in 80.64s (0:01:20)",
+      "local_log": "/tmp/bayesfilter-merged-regressions-20261020.log",
+      "sha256": "0dea3b0fca2723be510a20723bc97347b5f113bfee7556260794488beeac9fbe",
+      "gpu_intentionally_hidden": true
+    },
+    "final_documentation": {
+      "summary": "15 passed, 2 warnings in 2.75s",
+      "local_log": "/tmp/bayesfilter-latex-20261020/documentation-tests-final.log",
+      "sha256": "c343ac1ee3dd14b12bc16898c51992510f76f8d8e3cb8c7cdbd53ca7e7315965",
+      "gpu_intentionally_hidden": true
+    }
+  },
+  "copied_and_original_files_with_matching_hashes": 17,
+  "sir_worker_seconds": 197315.48680924764,
+  "render_review": {
+    "all_chapter_pages_layout_overview": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46
+    ],
+    "chapter_detailed_pdf_pages": [
+      32,
+      39,
+      40,
+      41,
+      42,
+      43
+    ],
+    "monograph_detailed_pdf_pages": [
+      478,
+      479,
+      539,
+      540,
+      541,
+      688,
+      690
+    ],
+    "reviewer": "Codex author/model review, not human voice acceptance",
+    "findings": "No clipping or equation/table overlap on inspected changed pages; dedicated algorithm float page is readable."
+  }
+}

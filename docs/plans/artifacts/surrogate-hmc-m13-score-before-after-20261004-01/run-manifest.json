@@ -1,0 +1,255 @@
+{
+  "aggregate_numerical_worker_seconds": 1921.836585694924,
+  "aggregate_worker_budget_seconds": 3600,
+  "analysis_repairs": [
+    "FP32 constant-division reconstruction changed to observed XLA rounded reciprocal; exact runtime-force parity at all eight probes",
+    "Whitened derivative-resolution bound propagates absolute L coefficients to avoid cancellation"
+  ],
+  "conclusions": {
+    "finite_acceptance_likelihood_disagreement_remains": true,
+    "main_fix_improves_m13_score_at_tested_probes": false,
+    "own_finite_likelihood_derivative_agreement": true,
+    "statistical_ranking_supported": false
+  },
+  "cpu_preparation": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+      "--prepare"
+    ],
+    "environment": {
+      "cuda_visible_devices": "-1",
+      "executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "gpu_intentionally_hidden": true,
+      "gpu_memory_policy": {
+        "all_physical_devices_memory_growth": true,
+        "configured_before_logical_device_initialization": true,
+        "full_device_preallocation_disabled": true,
+        "logical_device_memory_limit_required_for_hard_cap": true,
+        "memory_growth_is_hard_memory_cap": false,
+        "mode": "memory_growth",
+        "physical_devices": [],
+        "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+        "tf_force_gpu_allow_growth": "true"
+      },
+      "jit_compile": false,
+      "physical_gpus": [],
+      "python": "3.11.15 (main, Jun 11 2026, 15:20:16) [GCC 14.3.0]",
+      "tensorflow": "2.20.0-dev0+selfbuilt",
+      "tf32": true
+    },
+    "gpu_intentionally_hidden": true,
+    "wall_seconds": 6.642124778940342
+  },
+  "data_seed": 1704,
+  "data_version": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+  "design_partition": 9,
+  "design_seed": 20260923,
+  "endpoint_seed": [
+    2026092402,
+    9101
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_branch": "ledh-graceful-failure-execution-20260917",
+  "git_commit": "a55c6be7a16e9401242ee3449248fa347eb58d90",
+  "gpu_environment": {
+    "cuda_visible_devices": "1",
+    "executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "gpu_intentionally_hidden": false,
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              12,
+              0
+            ],
+            "device_name": "NVIDIA GeForce RTX 5080"
+          },
+          "memory_growth": true
+        }
+      ],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": true,
+    "physical_gpus": [
+      "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+    ],
+    "python": "3.11.15 (main, Jun 11 2026, 15:20:16) [GCC 14.3.0]",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "tensorflow_probability": "0.25.0",
+    "tf32": true
+  },
+  "hardware": "NVIDIA GeForce RTX 5080, CUDA_VISIBLE_DEVICES=1, memory growth verified, XLA; CPU-only preparation",
+  "new_hmc_transitions": 0,
+  "numerical_script_versions": {
+    "analyze.py": "3d214ac1e90af671a20a7a7406da3135567fe62111d3ee196fdfe7861f5f41bb",
+    "finalize.py": "4ab70e956afcb7b588e8aa2373e18c103b1b97775fcf3d5bd0ee0eb08449ce57",
+    "measure-attempt1.py": "2174d84a3f6cf8f56a6c2ffa074c123e1a495cd89052e3e8863ec8b5526f51bd",
+    "measure.py": "b0e6fbf77a68ef800618d1aac7c07996ce27be17ca768550292526cca24501cf",
+    "observe.py": "e09a800529ef23900295884347a411bfd8a5e0a2f093b046c7f5181474cdbe18",
+    "resume.py": "99691dd9205d13371c0ac90811dd17e95c20e9314c0c80d4dfb5a4b186dedcc3"
+  },
+  "original_script_sha256": "2174d84a3f6cf8f56a6c2ffa074c123e1a495cd89052e3e8863ec8b5526f51bd",
+  "plan": "docs/plans/surrogate-hmc-m13-score-before-after-2026-10-04.md",
+  "provenance_note": "Git HEAD alone is insufficient: frozen dirty source inventories and verified imports record the executed code.",
+  "remaining_worker_budget_seconds": 1678.163414305076,
+  "repair": "Copied unchanged existing native shared library into post-sync source snapshot.",
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/result.md",
+  "result_artifacts": {
+    "attempt-02/after-float32.json": "1897f3862e8535e1ffefdbfd146678d96a3e04ee5f43f7817d4b3b70c8154e5a",
+    "attempt-02/after-float64.json": "2bbe2a97e105d051c27244f84a0799d722af6ed37691680d2239577ea1d4064c",
+    "attempt-02/before-float64.json": "bfe499af3607673265f6bdfacc3c79abee8d23e0cde1b0f4e9dbe162d0ef63b4",
+    "before-float32.json": "20aaa2f1a833379b9bae701f8496bf059029db36144bb64ce6970f9040cad07f",
+    "final-audit.json": "6feadf6cae6f2ca4210c49bdc9979e5120aa39e2ea8aec1aed8640636d6fde73",
+    "inputs.json": "7498be9e805be774adf811f76c187b0b7003b78578f3c4aef693048c5c3d815f",
+    "observability-01/after.json": "48f1f992cc9025b58cf4ee673c7c6e8f58f275b01100aca07585585b8469c65f",
+    "observability-01/before.json": "1b99ba947ee95604eaf39f952d35de1e26edd8fb72a1e6ce200d33a3d36a9cb1",
+    "report.json": "98a17e7529e6bc5105f73ae01bd9a79170fbadefb2be00dbdd083e1c93faaa6d",
+    "result.md": "942ce32c4bb888f6c26949975f96b9b1ccaa67d3064f2aabc5736b50b55b6c73",
+    "runtime-library-snapshot.json": "2d01a7044f7b4a24637971639f47311c99be4b8ba3686d0002fe6790bb049564",
+    "saved-chain-scope-check.json": "f7a6550e42cc07e6ceacea6ed0ba7de7208d53e5e2f1ee1d2a0476ee1fc1be81",
+    "source-impact-check.json": "6afedf1349767366aa4bb946eb06ffac56b0826b6f795131085819d9d398f831",
+    "source-snapshots.json": "b9657ac85b9857d527a80a7c36c5ea3cc7349554946f62ec3649ff4204f8b106"
+  },
+  "result_written_utc": "2026-10-04T07:46:46.033344+00:00",
+  "schema": "bayesfilter.m13.score_measurement_manifest.v1",
+  "scope_controls": {
+    "coordinate_cap": 16000.0,
+    "coordinate_cap_power": 8,
+    "correction_lm_damping": 1e-06,
+    "correction_lm_scale_floor": 1e-09,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_trust_radius": 100.0,
+    "pairwise_rms_cap": 2000.0,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "reset_balance_steps": 8,
+    "reset_epsilon": 2.0,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-08,
+    "reset_sinkhorn_steps": 8,
+    "substeps": 10
+  },
+  "script_sha256": "b0e6fbf77a68ef800618d1aac7c07996ce27be17ca768550292526cca24501cf",
+  "started_utc": "2026-10-04T01:32:49.176672+00:00",
+  "status": "COMPLETED",
+  "wall_seconds": 1921.836585694924,
+  "wall_seconds_definition": "Sum of numerical worker subprocess wall times plus CPU preparation; not elapsed calendar duration",
+  "workers": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+        "--worker",
+        "before",
+        "--dtype",
+        "float32"
+      ],
+      "exit_code": 0,
+      "finished_utc": "2026-10-04T01:33:45.214341+00:00",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/before-float32.log",
+      "started_utc": "2026-10-04T01:32:49.178258+00:00",
+      "timeout_seconds": 1200,
+      "wall_seconds": 54.5985682309838
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+        "--worker",
+        "after",
+        "--dtype",
+        "float32"
+      ],
+      "exit_code": 1,
+      "finished_utc": "2026-10-04T01:33:49.539302+00:00",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/after-float32.log",
+      "started_utc": "2026-10-04T01:33:45.214787+00:00",
+      "timeout_seconds": 1200,
+      "wall_seconds": 3.0762261180207133
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+        "--worker",
+        "after",
+        "--dtype",
+        "float32"
+      ],
+      "exit_code": 0,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02/after-float32.log",
+      "output_root": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02",
+      "timeout_seconds": 1200,
+      "wall_seconds": 61.57213111699093
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+        "--worker",
+        "before",
+        "--dtype",
+        "float64"
+      ],
+      "exit_code": 0,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02/before-float64.log",
+      "output_root": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02",
+      "timeout_seconds": 1200,
+      "wall_seconds": 807.8483652890427
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py",
+        "--worker",
+        "after",
+        "--dtype",
+        "float64"
+      ],
+      "exit_code": 0,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02/after-float64.log",
+      "output_root": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/attempt-02",
+      "timeout_seconds": 1200,
+      "wall_seconds": 796.5291493230034
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observe.py",
+        "--arm",
+        "before"
+      ],
+      "exit_code": 0,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observability-01/before.log",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observability-01/before.json",
+      "role": "fp32_repeatability_observability",
+      "timeout_seconds": 300,
+      "wall_seconds": 124.12399567000102
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observe.py",
+        "--arm",
+        "after"
+      ],
+      "exit_code": 0,
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observability-01/after.log",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/observability-01/after.json",
+      "role": "fp32_repeatability_observability",
+      "timeout_seconds": 300,
+      "wall_seconds": 67.44602516794112
+    }
+  ]
+}

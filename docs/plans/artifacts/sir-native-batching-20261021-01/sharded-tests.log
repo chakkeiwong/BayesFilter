@@ -1,0 +1,134 @@
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+____ test_shards_preserve_every_output_and_padded_row_isolation[False-True] ____
+
+fixed = False, history = True
+
+    @pytest.mark.parametrize("fixed,history", [(True, False), (False, True)])
+    def test_shards_preserve_every_output_and_padded_row_isolation(fixed, history):
+        dtype = tf.float64
+        spec = NonlinearSQMCSpec("sir_d18")
+        n, horizon, batch = 32, 2, 5
+        controls = ProposalControls(flow_steps=2, correction_steps=2)
+        initial = tf.random.stateless_normal([n,18], [813,1], dtype=dtype)
+        noise = tf.random.stateless_normal([horizon,n,18], [813,2], dtype=dtype)
+        uniforms = tf.random.stateless_uniform([horizon,n,2], [813,3], dtype=dtype)
+        beta = tf.constant([.2,.3,.5], dtype)
+        observations = spec.observations(horizon, 813, dtype=dtype)
+        theta = tf.constant([[0.,0.,0.],[.01,0.,0.],[0.,.01,0.],[0.,0.,.01],[float("nan"),0.,0.]], dtype)
+        options = dict(dtype=dtype, jit_compile=True, batch_size=batch,
+                       record_history=history, fixed_draw_design=(beta,uniforms) if fixed else None)
+        full = make_batched_score_filter(spec,n,horizon,controls,**options)
+        sharded = make_sharded_score_filter(spec,n,horizon,controls,shard_size=2,**options)
+        args = (theta,observations,initial,noise) + (() if fixed else (uniforms,beta))
+        a,b = full(*args),sharded(*args)
+        assert set(a) == set(b)
+        for key in a:
+            if a[key].dtype.is_floating:
+>               tf.debugging.assert_equal(tf.math.is_finite(a[key]),tf.math.is_finite(b[key]))
+
+tests/highdim/test_covariance_proposal_sharded_batch.py:33: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x7d0b334e8040>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(5, 2, 32, 18), dtype=bool, numpy=
+array([[[[ True,  True,  True, ...,  True,  True,  True],
+       ...         [ True,  True,  True, ...,  True,  True,  True],
+         [ True,  True,  True, ...,  True,  True,  True]]]])>
+y = <tf.Tensor: shape=(5, 2, 32, 18), dtype=bool, numpy=
+array([[[[ True,  True,  True, ...,  True,  True,  True],
+       ...         [False, False, False, ..., False, False, False],
+         [False, False, False, ..., False, False, False]]]])>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[4, 1, 0, 0],
+       [4, 1, 0, 1],
+       [4, 1, 0, 2]]), 'Corresponding x values:', array([ True,  True,  True]), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[4 1 0 0]
+E          [4 1 0 1]
+E          [4 1 0 2]]
+E         Corresponding x values:
+E         [ True  True  True]
+E         Corresponding y values:
+E         [False False False]
+E         First 3 elements of x:
+E         [ True  True  True]
+E         First 3 elements of y:
+E         [ True  True  True]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_sharded_batch.py::test_shards_preserve_every_output_and_padded_row_isolation[False-True]
+1 failed, 2 passed, 2 warnings in 44.61s

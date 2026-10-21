@@ -1,0 +1,53 @@
+..........................F...........................................   [100%]
+=================================== FAILURES ===================================
+_______ test_fixed_design_and_likelihood_only_canonical_consumer_wiring ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7706b2b44bd0>
+
+    def test_fixed_design_and_likelihood_only_canonical_consumer_wiring(monkeypatch):
+        fixture = build_range_bearing_fixture_tf()
+        fixture = replace(fixture, observations=fixture.observations[:2], states=fixture.states[:2])
+        target = make_range_bearing_target(fixture,particle_count=16,controls=warm_start_controls(),dtype=tf.float64)
+        design = target.controls["reset_design"]
+        tf.debugging.assert_near(tf.reduce_mean(design,0),tf.zeros([4],tf.float64),atol=2e-8,rtol=0.)
+        tf.debugging.assert_near(tf.transpose(design)@design/16,tf.eye(4,dtype=tf.float64),atol=8e-8,rtol=0.)
+        calls = []
+        def canonical(model,theta,directions,**kwargs):
+            calls.append((model,theta,directions,kwargs))
+            value = tf.constant([1.25,-2.5],tf.float64)
+            score = tf.constant([[3.,4.],[5.,6.]],tf.float64)
+            ok = tf.constant([True,True])
+            return value,score,dict(value_valid=ok,force_valid=ok,program_valid=ok)
+        monkeypatch.setattr(target_module,"canonical_batch_fused_value_score",canonical)
+        points = tf.constant([[.2,-.3],[-.1,.4]],tf.float64)
+        value,score,status = target.evaluate(points)
+>       tf.debugging.assert_equal(value,[1.25,-2.5])
+
+tests/test_surrogate_hmc_m13_consumer.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+e = _NotOkStatusException(), name = None
+
+    def raise_from_not_ok_status(e, name) -> NoReturn:
+      e.message += (" name: " + str(name if name is not None else ""))
+>     raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     tensorflow.python.framework.errors_impl.InvalidArgumentError: cannot compute Equal as input #1(zero-based) was expected to be a double tensor but is a float tensor [Op:Equal] name:
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py:6027: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_consumer.py::test_fixed_design_and_likelihood_only_canonical_consumer_wiring
+1 failed, 69 passed, 2 warnings in 6.20s

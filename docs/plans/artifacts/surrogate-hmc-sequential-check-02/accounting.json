@@ -1,0 +1,81 @@
+{
+  "allocation": "incremental recovery",
+  "charged_this_run": {
+    "cpu_worker_seconds": 153.110704,
+    "gpu_seconds": 84.00653979397612
+  },
+  "cumulative_recovery_charged": {
+    "cpu_worker_seconds": 153.110704,
+    "gpu_seconds": 84.00653979397612
+  },
+  "historical_cpu_unknown": true,
+  "jobs": [
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_sequential_verification.py",
+        "tests/test_hmc_tensorflow_verified.py",
+        "tests/test_surrogate_hmc_worker_guard.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_recovery_program.py",
+        "tests/test_surrogate_hmc_m13_public_tuning.py",
+        "tests/test_surrogate_hmc_m13_initialization_repair.py",
+        "tests/test_surrogate_hmc_m13_retained.py",
+        "tests/test_surrogate_hmc_m13_posterior_assessment.py"
+      ],
+      "cpu_allowance_seconds": 600.0,
+      "cpu_worker_seconds": 61.629259999999995,
+      "cpu_worker_seconds_observed_lower_bound": 61.510473000000005,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "guard_pid": 421288,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 421284,
+        "start": "38344093"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 240.0,
+      "wall_seconds": 47.493872177030426,
+      "worker_pid": 421289
+    },
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_hmc_tensorflow_verified.py",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-sequential-check-02/gpu-smoke/qualification"
+      ],
+      "cpu_allowance_seconds": 600.0,
+      "cpu_worker_seconds": 91.481444,
+      "cpu_worker_seconds_observed_lower_bound": 91.44851299999999,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 84.00653979397612,
+      "guard_pid": 422180,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 421284,
+        "start": "38344093"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 240.0,
+      "wall_seconds": 84.00653979397612,
+      "worker_pid": 422181
+    }
+  ],
+  "limits": {
+    "cpu_worker_seconds": 1500.0,
+    "gpu_seconds": 300.0
+  }
+}

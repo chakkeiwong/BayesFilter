@@ -1,0 +1,38 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791447861.997344 3244401 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791447862.000683 3244401 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791447862.010333 3244401 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791447862.010384 3244401 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791447862.010391 3244401 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791447862.010393 3244401 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791447865.244972 3244401 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1791447867.526059 3244401 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791447869.642630 3244401 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 231, in worker
+    row=ex.one(evaluate(filt(setting,policy),tf.constant([theta],tf.float32),
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 541, in <module>
+    if __name__=="__main__": main()
+                             ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 538, in main
+    worker(args)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 231, in worker
+    row=ex.one(evaluate(filt(setting,policy),tf.constant([theta],tf.float32),
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted

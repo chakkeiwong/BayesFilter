@@ -1,0 +1,414 @@
+--- before/bayesfilter/inference/hmc_tensorflow_verified.py
++++ after/bayesfilter/inference/hmc_tensorflow_verified.py
+@@ -158,7 +158,23 @@
+                     if total and policy == "warn_deterministic_position_force_v1" else [])
+ 
+ 
+-def _health(chunk, start, energy_max, runner_binding=None):
++def _chunk_diagnostics(chunk, binding, energy_max):
++    """Finite Hamiltonian errors describe efficiency; endpoint MH decides acceptance."""
++    result = _force_diagnostics(chunk, binding)
++    errors = tf.abs(chunk.delta_h)
++    breaches = tf.math.is_finite(errors) & (errors > energy_max)
++    count = int(tf.reduce_sum(tf.cast(breaches, tf.int64)))
++    result["energy"] = dict(policy="finite_energy_error_warning_only_v1",
++        warning_threshold=float(energy_max), max_abs_error=float(tf.reduce_max(errors)),
++        threshold_exceedance_count=count,
++        threshold_exceedance_count_by_chain=
++            tf.reduce_sum(tf.cast(breaches, tf.int64), axis=0).numpy().tolist())
++    if count:
++        result["warnings"].append("large_finite_energy_error")
++    return result
++
++
++def _health(chunk, start, energy_max, runner_binding=None, *, legacy_energy_gate=False):
+     """Host-invoked TF checks; XLA assertions are never admission guards."""
+     finite = tf.reduce_all(tf.stack([
+         tf.reduce_all(tf.math.is_finite(x)) for x in
+@@ -168,9 +184,11 @@
+                                    chunk.endpoint_status[..., 2] != 0)
+     endpoint_ok = tf.reduce_all(tf.logical_and(endpoint_valid, chunk.endpoint_status[..., 8] == 0))
+     moved = tf.reduce_all(tf.reduce_any(tf.not_equal(chunk.states, start[None, ...]), axis=[0, 2]))
+-    energy_ok = tf.reduce_all(tf.abs(chunk.delta_h) <= energy_max)
+     checks = dict(finite=finite, endpoint_valid=endpoint_ok, all_chains_moved=moved,
+-                  energy_valid=energy_ok, no_divergences=~tf.reduce_any(chunk.divergence))
++                  no_divergences=~tf.reduce_any(chunk.divergence))
++    # Historical replay only: never use this gate for new sampling.
++    if legacy_energy_gate:
++        checks["energy_valid"] = tf.reduce_all(tf.abs(chunk.delta_h) <= energy_max)
+     if _force_fallback_policy(runner_binding) == "reject_force_fallback_v1":
+         checks["no_force_fallback"] = ~tf.reduce_any(chunk.force_fallback)
+     return checks
+@@ -351,7 +369,7 @@
+ 
+     result = run_sequential_verification(config=config, initial_state=initial,
+         run_chunk=run, health=lambda chunk, start: _health(chunk, start, config.energy_error_max, binding),
+-        diagnose_chunk=lambda chunk: _force_diagnostics(chunk, binding),
++        diagnose_chunk=lambda chunk: _chunk_diagnostics(chunk, binding, config.energy_error_max),
+         diagnose=lambda samples: _rhat_graph(int(samples.shape[0]), config.nomination.parameter_dimension)(samples),
+         transform=affine.latent_to_position, archive=archive, persist=persist,
+         verification_threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
+--- before/bayesfilter/inference/hmc_tensorflow_resume.py
++++ after/bayesfilter/inference/hmc_tensorflow_resume.py
+@@ -21,12 +21,22 @@
+ _PRIOR_RESUME_SHA256 = "9e74ac1298f9c8e4cd8f94873bfbb4f9d540110101be529e94afab8a70b7d16c"
+ _LEGACY_EVENT_VERIFIED_SHA256 = "e52f576eed0e84354fa1abc79303a69fd8f0ecd649170fe7f47f2e67cffdf2c1"
+ _PRE_REPLAY_REPAIR_RESUME_SHA256 = "59a5472c360be93e95f802c34a289b97058b9ce3aa0377a846765ab93a94947b"
++_PRE_ENERGY_WARNING_VERIFIED_SHA256 = "d1e05e5cfa537e5f26f5386de545a21af654b7f40e8bc3a826b9145614e3071b"
++_PRE_ENERGY_WARNING_RESUME_SHA256 = "776e8b9a7a703067aef9b53ea4363a92d85027107781d786f5a0a8ec48d0a1fc"
+ 
+ 
+ def validate_source_migration(saved):
+     current = verified._source_hashes()
+     if saved == current:
+         return dict(kind="unchanged", old=saved, current=current)
++    expected = dict(current)
++    expected["hmc_tensorflow_verified.py"] = _PRE_ENERGY_WARNING_VERIFIED_SHA256
++    expected["hmc_tensorflow_resume.py"] = _PRE_ENERGY_WARNING_RESUME_SHA256
++    if saved == expected:
++        return dict(kind="owner_finite_energy_warning_20261019",
++            old=saved, current=current, numerical_kernel_changed=False,
++            preserved_source="docs/plans/artifacts/surrogate-hmc-energy-warning-repair-20261019-01/source-before",
++            plan="docs/plans/surrogate-hmc-energy-warning-repair-2026-10-19.md")
+     expected = dict(current)
+     expected["hmc_tensorflow_resume.py"] = _PRIOR_RESUME_SHA256
+     if saved == expected:
+@@ -63,12 +73,17 @@
+             or payload.get("rhat_threshold") != verified.HMC_TUNING_ORDINARY_RHAT_THRESHOLD):
+         raise ValueError("resume requires an interrupted non-admitted verified-tuner artifact")
+     sequence = payload["sequence"]
+-    if (sequence.get("status") != "BUDGET_EXHAUSTED"
++    energy_only_stop = (sequence.get("status") == "HEALTH_VETO"
++        and any(event.get("checks", {}).get("energy_valid") is False
++                for event in sequence.get("events", [])))
++    if (sequence.get("status") != "BUDGET_EXHAUSTED" and not energy_only_stop
+             or type(sequence.get("warmup_ready")) is not bool
+             or not sequence.get("chunks") or not sequence.get("events")
+-            or any(not event["checks"] or not all(event["checks"].values())
++            or any(not event["checks"] or not all(
++                       value for key, value in event["checks"].items()
++                       if energy_only_stop and key != "energy_valid" or not energy_only_stop)
+                    for event in sequence["events"])):
+-        raise ValueError("resume requires healthy budget-interrupted chains")
++        raise ValueError("resume requires healthy budget-interrupted chains or an energy-only stop")
+     if (not sequence["warmup_ready"]
+             and sequence["counts"]["warmup"] >= config.warmup_max_results):
+         raise ValueError("resume cannot extend an exhausted warmup maximum")
+@@ -89,9 +104,12 @@
+ 
+ 
+ def replay_then_continue(*, config, nomination, binding, source_root, records,
+-                         output_root=None, permit_new=None, run_new=None, progress_callback=None):
++                         output_root=None, permit_new=None, run_new=None, progress_callback=None,
++                         legacy_energy_gate=False):
+     """Use the unchanged sequential controller for both archive replay and extension."""
+     source_root = Path(source_root)
++    if legacy_energy_gate and output_root is not None:
++        raise ValueError("legacy energy gate is archive-validation only")
+     cursor, graphs, timing = [0], {}, {}
+     affine = verified._affine(nomination)
+     initial = affine.position_to_latent(tf.constant(config.initial_chain_positions, tf.float64))
+@@ -144,8 +162,11 @@
+                       last.get("rhat"), flush=True)
+ 
+     result = run_sequential_verification(config=config, initial_state=initial,
+-        run_chunk=run, health=lambda chunk, start: verified._health(chunk, start, config.energy_error_max, binding),
+-        diagnose_chunk=lambda chunk: verified._force_diagnostics(chunk, binding),
++        run_chunk=run, health=lambda chunk, start: verified._health(
++            chunk, start, config.energy_error_max, binding, **(
++                {"legacy_energy_gate": True} if legacy_energy_gate else {})),
++        diagnose_chunk=lambda chunk: (verified._force_diagnostics(chunk, binding)
++            if legacy_energy_gate else verified._chunk_diagnostics(chunk, binding, config.energy_error_max)),
+         diagnose=lambda samples: verified._rhat_graph(
+             int(samples.shape[0]), config.nomination.parameter_dimension)(samples),
+         transform=affine.latent_to_position, archive=archive, persist=persist,
+@@ -170,13 +191,15 @@
+     if nomination.config.payload() != config.nomination.payload():
+         raise ValueError("resume nomination configuration mismatch")
+     replay = replay_then_continue(config=previous, nomination=nomination,
+-        binding=runner_binding, source_root=path.parent, records=payload["sequence"]["chunks"])
++        binding=runner_binding, source_root=path.parent, records=payload["sequence"]["chunks"],
++        legacy_energy_gate=migration["kind"] != "unchanged")
+     verified._check_sequence_replay(replay, payload["sequence"])
+     from .hmc_sequential_verification import combined_chunks
+     for phase in ("warmup", "verification"):
+         actual = combined_chunks(replay["phases"][phase])
+-        if actual is None or payload[phase] is None:
+-            if actual is not None or payload[phase] is not None:
++        # The writer represents an absent phase as {}, not null.
++        if actual is None or not payload[phase]:
++            if actual is not None or bool(payload[phase]):
+                 raise ValueError("resume aggregate/chunk presence mismatch")
+             continue
+         aggregate = verified._read_chunk(path.parent, payload[phase])
+--- before/scripts/run_surrogate_hmc_48h_queue_repair.py
++++ after/scripts/run_surrogate_hmc_48h_queue_repair.py
+@@ -24,6 +24,8 @@
+ master = queue.master
+ PLAN = ROOT / "docs/plans/surrogate-hmc-48h-queue-repair-2026-10-18.md"
+ RETRY_NAME = "predator_prey-retry-01"
++ENERGY_PLAN = ROOT / "docs/plans/surrogate-hmc-energy-warning-repair-2026-10-19.md"
++ENERGY_RESUME_NAME = "range_bearing-energy-resume-01"
+ 
+ 
+ def process(pid):
+@@ -130,30 +132,43 @@
+         return True
+ 
+ 
+-def validate(output):
++def validate(output, resume_range_bearing=False):
+     manifest = master.read(output / "manifest.json")
+     state = master.read(output / "state.json")
+     ledger, _ = queue.campaign_remaining(output / "budget.json")
+-    if state["status"] != "RUNNING" or state["current_model"] != "range_bearing":
+-        raise RuntimeError("Expected the original active range-bearing phase")
++    active_model = "predator_prey" if resume_range_bearing else "range_bearing"
++    if state["status"] != "RUNNING" or state["current_model"] != active_model:
++        raise RuntimeError(f"Expected active {active_model} phase")
+     if ledger["authorized_gpu_wall_seconds"] != queue.TOTAL_SECONDS or ledger["max_attempts"] != 6:
+         raise RuntimeError("Original campaign budget changed")
+     if manifest["deadline_epoch"] != ledger["deadline_epoch"] or state["deadline_epoch"] != manifest["deadline_epoch"]:
+         raise RuntimeError("Campaign deadlines disagree")
+     running = [row for row in ledger["attempts"] if row["status"] == "RUNNING"]
+-    if len(running) != 1 or running[0]["model"] != "range_bearing":
+-        raise RuntimeError("Expected exactly one active range-bearing reservation")
++    if len(running) != 1 or running[0]["model"] != active_model:
++        raise RuntimeError(f"Expected exactly one active {active_model} reservation")
+     parent, worker = process(state["pid"]), process(state["active_master_pid"])
+     if not parent or not worker or not alive(parent) or not alive(worker):
+         raise RuntimeError("Expected live supervisor and worker")
+-    if not any(part.endswith("run_surrogate_hmc_48h_extension.py") for part in parent["command"]):
++    supervisor = ("run_surrogate_hmc_48h_queue_repair.py" if resume_range_bearing
++                  else "run_surrogate_hmc_48h_extension.py")
++    if not any(part.endswith(supervisor) for part in parent["command"]):
+         raise RuntimeError("Unexpected original supervisor command")
+     if worker["command"] != state["active_command"] or worker["ppid"] != parent["pid"]:
+         raise RuntimeError("Worker identity or parent changed")
+     if parent["pgid"] != parent["pid"] or worker["pgid"] != worker["pid"]:
+         raise RuntimeError("Expected separately sessioned supervisor and worker")
+-    if state["models"].get("predator_prey", {}).get("status") != "STAGE_ERROR":
+-        raise RuntimeError("Predator–prey is not the recorded failed attempt")
++    failed_model = "range_bearing" if resume_range_bearing else "predator_prey"
++    failed_status = "HEALTH_VETO" if resume_range_bearing else "STAGE_ERROR"
++    if state["models"].get(failed_model, {}).get("status") != failed_status:
++        raise RuntimeError(f"{failed_model} is not the recorded failed attempt")
++    if resume_range_bearing:
++        sequence = master.read(energy_resume_manifest(output))["sequence"]
++        checks = [event["checks"] for event in sequence["events"]]
++        if (sequence["status"] != "HEALTH_VETO"
++                or not any(row.get("energy_valid") is False for row in checks)
++                or any(not row or not all(value for key, value in row.items()
++                       if key != "energy_valid") for row in checks)):
++            raise RuntimeError("Saved range-bearing failure is not energy-only")
+     for path, expected in manifest["supervisor_sources"].items():
+         if master.digest(ROOT / path) != expected:
+             raise RuntimeError(f"Pinned source changed: {path}")
+@@ -164,6 +179,52 @@
+     command = queue.command_for("predator_prey", seconds, queue.PREPARATION, output)
+     command[command.index("--output") + 1] = str(output / RETRY_NAME)
+     return command
++
++
++def energy_resume_manifest(output):
++    return output / "range_bearing/range_bearing/inference/public-tuning/manifest.json"
++
++
++def energy_resume_command(seconds, output):
++    command = queue.command_for("range_bearing", seconds, queue.RANGE_PREPARATION, output)
++    # The saved config owns these values: resumption must not retune the kernel.
++    for option in ("--hmc-target-accept", "--hmc-initial-step-size"):
++        index = command.index(option)
++        del command[index:index + 2]
++    command[command.index("--output") + 1] = str(output / ENERGY_RESUME_NAME)
++    return command + ["--resume-manifest", str(energy_resume_manifest(output))]
++
++
++def phase_order(resume_range_bearing=False):
++    phases = (("range_bearing", 8 * 3600, queue.RANGE_PREPARATION),
++              ("predator_prey", 8 * 3600, queue.PREPARATION),
++              ("sir_d18", 32 * 3600, queue.PREPARATION))
++    return (phases[1], phases[0], phases[2]) if resume_range_bearing else phases
++
++
++def validate_stopped(output):
++    manifest, state = master.read(output / "manifest.json"), master.read(output / "state.json")
++    ledger, remaining = queue.campaign_remaining(output / "budget.json")
++    parent = process(state["pid"])
++    if (state["status"] != "INCOMPLETE_SEE_MODEL_RESULTS"
++            or state.get("active_master_pid") is not None
++            or (parent and alive(parent))
++            or any(row["status"] == "RUNNING" for row in ledger["attempts"])):
++        raise RuntimeError("Stopped restart requires an idle, terminal queue")
++    if (ledger["authorized_gpu_wall_seconds"] != queue.TOTAL_SECONDS
++            or ledger["max_attempts"] != 6
++            or ledger["deadline_epoch"] != manifest["deadline_epoch"]
++            or state["deadline_epoch"] != manifest["deadline_epoch"]
++            or time.time() >= manifest["deadline_epoch"] - 60
++            or remaining <= 60 or queue.campaign_attempts_remaining(ledger) < 2):
++        raise RuntimeError("Insufficient or changed existing campaign budget")
++    expected = {"predator_prey": "VERIFIED", "range_bearing": "HEALTH_VETO", "sir_d18": "STAGE_ERROR"}
++    if any(state["models"].get(model, {}).get("status") != status for model, status in expected.items()):
++        raise RuntimeError("Unexpected terminal model state")
++    for path, expected_hash in manifest["supervisor_sources"].items():
++        if master.digest(ROOT / path) != expected_hash:
++            raise RuntimeError(f"Pinned source changed: {path}")
++    return manifest, state, ledger
+ 
+ 
+ def finish_phase(output, state, phase_output, returncode):
+@@ -187,7 +248,11 @@
+     manifest = master.read(output / "manifest.json")
+     state = receipt["saved_state"]
+     child = None
+-    adopted = receipt["worker"]
++    adopted = receipt.get("worker")
++    energy_resume = receipt.get("resume_range_bearing", False)
++    adopted_model = state["current_model"]
++    adopted_output = (Path(state["active_command"][state["active_command"].index("--output") + 1])
++                      if adopted is not None else None)
+     took_over = False
+     try:
+         if manifest["deadline_epoch"] != receipt["deadline_epoch"]:
+@@ -199,26 +264,32 @@
+             receipt = master.read(receipt_path)
+             if receipt["status"] != "PREPARED":
+                 raise RuntimeError("Handoff was cancelled or already consumed")
+-            terminate_parent(receipt["parent"], adopted)
++            if adopted is not None:
++                terminate_parent(receipt["parent"], adopted)
++            else:
++                validate_stopped(output)
+             took_over = True
+             receipt.update(status="TAKEN_OVER", supervisor_pid=os.getpid(),
+                            takeover_utc=master.stamp())
+             master.write(receipt_path, receipt)
+-        queue.RUNS = (("range_bearing", 8 * 3600, queue.RANGE_PREPARATION),
+-                      ("predator_prey", 8 * 3600, queue.PREPARATION),
+-                      ("sir_d18", 32 * 3600, queue.PREPARATION))
++        queue.RUNS = phase_order(energy_resume)
++        failed_model = "range_bearing" if energy_resume else "predator_prey"
+         state.setdefault("prior_attempts", []).append(dict(
+-            model="predator_prey", **state["models"].pop("predator_prey")))
+-        state.update(pid=os.getpid(), queue_repair_plan=str(PLAN),
+-                     previous_supervisor_pid=receipt["parent"]["pid"])
+-        completed = monitor_adopted(adopted, manifest["deadline_epoch"],
+-                                    lambda: queue.publish(output, state, manifest))
+-        if not completed:
+-            queue.close_interrupted_attempt(
+-                output, time.monotonic() - state["phase_started_monotonic"], "DEADLINE_STOP")
+-            state["models"]["range_bearing"] = dict(status="DEADLINE_STOP")
+-        if "range_bearing" not in state["models"]:
+-            finish_phase(output, state, output / "range_bearing", None)
++            model=failed_model, **state["models"].pop(failed_model)))
++        if adopted is None:
++            state["prior_attempts"].append(dict(model="sir_d18", **state["models"].pop("sir_d18")))
++        state.update(pid=os.getpid(), status="RUNNING", queue_repair_plan=receipt["plan"],
++                     previous_supervisor_pid=receipt["saved_state"]["pid"])
++        state.pop("finished_utc", None)
++        if adopted is not None:
++            completed = monitor_adopted(adopted, manifest["deadline_epoch"],
++                                        lambda: queue.publish(output, state, manifest))
++            if not completed:
++                queue.close_interrupted_attempt(
++                    output, time.monotonic() - state["phase_started_monotonic"], "DEADLINE_STOP")
++                state["models"][adopted_model] = dict(status="DEADLINE_STOP")
++            if adopted_model not in state["models"]:
++                finish_phase(output, state, adopted_output, None)
+         state.pop("active_master_pid", None)
+         adopted = None
+         queue.publish(output, state, manifest)
+@@ -229,8 +300,12 @@
+                 state["models"][model] = dict(status="CAMPAIGN_BUDGET_STOP")
+                 queue.publish(output, state, manifest)
+                 continue
+-            command = (retry_command(seconds, output) if model == "predator_prey"
++            command = (energy_resume_command(seconds, output)
++                       if energy_resume and model == "range_bearing"
++                       else retry_command(seconds, output) if model == "predator_prey"
+                        else queue.command_for(model, seconds, root, output))
++            if receipt.get("stopped_restart") and model == "sir_d18":
++                command[command.index("--output") + 1] = str(output / "sir_d18-energy-retry-01")
+             phase_output = Path(command[command.index("--output") + 1])
+             if phase_output.exists():
+                 raise FileExistsError(phase_output)
+@@ -263,7 +338,7 @@
+             for model, _, _ in queue.RUNS) else "INCOMPLETE_SEE_MODEL_RESULTS")
+     except BaseException:
+         error = traceback.format_exc()
+-        if not took_over and alive(receipt["parent"]):
++        if not took_over and receipt.get("parent") and alive(receipt["parent"]):
+             signal_live(receipt["parent"], signal.SIGCONT)
+             receipt.update(status="HANDOFF_FAILED_OLD_SUPERVISOR_RESUMED", error=traceback.format_exc())
+             master.write(receipt_path, receipt)
+@@ -282,9 +357,12 @@
+     return 0 if state["status"] == "COMPLETE_RECORDED_SAMPLING_RULE" else 2
+ 
+ 
+-def launch(output):
+-    _, _, _, parent, _ = validate(output)
+-    repair = output / "queue-repair-01"
++def launch(output, resume_range_bearing=False):
++    if resume_range_bearing and master.read(output / "state.json")["status"] != "RUNNING":
++        return launch_stopped(output)
++    _, _, _, parent, _ = validate(output, resume_range_bearing)
++    plan = ENERGY_PLAN if resume_range_bearing else PLAN
++    repair = output / ("queue-energy-repair-01" if resume_range_bearing else "queue-repair-01")
+     repair.mkdir(exist_ok=False)
+     frozen = False
+     child = None
+@@ -293,14 +371,15 @@
+         os.kill(parent["pid"], signal.SIGSTOP)
+         frozen = True
+         wait_stopped(parent)
+-        manifest, state, ledger, checked_parent, worker = validate(output)
++        manifest, state, ledger, checked_parent, worker = validate(output, resume_range_bearing)
+         if checked_parent["start_ticks"] != parent["start_ticks"]:
+             raise RuntimeError("Supervisor changed during handoff")
+         master.write(receipt, dict(status="PREPARED", created_utc=master.stamp(),
+             parent=parent, worker=worker, saved_state=state, saved_budget=ledger,
+-            deadline_epoch=manifest["deadline_epoch"], plan=str(PLAN),
++            deadline_epoch=manifest["deadline_epoch"], plan=str(plan),
++            resume_range_bearing=resume_range_bearing,
+             sources={str(path.relative_to(ROOT)): master.digest(path)
+-                     for path in (Path(__file__).resolve(), PLAN)}))
++                     for path in (Path(__file__).resolve(), plan)}))
+         with (repair / "supervisor.log").open("x") as log:
+             child = subprocess.Popen([str(queue.PYTHON), str(Path(__file__).resolve()),
+                 "run", "--output", str(output), "--receipt", str(receipt)], cwd=ROOT,
+@@ -322,12 +401,34 @@
+         raise
+ 
+ 
++def launch_stopped(output):
++    manifest, state, ledger = validate_stopped(output)
++    repair = output / "queue-energy-repair-01"
++    repair.mkdir(exist_ok=False)
++    receipt = repair / "handoff.json"
++    master.write(receipt, dict(status="PREPARED", created_utc=master.stamp(),
++        worker=None, parent=None, stopped_restart=True, resume_range_bearing=True,
++        saved_state=state, saved_budget=ledger, deadline_epoch=manifest["deadline_epoch"],
++        plan=str(ENERGY_PLAN), sources={str(path.relative_to(ROOT)): master.digest(path)
++            for path in (Path(__file__).resolve(), ENERGY_PLAN)}))
++    with (repair / "supervisor.log").open("x") as log:
++        child = subprocess.Popen([str(queue.PYTHON), str(Path(__file__).resolve()),
++            "run", "--output", str(output), "--receipt", str(receipt)], cwd=ROOT,
++            stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT,
++            start_new_session=True, env={**os.environ, "TF_FORCE_GPU_ALLOW_GROWTH": "true"})
++    print(json.dumps(dict(supervisor_pid=child.pid, receipt=str(receipt),
++                         mode="stopped_restart", deadline_utc=manifest["deadline_utc"])))
++    return 0
++
++
+ if __name__ == "__main__":
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument("action", choices=("launch", "run"))
+     parser.add_argument("--output", type=Path, default=queue.OUTPUT)
+     parser.add_argument("--receipt", type=Path)
++    parser.add_argument("--resume-range-bearing", action="store_true")
+     args = parser.parse_args()
+     if args.action == "run" and args.receipt is None:
+         parser.error("run requires --receipt")
+-    raise SystemExit(launch(args.output) if args.action == "launch" else run(args.output, args.receipt))
++    raise SystemExit(launch(args.output, args.resume_range_bearing)
++                     if args.action == "launch" else run(args.output, args.receipt))

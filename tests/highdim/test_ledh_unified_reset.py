@@ -81,9 +81,9 @@ def test_b1_k1_matches_legacy_single_cloud_authority(denominator_regularization)
     new = _run(values, denominator_regularization)
     for index, (expected, actual) in enumerate(zip(old, new)):
         if index == 6:
-            # The existing numerical helper squeezes a singleton batch flag.
-            assert actual.shape == expected.shape == tf.TensorShape([])
-            np.testing.assert_array_equal(actual.numpy(), expected.numpy())
+            assert actual.shape == tf.TensorShape([1])
+            assert expected.shape == tf.TensorShape([])
+            np.testing.assert_array_equal(actual[0].numpy(), expected.numpy())
             continue
         unbatched = actual[0, 0] if index in (1, 3, 5) else actual[0]
         np.testing.assert_allclose(
@@ -112,8 +112,8 @@ def test_batched_rows_and_directions_equal_independent_calls(denominator_regular
             for index, (full, expected) in enumerate(zip(batched, independent)):
                 if index == 6:
                     assert full.shape == tf.TensorShape([batch_size])
-                    assert expected.shape == tf.TensorShape([])
-                    np.testing.assert_array_equal(full[row].numpy(), expected.numpy())
+                    assert expected.shape == tf.TensorShape([1])
+                    np.testing.assert_array_equal(full[row].numpy(), expected[0].numpy())
                     continue
                 if index in (1, 3, 5):
                     selected = full[direction, row]

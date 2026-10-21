@@ -1,0 +1,4 @@
+# Terminal next-phase reporting repair
+The last successful model could leave next-phase-plan status looking complete even when an earlier model failed. advance.json already reported the aggregate correctly. Added overall_status and unresolved_models to the next-phase plan while preserving the last specific status for existing readers. The repair changes orchestration reporting only; no scientific dependency, selection identity, numerical kernel or running process was changed. The active parent loaded the earlier orchestration; at completion its terminal plan will be refreshed from advance.json. Focused regression verifies both earlier-failure/later-success and all-pass cases.
+
+GPU contention observed during LGSSM fresh tuning is preserved in contention-observation-01.json. Timing under overlap is explanatory, not isolated performance evidence; numerical/precision checks remain useful. Any timing nomination is provisional until uncontended measurement.

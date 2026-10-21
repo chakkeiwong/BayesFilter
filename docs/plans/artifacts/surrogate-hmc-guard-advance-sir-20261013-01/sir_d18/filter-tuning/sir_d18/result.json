@@ -1,0 +1,3722 @@
+{
+  "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+  "model": "sir_d18",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "sir_d18",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-guard-advance-sir-20261013-01/sir_d18/filter-tuning/sir_d18",
+    "--gpu",
+    "0",
+    "--batch-size",
+    "2",
+    "--paired-repeats",
+    "2",
+    "--offset",
+    "0.0",
+    "--runtime-precision",
+    "fp64_recursion_fp32_pairs",
+    "--tuning-seed-offset",
+    "40",
+    "--filter-tuning",
+    "--shared-gaussian-contraction",
+    "direct"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-12T18:04:42.546216+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "evidence_role": "fresh_scope_control_nomination_with_precision_veto",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "covariance_proposal_score_tf.py": "3df5148a6b7d7ca7ca9f6c17e9dabac4c2a11903890e67162fb160e034f08aba",
+    "covariance_proposal_score_batch_tf.py": "14140e3bcbf48b63922a69b1bde3f143be244aa55f501309836d070e124b9586",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "8c4faaae7f336db7825fb6158d73248d1a03edd0114cb64282b5231961bb79c7",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "source_snapshot": "docs/plans/artifacts/surrogate-hmc-guard-advance-sir-20261013-01/sir_d18/filter-tuning/sir_d18/source",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "source_dependency_sha256": {
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+    "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+    "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "3df5148a6b7d7ca7ca9f6c17e9dabac4c2a11903890e67162fb160e034f08aba",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "14140e3bcbf48b63922a69b1bde3f143be244aa55f501309836d070e124b9586",
+    "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+    "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "8c4faaae7f336db7825fb6158d73248d1a03edd0114cb64282b5231961bb79c7",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+  },
+  "baseline_selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/sir_d18/filter-tuning/filter-selection.json",
+  "precision_policy": "fp64_recursion_fp32_pairs",
+  "pairwise_dtype": "float32",
+  "tuning_seed_offset": 40,
+  "particles": 4032,
+  "horizon": 50,
+  "parameter_count": 3,
+  "state_dimension": 18,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "scope": {
+    "model": "sir_d18",
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 18,
+    "parameter_dimension": 3,
+    "dtype": "float64",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "fp64_recursion_fp32_pairs",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 40,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scales": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "3df5148a6b7d7ca7ca9f6c17e9dabac4c2a11903890e67162fb160e034f08aba",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "14140e3bcbf48b63922a69b1bde3f143be244aa55f501309836d070e124b9586",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "8c4faaae7f336db7825fb6158d73248d1a03edd0114cb64282b5231961bb79c7",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection": "docs/plans/artifacts/surrogate-hmc-guard-advance-sir-20261013-01/sir_d18/filter-tuning/sir_d18/filter-selection.json",
+  "selected": {
+    "index": 0,
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 0.5,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25,
+      "shared_gaussian_contraction": "direct"
+    },
+    "valid": true,
+    "beta": [
+      0.1,
+      0.07527773579726693,
+      0.8247222642027332
+    ],
+    "trajectory_health": [
+      {
+        "seed": 26101251,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "validity_fields": [
+          "mean",
+          "covariance",
+          "correction_l2",
+          "correction_coordinate",
+          "correction_finite",
+          "proposal_maps",
+          "density",
+          "reset",
+          "particle_value",
+          "particle_tangent",
+          "increment_value",
+          "increment_tangent"
+        ],
+        "validity_trace": [
+          [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ]
+        ],
+        "covariance_tolerance": 8.000183862868282e-12,
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            74.0599710382936
+          ],
+          "maximum": [
+            3943.7404774354623
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00038330492215238906
+          ],
+          "maximum": [
+            0.053680709815568516
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            7.105427357601002e-15
+          ],
+          "maximum": [
+            5.684341886080802e-14
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            2.8005195576749237e-16
+          ],
+          "maximum": [
+            8.94938186484049e-16
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.009231963610615726
+          ],
+          "maximum": [
+            0.3142621826586331
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00013528892304748297
+          ],
+          "maximum": [
+            0.05243948474526405
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            5.888938903808594e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.2872670286659092
+          ],
+          "maximum": [
+            40.302028790498305
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101252,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "validity_fields": [
+          "mean",
+          "covariance",
+          "correction_l2",
+          "correction_coordinate",
+          "correction_finite",
+          "proposal_maps",
+          "density",
+          "reset",
+          "particle_value",
+          "particle_tangent",
+          "increment_value",
+          "increment_tangent"
+        ],
+        "validity_trace": [
+          [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ]
+        ],
+        "covariance_tolerance": 8.000183862868282e-12,
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            248.4592191153047
+          ],
+          "maximum": [
+            3992.7024692895334
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00032570714619198913
+          ],
+          "maximum": [
+            0.024469619627852365
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            7.105427357601002e-15
+          ],
+          "maximum": [
+            5.684341886080802e-14
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            3.026597821827178e-16
+          ],
+          "maximum": [
+            7.713383657151788e-16
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.013263859064236501
+          ],
+          "maximum": [
+            0.33920968807271495
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            9.058545401785523e-05
+          ],
+          "maximum": [
+            0.02397358976304531
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            5.328655242919922e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.2652493652128068
+          ],
+          "maximum": [
+            31.43207559580298
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101253,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "validity_fields": [
+          "mean",
+          "covariance",
+          "correction_l2",
+          "correction_coordinate",
+          "correction_finite",
+          "proposal_maps",
+          "density",
+          "reset",
+          "particle_value",
+          "particle_tangent",
+          "increment_value",
+          "increment_tangent"
+        ],
+        "validity_trace": [
+          [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ]
+        ],
+        "covariance_tolerance": 8.000183862868282e-12,
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            410.2048234745106
+          ],
+          "maximum": [
+            3900.7473344246973
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00043381123922791
+          ],
+          "maximum": [
+            0.014642371040904944
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            7.105427357601002e-15
+          ],
+          "maximum": [
+            5.684341886080802e-14
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            3.3386440708710997e-16
+          ],
+          "maximum": [
+            6.728070104625938e-16
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.011756294946291261
+          ],
+          "maximum": [
+            0.3721076020986258
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00018579527386464179
+          ],
+          "maximum": [
+            0.013650316745042801
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            5.227327346801758e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.3582100573633741
+          ],
+          "maximum": [
+            26.104281707533048
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101254,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "validity_fields": [
+          "mean",
+          "covariance",
+          "correction_l2",
+          "correction_coordinate",
+          "correction_finite",
+          "proposal_maps",
+          "density",
+          "reset",
+          "particle_value",
+          "particle_tangent",
+          "increment_value",
+          "increment_tangent"
+        ],
+        "validity_trace": [
+          [
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ],
+            [
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            ]
+          ]
+        ],
+        "covariance_tolerance": 8.000183862868282e-12,
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            248.1816214275189
+          ],
+          "maximum": [
+            3989.4221998117605
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0003308241643790126
+          ],
+          "maximum": [
+            0.026066556636576147
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            7.105427357601002e-15
+          ],
+          "maximum": [
+            5.684341886080802e-14
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            2.666344512630619e-16
+          ],
+          "maximum": [
+            8.15927231219088e-16
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.010365595167200283
+          ],
+          "maximum": [
+            0.35544136547487765
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            8.280837209895253e-05
+          ],
+          "maximum": [
+            0.024331124499440193
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            8.386373519897461e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.20612743915483717
+          ],
+          "maximum": [
+            38.23149464473412
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      }
+    ],
+    "precision_pass": true,
+    "precision_checks": [
+      {
+        "passed": true,
+        "healthy": true,
+        "candidate_values_and_scores": [
+          [
+            -1679.6097947760104,
+            40.57391098598388,
+            166.88889857495684,
+            -22.76980457642156
+          ],
+          [
+            -1678.9961497125842,
+            18.99801891830131,
+            142.22820576564766,
+            -15.488010239620344
+          ]
+        ],
+        "fp64_values_and_scores": [
+          [
+            -1679.6097631754985,
+            40.58400896655495,
+            166.8834156970501,
+            -22.763404762454726
+          ],
+          [
+            -1678.9961248101251,
+            19.024802301598942,
+            142.2173418400522,
+            -15.491080749244716
+          ]
+        ],
+        "candidate_precision_policy": "fp64_recursion_fp32_pairs",
+        "reference_precision_policy": "uniform",
+        "reference_dtype": "float64",
+        "absolute_errors": [
+          [
+            3.16005118747853e-05,
+            0.010097980571067922,
+            0.0054828779067293,
+            0.006399813966833534
+          ],
+          [
+            2.4902459017539513e-05,
+            0.026783383297633634,
+            0.010863925595458568,
+            0.003070509624372164
+          ]
+        ],
+        "scaled_errors": [
+          [
+            1.8814198730924757e-08,
+            0.00024881673418191905,
+            3.285454030185108e-05,
+            0.0002811448477773059
+          ],
+          [
+            1.4831754909711712e-08,
+            0.0014078140142030607,
+            7.638959816642415e-05,
+            0.00019821145303382853
+          ]
+        ],
+        "tolerance": 0.01,
+        "scale": "max(1,abs(FP64 component))",
+        "role": "numerical veto; same-algorithm reference, not model oracle",
+        "validation_seed": 26101253
+      },
+      {
+        "passed": true,
+        "healthy": true,
+        "candidate_values_and_scores": [
+          [
+            -1668.2445992097662,
+            33.18047555319671,
+            -33.61408186796896,
+            -38.76287530208819
+          ],
+          [
+            -1668.4599974253413,
+            -1.801614555188826,
+            -52.181988348368094,
+            -34.031799867949026
+          ]
+        ],
+        "fp64_values_and_scores": [
+          [
+            -1668.2445690907937,
+            33.173693395112345,
+            -33.61256889884561,
+            -38.744640787479604
+          ],
+          [
+            -1668.4599746852232,
+            -1.8049269762144242,
+            -52.18090644325523,
+            -34.02911967242009
+          ]
+        ],
+        "candidate_precision_policy": "fp64_recursion_fp32_pairs",
+        "reference_precision_policy": "uniform",
+        "reference_dtype": "float64",
+        "absolute_errors": [
+          [
+            3.0118972517811926e-05,
+            0.006782158084362777,
+            0.0015129691233539688,
+            0.018234514608586494
+          ],
+          [
+            2.2740118083675043e-05,
+            0.0033124210255981446,
+            0.0010819051128621027,
+            0.0026801955289386115
+          ]
+        ],
+        "scaled_errors": [
+          [
+            1.8054290765188584e-08,
+            0.0002044438647088367,
+            4.501200511948762e-05,
+            0.00047063320856697704
+          ],
+          [
+            1.3629405816561624e-08,
+            0.001835210548265766,
+            2.073373550991556e-05,
+            7.876182383615571e-05
+          ]
+        ],
+        "tolerance": 0.01,
+        "scale": "max(1,abs(FP64 component))",
+        "role": "numerical veto; same-algorithm reference, not model oracle",
+        "validation_seed": 26101254
+      }
+    ],
+    "first_score_compile_and_execute_seconds": 69.18692944990471,
+    "warmed_score_seconds": 40.851481267949566,
+    "score_batch_size": 2,
+    "importance_variance_cost_proxy": 46.932069286051274,
+    "fit_converged": true,
+    "context_valid": true,
+    "beta_fit": {
+      "beta": [
+        0.1,
+        0.07527773579726693,
+        0.8247222642027332
+      ],
+      "objective": 1.122694107018547,
+      "gap": 0.00010846604218060774,
+      "iterations": 53,
+      "converged": true
+    },
+    "calibration_candidate_valid": true,
+    "validation_loss": 1.1488462065357785,
+    "equal_validation_loss": 1.175659172532098,
+    "selected_beta_loss": 1.1488462065357785,
+    "beta_choice": "calibrated"
+  },
+  "wall_seconds": 1931.856885308167,
+  "peak_host_rss_bytes": 5728342016,
+  "allocator": {
+    "current": 37379840,
+    "peak": 3085449216
+  }
+}

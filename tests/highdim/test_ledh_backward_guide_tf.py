@@ -222,7 +222,7 @@ def test_guided_consumer_actual_nonlinear_flow_jacobian(integrated, monkeypatch)
     for args, kwargs, result in captured:
         assert kwargs["return_affine"]
         model, actual, _, anchors = args[:4]
-        assert float(tf.reduce_max(tf.abs(result[4] - anchors))) > 1e-3
+        assert float(tf.reduce_max(tf.abs(result[6] - anchors))) > 1e-3
         assert float(tf.reduce_max(tf.abs(
             model.observation_jacobian_fn(anchors + 0.17)
             - model.observation_jacobian_fn(anchors)
@@ -237,7 +237,7 @@ def test_guided_consumer_actual_nonlinear_flow_jacobian(integrated, monkeypatch)
             lower = original(*(args[:1] + (actual - perturbation,) + args[2:]), **kwargs)[0]
             columns.append(tf.reshape((upper - lower) / (2 * delta), [-1]))
         numerical = tf.stack(columns, axis=1)
-        affine = result[6]
+        affine = result[8]
         expected = tf.reshape(
             tf.einsum("nm,nij->nimj", tf.eye(actual.shape[0], dtype=DTYPE), affine),
             [coordinate_count, coordinate_count],
@@ -286,8 +286,8 @@ def test_quadratic_guide_is_applied_in_preflow_coordinates(integrated):
         substeps=fixture["options"]["flow_substeps"], eye=tf.eye(2, dtype=DTYPE),
         return_affine=True,
     )
-    affine = flow[6]
-    shift = flow[4] - tf.einsum("nij,nj->ni", affine, anchors)
+    affine = flow[8]
+    shift = flow[6] - tf.einsum("nij,nj->ni", affine, anchors)
     children = tf.einsum("nij,nj->ni", affine, points) + shift
     np.testing.assert_allclose(record["children"], children, atol=1e-13)
     recovered = tf.linalg.solve(affine, (children - shift)[..., None])[..., 0]
@@ -481,3 +481,40 @@ def test_unsupported_guide_combinations_fail_at_both_endpoints(integrated, extra
             fixture["initial_states"], fixture["initial_covariances"], fixture["noises"],
             fixture["observations"], with_score=True, backward_guide=_mixture(), **options,
         )
+
+
+@pytest.mark.parametrize("failure", ["guide_validity", "guide_tangent"])
+def test_guided_proposal_preserves_split_failure_status(integrated, monkeypatch, failure):
+    """A merged guided lane must retain value/force failure separation."""
+    from bayesfilter.highdim import ledh_backward_guide_tf as guide_module
+
+    fixture, _ = integrated
+    original = guide_module.guided_gaussian_draw
+
+    def failing_draw(*args, **kwargs):
+        values = list(original(*args, **kwargs))
+        if failure == "guide_validity":
+            # Finite arithmetic must not conceal the guide's invalidity flag.
+            values[-1] = tf.constant(False)
+        else:
+            # A failed derivative does not invalidate the finite scalar value.
+            values[3] = tf.fill(tf.shape(values[3]), tf.constant(float("nan"), DTYPE))
+        return tuple(values)
+
+    monkeypatch.setattr(guide_module, "guided_gaussian_draw", failing_draw)
+    theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
+    direction = tf.constant([0.4, -0.3, 0.2, 0.5], DTYPE)
+    value, score, status = shared_score._value_and_analytical_score_impl(
+        _parameterized_model(theta, direction), theta,
+        fixture["initial_states"], fixture["initial_covariances"], fixture["noises"],
+        fixture["observations"], with_score=True, return_status=True,
+        backward_guide=_mixture(), **fixture["options"],
+    )
+    assert not bool(status["force_valid"])
+    assert bool(tf.reduce_all(tf.math.is_finite(score)))
+    if failure == "guide_validity":
+        assert not bool(status["value_valid"])
+        assert float(value) == float("-inf")
+    else:
+        assert bool(status["value_valid"])
+        assert bool(tf.math.is_finite(value))

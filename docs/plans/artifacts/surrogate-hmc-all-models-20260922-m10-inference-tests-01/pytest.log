@@ -1,0 +1,44 @@
+..................F.......................................               [100%]
+=================================== FAILURES ===================================
+______ test_public_verified_tuning_budget_and_reference_functional_units _______
+
+    def test_public_verified_tuning_budget_and_reference_functional_units():
+        import tensorflow as tf
+        from scripts.run_surrogate_hmc_nonlinear import tuning_config
+        from bayesfilter.inference import HMC_TUNING_INTERFACE_CAPABILITIES
+        from bayesfilter.testing.surrogate_hmc_nonlinear_inference_metrics import scalar_functionals
+        config = tuning_config('M10-test')
+        payload = config.payload()
+        assert payload['warmup_results'] == 250
+        assert payload['verification_results'] == 1000
+>       assert payload['nomination']['trajectory_candidates'] == [1, 2]
+E       assert (1, 2) == [1, 2]
+E         
+E         Use -v to get more diff
+
+tests/test_surrogate_hmc_nonlinear_inference.py:166: AssertionError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790012510.296253       4 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790012510.300276       4 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790012510.311003       4 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790012510.311068       4 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790012510.311070       4 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790012510.311072       4 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-22 01:41:53.641218: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (100)
+------------------------------ Captured log call -------------------------------
+WARNING  matplotlib:__init__.py:541 /home/chakwong/.config/matplotlib is not a writable directory
+WARNING  matplotlib:__init__.py:554 Matplotlib created a temporary cache directory at /tmp/matplotlib-isqq9s9x because there was an issue with the default path (/home/chakwong/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_nonlinear_inference.py::test_public_verified_tuning_budget_and_reference_functional_units
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_nonlinear_inference.py::test_public_verified_tuning_budget_and_reference_functional_units
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_nonlinear_inference.py::test_public_verified_tuning_budget_and_reference_functional_units
+1 failed, 57 passed, 2 warnings in 5.56s

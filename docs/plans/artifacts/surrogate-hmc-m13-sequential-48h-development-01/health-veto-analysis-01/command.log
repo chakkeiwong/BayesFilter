@@ -1,0 +1,24 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790651754.461942 1995155 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790651754.466018 1995155 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790651754.476187 1995155 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790651754.476254 1995155 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790651754.476260 1995155 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790651754.476262 1995155 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-29 11:15:55.991382: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/analyze_health_veto_01.py", line 31, in <module>
+    nt={k:load(nom["tensors"][k],nomroot) for k in (
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/analyze_health_veto_01.py", line 31, in <dictcomp>
+    nt={k:load(nom["tensors"][k],nomroot) for k in (
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-development-01/analyze_health_veto_01.py", line 13, in load
+    return tf.io.parse_tensor(tf.io.read_file(str(path)),out_type=tf.as_dtype(record.get("dtype","float64")))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/gen_parsing_ops.py", line 2159, in parse_tensor
+    _ops.raise_from_not_ok_status(e, name)
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py", line 6027, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__ParseTensor_device_/job:localhost/replica:0/task:0/device:CPU:0}} Type mismatch between parsed tensor (int32) and dtype (double) [Op:ParseTensor] name: 

@@ -14,6 +14,8 @@ from typing import Any, Mapping
 
 
 PROTOCOL_SCHEMA = "bayesfilter.hmc_replicated_acceptance_policy.v7"
+ONE_SIDED_PROTOCOL_SCHEMA = "bayesfilter.hmc_replicated_acceptance_policy.v8"
+SUPPORTED_PROTOCOL_SCHEMAS = (PROTOCOL_SCHEMA, ONE_SIDED_PROTOCOL_SCHEMA)
 EVIDENCE_UNIT = "independent_fixed_horizon_trial"
 
 
@@ -54,6 +56,7 @@ class HMCReplicatedAcceptancePolicy:
     preferred_region: tuple[float, float] = (.65, .75)
     qualification_region: tuple[float, float] = (.55, .85)
     start_weights: tuple[float, ...] = (.25, .25, .25, .25)
+    qualification_mode: str = "two_sided"
     method: str = "bounded_betting_mixture_v1"
     bet_fractions: tuple[float, ...] = (1., .5, .25, .125)
     min_movement_rate: float = .05
@@ -71,17 +74,23 @@ class HMCReplicatedAcceptancePolicy:
         for name in ("search_family_alpha", "verification_family_alpha",
                      "diagnostic_family_alpha", "temporal_tolerance"):
             object.__setattr__(self, name, _probability(getattr(self, name), name))
+        if self.qualification_mode not in {"two_sided", "lower_bound"}:
+            raise ValueError("unsupported acceptance qualification mode")
         for name in ("preferred_region", "qualification_region"):
             value = tuple(getattr(self, name))
             if len(value) != 2:
                 raise ValueError(f"{name} requires two endpoints")
-            value = tuple(_probability(v, name) for v in value)
+            value = tuple(1.0 if name == "qualification_region" and i == 1
+                          and self.qualification_mode == "lower_bound" and type(v) in (int, float) and v == 1.
+                          else _probability(v, name) for i, v in enumerate(value))
             if value[0] >= value[1]:
                 raise ValueError(f"{name} must be ordered")
             object.__setattr__(self, name, value)
         if not (self.qualification_region[0] <= self.preferred_region[0]
                 < self.preferred_region[1] <= self.qualification_region[1]):
             raise ValueError("qualification region must contain the preferred region")
+        if self.qualification_mode == "lower_bound" and self.qualification_region[1] != 1.:
+            raise ValueError("one-sided qualification requires upper endpoint one")
         weights = tuple(self.start_weights)
         if len(weights) != 4 or any(type(w) not in (int, float) or not math.isfinite(w)
                                     or w <= 0 for w in weights):
@@ -132,7 +141,11 @@ class HMCReplicatedAcceptancePolicy:
         return hashlib.sha256(_canonical(self.payload()).encode()).hexdigest()
 
     def payload(self) -> Mapping[str, Any]:
-        return {"schema": PROTOCOL_SCHEMA, **asdict(self),
+        values = asdict(self)
+        schema = ONE_SIDED_PROTOCOL_SCHEMA if self.qualification_mode == "lower_bound" else PROTOCOL_SCHEMA
+        if self.qualification_mode == "two_sided":
+            values.pop("qualification_mode")
+        return {"schema": schema, **values,
                 "evidence_unit": EVIDENCE_UNIT,
                 "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
                 "temporal_diagnostic_role": "preparation_investigation_not_admission",
@@ -143,9 +156,10 @@ class HMCReplicatedAcceptancePolicy:
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "HMCReplicatedAcceptancePolicy":
         from dataclasses import fields
-        if not isinstance(payload, Mapping) or payload.get("schema") != PROTOCOL_SCHEMA:
+        if not isinstance(payload, Mapping) or payload.get("schema") not in SUPPORTED_PROTOCOL_SCHEMAS:
             raise ValueError("replicated acceptance policy schema mismatch")
-        values = {f.name: payload[f.name] for f in fields(cls)}
+        values = {f.name: payload[f.name] for f in fields(cls) if f.name != "qualification_mode"}
+        values["qualification_mode"] = payload.get("qualification_mode", "two_sided")
         policy = cls(**values)
         if _canonical(policy.payload()) != _canonical(payload):
             raise ValueError("replicated acceptance policy metadata mismatch")
@@ -194,7 +208,8 @@ def replicated_evidence_preflight(policy: HMCReplicatedAcceptancePolicy, *,
                                   evidence_rungs: tuple[int, ...], candidate_cap: int,
                                   leapfrog_steps: tuple[int, ...],
                                   max_gradient_work: int | None = None,
-                                  pilot_enabled: bool = False) -> Mapping[str, Any]:
+                                  pilot_enabled: bool = False,
+                                  transition_profile=None) -> Mapping[str, Any]:
     """Check the full evidence design before target evaluation or compilation."""
     if not isinstance(policy, HMCReplicatedAcceptancePolicy):
         raise TypeError("a replicated acceptance policy is required")
@@ -219,19 +234,29 @@ def replicated_evidence_preflight(policy: HMCReplicatedAcceptancePolicy, *,
         raise ValueError("pilot_enabled must be boolean")
     targets = tuple(policy.repetition_target(r) for r in rungs)
     per_trial = policy.chain_count * (policy.discarded_prefix + policy.trial_num_results)
-    first_stage = tuple(per_trial * targets[0] * (l + 1) for l in steps)
+    costs = tuple(l + 1 for l in steps)
+    if transition_profile is not None:
+        from .hmc_transition_spec import HMCTransitionProfile
+        if not isinstance(transition_profile, HMCTransitionProfile):
+            raise TypeError("typed transition profile required for work preflight")
+        costs = tuple(transition_profile.freeze(epsilon=1., max_steps=l).
+                      conservative_gradient_work_per_transition for l in steps)
+    first_stage = tuple(per_trial * targets[0] * cost for cost in costs)
     mandatory = (2 + int(pilot_enabled)) * sum(first_stage)
-    return {"schema": "bayesfilter.hmc_replicated_evidence_preflight.v1",
+    return {"schema": "bayesfilter.hmc_replicated_evidence_preflight.v1" if transition_profile is None
+                       else "bayesfilter.hmc_replicated_evidence_preflight.v2",
+            **({"transition_profile": transition_profile.payload()} if transition_profile is not None else {}),
             "policy_id": policy.identity, "evidence_unit": EVIDENCE_UNIT,
             "replication_targets": targets,
             "incremental_repetitions": (targets[0], *(b-a for a, b in zip(targets, targets[1:]))),
             "trial_transitions": per_trial, "initial_cohort_mandatory_gradient_work": mandatory,
             "initial_measurement_gradient_work_by_candidate": first_stage,
-            "maximum_stage_gradient_work_by_candidate": tuple(per_trial * targets[-1] * (l+1) for l in steps),
+            "maximum_stage_gradient_work_by_candidate": tuple(per_trial * targets[-1] * cost for cost in costs),
             "candidate_cap": candidate_cap, "planned_looks": len(rungs),
             "pilot_enabled": pilot_enabled,
             "search_one_sided_alpha": policy.one_sided_alpha("measurement"),
             "verification_one_sided_alpha": policy.one_sided_alpha("verification"),
             "first_cohort_fundable": max_gradient_work is None or mandatory <= max_gradient_work,
             "precision_sufficiency": "not_established; requires statistical and cost validation",
-            "cost_basis": "conservative transitions times L+1; includes every discarded prefix"}
+            "cost_basis": "conservative transitions times L+1; includes every discarded prefix" if transition_profile is None
+                          else "frozen profile maximum value/score and status calls; includes every discarded prefix"}

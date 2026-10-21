@@ -1,0 +1,58 @@
+{
+  "role": "CPU numerical mechanics and orchestration tests, no statistical promotion",
+  "git_commit": "8b3be2379acab6fef1e31a4b24d3d87becbdd218",
+  "working_tree_source_sha256": {
+    "bayesfilter/testing/inference_validation/modern_tuning_consumer.py": "207ac3106d79fa5de260ddccf5f508f85fcf868b2a4736418bc20b99b51d3600",
+    "bayesfilter/testing/inference_validation/mams_adaptation_consumer.py": "2fbd6d170299cf4867dc48e064c05f6535513ec941a4198043aaaefa330f3d8e",
+    "tests/test_modern_tuning_consumer.py": "92eb952836ac384458ccdf993de819082581c04cd964be223f38e28e2afbab7f",
+    "tests/test_mams_adaptation_consumer.py": "679665aca87c94ae652ab940306278668fe19c9be67bf9449236d6b5b4c42aaf"
+  },
+  "first_run": {
+    "command": "env CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true TF_CPP_MIN_LOG_LEVEL=3 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest -q tests/test_modern_tuning_consumer.py tests/test_mams_adaptation_consumer.py",
+    "tests_passed": 22,
+    "pytest_seconds": 172.55,
+    "charged_seconds": 180.0,
+    "charge_basis": "conservative round-up includes startup; wall duration was not separately recorded"
+  },
+  "followup": {
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--disable-warnings",
+      "tests/test_modern_tuning_consumer.py",
+      "-k",
+      "actual_budget_stop or fixed_hmc_uses"
+    ],
+    "exit_code": 1,
+    "wall_seconds": 15.224023720715195,
+    "gpu_intentionally_hidden": true,
+    "role": "CPU mechanics regression",
+    "source": "working tree pending scoped commit"
+  },
+  "corrected": {
+    "command": [
+      "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--disable-warnings",
+      "tests/test_modern_tuning_consumer.py",
+      "-k",
+      "actual_budget_stop"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 5.304087046999484,
+    "gpu_intentionally_hidden": true,
+    "role": "CPU mechanics regression"
+  },
+  "distinct_passing_tests": 24,
+  "gpu_intentionally_hidden": true,
+  "non_xla_role": "explicit CPU graph reference fixtures; internal XLA only where existing code requests it",
+  "environment": "/home/ubuntu/anaconda3/envs/tfgpu",
+  "initial_followup_failure": "test expected budget_bound; public completion status is partial_budget; no runtime change",
+  "plan": "docs/plans/bayesfilter-modern-hmc-adaptive-consumer-repair-2026-10-12.md",
+  "charged_seconds": 200.52811076771468,
+  "local_usage_in_existing_3600_second_reserve": 993.3624797677147
+}

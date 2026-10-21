@@ -1,0 +1,53 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791326356.672582  691198 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791326356.679322  691198 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791326356.697914  691198 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791326356.697981  691198 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791326356.697987  691198 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791326356.697989  691198 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791326359.379058  691198 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791326359.720964  691198 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5fd961431350
+I0000 00:00:1791326364.056124  691198 cuda_dnn.cc:529] Loaded cuDNN version 92000
+I0000 00:00:1791326365.391163  691198 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+m13-t50 1024 control 0 valid True
+m13-t50 1024 control 1 valid True
+WARNING:tensorflow:5 out of the last 4658 calls to <function Kernels.get.<locals>.function at 0x7a3694e498a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:6 out of the last 4659 calls to <function Kernels.get.<locals>.function at 0x7a3694e487c0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+m13-t50 1024 dataset 100 complete
+m13-t50 1024 dataset 101 complete
+m13-t50 1024 dataset 102 complete
+m13-t50 1024 dataset 103 complete
+m13-t50 1024 dataset 104 complete
+m13-t50 1024 dataset 105 complete
+m13-t50 1024 dataset 106 complete
+m13-t50 1024 dataset 107 complete
+m13-t50 1024 dataset 108 complete
+m13-t50 1024 dataset 109 complete
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 374, in worker
+    row["bootstrap"]=evaluate(bootstrap,param,observed32,seed)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 541, in <module>
+    if __name__=="__main__": main()
+                             ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 538, in main
+    worker(args)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 374, in worker
+    row["bootstrap"]=evaluate(bootstrap,param,observed32,seed)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted

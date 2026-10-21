@@ -1,0 +1,114 @@
+........................................................................ [ 98%]
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ test_all_computed_correction_diagnostics_reach_batch_consumer _________
+
+    def test_all_computed_correction_diagnostics_reach_batch_consumer():
+        """The consumer preserves the actual single-cloud diagnostic outputs."""
+        from bayesfilter.highdim.ledh_unified_correction_tf import higher_moment_diagnostic_signature
+        initial, covs, noises, observations = _fixture(211, n=16, horizon=1)
+        theta = tf.constant([.6], DTYPE)
+>       value_ref, score_ref, trace, reference_status = canonical_value_and_analytical_score(
+            _single_model(),theta,initial,covs,noises,observations,flow_substeps=10,
+            with_score=True,return_trace=True,return_status=True,reset_design=_reset_design(16),**_FULL_UNION)
+
+tests/highdim/test_ledh_canonical_batch_fused.py:506: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/ledh_canonical_score_tf.py:991: in canonical_value_and_analytical_score
+    return _value_and_analytical_score_impl(
+bayesfilter/highdim/ledh_canonical_score_tf.py:899: in _value_and_analytical_score_impl
+    template = step_kernel.get_concrete_function().structured_outputs[1]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:1256: in get_concrete_function
+    concrete = self._get_concrete_function_garbage_collected(*args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:1226: in _get_concrete_function_garbage_collected
+    self._initialize(args, kwargs, add_initializers_to=initializers)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:696: in _initialize
+    self._concrete_variable_creation_fn = tracing_compilation.trace_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:178: in trace_function
+    concrete_function = _maybe_define_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:283: in _maybe_define_function
+    concrete_function = _create_concrete_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:310: in _create_concrete_function
+    traced_func_graph = func_graph_module.func_graph_from_py_func(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py:1060: in func_graph_from_py_func
+    func_outputs = python_func(*func_args, **func_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:599: in wrapped_fn
+    out = weak_wrapped_fn().__wrapped__(*args, **kwds)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_score_tf.py:708: in time_loop_body
+    batched_corrected = batched_higher_moment_shape_jvp(
+bayesfilter/highdim/ledh_unified_correction_tf.py:179: in batched_higher_moment_shape_jvp
+    result = tf.map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:636: in map_fn_v2
+    return map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:496: in map_fn
+    _, r_a = while_loop.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:440: in while_loop
+    return while_v2.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:202: in while_loop
+    body_graph = func_graph_module.func_graph_from_py_func(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py:1060: in func_graph_from_py_func
+    func_outputs = python_func(*func_args, **func_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:180: in wrapped_body
+    outputs = body(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:486: in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:643: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_unified_correction_tf.py:177: in correct_row
+    return tf.cond(row_active,evaluate,inactive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+op_type = 1
+branch_graphs = [<tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph object at 0x7e0a2c3475c0>, <tensorflow.python.ops.control_flow_v2_func_graphs.CondBranchFuncGraph object at 0x7e0a2c344640>]
+
+    def _make_indexed_slices_indices_types_match(op_type, branch_graphs):
+      """Match dtype of IndexedSlices.indices in outputs of branch_graphs."""
+      assert branch_graphs
+      # Indices of `IndexedSlices.indices` tensors in `branch_graphs[i].outputs`.
+      indexed_slice_indices = []
+      current_index = 0
+      # Note that this still contains Nones. We leave those in so that error
+      # messages contain the correct indices. We handle the Nones later when
+      # updating `current_index`.
+      branch_outputs_flat_with_composites = [
+          nest.flatten(branch_graph.structured_outputs, expand_composites=False)
+          for branch_graph in branch_graphs
+      ]
+      outs_per_branch = [len(outs) for outs in branch_outputs_flat_with_composites]
+>     assert len(set(outs_per_branch)) == 1, outs_per_branch
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     AssertionError: [53, 47]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/cond_v2.py:821: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_ledh_canonical_batch_fused.py::test_all_computed_correction_diagnostics_reach_batch_consumer
+1 failed, 72 passed, 2 warnings in 287.43s (0:04:47)

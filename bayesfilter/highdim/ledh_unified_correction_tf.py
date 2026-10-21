@@ -62,7 +62,11 @@ def _output_signature(
         ),
         "target_source_id": tf.TensorSpec([], tf.int32),
         "valid": tf.TensorSpec([], tf.bool),
+        "value_valid": tf.TensorSpec([], tf.bool),
     }
+    signature.update({key: tf.TensorSpec([], tf.bool) for key in (
+        "target_covariance_valid", "initial_standardization_valid", "diagonal_iterations_valid",
+        "pairwise_iterations_valid", "affine_restoration_value_valid", "output_standardization_valid")})
     signature.update(
         {key: tf.TensorSpec([state_dim], dtype) for key in _VECTOR_KEYS}
     )
@@ -77,6 +81,12 @@ def _output_signature(
             signature["stage_" + stage] = tf.TensorSpec([particle_count, state_dim], dtype)
             signature["stage_" + stage + "_tangent"] = tf.TensorSpec([particle_count, state_dim, direction_count], dtype)
     return signature
+
+
+def higher_moment_diagnostic_signature(state_dim: int, dtype: tf.DType):
+    """Shapes of every diagnostic issued by the shared correction authority."""
+    return {key: spec for key, spec in _output_signature(1, state_dim, 1, dtype).items()
+            if key not in ("particles", "particles_tangent")}
 
 
 def batched_higher_moment_shape_jvp(
@@ -102,6 +112,7 @@ def batched_higher_moment_shape_jvp(
     coordinatewise_standardized_identity_radius: float = 0.0,
     return_stages: bool = False,
     moment_safety: bool = False,
+    active: Tensor | None = None,
 ) -> dict[str, Tensor]:
     """Correct B clouds with K analytical tangent directions.
 
@@ -130,9 +141,16 @@ def batched_higher_moment_shape_jvp(
     weights_tangent_by_row = tf.transpose(weights_tangent, [1, 2, 0])
     points_tangent_by_row = tf.transpose(points_tangent, [1, 2, 3, 0])
 
+    if active is None:
+        active = tf.ones([tf.shape(source)[0]],tf.bool)
+    signature = _output_signature(
+        particle_count, state_dim, direction_count, dtype, return_stages
+    )
+
     def correct_row(row):
-        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent = row
-        return higher_moment_shape_jvp(
+        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent, row_active = row
+        def evaluate():
+            return higher_moment_shape_jvp(
             row_source,
             row_weights,
             row_source_tangent,
@@ -156,6 +174,10 @@ def batched_higher_moment_shape_jvp(
             moment_safety=moment_safety,
         )
 
+        def inactive():
+            return {key:tf.zeros(spec.shape,spec.dtype) for key,spec in signature.items()}
+        return tf.cond(row_active,evaluate,inactive)
+
     result = tf.map_fn(
         correct_row,
         (
@@ -165,6 +187,7 @@ def batched_higher_moment_shape_jvp(
             weights_tangent_by_row,
             points,
             points_tangent_by_row,
+            active,
         ),
         fn_output_signature=_output_signature(
             particle_count, state_dim, direction_count, dtype, return_stages
@@ -177,4 +200,4 @@ def batched_higher_moment_shape_jvp(
     return result
 
 
-__all__ = ["batched_higher_moment_shape_jvp"]
+__all__ = ["batched_higher_moment_shape_jvp", "higher_moment_diagnostic_signature"]

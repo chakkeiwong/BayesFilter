@@ -1,0 +1,656 @@
+{
+  "status": "PASSED_GAUSSIAN_CALIBRATION_SCREENS",
+  "plan": "docs/plans/surrogate-hmc-mcse-binary-calibration-2026-09-20.md",
+  "protocol": {
+    "name": "binary-fold-v2",
+    "binary_repair": true,
+    "plan": "docs/plans/surrogate-hmc-mcse-binary-calibration-2026-09-20.md",
+    "artifact_marker": "-mcse-binary-calibration-",
+    "worker_budget": 900.0,
+    "data_key": 20260923,
+    "permutation_key": 20260924,
+    "groups": [
+      [
+        "iid",
+        0.0,
+        0,
+        512,
+        500000
+      ],
+      [
+        "ar_positive",
+        0.5,
+        0,
+        256,
+        510000
+      ],
+      [
+        "ar_negative",
+        -0.5,
+        0,
+        256,
+        520000
+      ],
+      [
+        "ar_borderline",
+        0.9,
+        0,
+        256,
+        530000
+      ],
+      [
+        "ar_slow",
+        0.99,
+        0,
+        256,
+        540000
+      ],
+      [
+        "chain_offset",
+        0.0,
+        1,
+        256,
+        550000
+      ],
+      [
+        "linear_drift",
+        0.0,
+        2,
+        256,
+        560000
+      ]
+    ],
+    "looks": {
+      "iid": [
+        1000,
+        2000
+      ],
+      "ar_positive": [
+        1000,
+        2000
+      ],
+      "ar_negative": [
+        1000,
+        2000
+      ],
+      "ar_borderline": [
+        4000,
+        8000
+      ],
+      "ar_slow": [
+        1000,
+        2000
+      ],
+      "chain_offset": [
+        1000,
+        2000
+      ],
+      "linear_drift": [
+        1000,
+        2000
+      ]
+    }
+  },
+  "cpu_only": true,
+  "default_promoted": false,
+  "closed_results_reinterpreted": false,
+  "source_hashes": {
+    "docs/plans/surrogate-hmc-mcse-binary-calibration-2026-09-20.md": "06edff7950f84e732bbbfa40df4f5123a370f21423ede7e9a8d458d7f5588c23",
+    "scripts/calibrate_surrogate_hmc_mcse_randomization.py": "27443ca25ab6d9ae74e679be7e9c6b9b8f9cbbf03b8386767256418f76e760a7",
+    "scripts/diagnose_surrogate_hmc_mcse.py": "e3b769b2cdf71ab1ad0296fa1ec6e8b41f452520fe52640b694bdc4ce6fd995a",
+    "bayesfilter/testing/surrogate_hmc_mcse_randomization.py": "353fcf6b1f7e60a2e5d9d4a664ac8016e95acf6fbce087306e8f5e4b89a6f19d",
+    "bayesfilter/inference/surrogate_hmc_equivalence.py": "a03d78b250f53c0fb8c4f950ae6e5551d8cc5b1dba8070b1b02ff658231c3b18",
+    "bayesfilter/inference/hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+    "bayesfilter/testing/surrogate_hmc_gaussian_control.py": "f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "tests/test_surrogate_hmc_mcse_randomization.py": "83d0455d0c5fd43d5b3dfcbc29fb2fe2baa87d0dd3afce041005b86b962464a4"
+  },
+  "reference": {
+    "names": [
+      "mean_w0",
+      "mean_w1",
+      "mean_w2",
+      "second_w0",
+      "second_w1",
+      "second_w2",
+      "cdf_10_w0",
+      "cdf_10_w1",
+      "cdf_10_w2",
+      "cdf_50_w0",
+      "cdf_50_w1",
+      "cdf_50_w2",
+      "cdf_90_w0",
+      "cdf_90_w1",
+      "cdf_90_w2"
+    ],
+    "thresholds": [
+      -1.2815515655446004,
+      0.0,
+      1.2815515655446004
+    ],
+    "expectations": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      1.0,
+      0.1,
+      0.1,
+      0.1,
+      0.5,
+      0.5,
+      0.5,
+      0.9,
+      0.9,
+      0.9
+    ],
+    "margins": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02
+    ],
+    "allowance": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "analytic Gaussian moments and marginal CDFs",
+    "independent_seed": [
+      20260920,
+      7999
+    ]
+  },
+  "critical_value": 3.3989386395887475,
+  "groups": {
+    "iid": {
+      "completed_replications": 512,
+      "candidate_any_look_veto": {
+        "count": 512,
+        "events": 8,
+        "rate": 0.015625,
+        "wilson95": [
+          0.007938224978408945,
+          0.03052603275313371
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 512,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.007446975722882739
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 512,
+        "events": 467,
+        "rate": 0.912109375,
+        "wilson95": [
+          0.8844149764714027,
+          0.9336658365070025
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 512,
+        "events": 10,
+        "rate": 0.01953125,
+        "wilson95": [
+          0.010642921854633284,
+          0.03557565637907435
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 512,
+        "events": 10,
+        "rate": 0.01953125,
+        "wilson95": [
+          0.010642921854633284,
+          0.03557565637907435
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.0472216839633381,
+          1.0417340393579648,
+          1.0457346520602429
+        ],
+        "2000": [
+          1.0492261069955073,
+          1.0388139437028512,
+          1.0428671256343434
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.9995715765231099,
+          1.0000686887413228,
+          0.9993764189526505
+        ],
+        "2000": [
+          1.0000095352454432,
+          0.9994377437635398,
+          0.9996971028535886
+        ]
+      }
+    },
+    "ar_positive": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 7,
+        "rate": 0.02734375,
+        "wilson95": [
+          0.013307156355121155,
+          0.05535570792246043
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.01478385642587143
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 227,
+        "rate": 0.88671875,
+        "wilson95": [
+          0.842043833343102,
+          0.9199592777025132
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.021747090727335,
+          1.0322788577502064,
+          1.0291610906827031
+        ],
+        "2000": [
+          1.0384830436400452,
+          1.0406536208075658,
+          1.0376163255668227
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.5773856701640792,
+          0.577527216491645,
+          0.5771478331255853
+        ],
+        "2000": [
+          0.5771798530731256,
+          0.5776119522295515,
+          0.5770124123352011
+        ]
+      }
+    },
+    "ar_negative": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 6,
+        "rate": 0.0234375,
+        "wilson95": [
+          0.010784867555857603,
+          0.0501809956000511
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.01478385642587143
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 224,
+        "rate": 0.875,
+        "wilson95": [
+          0.8288639408674391,
+          0.9100481668131574
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 3,
+        "rate": 0.01171875,
+        "wilson95": [
+          0.003993287123007758,
+          0.033881572667882304
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 256,
+        "events": 3,
+        "rate": 0.01171875,
+        "wilson95": [
+          0.003993287123007758,
+          0.033881572667882304
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.0659860304665978,
+          1.0671422442211165,
+          1.0614102173196864
+        ],
+        "2000": [
+          1.0519228940866316,
+          1.0616774042269461,
+          1.0436190053447922
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          1.731247408887521,
+          1.7299878928887884,
+          1.7315453112182344
+        ],
+        "2000": [
+          1.7306536414909126,
+          1.7304457611378659,
+          1.7321804211172396
+        ]
+      }
+    },
+    "ar_borderline": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 34,
+        "rate": 0.1328125,
+        "wilson95": [
+          0.09662155083903351,
+          0.17986034372371584
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 219,
+        "rate": 0.85546875,
+        "wilson95": [
+          0.8071377780781674,
+          0.8932893239940645
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 252,
+        "events": 4,
+        "rate": 0.015873015873015872,
+        "wilson95": [
+          0.006189571180543699,
+          0.040094791312062256
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "4000": [
+          1.0187363439893007,
+          1.0165812302765211,
+          1.0130681298814908
+        ],
+        "8000": [
+          1.0328735997410996,
+          1.0308580389882949,
+          1.026981389983412
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "4000": [
+          0.22925731777442931,
+          0.22937134605130086,
+          0.22960911122590294
+        ],
+        "8000": [
+          0.22941047398823958,
+          0.22936776280310117,
+          0.2295562131746964
+        ]
+      }
+    },
+    "ar_slow": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.01478385642587143
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 0,
+        "events": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          0.5836148417883708,
+          0.5829938622471854,
+          0.5778701172512813
+        ],
+        "2000": [
+          0.7379771565122676,
+          0.7348165174547372,
+          0.7334553509639429
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.07262683458534387,
+          0.07291544697276559,
+          0.07206241547518634
+        ],
+        "2000": [
+          0.07166970417190244,
+          0.07154162561151459,
+          0.07125181258710822
+        ]
+      }
+    },
+    "chain_offset": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      }
+    },
+    "linear_drift": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      }
+    }
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "planned_replications": 2048,
+  "cost_forecasts": {
+    "iid": {
+      "wall_seconds": 473.98547830815824,
+      "cpu_worker_seconds": 526.3793407798252
+    },
+    "ar_positive": {
+      "wall_seconds": 392.95048977445276,
+      "cpu_worker_seconds": 436.38682877982535
+    },
+    "ar_negative": {
+      "wall_seconds": 352.4329955076,
+      "cpu_worker_seconds": 391.39057277982545
+    },
+    "ar_borderline": {
+      "wall_seconds": 307.1932607448356,
+      "cpu_worker_seconds": 341.150084724206
+    },
+    "ar_slow": {
+      "wall_seconds": 120.28631110471906,
+      "cpu_worker_seconds": 133.5826349999997
+    },
+    "chain_offset": {
+      "wall_seconds": 79.76881683786632,
+      "cpu_worker_seconds": 88.58637899999981
+    },
+    "linear_drift": {
+      "wall_seconds": 39.25132257101359,
+      "cpu_worker_seconds": 43.590122999999906
+    }
+  },
+  "completed_replications": 2048,
+  "checks": {
+    "iid_false_veto": true,
+    "iid_coverage": true,
+    "ar_positive_coverage": true,
+    "ar_negative_coverage": true,
+    "ar_borderline_coverage": true,
+    "ar_slow_veto": true,
+    "chain_offset_veto": true,
+    "linear_drift_veto": true
+  },
+  "general_mcmc_validity": false,
+  "wall_seconds": 264.8296302279923,
+  "cpu_worker_seconds": 304.114897
+}

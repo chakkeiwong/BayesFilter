@@ -1,0 +1,91 @@
+{
+  "status": "ERROR",
+  "model": "lgssm",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "lgssm",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-repair-20261011-01/lgssm",
+    "--gpu",
+    "GPU-68251639-fe82-8f81-3ccc-2953c32e805b"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-11T15:31:03.811185+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "8ed9bb0e7ae9950e23b683671889d2fe92f86b768045096f8c62060581c67ae9",
+    "covariance_proposal_score_tf.py": "fa061f64e1b92227936523cdacdbb317b45678a24888e6b5cf50a1c32f606d5c",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "baseline_selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/lgssm/filter-tuning/filter-selection.json",
+  "particles": 4032,
+  "horizon": 50,
+  "parameter_count": 4,
+  "state_dimension": 3,
+  "observation_dimension": 3,
+  "dtype": "float32",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 32,
+    "reset_steps": 80,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.21928751468658447,
+    0.6807126998901367
+  ],
+  "offset": 0.0,
+  "data_sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+  "gpu_devices": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "error": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py\", line 102, in worker\n    candidate,compile_new=evaluate(new,*values)\n                          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py\", line 99, in evaluate\n    begin=time.monotonic(); output=fn(*inputs)\n                                   ^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py\", line 59, in quick_execute\n    except TypeError as e:\ntensorflow.python.framework.errors_impl.InternalError: Invalid TensorList shape: element_type: TUPLE\ntuple_shapes {\n  element_type: F32\n  dimensions: 4\n  dimensions: 4\n  dimensions: 2016\n  dimensions: 2016\n  layout {\n    minor_to_major: 3\n    minor_to_major: 2\n    minor_to_major: 1\n    minor_to_major: 0\n    tail_padding_alignment_in_elements: 1\n  }\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n}\ntuple_shapes {\n  element_type: S32\n  layout {\n    tail_padding_alignment_in_elements: 1\n  }\n}\n, expected: element_type: TUPLE\ntuple_shapes {\n  element_type: F32\n  dimensions: 4\n  dimensions: 4\n  dimensions: 4032\n  dimensions: 4032\n  layout {\n    minor_to_major: 3\n    minor_to_major: 2\n    minor_to_major: 1\n    minor_to_major: 0\n    tail_padding_alignment_in_elements: 1\n  }\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n  is_dynamic_dimension: false\n}\ntuple_shapes {\n  element_type: S32\n  layout {\n    tail_padding_alignment_in_elements: 1\n  }\n}\n\n\t [[{{node while/while_4/TensorArrayV2Write_1/TensorListSetItem}}]]\n\ttf2xla conversion failed while converting while_while_4_body_7438_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\t [[while/while_4]]\n\ttf2xla conversion failed while converting while_body_1491_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.\n\t [[while]]\n\ttf2xla conversion failed while converting __inference_program_9436[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_program_9436]\n",
+  "wall_seconds": 5.806308357045054
+}

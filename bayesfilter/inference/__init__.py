@@ -9,6 +9,9 @@ from __future__ import annotations
 from importlib import import_module
 
 __all__ = [
+    "HMCTransitionProfile", "FrozenTransitionSpec",
+    "TrajectoryPilotConfig", "propose_trajectory_candidates",
+    "MAMSPilotConfig", "propose_mams_trajectory_candidates",
     'HMCChainTarget', 'HMCChainKernel', 'HMCChainLayout', 'HMCChainExecutor',
     'HMCChainResult', 'HMCChainExecutionError', 'benchmark_hmc_chain_execution',
     'NeuTraTransportConfig',
@@ -209,6 +212,9 @@ __all__ = [
     "FourChainAcceptanceDecision",
     "FourChainMeanBandAcceptancePolicy",
     "TensorFlowHMCKernelTuningConfig",
+    "VerifiedTensorFlowHMCConfig",
+    "VerifiedTensorFlowHMCResult",
+    "load_verified_tensorflow_hmc_result",
     "TensorFlowHMCKernelTuningResult",
     "BoundRetainedHMCArchiveConfig",
     "BoundRetainedHMCArchiveResult",
@@ -728,6 +734,12 @@ _DIRECT_EXPORTS = {
     "HMCWorkItem": "bayesfilter.inference.hmc_candidate_set_tuning",
     "HMC_CANDIDATE_SET_ADAPTER_SCHEMA": "bayesfilter.inference.hmc_candidate_set_adapters",
     "HMCTypedCandidateSetAdapter": "bayesfilter.inference.hmc_candidate_set_adapters",
+    "HMCTransitionProfile": "bayesfilter.inference.hmc_transition_spec",
+    "FrozenTransitionSpec": "bayesfilter.inference.hmc_transition_spec",
+    "TrajectoryPilotConfig": "bayesfilter.inference.hmc_trajectory_proposals",
+    "propose_trajectory_candidates": "bayesfilter.inference.hmc_trajectory_proposals",
+    "MAMSPilotConfig": "bayesfilter.inference.hmc_mams_trajectory_proposals",
+    "propose_mams_trajectory_candidates": "bayesfilter.inference.hmc_mams_trajectory_proposals",
     "HMCCandidateExecutionConfig": "bayesfilter.inference.hmc_candidate_set_execution",
     "HMCAcceptancePolicy": "bayesfilter.inference.hmc_verification",
     "HMCCandidateExecutionBinding": "bayesfilter.inference.hmc_candidate_set_execution",
@@ -762,6 +774,9 @@ _DIRECT_EXPORTS = {
     "FourChainAcceptanceDecision": "bayesfilter.inference.hmc_tuning_dispatch",
     "FourChainMeanBandAcceptancePolicy": "bayesfilter.inference.hmc_tuning_dispatch",
     "TensorFlowHMCKernelTuningConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "VerifiedTensorFlowHMCConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "VerifiedTensorFlowHMCResult": "bayesfilter.inference.hmc_tuning_dispatch",
+    "load_verified_tensorflow_hmc_result": "bayesfilter.inference.hmc_tuning_dispatch",
     "TensorFlowHMCKernelTuningResult": "bayesfilter.inference.hmc_tuning_dispatch",
     "build_retained_bound_hmc_archive_runner_from_tuning_result": (
         "bayesfilter.inference.hmc_tuning_dispatch"

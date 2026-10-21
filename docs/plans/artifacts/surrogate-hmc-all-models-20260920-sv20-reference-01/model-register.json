@@ -1,0 +1,644 @@
+{
+  "all_models_validated": false,
+  "coverage_complete": false,
+  "families": [
+    {
+      "family": "linear Gaussian",
+      "id": "M01",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "resolved posterior comparisons",
+        "heuristic comparisons",
+        "remaining linear scopes"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "PARTIAL_LINEAR_IMPLEMENTATION",
+      "variant_status": {
+        "LG1": "REFERENCE_CONTROL_TUNING_SAMPLING_AVAILABLE",
+        "LG2": "REFERENCE_CONSUMER_CALIBRATION_AVAILABLE",
+        "LG20": "SCOPE_UNRESOLVED",
+        "LG4": "SCOPE_UNRESOLVED",
+        "diagonal": "SCOPE_UNRESOLVED",
+        "triangular-all-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "LG1",
+        "LG2",
+        "LG4",
+        "LG20",
+        "diagonal",
+        "triangular-all-parameter"
+      ]
+    },
+    {
+      "executed_stage": "P3-SV20-reference",
+      "family": "actual stochastic volatility",
+      "id": "M02",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "full-prior posterior reference",
+        "actual-SV DCTR consumer",
+        "scope-specific tuning",
+        "retained inference",
+        "heuristic comparisons",
+        "remaining SV variants"
+      ],
+      "role": "model_inference",
+      "scope_results": {
+        "comparisons": {
+          "B/R": "NOT_RUN",
+          "C/D": "NOT_RUN",
+          "C/R": "NOT_RUN",
+          "D/R": "NOT_RUN"
+        },
+        "posterior_reference_qualified": false,
+        "reference": {
+          "allocator": {
+            "current": 985600,
+            "peak": 135203072
+          },
+          "checks": {
+            "chart_prior_chain_rule": true,
+            "domain_mass": true,
+            "domain_refinement": true,
+            "independent_T1": true,
+            "independent_T2": true,
+            "mesh_refinement": true,
+            "replay": true,
+            "row_independence": true,
+            "total_score_finite_difference": true
+          },
+          "classification": "independent likelihood reference preparation",
+          "cpu_worker_seconds": 6.893967,
+          "domain_refinement": {
+            "maximum_log_likelihood_change": 7.105427357601002e-15,
+            "maximum_relative_score_change": 1.7371311616401425e-15
+          },
+          "grids": [
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-128-12-log_likelihood.tfbin",
+                  "sha256": "1ac032cd404575b11712f3693f791b25e8431ea1bcc0102e9859ee7f23fa71b3"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-128-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "86c42d8a4f332fa318e0ac1629ae81de185fa4170fd07f0039279a76508a0e11"
+                },
+                "score": {
+                  "path": "grid-128-12-score.tfbin",
+                  "sha256": "5a2d30d44b64f3fa7feed01ddd6c9347df33b61e023be44736934c37fc40e25f"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 128,
+              "maximum_predicted_domain_loss": 1.7154186815471206e-07,
+              "wall_seconds": 0.8900216660113074
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-256-12-log_likelihood.tfbin",
+                  "sha256": "6362955a451bd59359e1c4b6f12797bf9656efc6181751a55124c187202e382e"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-256-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "8b1a4414ddb52e34600cfaaaad222b43927fda0c0f36f92156c65cbeb75f0430"
+                },
+                "score": {
+                  "path": "grid-256-12-score.tfbin",
+                  "sha256": "3c84deb6ebcec68edf799e6966549341c6e518984746d2baf66e1245a350b970"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 256,
+              "maximum_predicted_domain_loss": 1.6955341219926368e-07,
+              "wall_seconds": 0.35532934102229774
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-512-12-log_likelihood.tfbin",
+                  "sha256": "2cb33058de2281c37612e9f85fedf974613f52efd9ca220b51ce36d0ab5c9315"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-512-12-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "759b4273412e1b4ed0046bf9321d4f40b3f01edc165bb85fb48004faf5c546d5"
+                },
+                "score": {
+                  "path": "grid-512-12-score.tfbin",
+                  "sha256": "3f4d2b4e0e542a0040fa7f6dcd5d7be372c08c6afa45a153eb6504b443d94009"
+                }
+              },
+              "half_width": 12.0,
+              "intervals": 512,
+              "maximum_predicted_domain_loss": 1.690550353039555e-07,
+              "wall_seconds": 0.3667435289826244
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-512-16-log_likelihood.tfbin",
+                  "sha256": "89aacdec0b2c4c1ca2c6983ee9e8159a9bc77a0447b352408d32b3aa73354d02"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-512-16-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "ee56c60affa1dd3c364fc518ea935a752d08fd7bdde0689e9e92c03a734fb2f1"
+                },
+                "score": {
+                  "path": "grid-512-16-score.tfbin",
+                  "sha256": "e2666892b0eef9f67e22bbf2b665a927fc52545cd7fd01b575fbddc05bcaba81"
+                }
+              },
+              "half_width": 16.0,
+              "intervals": 512,
+              "maximum_predicted_domain_loss": 3.0847546739209974e-12,
+              "wall_seconds": 0.35587886499706656
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-1024-16-log_likelihood.tfbin",
+                  "sha256": "4e5fb690284afecec4df449dfa4f14a8d3c1a1f374342d2ee1f300a32200a84f"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-1024-16-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "83fa26577b4fdbac0ba3d27f06552cb2eba16868f212de10ead801f8ef4ee035"
+                },
+                "score": {
+                  "path": "grid-1024-16-score.tfbin",
+                  "sha256": "6971ef253531d61e4bff720a708b51933f1284486356d8862c6880df1926c8eb"
+                }
+              },
+              "half_width": 16.0,
+              "intervals": 1024,
+              "maximum_predicted_domain_loss": 3.077538224260934e-12,
+              "wall_seconds": 0.5301365189952776
+            },
+            {
+              "arrays": {
+                "log_likelihood": {
+                  "path": "grid-1280-20-log_likelihood.tfbin",
+                  "sha256": "f7d7c0710ab8b2749e1b02ffde642bbe9ed6f9987d63b48681ac342ca5ae0185"
+                },
+                "maximum_predicted_domain_loss": {
+                  "path": "grid-1280-20-maximum_predicted_domain_loss.tfbin",
+                  "sha256": "891997b85efa6a220cbf47fb84f43510b4943fd781c28a0afa4bd5f3adc255ec"
+                },
+                "score": {
+                  "path": "grid-1280-20-score.tfbin",
+                  "sha256": "e647730ee55ec51529a58562074c06433b09fdb1926c1f18a0ddd6fef852f6bf"
+                }
+              },
+              "half_width": 20.0,
+              "intervals": 1280,
+              "maximum_predicted_domain_loss": 2.220446049250313e-16,
+              "wall_seconds": 0.481067651999183
+            }
+          ],
+          "heuristic_dominance": "NOT_RUN",
+          "maximum_finite_difference_relative_error": 1.1162237315749047e-09,
+          "memory_policy": {
+            "all_physical_devices_memory_growth": true,
+            "configured_before_logical_device_initialization": true,
+            "full_device_preallocation_disabled": true,
+            "logical_device_memory_limit_required_for_hard_cap": true,
+            "memory_growth_is_hard_memory_cap": false,
+            "mode": "memory_growth",
+            "physical_devices": [
+              {
+                "device": "/physical_device:GPU:0",
+                "device_details": {
+                  "compute_capability": [
+                    8,
+                    9
+                  ],
+                  "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+                },
+                "memory_growth": true
+              }
+            ],
+            "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+            "tf_force_gpu_allow_growth": "true"
+          },
+          "mesh_refinement": {
+            "maximum_log_likelihood_change": 3.552713678800501e-15,
+            "maximum_relative_score_change": 2.9779391342402494e-15
+          },
+          "next_action": "Full-prior posterior refinement and separate actual-SV DCTR consumer qualification",
+          "partitions": {
+            "calibration": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/calibration/data.json",
+              "data_sha256": "4648ab3a318df5e82ab7625684cdca0bf261df7b5a239d213f46c2c8b4763284"
+            },
+            "claim": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/claim/data.json",
+              "data_sha256": "31b0493b7bf9c5b8ffe173fa5e44a9f9d32b1c64702dfae8954cae56a54e04c4"
+            },
+            "validation": {
+              "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-sv20-reference-01/P3-SV20-reference/validation/data.json",
+              "data_sha256": "6201be3a2dd16ac60b568203211c497ea09b5b56dffdfb51c5a522cbf4fe0d2f"
+            }
+          },
+          "plan": "docs/plans/surrogate-hmc-sv20-reference-2026-09-20.md",
+          "posterior_reference_qualified": false,
+          "probes": [
+            [
+              0.1,
+              0.1
+            ],
+            [
+              0.1,
+              0.5
+            ],
+            [
+              0.1,
+              0.9
+            ],
+            [
+              0.5,
+              0.1
+            ],
+            [
+              0.5,
+              0.5
+            ],
+            [
+              0.5,
+              0.9
+            ],
+            [
+              0.9,
+              0.1
+            ],
+            [
+              0.9,
+              0.5
+            ],
+            [
+              0.9,
+              0.9
+            ],
+            [
+              0.6,
+              0.4
+            ],
+            [
+              0.2,
+              0.8
+            ],
+            [
+              0.8,
+              0.2
+            ]
+          ],
+          "qualified": true,
+          "retained_inference": false,
+          "scope": "SV20-attempt1",
+          "short_reference": {
+            "1": {
+              "grid_difference": 2.886579864025407e-15,
+              "hermite_refinement": 2.1862067711708733e-11
+            },
+            "2": {
+              "grid_difference": 9.769962616701378e-15,
+              "hermite_refinement": 1.1546319456101628e-14
+            }
+          },
+          "status": "QUALIFIED_LIKELIHOOD_PROBES",
+          "wall_seconds": 9.327038543997332
+        },
+        "role": "model_reference_preparation",
+        "surrogate_hmc_tested": false
+      },
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "REFERENCE_PREPARATION_AVAILABLE",
+      "variant_status": {
+        "SV20": "LIKELIHOOD_REFERENCE_PREPARATION_AVAILABLE",
+        "SV40": "SCOPE_UNRESOLVED",
+        "real-data": "SCOPE_UNRESOLVED",
+        "synthetic": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "synthetic",
+        "real-data",
+        "SV20",
+        "SV40"
+      ]
+    },
+    {
+      "family": "transformed stochastic volatility",
+      "id": "M03",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "KSC-mixture": "SCOPE_UNRESOLVED",
+        "exact-transformed": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "exact-transformed",
+        "KSC-mixture"
+      ]
+    },
+    {
+      "family": "generalized stochastic volatility",
+      "id": "M04",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "native-two-state": "SCOPE_UNRESOLVED",
+        "prior-mean-projection": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "prior-mean-projection",
+        "native-two-state"
+      ]
+    },
+    {
+      "family": "predator-prey",
+      "id": "M05",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "PP20-restricted": "SCOPE_UNRESOLVED",
+        "six-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "six-parameter",
+        "PP20-restricted"
+      ]
+    },
+    {
+      "family": "Austria SIR",
+      "id": "M06",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "physical-clipped": "SCOPE_UNRESOLVED",
+        "preclip-distinct-law": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "physical-clipped",
+        "preclip-distinct-law"
+      ]
+    },
+    {
+      "family": "coupled nonlinear",
+      "id": "M07",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "coupled-state": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "coupled-state"
+      ]
+    },
+    {
+      "family": "structural",
+      "id": "M08",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "AR1-quadratic-completion": "SCOPE_UNRESOLVED",
+        "AR2": "SCOPE_UNRESOLVED",
+        "affine": "SCOPE_UNRESOLVED",
+        "nonlinear-five-parameter": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "affine",
+        "AR2",
+        "nonlinear-five-parameter",
+        "AR1-quadratic-completion"
+      ]
+    },
+    {
+      "family": "accumulation and growth",
+      "id": "M09",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "model-B": "SCOPE_UNRESOLVED",
+        "model-C": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "model-B",
+        "model-C"
+      ]
+    },
+    {
+      "family": "nonlinear score-study",
+      "id": "M10",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "concrete-score-study": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "concrete-score-study"
+      ]
+    },
+    {
+      "family": "SSL-LSTM",
+      "id": "M11",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "complexity-ladder": "SCOPE_UNRESOLVED",
+        "fixed": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "fixed",
+        "complexity-ladder"
+      ]
+    },
+    {
+      "family": "hard-bound macrofinancial",
+      "id": "M12",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "hard-bound": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "hard-bound"
+      ]
+    },
+    {
+      "family": "range-bearing",
+      "id": "M13",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "range-bearing": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "range-bearing"
+      ]
+    },
+    {
+      "family": "BGS",
+      "id": "M14",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "model_inference",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "concrete-upstream-instance-required": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "concrete-upstream-instance-required"
+      ]
+    },
+    {
+      "family": "Gaussian mechanism controls",
+      "id": "C01",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "ANISOTROPIC_CONTROL_IMPLEMENTED",
+      "variant_status": {
+        "anisotropic": "TUNING_AND_RETAINED_COMPARISON_AVAILABLE",
+        "d100": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "anisotropic",
+        "d100"
+      ]
+    },
+    {
+      "family": "non-Gaussian mechanism controls",
+      "id": "C02",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "banana": "SCOPE_UNRESOLVED",
+        "funnel": "SCOPE_UNRESOLVED",
+        "mixture": "SCOPE_UNRESOLVED",
+        "varying-hessian": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "funnel",
+        "banana",
+        "mixture",
+        "varying-hessian"
+      ]
+    },
+    {
+      "family": "German-credit posterior",
+      "id": "C03",
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "role": "mechanism_control",
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "data-version-required": "SCOPE_UNRESOLVED"
+      },
+      "variants": [
+        "data-version-required"
+      ]
+    }
+  ],
+  "question": "Does imperfect full-DCTR surrogate HMC recover model parameter posteriors?",
+  "schema": "bayesfilter.surrogate_hmc_master.v1"
+}

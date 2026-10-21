@@ -1,0 +1,51 @@
+...........................F.                                            [100%]
+=================================== FAILURES ===================================
+_______ test_public_binding_uses_native_affine_transform_and_whole_chunk _______
+
+    def test_public_binding_uses_native_affine_transform_and_whole_chunk():
+        force = native_force(CanonicalStandIn())
+        endpoint = batched_endpoint(scalar_reference)
+        binding = bind_components(force, endpoint, "test-m13-connection")
+        center = tf.constant([.1, -.2], F64)
+        factor = tf.constant([[.7, 0.], [.1, .8]], F64)
+>       run, kernel, adapter = compiled_chunk(binding, "test-m13-connection", 2,
+            center=center, factor=factor, count=4)
+
+tests/test_surrogate_hmc_m13_four_chain_cost.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_four_chain_cost.py:86: in compiled_chunk
+    kernel = binding.build_tensor_kernel(
+bayesfilter/inference/tuning_contract.py:636: in build_tensor_kernel
+    self.validate_public_context(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HMCTuningRunnerBinding(runner_identity='bayesfilter.inference.neural_force_hmc.run_full_chain_neural_force_hmc', algor..._init__.py', 'sha256': 'b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85'}]}, artifact_authority=False)
+
+    def validate_public_context(
+        self,
+        *,
+        target_scope: str,
+        target_status_trace_policy: str,
+        chain_execution_mode: str,
+        use_xla: bool,
+    ) -> None:
+        if str(target_scope) != self.target_scope:
+            raise ValueError("runner binding target_scope mismatch")
+        if target_status_trace_policy not in self.supported_target_status_trace_policies:
+>           raise ValueError("runner binding does not support target-status trace policy")
+E           ValueError: runner binding does not support target-status trace policy
+
+bayesfilter/inference/tuning_contract.py:546: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_four_chain_cost.py::test_public_binding_uses_native_affine_transform_and_whole_chunk
+1 failed, 28 passed, 2 warnings in 6.13s

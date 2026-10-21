@@ -1,0 +1,26 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+________ test_actual_budget_stop_preserves_cohort_without_false_exports ________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-1505/test_actual_budget_stop_preser0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x700483776060>
+
+    def test_actual_budget_stop_preserves_cohort_without_false_exports(tmp_path, monkeypatch):
+        from bayesfilter.runtime.execution_budget import execution_budget
+        binding, search = setup()
+        monkeypatch.setattr(binding, "_run", lambda *a, **k: pytest.fail("work after resource stop"))
+        with execution_budget(check=lambda: False):
+            run, members = run_frozen_trajectory_search(binding, search, output_dir=tmp_path/"search")
+>       assert run.result.completion_status == "budget_bound"
+E       AssertionError: assert 'partial_budget' == 'budget_bound'
+E         
+E         - budget_bound
+E         + partial_budget
+
+tests/test_modern_tuning_consumer.py:80: AssertionError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791782676.155399       4 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+=========================== short test summary info ============================
+FAILED tests/test_modern_tuning_consumer.py::test_actual_budget_stop_preserves_cohort_without_false_exports
+1 failed, 1 passed, 17 deselected, 2 warnings in 11.59s

@@ -1,0 +1,121 @@
+{
+  "budget_seconds": 12000,
+  "attempts": [
+    {
+      "stage": "check-fp32",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "check-fp32",
+        "--dtype",
+        "float32",
+        "--output",
+        "docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06",
+        "--particles",
+        "1008",
+        "--gpu",
+        "0",
+        "--replicates",
+        "4",
+        "--no-tf32"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 34.15371597581543
+    },
+    {
+      "stage": "check-fp64",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "check-fp64",
+        "--dtype",
+        "float64",
+        "--output",
+        "docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06",
+        "--particles",
+        "1008",
+        "--gpu",
+        "0",
+        "--replicates",
+        "4",
+        "--no-tf32"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 16.911318426951766
+    },
+    {
+      "stage": "references",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "references",
+        "--dtype",
+        "float64",
+        "--output",
+        "docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06",
+        "--particles",
+        "1008",
+        "--gpu",
+        "0",
+        "--replicates",
+        "4",
+        "--no-tf32"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 46.6713969190605
+    },
+    {
+      "stage": "tune",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "tune",
+        "--dtype",
+        "float64",
+        "--output",
+        "docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06",
+        "--particles",
+        "1008",
+        "--gpu",
+        "0",
+        "--replicates",
+        "4",
+        "--no-tf32"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 237.4867721409537
+    },
+    {
+      "stage": "compare",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "compare",
+        "--dtype",
+        "float64",
+        "--output",
+        "docs/plans/artifacts/ledh-range-bearing-covariance-20261009-06",
+        "--particles",
+        "1008",
+        "--gpu",
+        "0",
+        "--replicates",
+        "4",
+        "--no-tf32"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 201.17551296087913
+    }
+  ],
+  "elapsed_seconds": 536.4040179881267
+}

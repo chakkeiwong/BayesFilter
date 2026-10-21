@@ -1,0 +1,53 @@
+{
+  "P3-C01-inference-job": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_gaussian_controls.py",
+      "--output",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-inference-01/P3-C01-inference",
+      "--qualification-root",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-c01-qualify-01/P3-C01-qualify"
+    ],
+    "cpu_allowance_seconds": 1000.0,
+    "cpu_worker_seconds": 149.052078,
+    "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+    "depends_on": [],
+    "device": "gpu",
+    "exit_code": 0,
+    "gpu_intentionally_hidden": false,
+    "gpu_seconds": 141.92721240600804,
+    "name": "P3-C01-inference-job",
+    "preflight": {
+      "affordable": true,
+      "arms": {
+        "exact": {
+          "cpu_worker_seconds": 137.48048156250002,
+          "wall_seconds": 138.0910337398418
+        },
+        "half": {
+          "cpu_worker_seconds": 138.1414861875,
+          "wall_seconds": 138.23519366047185
+        },
+        "rotational": {
+          "cpu_worker_seconds": 143.3648653125,
+          "wall_seconds": 143.1608683742852
+        },
+        "zero": {
+          "cpu_worker_seconds": 139.44227850000004,
+          "wall_seconds": 139.6249603573342
+        }
+      },
+      "classification": "planning estimate, not a measured runtime bound",
+      "graph_analysis_allowance_per_arm_seconds": 90.0,
+      "maximum_transitions_per_arm": 5216,
+      "safety_factor": 1.5,
+      "total": {
+        "cpu_worker_seconds": 558.4291115625001,
+        "wall_seconds": 559.1120561319331
+      }
+    },
+    "status": "COMPLETED",
+    "timeout_seconds": 900.0,
+    "wall_seconds": 141.92721240600804
+  }
+}

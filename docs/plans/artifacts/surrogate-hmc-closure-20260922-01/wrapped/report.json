@@ -1,0 +1,77 @@
+{
+  "alias_policy": {
+    "aliases_each_side": 4,
+    "maximum_conditional_sigma": 3.141592653589793,
+    "omitted_mass_upper_bound": 2.2571768119076845e-19,
+    "tail_mass_tolerance": 1e-14
+  },
+  "analytical_tangent_max_fd_error": 3.0843549936321324e-11,
+  "consumer": "range_bearing_tf.observation_log_density_tf",
+  "device": "gpu",
+  "gpu_intentionally_hidden": false,
+  "inference_launched": false,
+  "jit_compile": true,
+  "masses": [
+    {
+      "integrated_mass": 0.9999999999999994,
+      "sigma": 0.04
+    },
+    {
+      "integrated_mass": 1.0000000000000002,
+      "sigma": 0.2
+    },
+    {
+      "integrated_mass": 1.0000000000000002,
+      "sigma": 1.0
+    },
+    {
+      "integrated_mass": 0.9999999999999999,
+      "sigma": 3.141592653589793
+    }
+  ],
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "posterior_qualified": false,
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "qualified": true,
+  "remaining": [
+    "integrated likelihood and parameter-posterior reference",
+    "canonical model consumer and tuning"
+  ],
+  "stage": "wrapped",
+  "status": "OBSERVATION_LAW_REPAIR_QUALIFIED",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true
+}

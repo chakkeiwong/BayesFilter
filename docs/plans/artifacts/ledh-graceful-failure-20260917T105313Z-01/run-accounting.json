@@ -1,0 +1,388 @@
+{
+  "limits": {
+    "gpu_device_seconds": 230400,
+    "cpu_worker_seconds": 57600,
+    "single_gpu_job_seconds": 14400,
+    "substantive_attempts_per_case": 3,
+    "simultaneous_gpu_campaigns": 1
+  },
+  "charged": {
+    "gpu_device_seconds": 1309.3104894290154,
+    "cpu_worker_seconds": 3187.843223999999
+  },
+  "setup_cpu_reserve_seconds": 900,
+  "setup_note": "Prior readiness build and four primitive tests preceded execution authorization. Build CPU usage was not measured; conservatively reserve 0.25 CPU worker-hours.",
+  "runs": [
+    {
+      "label": "baseline",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 11.903499798994744,
+      "cpu_worker_seconds": 9.724981999999999,
+      "gpu_device_seconds": 0.0,
+      "manifest": "baseline/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "repaired-fixture-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 12.388609764981084,
+      "cpu_worker_seconds": 10.371148,
+      "gpu_device_seconds": 0.0,
+      "manifest": "repaired-fixture-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "containment-cpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 46.692128041991964,
+      "cpu_worker_seconds": 49.348633,
+      "gpu_device_seconds": 0.0,
+      "manifest": "containment-cpu-01/manifest.json",
+      "failure_classification": "Fixture supplied mismatched exact/biased configuration keys; repaired fixture."
+    },
+    {
+      "label": "containment-cpu-02",
+      "status": "failed",
+      "exit_code": 4,
+      "wall_seconds": 0.2775173099944368,
+      "cpu_worker_seconds": 0.157754,
+      "gpu_device_seconds": 0.0,
+      "manifest": "containment-cpu-02/manifest.json",
+      "failure_classification": "Test command used a nonexistent filename ending in _tf.py; corrected to the actual test path and reran."
+    },
+    {
+      "label": "containment-cpu-03",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 63.024947644007625,
+      "cpu_worker_seconds": 57.091271000000006,
+      "gpu_device_seconds": 0.0,
+      "manifest": "containment-cpu-03/manifest.json",
+      "failure_classification": "Existing nested annealing limitation reached by the full-feature test; implemented common tf.while_loop path."
+    },
+    {
+      "label": "correction-cpu-01",
+      "status": "failed",
+      "exit_code": 2,
+      "wall_seconds": 6.952296642004512,
+      "cpu_worker_seconds": 5.05533,
+      "gpu_device_seconds": 0.0,
+      "manifest": "correction-cpu-01/manifest.json",
+      "failure_classification": "Pre-existing test imports deleted cubature_genut_batch_tf module. That obsolete module was not recreated; active shared-correction tests passed."
+    },
+    {
+      "label": "correction-cpu-02",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 82.12678832700476,
+      "cpu_worker_seconds": 83.11812499999999,
+      "gpu_device_seconds": 0.0,
+      "manifest": "correction-cpu-02/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "annealing-cpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 56.849270653998246,
+      "cpu_worker_seconds": 53.581813999999994,
+      "gpu_device_seconds": 0.0,
+      "manifest": "annealing-cpu-01/manifest.json",
+      "failure_classification": "TensorFlow loop shape changed after one step; repaired shape invariant and reran actual compiled recursion."
+    },
+    {
+      "label": "dependencies-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 24.981327826011693,
+      "cpu_worker_seconds": 29.30329,
+      "gpu_device_seconds": 0.0,
+      "manifest": "dependencies-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "containment-gpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 73.15753027400933,
+      "cpu_worker_seconds": 70.28773899999999,
+      "gpu_device_seconds": 73.15753027400933,
+      "manifest": "containment-gpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-feasibility-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 19.55047946400009,
+      "cpu_worker_seconds": 18.771929000000004,
+      "gpu_device_seconds": 19.55047946400009,
+      "manifest": "lg1-feasibility-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "hmc-telemetry-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 10.011737897002604,
+      "cpu_worker_seconds": 8.131755,
+      "gpu_device_seconds": 0.0,
+      "manifest": "hmc-telemetry-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "hmc-real-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 45.098623904021224,
+      "cpu_worker_seconds": 66.694936,
+      "gpu_device_seconds": 0.0,
+      "manifest": "hmc-real-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-data-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 5.331656387017574,
+      "cpu_worker_seconds": 9.515974,
+      "gpu_device_seconds": 0.0,
+      "manifest": "lg1-data-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-calibration-diagnostic-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 149.57935741200345,
+      "cpu_worker_seconds": 149.037953,
+      "gpu_device_seconds": 149.57935741200345,
+      "manifest": "lg1-calibration-diagnostic-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "latest-baseline-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 11.835598692996427,
+      "cpu_worker_seconds": 11.255593000000001,
+      "gpu_device_seconds": 0.0,
+      "manifest": "latest-baseline-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-control-curves-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 373.390901028004,
+      "cpu_worker_seconds": 360.838889,
+      "gpu_device_seconds": 373.390901028004,
+      "manifest": "lg1-control-curves-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "block-transport-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 4.918567914981395,
+      "cpu_worker_seconds": 4.651065,
+      "gpu_device_seconds": 0.0,
+      "manifest": "block-transport-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "block-transport-gpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 5.159483091003494,
+      "cpu_worker_seconds": 4.828892,
+      "gpu_device_seconds": 5.159483091003494,
+      "manifest": "block-transport-gpu-01/manifest.json",
+      "failure_classification": "Local variable binding error in diagnostic block harness; fixed."
+    },
+    {
+      "label": "block-transport-gpu-02",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 8.317041417001747,
+      "cpu_worker_seconds": 6.084282,
+      "gpu_device_seconds": 8.317041417001747,
+      "manifest": "block-transport-gpu-02/manifest.json",
+      "failure_classification": "XLA requires compile-time Range extent; block harness now uses fixed extent and variable offset."
+    },
+    {
+      "label": "block-transport-gpu-03",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 13.562837620993378,
+      "cpu_worker_seconds": 19.489818000000003,
+      "gpu_device_seconds": 13.562837620993378,
+      "manifest": "block-transport-gpu-03/manifest.json",
+      "failure_classification": "Single finite-difference step was insufficient under float32 rounding; used the master-prescribed step ladder with the unchanged 1e-2 criterion."
+    },
+    {
+      "label": "block-transport-gpu-04",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 15.139806586987106,
+      "cpu_worker_seconds": 21.656401,
+      "gpu_device_seconds": 15.139806586987106,
+      "manifest": "block-transport-gpu-04/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-n4096-curves-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 119.63271744499798,
+      "cpu_worker_seconds": 122.53769800000002,
+      "gpu_device_seconds": 119.63271744499798,
+      "manifest": "lg1-n4096-curves-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "matrix-families-gpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 7.656385520007461,
+      "cpu_worker_seconds": 7.450183999999999,
+      "gpu_device_seconds": 7.656385520007461,
+      "manifest": "matrix-families-gpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "matrix-families-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 7.433467562019359,
+      "cpu_worker_seconds": 6.646878999999999,
+      "gpu_device_seconds": 0.0,
+      "manifest": "matrix-families-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-localization-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 34.14120733499294,
+      "cpu_worker_seconds": 40.760777,
+      "gpu_device_seconds": 34.14120733499294,
+      "manifest": "lg1-localization-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-halton-curves-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 229.00742651801556,
+      "cpu_worker_seconds": 225.494803,
+      "gpu_device_seconds": 229.00742651801556,
+      "manifest": "lg1-halton-curves-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "stage-propagation-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 32.736457171005895,
+      "cpu_worker_seconds": 45.938562,
+      "gpu_device_seconds": 0.0,
+      "manifest": "stage-propagation-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "coordinate-cap-nonharm-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 31.589319264981896,
+      "cpu_worker_seconds": 30.546642,
+      "gpu_device_seconds": 31.589319264981896,
+      "manifest": "coordinate-cap-nonharm-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "lg1-cap-repair-curves-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 229.425996452017,
+      "cpu_worker_seconds": 226.97629600000002,
+      "gpu_device_seconds": 229.425996452017,
+      "manifest": "lg1-cap-repair-curves-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "tuner-telemetry-tests-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 23.925265558995306,
+      "cpu_worker_seconds": 20.370054,
+      "gpu_device_seconds": 0.0,
+      "manifest": "tuner-telemetry-tests-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "public-tuner-cpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 58.031626594020054,
+      "cpu_worker_seconds": 51.638985,
+      "gpu_device_seconds": 0.0,
+      "manifest": "public-tuner-cpu-01/manifest.json",
+      "failure_classification": "Numerics finished but JSON serializer rejected mappingproxy; converted host mappings and retried in a fresh directory."
+    },
+    {
+      "label": "public-tuner-cpu-02",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 55.0348599049903,
+      "cpu_worker_seconds": 50.285381,
+      "gpu_device_seconds": 0.0,
+      "manifest": "public-tuner-cpu-02/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "final-regressions-cpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 244.70697614201345,
+      "cpu_worker_seconds": 281.787762,
+      "gpu_device_seconds": 0.0,
+      "manifest": "final-regressions-cpu-01/manifest.json",
+      "failure_classification": "141 passed; obsolete dual API fixtures and omitted optional fields caused five failures/four setup errors. Repaired real API tests passed."
+    },
+    {
+      "label": "stale-fixture-repair-cpu-01",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_seconds": 32.102485841023736,
+      "cpu_worker_seconds": 29.184480999999998,
+      "gpu_device_seconds": 0.0,
+      "manifest": "stale-fixture-repair-cpu-01/manifest.json",
+      "failure_classification": "12 passed; invalid process covariance was correctly flagged before time zero, while test expected time zero. Corrected to initial-stage time -1."
+    },
+    {
+      "label": "final-baseline-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 15.080082722997759,
+      "cpu_worker_seconds": 12.250478000000001,
+      "gpu_device_seconds": 0.0,
+      "manifest": "final-baseline-cpu-01/manifest.json",
+      "failure_classification": null
+    },
+    {
+      "label": "corrected-regressions-cpu-01",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_seconds": 69.73595854599262,
+      "cpu_worker_seconds": 86.97666899999999,
+      "gpu_device_seconds": 0.0,
+      "manifest": "corrected-regressions-cpu-01/manifest.json",
+      "failure_classification": null
+    }
+  ],
+  "note": "Command success records harness completion; scientific screen decisions are separate. GPU charge is whole GPU-command wall time; CPU is child-process user+system time."
+}

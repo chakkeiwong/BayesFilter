@@ -1,0 +1,82 @@
+..........F..                                                            [100%]
+=================================== FAILURES ===================================
+___ test_retained_consumer_calls_verified_public_runner_and_excludes_warmup ____
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-99/test_retained_consumer_calls_v0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7093af700110>
+
+    def test_retained_consumer_calls_verified_public_runner_and_excludes_warmup(tmp_path, monkeypatch):
+        variance = math.log(2.)**2
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)], jit_compile=True)
+        def force(x):
+            return PositionOnlyForceEvaluation(x/variance, tf.ones(tf.shape(x)[:-1], tf.bool))
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)], jit_compile=True)
+        def endpoint(x):
+            valid = tf.ones(tf.shape(x)[:-1], tf.bool)
+            return TargetPotentialEvaluation(tf.reduce_sum(x*x, -1)/(2*variance),
+                dict(value_valid=valid, force_valid=valid, numerical_failure=~valid,
+                     outside_declared_support=~valid))
+        scope = "Gaussian-retained-consumer-mechanics-only"
+        binding = bind_components(force, endpoint, scope)
+        adapter = SimpleNamespace(target_scope=scope, adapter_signature=lambda: scope+":"+binding.binding_hash)
+        config = tuning_config(scope)
+        config = dataclasses.replace(config, nomination=dataclasses.replace(config.nomination,
+            mass_window_results=(16, 32), step_adaptation_results=64, verification_results=64),
+            warmup_results=100)
+        tuning = tune_hmc_kernel(adapter=adapter, initial_position=(0., 0.), config=config,
+            parameter_scales=(math.log(2.), math.log(2.)),
+            output_dir=tmp_path/"tuning", runner_binding=binding)
+        assert tuning.passed, "The Gaussian public-tuner fixture must itself pass fresh verification."
+        reference = dict(reference_sha256="analytic-Gaussian-test-only",
+            mean=[0., 0.], sd=[math.log(2.)]*2, cuts=[[-.467516, 0., .467516]]*2,
+            empirical_allowance=[0.]*10)
+        calibration = dict(method=METHOD, qualified=True, looks=list(LOOKS),
+            reference_sha256=reference["reference_sha256"])
+        # The numerical archive is real. The comparison hook inspects exact retained
+        # shape and returns at the first permitted look; it grants no scientific claim.
+        from bayesfilter.testing import surrogate_hmc_m13_retained as consumer
+        counts = []
+        def compare(points, ref, *, calibration):
+            counts.append(points.shape.as_list())
+            return dict(status="EQUIVALENT", rhat=[1., 1.], diagnostic_test_only=True)
+        monkeypatch.setattr(consumer, "assess", compare)
+>       result = consume_chunks(tuning, binding, tmp_path/"retained", reference, calibration)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_retained.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tuning = VerifiedTensorFlowHMCResult(config=VerifiedTensorFlowHMCConfig(nomination=TensorFlowHMCKernelTuningConfig(parameter_di...'verification_energy_valid': True, 'verification_no_divergences': True, 'nomination_passed': True, 'fresh_rhat': True})
+binding = HMCTuningRunnerBinding(runner_identity='bayesfilter.inference.neural_force_hmc.run_full_chain_neural_force_hmc', algor..._init__.py', 'sha256': 'b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85'}]}, artifact_authority=False)
+output_dir = PosixPath('/tmp/pytest-of-chakwong/pytest-99/test_retained_consumer_calls_v0/retained')
+reference = {'cuts': [[-0.467516, 0.0, 0.467516], [-0.467516, 0.0, 0.467516]], 'empirical_allowance': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...], 'mean': [0.0, 0.0], 'reference_sha256': 'analytic-Gaussian-test-only', ...}
+calibration = {'looks': [1000, 2000], 'method': 'm13_ten_functions_guarded_lugsail_two_looks_v1', 'qualified': True, 'reference_sha256': 'analytic-Gaussian-test-only'}
+
+    def consume_chunks(tuning, binding, output_dir, reference, calibration):
+        """Actual consumer -> public runner -> frozen native kernel, in250-draw chunks."""
+        if (calibration.get("qualified") is not True or calibration.get("method") != METHOD
+                or calibration.get("looks") != list(LOOKS)
+                or calibration.get("reference_sha256") != reference.get("reference_sha256")):
+            raise ValueError("missing or mismatched M13 uncertainty qualification")
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=False)
+>       runner = build_retained_bound_hmc_archive_runner_from_tuning_result(tuning, runner_binding=binding)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: build_retained_bound_hmc_archive_runner_from_tuning_result() takes 0 positional arguments but 1 positional argument (and 1 keyword-only argument) were given
+
+bayesfilter/testing/surrogate_hmc_m13_retained.py:47: TypeError
+----------------------------- Captured stderr call -----------------------------
+2026-09-26 04:11:13.506017: E tensorflow/core/util/util.cc:131] oneDNN supports DT_BOOL only on platforms with AVX-512. Falling back to the default Eigen-based implementation if present.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_retained.py::test_retained_consumer_calls_verified_public_runner_and_excludes_warmup
+1 failed, 12 passed, 2 warnings in 17.54s

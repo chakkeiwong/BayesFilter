@@ -1,0 +1,486 @@
+{
+  "epsilon_domain": [
+    0.001,
+    4.0
+  ],
+  "execution": {
+    "acceptance_policy": {
+      "base_repetitions": 32,
+      "bet_fractions": [
+        1.0,
+        0.5,
+        0.25,
+        0.125
+      ],
+      "default_promotion_status": "experimental_pending_validation",
+      "diagnostic_family_alpha": 0.05,
+      "discarded_prefix": 0,
+      "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+      "evidence_unit": "independent_fixed_horizon_trial",
+      "independent_unit": "complete_start_bank_trial",
+      "max_abs_log_accept_energy_proxy": 1000.0,
+      "max_candidates": 16,
+      "max_repeated_state_fraction": 0.95,
+      "max_repetitions": 128,
+      "method": "bounded_betting_mixture_v1",
+      "min_movement_rate": 0.05,
+      "min_normalized_return_displacement": 0.0,
+      "preferred_region": [
+        0.65,
+        0.75
+      ],
+      "qualification_mode": "lower_bound",
+      "qualification_region": [
+        0.5,
+        1.0
+      ],
+      "rhat_role": "reporting_only",
+      "schema": "bayesfilter.hmc_replicated_acceptance_policy.v8",
+      "search_family_alpha": 0.05,
+      "start_weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "temporal_diagnostic_role": "preparation_investigation_not_admission",
+      "temporal_tolerance": 0.1,
+      "trial_num_results": 64,
+      "verification_family_alpha": 0.05
+    },
+    "chain_mode": "batched",
+    "chunk_max_results": 64,
+    "measurement_num_results": 64,
+    "non_xla_reason": null,
+    "num_warmup_steps": 0,
+    "preparation_elapsed_seconds": 0.0,
+    "seed": [
+      771398554,
+      572601833
+    ],
+    "target_status_trace_policy": "per_chain_step",
+    "transition_profile": {
+      "auxiliary_refresh": "independent_full_each_transition",
+      "family": "hmc",
+      "integrator": "leapfrog",
+      "length_randomness": "independent_chain_transition_stateless",
+      "schema": "bayesfilter.hmc_transition_profile.v1",
+      "state_codec": "position_only_full_refresh_v1",
+      "status": "experimental",
+      "trajectory": "fixed"
+    },
+    "use_xla": true,
+    "verification_num_results": 64
+  },
+  "geometry_directory": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/full-model-geometry-02-sir/nl-sir",
+  "max_repairs_per_family": 1,
+  "method": "fixed_hmc",
+  "plan": "docs/plans/bayesfilter-modern-hmc-sir-evidence-phase-2026-10-17.md",
+  "posterior": {
+    "assessment": {
+      "retained_bulk_ess_min": 400.0,
+      "retained_tail_ess_min": 400.0,
+      "warmup_bulk_ess_min": 0.0,
+      "warmup_consecutive_checks": 1,
+      "warmup_tail_ess_min": 0.0
+    },
+    "mcse_sd_ratio_max": 0.02,
+    "precision": {
+      "batch_size": null,
+      "lugsail_c": 0.5,
+      "lugsail_r": 3,
+      "method": "lugsail",
+      "min_batches": 20
+    },
+    "reference_mcse_multiplier": 3.0,
+    "reference_normalized_tolerance": 0.1,
+    "seed": [
+      2004696093,
+      606561177
+    ],
+    "sequential": {
+      "count_budget_reason": null,
+      "energy_error_log_accept_threshold": -1000.0,
+      "max_results_per_chain": 10000,
+      "minimum_chain_count": 4,
+      "retained_chunk_results": 1000,
+      "retained_max_results": 10000,
+      "retained_min_results": 1000,
+      "retained_rhat_max": 1.01,
+      "warmup_check_window_results": 1000,
+      "warmup_chunk_results": 1000,
+      "warmup_max_results": 10000,
+      "warmup_min_results": 2000,
+      "warmup_rhat_max": 1.05
+    }
+  },
+  "proposal_input_sha256": {
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/full-model-geometry-02-sir/nl-sir/design.json": "05964fd80e83eea378b1c613e1a6beb7bbc7c13837eac804238adb27fa9e925a",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/full-model-geometry-02-sir/nl-sir/geometry.json": "b083ae4b946dc91345be975d11ecd8800cb03ccea572c61787e42a5d7bc12c7c",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-pricing-02/NL-SIR/design.json": "29c557ef4c52bfd2984cd53a65adaa21b438092c607dc633b530cd008166d949",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/full-model-pricing-02/NL-SIR/pilot/pilot-result.json": "40022c8d46b7a3238fe5405b1bbc08eb5d9a24141a140fd396b011723b86a03c",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/reference-consumer-05/NL-SIR.json": "9002b5da36a2e55f51bbfa7f3083d41ca5bbc49dc588fcd6fef2c11d31834187",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/method-proposals-02/nl-sir-snaper/design.json": "b6d6724325f3e2cc88bbf1e796c154c9434b02989968624976103d651536a44c",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/method-proposals-02/nl-sir-snaper/discarded-pilot.json": "3ba262fc02be8db4233dd2a977a608e21840ab0e3aad8c74c265096c4c21a5b9"
+  },
+  "proposal_metadata": {
+    "adaptation_replication": false,
+    "compilations": [
+      {
+        "frozen_transition_spec": {
+          "epsilon": 0.5,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 1.0,
+          "max_steps": 2,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 1.0,
+        "realized_second_moment": 1.0,
+        "requested_mean_duration": 1.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 1.0,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 1.0,
+          "max_steps": 1,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 1.0,
+        "realized_second_moment": 1.0,
+        "requested_mean_duration": 1.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 0.5,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 2.0,
+          "max_steps": 4,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 2.0,
+        "realized_second_moment": 4.0,
+        "requested_mean_duration": 2.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 1.0,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 2.0,
+          "max_steps": 2,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 2.0,
+        "realized_second_moment": 4.0,
+        "requested_mean_duration": 2.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 0.5,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 4.0,
+          "max_steps": 8,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 4.0,
+        "realized_second_moment": 16.0,
+        "requested_mean_duration": 4.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 1.0,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 4.0,
+          "max_steps": 4,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 4.0,
+        "realized_second_moment": 16.0,
+        "requested_mean_duration": 4.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 0.5,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 8.0,
+          "max_steps": 16,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 8.0,
+        "realized_second_moment": 64.0,
+        "requested_mean_duration": 8.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      },
+      {
+        "frozen_transition_spec": {
+          "epsilon": 1.0,
+          "log_mh_ratio": "delta_log_density_plus_kinetic_correction",
+          "max_duration": 8.0,
+          "max_steps": 8,
+          "profile": {
+            "auxiliary_refresh": "independent_full_each_transition",
+            "family": "hmc",
+            "integrator": "leapfrog",
+            "length_randomness": "independent_chain_transition_stateless",
+            "schema": "bayesfilter.hmc_transition_profile.v1",
+            "state_codec": "position_only_full_refresh_v1",
+            "status": "experimental",
+            "trajectory": "fixed"
+          },
+          "rounding": "fixed_count",
+          "schema": "bayesfilter.frozen_transition_spec.v1"
+        },
+        "max_steps_cap": 128,
+        "quantization_error": 0.0,
+        "realized_mean_duration": 8.0,
+        "realized_second_moment": 64.0,
+        "requested_mean_duration": 8.0,
+        "rounding": "nearest_count_ties_up",
+        "schema": "bayesfilter.compiled_mean_trajectory_duration.v1",
+        "tuning_artifact_authority": false
+      }
+    ],
+    "epsilons": [
+      0.5,
+      1.0
+    ],
+    "no_posterior_selection": true,
+    "requested_mean_durations": [
+      1.0,
+      2.0,
+      4.0,
+      8.0
+    ],
+    "role": "frozen_development_hypotheses",
+    "source": "explicit classical duration/epsilon coverage",
+    "source_role": "convenience geometric search hypotheses, not globally optimal tuning"
+  },
+  "reference_compatibility": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/preconfirmation-01/reference-consumer-05/NL-SIR.json",
+  "repair_factor": 1.5,
+  "schema": "bayesfilter.modern_frozen_full_model_design.v1",
+  "search": {
+    "allow_repair_from_free_pool": true,
+    "candidate_reserve_units": 6,
+    "epsilon_by_l": [
+      [
+        1,
+        [
+          1.0
+        ]
+      ],
+      [
+        2,
+        [
+          0.5,
+          1.0
+        ]
+      ],
+      [
+        4,
+        [
+          0.5,
+          1.0
+        ]
+      ],
+      [
+        8,
+        [
+          0.5,
+          1.0
+        ]
+      ],
+      [
+        16,
+        [
+          0.5
+        ]
+      ]
+    ],
+    "epsilon_refinement_factors": [
+      0.8,
+      1.25
+    ],
+    "evidence_rungs": [
+      1,
+      2,
+      4
+    ],
+    "expansion_l_grid": [],
+    "explore_failed_intervals": false,
+    "initial_epsilon": null,
+    "max_candidates": 16,
+    "max_gradient_work": null,
+    "max_wall_time_seconds": null,
+    "pilot_enabled": false,
+    "primary_l_grid": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "refinement_l_grid": [],
+    "refinement_rounds": 0,
+    "repair_reserve_units": 48,
+    "replicated_acceptance_policy": {
+      "base_repetitions": 32,
+      "bet_fractions": [
+        1.0,
+        0.5,
+        0.25,
+        0.125
+      ],
+      "default_promotion_status": "experimental_pending_validation",
+      "diagnostic_family_alpha": 0.05,
+      "discarded_prefix": 0,
+      "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+      "evidence_unit": "independent_fixed_horizon_trial",
+      "independent_unit": "complete_start_bank_trial",
+      "max_abs_log_accept_energy_proxy": 1000.0,
+      "max_candidates": 16,
+      "max_repeated_state_fraction": 0.95,
+      "max_repetitions": 128,
+      "method": "bounded_betting_mixture_v1",
+      "min_movement_rate": 0.05,
+      "min_normalized_return_displacement": 0.0,
+      "preferred_region": [
+        0.65,
+        0.75
+      ],
+      "qualification_mode": "lower_bound",
+      "qualification_region": [
+        0.5,
+        1.0
+      ],
+      "rhat_role": "reporting_only",
+      "schema": "bayesfilter.hmc_replicated_acceptance_policy.v8",
+      "search_family_alpha": 0.05,
+      "start_weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "temporal_diagnostic_role": "preparation_investigation_not_admission",
+      "temporal_tolerance": 0.1,
+      "trial_num_results": 64,
+      "verification_family_alpha": 0.05
+    },
+    "schema": "bayesfilter.hmc_controller_config.v2",
+    "total_budget_units": 96
+  },
+  "seed": 72410,
+  "seed_namespace": 20261017,
+  "target": "NL-SIR"
+}

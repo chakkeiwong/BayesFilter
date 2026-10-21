@@ -1,0 +1,12 @@
+# User-requested reusable inspection approvals for the surrogate-HMC campaign, 2026-09-23.
+# Runtime Python approval already exists; no new interpreter or shell approval.
+prefix_rule(pattern=["rg", "-n"], decision="allow")
+prefix_rule(pattern=["rg", "--files"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "status"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "diff", "--no-ext-diff", "--no-textconv"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "rev-parse"], decision="allow")
+prefix_rule(pattern=["codex", "execpolicy", "check"], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "-m", "pytest"], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "scripts/run_surrogate_hmc_program.py"], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "-m", "bayesfilter.testing.surrogate_hmc_closure_diagnostics"], decision="allow")

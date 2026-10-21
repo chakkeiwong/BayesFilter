@@ -1,0 +1,242 @@
+.............FF................                                          [100%]
+=================================== FAILURES ===================================
+______ test_annealed_full_union_multi_direction_parity_and_row_isolation _______
+tests/highdim/test_ledh_canonical_batch_fused.py:409: in test_annealed_full_union_multi_direction_parity_and_row_isolation
+    values, scores, diagnostics = canonical_batch_fused_value_score(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:298: in canonical_batch_fused_value_score
+    values,scores,diagnostics = _map_evaluations(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:34: in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:636: in map_fn_v2
+    return map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:496: in map_fn
+    _, r_a = while_loop.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:488: in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:479: in <lambda>
+    body = lambda i, lv: (i + 1, orig_body(*lv))
+                                 ^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:486: in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:693: in wrapper
+    raise e.ag_error_metadata.to_exception(e)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:690: in wrapper
+    return converted_call(f, args, kwargs, options=options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:439: in converted_call
+    result = converted_f(*effective_args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/__autograph_generated_file6jbwt4xh.py:55: in tf__evaluate_row
+    ag__.if_stmt(ag__.ld(k_batch_mode) == 'pfor', if_body, else_body, get_state, set_state, ('direction_status', 'scores', 'values'), 3)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1217: in if_stmt
+    _py_if_stmt(cond, body, orelse)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1270: in _py_if_stmt
+    return body() if cond else orelse()
+                               ^^^^^^^^
+/tmp/__autograph_generated_file6jbwt4xh.py:51: in else_body
+    values, scores, direction_status = ag__.converted_call(ag__.ld(_map_evaluations), (ag__.ld(evaluate_direction), ag__.ld(row_directions), ag__.ld(signature)), dict(use_whileloop=ag__.ld(_use_whileloop)), fscope)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:439: in converted_call
+    result = converted_f(*effective_args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/__autograph_generated_filev0efn0h7.py:58: in tf___map_evaluations
+    ag__.if_stmt(ag__.not_(ag__.ld(use_whileloop)), if_body, else_body, get_state, set_state, ('do_return', 'retval_'), 2)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1217: in if_stmt
+    _py_if_stmt(cond, body, orelse)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1270: in _py_if_stmt
+    return body() if cond else orelse()
+           ^^^^^^
+/tmp/__autograph_generated_filev0efn0h7.py:24: in if_body
+    retval_ = ag__.converted_call(ag__.ld(tf).map_fn, (ag__.ld(fn), ag__.ld(elements)), dict(fn_output_signature=ag__.ld(signature), parallel_iterations=1), fscope)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:331: in converted_call
+    return _call_unconverted(f, args, kwargs, options, False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:459: in _call_unconverted
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:636: in map_fn_v2
+    return map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:496: in map_fn
+    _, r_a = while_loop.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:488: in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:479: in <lambda>
+    body = lambda i, lv: (i + 1, orig_body(*lv))
+                                 ^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:486: in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/__autograph_generated_file6jbwt4xh.py:28: in evaluate_direction
+    value, score, status = ag__.converted_call(ag__.ld(canonical_value_and_analytical_score), (ag__.converted_call(ag__.ld(_single_cloud_model), (ag__.ld(model), ag__.ld(theta_row), ag__.ld(direction)), None, fscope_1), ag__.ld(theta_row), ag__.ld(initial_states), ag__.ld(initial_covariances), ag__.ld(noises), ag__.ld(observations)), dict(**ag__.ld(common_kwargs)), fscope_1)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:439: in converted_call
+    result = converted_f(*effective_args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/__autograph_generated_filee6pkct50.py:26: in tf__canonical_value_and_analytical_score
+    retval_ = ag__.converted_call(ag__.ld(_value_and_analytical_score_impl), (ag__.ld(model), ag__.ld(theta), ag__.ld(initial_states), ag__.ld(initial_covariances), ag__.ld(noises), ag__.ld(observations)), dict(flow_substeps=ag__.ld(flow_substeps), with_score=ag__.ld(with_score), return_trace=ag__.ld(return_trace), return_status=ag__.ld(return_status), initial_state_tangent=ag__.ld(initial_state_tangent), initial_covariance_tangent=ag__.ld(initial_covariance_tangent), observation_factor_override=None, post_reset_transform=None, reset_policy=ag__.ld(reset_policy), reset_design=ag__.ld(reset_design), reset_epsilon=ag__.ld(reset_epsilon), reset_sinkhorn_steps=ag__.ld(reset_sinkhorn_steps), reset_balance_steps=ag__.ld(reset_balance_steps), reset_ridge=ag__.ld(reset_ridge), correction_steps=ag__.ld(correction_steps), correction_strength=ag__.ld(correction_strength), correction_lm_damping=ag__.ld(correction_lm_damping), correction_lm_scale_floor=ag__.ld(correction_lm_scale_floor), correction_trust_radius=ag__.ld(correction_trust_radius), pairwise_steps=ag__.ld(pairwise_steps), pairwise_strength=ag__.ld(pairwise_strength), pairwise_rms_cap=ag__.ld(pairwise_rms_cap), coordinate_cap=ag__.ld(coordinate_cap), coordinate_cap_power=ag__.ld(coordinate_cap_power), annealed_stages=ag__.ld(annealed_stages), annealed_seed=ag__.ld(annealed_seed)), fscope)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:439: in converted_call
+    result = converted_f(*effective_args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/tmp/__autograph_generated_filei5b2xpka.py:116: in tf___value_and_analytical_score_impl
+    ag__.if_stmt(ag__.ld(annealed_stages) != 1, if_body_4, else_body_4, get_state_4, set_state_4, (), 0)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1217: in if_stmt
+    _py_if_stmt(cond, body, orelse)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/operators/control_flow.py:1270: in _py_if_stmt
+    return body() if cond else orelse()
+           ^^^^^^
+/tmp/__autograph_generated_filei5b2xpka.py:112: in if_body_4
+    raise ag__.converted_call(ag__.ld(ValueError), ('Phase 1 while-loop conversion requires annealed_stages=1; nested loop support deferred to future phase',), None, fscope)
+E   ValueError: in user code:
+E   
+E       File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 257, in evaluate_direction  *
+E           value, score, status = canonical_value_and_analytical_score(
+E       File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 34, in _map_evaluations  *
+E           return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+E       File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 832, in canonical_value_and_analytical_score  *
+E           annealed_seed=annealed_seed,
+E       File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 188, in _value_and_analytical_score_impl  *
+E           raise ValueError(
+E   
+E       ValueError: Phase 1 while-loop conversion requires annealed_stages=1; nested loop support deferred to future phase
+______________ test_annealed_full_union_is_tf_function_compilable ______________
+tests/highdim/test_ledh_canonical_batch_fused.py:491: in test_annealed_full_union_is_tf_function_compilable
+    values, scores, diagnostics = compiled(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:141: in error_handler
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:833: in __call__
+    result = self._call(*args, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:889: in _call
+    self._initialize(args, kwds, add_initializers_to=initializers)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:696: in _initialize
+    self._concrete_variable_creation_fn = tracing_compilation.trace_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:178: in trace_function
+    concrete_function = _maybe_define_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:283: in _maybe_define_function
+    concrete_function = _create_concrete_function(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/tracing_compilation.py:310: in _create_concrete_function
+    traced_func_graph = func_graph_module.func_graph_from_py_func(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py:1060: in func_graph_from_py_func
+    func_outputs = python_func(*func_args, **func_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/polymorphic_function.py:599: in wrapped_fn
+    out = weak_wrapped_fn().__wrapped__(*args, **kwds)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/highdim/test_ledh_canonical_batch_fused.py:476: in compiled
+    return canonical_batch_fused_value_score(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:298: in canonical_batch_fused_value_score
+    values,scores,diagnostics = _map_evaluations(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:34: in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:636: in map_fn_v2
+    return map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:496: in map_fn
+    _, r_a = while_loop.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:440: in while_loop
+    return while_v2.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:202: in while_loop
+    body_graph = func_graph_module.func_graph_from_py_func(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py:1060: in func_graph_from_py_func
+    func_outputs = python_func(*func_args, **func_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:180: in wrapped_body
+    outputs = body(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:486: in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:643: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:266: in evaluate_row
+    values,scores,direction_status = _map_evaluations(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:34: in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:636: in map_fn_v2
+    return map_fn(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:588: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:496: in map_fn
+    _, r_a = while_loop.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:440: in while_loop
+    return while_v2.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:202: in while_loop
+    body_graph = func_graph_module.func_graph_from_py_func(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/func_graph.py:1060: in func_graph_from_py_func
+    func_outputs = python_func(*func_args, **func_kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_v2.py:180: in wrapped_body
+    outputs = body(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py:486: in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py:643: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:257: in evaluate_direction
+    value, score, status = canonical_value_and_analytical_score(
+bayesfilter/highdim/ledh_canonical_score_tf.py:800: in canonical_value_and_analytical_score
+    return _value_and_analytical_score_impl(
+bayesfilter/highdim/ledh_canonical_score_tf.py:188: in _value_and_analytical_score_impl
+    raise ValueError(
+E   ValueError: Phase 1 while-loop conversion requires annealed_stages=1; nested loop support deferred to future phase
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/integration/test_ledh_graceful_failure_integration.py::TestLEDHGracefulFailureIntegration::test_session
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/unittest/case.py:678: DeprecationWarning: It is deprecated to return a value that is not None from a test case (<bound method TensorFlowTestCase.test_session of <test_ledh_graceful_failure_integration.TestLEDHGracefulFailureIntegration testMethod=test_session>>)
+    return self.run(*args, **kwds)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_ledh_canonical_batch_fused.py::test_annealed_full_union_multi_direction_parity_and_row_isolation
+FAILED tests/highdim/test_ledh_canonical_batch_fused.py::test_annealed_full_union_is_tf_function_compilable
+2 failed, 29 passed, 3 warnings in 60.57s (0:01:00)
