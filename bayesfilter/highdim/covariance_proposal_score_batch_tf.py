@@ -42,48 +42,8 @@ def gaussian_mixture(x,means,cov,shared_covariance=False,contraction="direct"):
     if shared_covariance:
         from bayesfilter.highdim.covariance_proposal_shared_gaussian_tf import shared_gaussian_mixture
         return shared_gaussian_mixture(x, means, cov, contraction)
-    from bayesfilter.highdim import ledh_small_matrix_tf as sm
-    from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
-    batch,n,d=x.v.shape; p=x.t.shape[0]; dtype=x.v.dtype
-    k=select_transport_chunks(n).row_chunk_size; blocks=n//k
-    if shared_covariance: cov=cov[:,:1]
-    valid,factor=safe_cholesky(cov.v,"importance_component")
-    precision=sm.cholesky_solve(factor,tf.broadcast_to(tf.eye(d,dtype=dtype),tf.shape(factor)))
-    norm=-tf.constant(.5*d*math.log(2*math.pi)+math.log(n),dtype)-tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)),-1)
-    trace=tf.einsum("bnij,pbnji->pbn",precision,cov.t)
-    out=tf.TensorArray(dtype,blocks,element_shape=[batch,k])
-    dout=tf.TensorArray(dtype,blocks,element_shape=[p,batch,k])
-    def rows(i,out,dout):
-        xv=tile(x.v,i,k,1); xt=tile(x.t,i,k,2)
-        def cols(j,total,dtotal):
-            mu=tile(means.v,j,k,1); dm=tile(means.t,j,k,2)
-            pr=precision if shared_covariance else tile(precision,j,k,1)
-            dc=cov.t if shared_covariance else tile(cov.t,j,k,2)
-            no=norm if shared_covariance else tile(norm,j,k,1)
-            tr=trace if shared_covariance else tile(trace,j,k,2)
-            if shared_covariance and contraction == "matrix":
-                mahal,linear=shared_location_terms(xv,mu,xt,dm,pr[:,0])
-                terms=no[:,None]+mahal
-            else:
-                residual=xv[:,:,None]-mu[:,None]
-                u=tf.linalg.matvec(pr[:,None],residual)
-                terms=no[:,None]-.5*tf.reduce_sum(residual*u,-1)
-                # A shared sensitivity translation cancels from d(x-m).
-                # Remove it before contracting to avoid subtracting large dot
-                # products. This changes no primal density or derivative formula.
-                origin=xt[:,:,:1]
-                linear=-tf.einsum("bijd,pbid->pbij",u,xt-origin)+tf.einsum("bijd,pbjd->pbij",u,dm-origin)
-            quadratic=_covariance_quadratic(xv,mu,pr,dc)
-            block=logsumexp(Jet(terms,linear+.5*quadratic-.5*tr[:,:,None]),-1)
-            joined=logsumexp(stack([Jet(total,dtotal),block],-1),-1)
-            return j+1,joined.v,joined.t
-        _,v,t=tf.while_loop(lambda j,*_:j<blocks,cols,(0,tf.fill([batch,k],tf.constant(-math.inf,dtype)),tf.zeros([p,batch,k],dtype)),parallel_iterations=1)
-        return i+1,out.write(i,v),dout.write(i,t)
-    _,out,dout=tf.while_loop(lambda i,*_:i<blocks,rows,(0,out,dout),parallel_iterations=1)
-    value=tf.reshape(tf.transpose(out.stack(),[1,0,2]),[batch,n])
-    tangent=tf.reshape(tf.transpose(dout.stack(),[1,2,0,3]),[p,batch,n])
-    valid=tf.reduce_all(valid,1) & tf.reduce_all(tf.math.is_finite(value),1) & tf.reduce_all(tf.math.is_finite(tangent),[0,2]) & tf.reduce_all(tf.math.is_finite(x.v),[1,2]) & tf.reduce_all(tf.math.is_finite(means.v),[1,2])
-    return Jet(value,tangent),valid
+    from bayesfilter.highdim.covariance_proposal_nonshared_gaussian_tf import nonshared_gaussian_mixture
+    return nonshared_gaussian_mixture(x, means, cov)
 
 
 def transport(x,logw,controls):
@@ -91,6 +51,8 @@ def transport(x,logw,controls):
     k=select_transport_chunks(n).row_chunk_size; blocks=n//k
     cache=tf.TensorArray(dtype,blocks*blocks,element_shape=[batch,k,k])
     epsilon=tf.constant(controls.reset_epsilon,dtype)
+    # Keep the dense block layout: the symmetric cache's conditional transposes
+    # reduced memory but materially slowed the enclosing GPU/XLA recurrence.
     def cost(index,cache):
         i=index//blocks; j=index%blocks
         xi=tile(x.v,i,k,1); xj=tile(x.v,j,k,1)
@@ -106,6 +68,9 @@ def transport(x,logw,controls):
     centred_x=x.v-x.v[:,:1]
     centred_t=x.t-x.t[:,:,:1]
     radial=tf.reduce_sum(centred_x*centred_t,-1)
+    invariant_features=tf.concat([centred_x,
+        tf.reshape(tf.transpose(centred_t,[1,2,0,3]),[batch,n,p*d]),
+        tf.transpose(radial,[1,2,0])],2)
     def reduce_tiles(potential,rows):
         out=tf.TensorArray(dtype,blocks,element_shape=[batch,k]); dout=tf.TensorArray(dtype,blocks,element_shape=[p,batch,k])
         def outer(i,out,dout):
@@ -119,8 +84,8 @@ def transport(x,logw,controls):
                 xi=tile(centred_x,i,k,1); xj=tile(centred_x,j,k,1)
                 di=tile(centred_t,i,k,2); dj=tile(centred_t,j,k,2)
                 ai=tile(radial,i,k,2); aj=tile(radial,j,k,2)
-                packed=tf.concat([tf.transpose(part.t,[1,2,0]),xj,
-                    tf.reshape(tf.transpose(dj,[1,2,0,3]),[batch,k,p*d]),tf.transpose(aj,[1,2,0])],2)
+                packed=tf.concat([tf.transpose(part.t,[1,2,0]),
+                    tile(invariant_features,j,k,1)],2)
                 averaged=tf.linalg.matmul(weights,packed)
                 da=tf.transpose(averaged[:,:,:p],[2,0,1]); mx=averaged[:,:,p:p+d]
                 mdx=tf.transpose(tf.reshape(averaged[:,:,p+d:p+d+p*d],[batch,k,p,d]),[2,0,1,3])

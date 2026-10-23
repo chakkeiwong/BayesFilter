@@ -1,0 +1,37 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792664735.834665 3542305 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1792664735.838611 3542305 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792664735.846730 3542305 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792664735.846774 3542305 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792664735.846781 3542305 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792664735.846783 3542305 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1792664738.185115 3542305 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792664738.584176 3542305 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792664739.334030 3542305 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+2026-10-22 18:33:50.146327: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_40603__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.687371] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-22 18:44:48.972600: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 12m58.82634678s
+
+********************************
+[Compiling module a_inference_run_40603__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.687371] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792671319.953589 3542305 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x59cbfb39b170
+HMC sequential {'warmup': 250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1000, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 0} RUNNING {'bulk': [1.0168786717188738, 1.0089467157374363, 1.0306593504839718], 'folded': [1.0055771757339664, 1.00422155561139, 1.0062516907790329], 'maximum': [1.0168786717188738, 1.0089467157374363, 1.0306593504839718]}
+HMC sequential {'warmup': 2000, 'verification': 250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1000} RUNNING {'bulk': [1.0068996343235008, 1.0061359532026428, 1.0247544062829825], 'folded': [1.0025058908580653, 1.0028877304631738, 1.0025292911989292], 'maximum': [1.0068996343235008, 1.0061359532026428, 1.0247544062829825]}
+HMC sequential {'warmup': 2000, 'verification': 1250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 2000} VERIFIED {'bulk': [1.0098244678566008, 1.0028605203659569, 1.0072490461904855], 'folded': [1.0035026011830412, 1.0011367283523636, 1.0061066542918444], 'maximum': [1.0098244678566008, 1.0028605203659569, 1.0072490461904855]}

@@ -341,12 +341,16 @@ class NeuTraOptimizerConfig:
     gradient_clip_norm: float | None
     jit_compile: bool = True
     target_dtype: str = "float64"
+    shard_size: int | None = None
 
     def __post_init__(self):
         if self.target_dtype not in ("float32", "float64"):
             raise ValueError("target_dtype must be float32 or float64")
         if type(self.batch_size) is not int or self.batch_size < 2:
             raise ValueError("batch_size must exceed one")
+        if self.shard_size is not None and (type(self.shard_size) is not int or
+                not 1 < self.shard_size <= self.batch_size):
+            raise ValueError("native shard_size must be between 2 and batch_size")
         if self.estimator not in ("standard", "path"):
             raise ValueError("estimator must be standard or path")
         for name in ("learning_rate", "epsilon"):
@@ -381,9 +385,42 @@ class NeuTraTransportTrainer:
         self.train_step = tf.function(self._train_step, input_signature=signature, jit_compile=config.jit_compile, autograph=False)
 
     def _evaluate(self, latent):
+        if self.config.shard_size is not None:
+            return self._evaluate_sharded(latent)
         return core.reverse_kl_evaluate(self.transport, self.target_value_score, latent,
             estimator=self.config.estimator, variables=self.variables,
             target_dtype=tf.as_dtype(self.config.target_dtype))
+
+    def _evaluate_sharded(self, latent):
+        """One mean gradient at fixed weights, with a bounded native target batch.
+
+        Padding carries zero objective weight. No optimizer state changes inside
+        this loop; the existing checked/clipped Adam update runs exactly once.
+        """
+        size, batch = self.config.shard_size, self.config.batch_size
+        groups = (batch + size - 1) // size
+        target_dtype = tf.as_dtype(self.config.target_dtype)
+        shape = [size, self.transport.parameter_dim]
+        proposals = tf.TensorArray(latent.dtype, groups, element_shape=shape)
+
+        def body(index, loss, valid, proposals, *gradients):
+            rows = index * size + tf.range(size)
+            mask = rows < batch
+            z = tf.gather(latent, tf.minimum(rows, batch - 1))
+            result = core.reverse_kl_evaluate(self.transport, self.target_value_score, z,
+                estimator=self.config.estimator, variables=self.variables,
+                target_dtype=target_dtype, sample_mask=mask)
+            weight = tf.reduce_sum(tf.cast(mask, target_dtype)) / tf.cast(batch, target_dtype)
+            summed = tuple(g + tf.cast(weight, g.dtype) * dg
+                           for g, dg in zip(gradients, result["gradients"]))
+            return (index + 1, loss + weight * result["loss"], valid & result["valid"],
+                    proposals.write(index, result["proposal_score"]), *summed)
+
+        result = tf.while_loop(lambda index, *_: index < groups, body,
+            (0, tf.zeros([], target_dtype), tf.constant(True), proposals,
+             *(tf.zeros_like(v) for v in self.variables)), parallel_iterations=1)
+        return dict(loss=result[1], valid=result[2], gradients=tuple(result[4:]),
+            proposal_score=tf.reshape(result[3].stack(), [-1, shape[1]])[:batch])
 
     def _train_step(self, latent):
         return self._apply_evaluation(self._evaluate(latent), latent)

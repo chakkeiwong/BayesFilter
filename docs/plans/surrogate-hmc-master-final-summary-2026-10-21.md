@@ -1,5 +1,11 @@
 # Surrogate-HMC master program: terminal campaign summary
 
+Historical snapshot, superseded by the
+[23 October completion summary](surrogate-hmc-master-final-summary-2026-10-23.md).
+The subsequent SIR NeuTra run passed the agreed cumulative R-hat rule, closing
+the five-model sampling objective. Statements below about pending SIR training
+or incomplete sampling describe the 21 October state only.
+
 ## Goal and completion status
 
 The goal is to test surrogate HMC on LGSSM, KSC stochastic volatility,

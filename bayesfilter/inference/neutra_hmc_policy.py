@@ -71,6 +71,13 @@ def discover_neutra_hmc_routes(
             if not any(marker.lower() in lowered for marker in behavior_markers):
                 continue
             discovered.add(str(path.resolve().relative_to(root)))
+    # Consumer endpoints can delegate without containing a sampler-name marker.
+    # Keep those endpoints explicit so removal/bypass cannot escape the ledger.
+    for path in discovery.get("explicit_paths", ()):
+        absolute = (root / path).resolve()
+        if not absolute.is_file() or absolute.suffix != suffix:
+            raise NeuTraHMCRoutePolicyError(f"stale explicit discovery path: {path}")
+        discovered.add(str(absolute.relative_to(root)))
     exclusions = _ledger_path_records(discovery.get("exclusions"), "exclusions")
     for path, record in exclusions.items():
         absolute = root / path

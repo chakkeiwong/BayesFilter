@@ -1,0 +1,61 @@
+F
+=================================== FAILURES ===================================
+_______ test_frozen_map_force_and_independent_endpoint_match_derivatives _______
+
+    def test_frozen_map_force_and_independent_endpoint_match_derivatives():
+        dtype = tf.float64
+        transport = NeuTraTransport(NeuTraTransportConfig.hoffman_author_iaf(
+            3, dtype="float64", conditional_scale_cap=2., seed=(11,23)))
+        signature = "b"*64
+        payload = transport.frozen_payload(target_signature=signature)
+        raw_force = FrozenPositionOnlyForce(
+            lambda q: PositionOnlyForceEvaluation(q+.4*q**3, tf.reduce_all(tf.abs(q)<30.,-1)), "aux")
+        # Deliberately distinct endpoint: the connection must preserve its value.
+        raw_target = FrozenTargetPotential(lambda q: tf.reduce_sum(q*q), "independent")
+        bound = frozen_neutra_bindings(payload, target_signature=signature,
+            raw_force=raw_force, raw_target=raw_target, target_scope="sir-test")
+        z = tf.constant([[.1,-.2,.3],[-.3,.2,-.1]],dtype)
+        with tf.GradientTape() as tape:
+            tape.watch(z)
+            q, ld = transport.forward_and_logdet(z)
+            aux = tf.reduce_sum(.5*q*q+.1*q**4,-1)-ld
+        expected = tape.gradient(aux,z)
+        actual = bound["force"].function(z)
+        np.testing.assert_allclose(actual.force, expected, atol=2e-10,rtol=2e-10)
+        assert bool(tf.reduce_all(actual.force_valid))
+        for row in range(2):
+>           endpoint = bound["target"].function(z[row])
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_sir_neutra.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/testing/surrogate_hmc_sir_neutra.py:110: in endpoint
+    value, status = _evaluate_endpoint_potential(raw_target, q[0], dtype=dtype,
+bayesfilter/inference/neural_force_hmc.py:422: in _evaluate_endpoint_potential
+    value = _assert_rank_and_dimension(value, rank=1, dimension=None, name="target potential")
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = <tf.Tensor 'Sum_3:0' shape=() dtype=float64>
+
+    def _assert_rank_and_dimension(
+        value: tf.Tensor,
+        *,
+        rank: int,
+        dimension: int | None,
+        name: str,
+    ) -> tf.Tensor:
+        if value.shape.rank is not None and value.shape.rank != rank:
+>           raise ValueError(f"{name} must have rank {rank}")
+E           ValueError: target potential must have rank 1
+
+bayesfilter/inference/neural_force_hmc.py:333: ValueError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792572440.878806       3 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_sir_neutra.py::test_frozen_map_force_and_independent_endpoint_match_derivatives
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 warnings in 4.32s

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="5.352" timestamp="2026-10-21T16:49:03.433149+08:00" hostname="DESKTOP-RF1Q5IJ"><testcase classname="tests.test_surrogate_hmc_sir_neutra" name="test_frozen_map_force_and_independent_endpoint_match_derivatives" time="0.956" /><testcase classname="tests.test_surrogate_hmc_sir_neutra" name="test_matched_sir_adapter_real_native_program_and_prior" time="0.068"><failure message="ValueError: require B&gt;=1, N&gt;d, T&gt;=1">tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-70/test_matched_sir_adapter_real_0')
+
+    def test_matched_sir_adapter_real_native_program_and_prior(tmp_path):
+        from bayesfilter.testing import surrogate_hmc_literature_priors as priors
+        from bayesfilter.testing.surrogate_hmc_five_model import Case
+        from bayesfilter.highdim.sqmc_nonlinear_tf import NonlinearSQMCSpec
+        from bayesfilter.highdim.covariance_proposal_tf import ProposalControls
+        dtype = tf.float32
+        spec = NonlinearSQMCSpec("sir_d18")
+        theta = spec.default_theta(dtype)
+        initial = tf.random.stateless_normal([16,18],[21,1],dtype=dtype)
+        noise = tf.random.stateless_normal([2,16,18],[21,2],dtype=dtype)
+        uniform = tf.random.stateless_uniform([2,16,2],[21,3],dtype=dtype)
+        model,_ = spec.model(theta,tf.zeros_like(theta))
+        state = spec.initial_cloud(theta,initial,tf.zeros_like(theta))[0]
+        obs=[]
+        for _ in range(2):
+            state=model.transition_mean_fn(theta,state)
+            obs.append(tf.reduce_mean(model.observation_fn(state),0))
+        data = tmp_path/"data.json"
+        data.write_text("tiny independent diagnostic data")
+        case=Case("sir_d18",spec,tf.stack(obs),theta,(initial,noise,uniform),
+            ProposalControls(flow_steps=2,reset_steps=5),tf.constant([.2,.3,.5],dtype),
+            data,prior_choice=priors.PRIOR_ID)
+&gt;       adapter=SIRNeuTraTarget(case,2)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_sir_neutra.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_sir_neutra.py:37: in __init__
+    self.program = make_batched_score_filter(case.spec, n, case.horizon,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spec = NonlinearSQMCSpec(name='sir_d18'), n = 16, horizon = 2
+controls = ProposalControls(flow_steps=2, reset_steps=5, reset_epsilon=1.0, correction_steps=0, correction_basis=4, correction_rate=0.1, correction_radius=0.25, shared_gaussian_contraction='direct')
+dtype = tf.float32, jit_compile = True, batch_size = 2, record_history = False
+precision_policy = 'uniform', fixed_draw_design = None
+
+    def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,batch_size=2,record_history=False,precision_policy="uniform",fixed_draw_design=None):
+        """Build the shared recurrence, optionally binding a fixed draw design.
+    
+        fixed_draw_design=(beta, uniforms) snapshots the immutable mixture weights
+        and uniforms and prepares their exact integer indices once on CPU. That
+        callable takes only (theta, observations, initial, innovations), so callers
+        cannot supply mismatched weights/uniforms at execution. The default dynamic
+        six-input callable is unchanged. Preparation uses the same FP64 index
+        authority; the continuous FP32 recurrence needs no FP64 index arithmetic.
+        """
+        dtype=tf.as_dtype(dtype); d=spec.dimension; p=spec.parameter_count; o=getattr(spec,"observation_dimension",d); batch=int(batch_size)
+        if precision_policy not in PRECISION_POLICIES:
+            raise ValueError("unknown score precision policy")
+        if precision_policy != "uniform" and dtype != tf.float64:
+            raise ValueError("mixed pair arithmetic requires FP64 recurrence")
+&gt;       if batch&lt;1 or n&lt;=d or horizon&lt;1: raise ValueError("require B&gt;=1, N&gt;d, T&gt;=1")
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: require B&gt;=1, N&gt;d, T&gt;=1
+
+bayesfilter/highdim/covariance_proposal_score_batch_tf.py:225: ValueError</failure></testcase></testsuite></testsuites>

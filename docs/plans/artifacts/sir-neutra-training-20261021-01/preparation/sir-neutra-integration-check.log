@@ -1,0 +1,107 @@
+...........................FFFFFFF.F............                         [100%]
+=================================== FAILURES ===================================
+______ test_resumption_matches_uninterrupted_states_seeds_and_diagnostics ______
+tests/test_hmc_tensorflow_resume.py:66: in test_resumption_matches_uninterrupted_states_seeds_and_diagnostics
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+__________ test_resume_rejects_corruption_before_new_transition[seed] __________
+tests/test_hmc_tensorflow_resume.py:92: in test_resume_rejects_corruption_before_new_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+_________ test_resume_rejects_corruption_before_new_transition[count] __________
+tests/test_hmc_tensorflow_resume.py:92: in test_resume_rejects_corruption_before_new_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+_________ test_resume_rejects_corruption_before_new_transition[index] __________
+tests/test_hmc_tensorflow_resume.py:92: in test_resume_rejects_corruption_before_new_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+________ test_resume_rejects_corruption_before_new_transition[initial] _________
+tests/test_hmc_tensorflow_resume.py:92: in test_resume_rejects_corruption_before_new_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+________ test_resume_rejects_corruption_before_new_transition[checksum] ________
+tests/test_hmc_tensorflow_resume.py:92: in test_resume_rejects_corruption_before_new_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+_________________ test_archive_replay_never_runs_a_transition __________________
+tests/test_hmc_tensorflow_resume.py:115: in test_archive_replay_never_runs_a_transition
+    cfg, run, calls, source, partial = exercise(monkeypatch, tmp_path)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tensorflow_resume.py:57: in exercise
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+_____________ test_unfinished_warmup_continues_without_restarting ______________
+tests/test_hmc_tensorflow_resume.py:148: in test_unfinished_warmup_continues_without_restarting
+    partial = resume.replay_then_continue(config=cfg, nomination=None, binding=None,
+bayesfilter/inference/hmc_tensorflow_resume.py:165: in replay_then_continue
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+bayesfilter/inference/neutra_hmc.py:1885: in run_sequential_neutra_hmc
+    raise NeuTraHMCError("verified callback contract requires VerifiedTensorFlowHMCConfig")
+E   bayesfilter.inference.neutra_hmc.NeuTraHMCError: verified callback contract requires VerifiedTensorFlowHMCConfig
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_tensorflow_resume.py::test_resumption_matches_uninterrupted_states_seeds_and_diagnostics
+FAILED tests/test_hmc_tensorflow_resume.py::test_resume_rejects_corruption_before_new_transition[seed]
+FAILED tests/test_hmc_tensorflow_resume.py::test_resume_rejects_corruption_before_new_transition[count]
+FAILED tests/test_hmc_tensorflow_resume.py::test_resume_rejects_corruption_before_new_transition[index]
+FAILED tests/test_hmc_tensorflow_resume.py::test_resume_rejects_corruption_before_new_transition[initial]
+FAILED tests/test_hmc_tensorflow_resume.py::test_resume_rejects_corruption_before_new_transition[checksum]
+FAILED tests/test_hmc_tensorflow_resume.py::test_archive_replay_never_runs_a_transition
+FAILED tests/test_hmc_tensorflow_resume.py::test_unfinished_warmup_continues_without_restarting
+8 failed, 40 passed, 2 warnings in 45.51s

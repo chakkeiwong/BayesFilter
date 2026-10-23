@@ -40,11 +40,7 @@ def polar_observation(x):
 
 
 def polar_observation_tangent(x, dx):
-    p, square, radius, valid = _polar_geometry(x)
-    dp = dx[:, :2]
-    radial = tf.reduce_sum(p*dp, -1)/radius
-    angular = (p[:, 0]*dp[:, 1]-p[:, 1]*dp[:, 0])/square
-    return _checked(tf.stack([radial, angular], -1), valid)
+    return polar_value_tangents(x, dx[None])[1][0]
 
 
 def polar_jacobian(x):
@@ -55,14 +51,34 @@ def polar_jacobian(x):
 
 
 def polar_jacobian_tangent(x, dx):
+    return polar_value_tangents(x, dx[None], jacobian=True)[1][0]
+
+
+def polar_value_tangents(x, dx, *, jacobian=False):
+    """Polar value and all directions; geometry has no parameter axis.
+
+    ``x`` is [cloud, 4], ``dx`` is [parameter, cloud, 4]. The radius
+    regularization and invalid-origin semantics match the scalar callbacks.
+    """
     p, square, radius, valid = _polar_geometry(x)
-    dp = dx[:, :2]
+    dp = dx[..., :2]
     dot = tf.reduce_sum(p*dp, -1)
-    radial = dp/radius[:, None]-p*(dot/radius**3)[:, None]
-    angular = (tf.stack([-dp[:, 1], dp[:, 0]], -1)/square[:, None]
-               -tf.stack([-p[:, 1], p[:, 0]], -1)*(2*dot/square**2)[:, None])
-    position = tf.stack([radial, angular], 1)
-    return _checked(tf.concat([position, tf.zeros_like(position)], -1), valid)
+    if jacobian:
+        angular = tf.stack([-p[:, 1], p[:, 0]], -1)/square[:, None]
+        position = tf.stack([p/radius[:, None], angular], -2)
+        value = tf.concat([position, tf.zeros_like(position)], -1)
+        radial = dp/radius[:, None]-p*(dot/radius**3)[..., None]
+        angular_dot = (tf.stack([-dp[..., 1], dp[..., 0]], -1)/square[:, None]
+                       -angular*(2*dot/square)[..., None])
+        tangent = tf.stack([radial, angular_dot], -2)
+        tangent = tf.concat([tangent, tf.zeros_like(tangent)], -1)
+    else:
+        value = tf.stack([radius, tf.atan2(p[:, 1], p[:, 0])], -1)
+        tangent = tf.stack([dot/radius,
+            (p[:, 0]*dp[..., 1]-p[:, 1]*dp[..., 0])/square], -1)
+    mask = tf.reshape(valid, [1, -1]+[1]*(tangent.shape.rank-2))
+    return _checked(value, valid), tf.where(mask, tangent,
+        tf.constant(float("nan"), x.dtype))
 
 
 def make_range_bearing_model(a, q, r, *, dtype=tf.float32):
