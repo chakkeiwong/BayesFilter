@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 550, in worker
+    result=globals()[job["kind"]](tf,job,out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 418, in freeze
+    audit=geometry(z)
+          ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 59, in quick_execute
+    except TypeError as e:
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Detected unsupported operations when trying to compile graph __inference_geometry_14651[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263] on XLA_GPU_JIT: LogMatrixDeterminant (No registered 'LogMatrixDeterminant' OpKernel for XLA_GPU_JIT devices compatible with node {{node LogMatrixDeterminant}}){{node LogMatrixDeterminant}}
+The op is created at: 
+File "BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 772, in <module>
+File "BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 760, in main
+File "BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 550, in worker
+File "BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 418, in freeze
+File "BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py", line 417, in geometry
+	tf2xla conversion failed while converting __inference_geometry_14651[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_geometry_14651]

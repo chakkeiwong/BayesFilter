@@ -149,8 +149,20 @@ def control_candidates(baseline, *, smoother_reset=False, fixed_ot_five=False):
         replace(baseline, reset_epsilon=.5*baseline.reset_epsilon)]
 
 
-def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
+def tune(case, output, *, smoother_reset=False, fixed_ot_five=False,
+         native_batch_sizes=(2,), precision_warning_only=False):
+    """Calibrate once, then check every declared native batch execution scope.
+
+    Joint scopes share calibrated controls/weights, but each receives its own
+    repository-issued selection only after executing that native batch lane.
+    Precision differences may be warning-only; invalid trajectories never are.
+    """
     from bayesfilter.testing import surrogate_hmc_five_model as runtime
+    batches = tuple(native_batch_sizes)
+    if not batches or len(set(batches)) != len(batches) or any(
+            not isinstance(b, int) or b < 2 for b in batches):
+        raise ValueError("distinct native batch sizes >=2 are required")
+    batch = max(batches)
     start = time.monotonic()
     n, dtype = runtime.N, case.force_dtype
     calibration_seeds = tuple(seed+case.tuning_seed_offset for seed in CALIBRATION_SEEDS)
@@ -163,7 +175,8 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
     data = {seed: (tf.cast(runtime.fresh_observations(case, seed), dtype),
                    tuple(tf.cast(x,dtype) for x in runtime.design(case, seed+700)))
             for seed in calibration_seeds+validation_seeds}
-    positions = tf.stack([theta, tf.cast(case.chart(tf.fill([case.p], tf.constant(.01, dtype)))[0], dtype)])
+    positions = tf.stack([tf.cast(case.chart(tf.fill([case.p], tf.constant(
+        (0., .01, -.01, .03)[i % 4], dtype)))[0], dtype) for i in range(batch)])
     references = independent_references(case, positions, data, validation_seeds)
     spec64 = case.spec
     if case.name == "range_bearing":
@@ -210,7 +223,10 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
         use_fit = fit_ok and good and float(loss) <= float(equal_loss)
         weights = fit["beta"] if use_fit else equal
         candidate_score = make_batched_score_filter(case.spec, n, case.horizon, controls,
-            dtype, jit_compile=True, batch_size=2, precision_policy=case.precision_policy)
+            dtype, jit_compile=True, batch_size=batch, precision_policy=case.precision_policy)
+        other_scores = {b: make_batched_score_filter(case.spec, n, case.horizon, controls,
+            dtype, jit_compile=True, batch_size=b, precision_policy=case.precision_policy)
+            for b in batches if b != batch}
         timing_obs, timing_fixed = data[calibration_seeds[0]]
         timer = time.monotonic()
         first = candidate_score(positions, timing_obs, *timing_fixed, weights)
@@ -224,7 +240,7 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
         runtime.save(Path(output)/"progress.json", dict(status="PRECISION_CHECK",
             candidate=index, completed_candidates=len(records), warmed_score_seconds=score_seconds))
         score64 = make_batched_score_filter(spec64, n, case.horizon, controls,
-            tf.float64, jit_compile=True, batch_size=2, precision_policy="uniform")
+            tf.float64, jit_compile=True, batch_size=batch, precision_policy="uniform")
         checks = []
         for seed in validation_seeds:
             obs, fixed = data[seed]
@@ -232,6 +248,9 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
             high = score64(tf.cast(positions, tf.float64), tf.cast(obs, tf.float64),
                           *[tf.cast(x, tf.float64) for x in fixed], tf.cast(weights, tf.float64))
             check = precision_screen(low, high, case.horizon, case.precision_policy)
+            if precision_warning_only:
+                check["role"] = "precision explanatory warning; invalid trajectory veto"
+            check["native_batch_size"] = batch
             check["validation_seed"] = seed
             reference_rows = [r for r in references.get("rows", []) if r["seed"] == seed]
             if reference_rows:
@@ -243,14 +262,28 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
                 check["reference_role"] = references["role"]
             checks.append(check)
             runtime.save(Path(output)/("precision-candidate-"+str(index)+"-seed-"+str(seed)+".json"), check)
+            for b, program in other_scores.items():
+                small = program(positions[:b], obs, *fixed, weights)
+                high_small = {k: high[k][:b] for k in ("value", "score", "valid", "steps_completed")}
+                extra = precision_screen(small, high_small, case.horizon, case.precision_policy)
+                if precision_warning_only:
+                    extra["role"] = "precision explanatory warning; invalid trajectory veto"
+                extra.update(native_batch_size=b, validation_seed=seed)
+                checks.append(extra)
+                runtime.save(Path(output)/f"precision-candidate-{index}-seed-{seed}-batch-{b}.json", extra)
         precision_ok = all(check["passed"] for check in checks)
-        good = good and precision_ok
+        # Finite, complete trajectories are mandatory even when percentage
+        # discrepancies are diagnostic. Do not turn a precision warning into
+        # implicit permission for a failed filter.
+        numerical_health = all(check["healthy"] for check in checks)
+        good = good and numerical_health and (precision_ok or precision_warning_only)
         selected_loss = loss if use_fit else equal_loss
         row = dict(index=index, controls=asdict(controls), valid=good, beta=weights,
                    trajectory_health=trajectory_health,
                    precision_pass=precision_ok, precision_checks=checks,
                    first_score_compile_and_execute_seconds=compile_seconds,
-                   warmed_score_seconds=score_seconds, score_batch_size=2,
+                   warmed_score_seconds=score_seconds, score_batch_size=batch,
+                   native_batch_sizes_checked=batches,
                    importance_variance_cost_proxy=float(selected_loss)*score_seconds,
                    fit_converged=fit["converged"], context_valid=context_valid,
                    beta_fit={k:fit[k] for k in ("beta","objective","gap","iterations","converged")},
@@ -270,9 +303,17 @@ def tune(case, output, *, smoother_reset=False, fixed_ot_five=False):
         control_family=control_family,
         calibration_implementation="shared_batched_analytical_filter_with_primal_history",
         ranking="descriptive_importance_variance_times_warmed_score_cost_nomination",
-        selection_policy="finite valid candidates with <=1% precision; validation variance times warmed score cost",
+        selection_policy=("finite valid candidates; precision warning only; validation variance times cost"
+                          if precision_warning_only else
+                          "finite valid candidates with <=1% precision; validation variance times warmed score cost"),
+        precision_warning_only=bool(precision_warning_only), native_batch_sizes_checked=batches,
         proxy_nonclaim="does not measure HMC ESS per second or establish statistical superiority",
         canonical_admission=False, wall_seconds=time.monotonic()-start)
+    result["scope"] = {**case.scope(), "force_batch_size": batches[0]}
+    for b in batches:
+        scoped = {**result, "scope": {**case.scope(), "force_batch_size": b}}
+        scoped["selection_hash"] = runtime.hashed(scoped)
+        runtime.save(Path(output)/f"batch-{b}"/"filter-selection.json", scoped)
     result["selection_hash"] = runtime.hashed(result)
     runtime.save(Path(output)/"filter-selection.json", result)
     return result

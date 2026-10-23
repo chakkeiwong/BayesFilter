@@ -328,7 +328,8 @@ def _check_sequence_replay(result, replay):
 
 
 def _fresh_sequence(config, nomination, binding, root, *, replay=None):
-    from .hmc_sequential_verification import run_sequential_verification, runtime_budget_guard
+    from .hmc_sequential_verification import runtime_budget_guard
+    from .neutra_hmc import run_sequential_neutra_hmc
     affine = _affine(nomination)
     initial = affine.position_to_latent(tf.constant(config.initial_chain_positions, tf.float64))
     graphs, cursor = {}, [0]
@@ -367,7 +368,7 @@ def _fresh_sequence(config, nomination, binding, root, *, replay=None):
             print("HMC sequential", value["counts"], value["status"],
                   value["events"][-1]["rhat"] if value["events"] else None, flush=True)
 
-    result = run_sequential_verification(config=config, initial_state=initial,
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
         run_chunk=run, health=lambda chunk, start: _health(chunk, start, config.energy_error_max, binding),
         diagnose_chunk=lambda chunk: _chunk_diagnostics(chunk, binding, config.energy_error_max),
         diagnose=lambda samples: _rhat_graph(int(samples.shape[0]), config.nomination.parameter_dimension)(samples),

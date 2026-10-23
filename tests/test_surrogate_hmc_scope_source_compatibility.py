@@ -38,9 +38,14 @@ def test_provenance_preserves_actual_runtime_digest_for_unreviewed_source(tmp_pa
     assert provenance["tuning_scope_runtime_sha256"] == actual
 
 
-def test_repository_runtime_matches_reviewed_migration():
+def test_current_runtime_cannot_inherit_historical_tuning_identity():
+    # NeuTra integration changed the runtime after the exact October 18
+    # orchestration migration. Its fresh tuning must bind its actual source,
+    # not silently inherit the earlier run's compatibility identity.
     root = Path(__file__).resolve().parents[1]
+    actual = hashlib.sha256((root / compat.RUNTIME_PATH).read_bytes()).hexdigest()
+    assert actual != compat.REVIEWED_RUNTIME_SHA256
     provenance = compat.source_migration_provenance(root)
-    assert provenance["migration_id"] == compat.MIGRATION_ID
-    assert provenance["executed_runtime_sha256"] == compat.REVIEWED_RUNTIME_SHA256
-    assert provenance["tuning_scope_runtime_sha256"] == compat.SAVED_RUNTIME_SHA256
+    assert provenance["migration_id"] is None
+    assert provenance["executed_runtime_sha256"] == actual
+    assert provenance["tuning_scope_runtime_sha256"] == actual

@@ -14,7 +14,8 @@ import tensorflow as tf
 
 from . import hmc_tensorflow_verified as verified
 from . import hmc_tensorflow_tuning as stage
-from .hmc_sequential_verification import run_sequential_verification, runtime_budget_guard
+from .hmc_sequential_verification import runtime_budget_guard
+from .neutra_hmc import run_sequential_neutra_hmc
 
 # Exact pre-repair implementation preserved in the October 1 development root.
 _PRIOR_VERIFIED_SHA256 = "46687b1a00bce5c5c515bbc73c0b59dd8a3831748bf5d077b194917c04754f4c"
@@ -161,7 +162,7 @@ def replay_then_continue(*, config, nomination, binding, source_root, records,
                 print("HMC resumed sequence", value["counts"], value["status"],
                       last.get("rhat"), flush=True)
 
-    result = run_sequential_verification(config=config, initial_state=initial,
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
         run_chunk=run, health=lambda chunk, start: verified._health(
             chunk, start, config.energy_error_max, binding, **(
                 {"legacy_energy_gate": True} if legacy_energy_gate else {})),

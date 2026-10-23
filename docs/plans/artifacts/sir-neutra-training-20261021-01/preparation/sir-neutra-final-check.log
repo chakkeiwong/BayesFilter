@@ -1,0 +1,50 @@
+.......FFF............................................................   [100%]
+=================================== FAILURES ===================================
+_ test_joint_scope_selection_precision_warning_preserves_health_veto[True-True-True] _
+tests/test_sir_neutra_training_master.py:169: in test_joint_scope_selection_precision_warning_preserves_health_veto
+    result=tuning.tune(case,tmp_path,native_batch_sizes=(4,2),precision_warning_only=warning)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:199: in tune
+    trajectory_health.append(dict(seed=seed, **trajectory_diagnostics(run)))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:91: in trajectory_diagnostics
+    values = run["trace"][:, :, TRACE_FIELDS.index(name)]
+             ^^^^^^^^^^^^
+E   KeyError: 'trace'
+_ test_joint_scope_selection_precision_warning_preserves_health_veto[False-True-False] _
+tests/test_sir_neutra_training_master.py:169: in test_joint_scope_selection_precision_warning_preserves_health_veto
+    result=tuning.tune(case,tmp_path,native_batch_sizes=(4,2),precision_warning_only=warning)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:199: in tune
+    trajectory_health.append(dict(seed=seed, **trajectory_diagnostics(run)))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:91: in trajectory_diagnostics
+    values = run["trace"][:, :, TRACE_FIELDS.index(name)]
+             ^^^^^^^^^^^^
+E   KeyError: 'trace'
+_ test_joint_scope_selection_precision_warning_preserves_health_veto[True-False-False] _
+tests/test_sir_neutra_training_master.py:169: in test_joint_scope_selection_precision_warning_preserves_health_veto
+    result=tuning.tune(case,tmp_path,native_batch_sizes=(4,2),precision_warning_only=warning)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:199: in tune
+    trajectory_health.append(dict(seed=seed, **trajectory_diagnostics(run)))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_scope_tuning.py:91: in trajectory_diagnostics
+    values = run["trace"][:, :, TRACE_FIELDS.index(name)]
+             ^^^^^^^^^^^^
+E   KeyError: 'trace'
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_sir_neutra_training_master.py::test_joint_scope_selection_precision_warning_preserves_health_veto[True-True-True]
+FAILED tests/test_sir_neutra_training_master.py::test_joint_scope_selection_precision_warning_preserves_health_veto[False-True-False]
+FAILED tests/test_sir_neutra_training_master.py::test_joint_scope_selection_precision_warning_preserves_health_veto[True-False-False]
+3 failed, 67 passed, 2 warnings in 58.47s

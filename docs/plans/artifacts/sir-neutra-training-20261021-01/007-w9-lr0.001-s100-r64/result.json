@@ -1,0 +1,147 @@
+{
+  "status": "RUNG_COMPLETED",
+  "valid": true,
+  "key": "w9-lr0.001-s100-r64",
+  "accepted": 64,
+  "attempted": 64,
+  "selection_loss": 1834.1197509765625,
+  "selection_se": 17.935073852539062,
+  "checkpoint": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/007-w9-lr0.001-s100-r64/checkpoint.json",
+  "target_scope": {
+    "model": "sir_d18",
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 18,
+    "parameter_dimension": 3,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 4,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 1000,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+    "prior": {
+      "id": "literature-model-priors-v1",
+      "coordinates": "q",
+      "normalized": true,
+      "chart": "affine",
+      "chart_scales": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "jacobian": "physical-to-theta and theta-to-q Jacobians included",
+      "evidence": "docs/papers/surrogate-hmc-priors-2026-10-15/README.md",
+      "source": "Grinsztajn et al. 2021 section 4.3; Sarkka-Nummenmaa 2009 section III",
+      "days_per_benchmark_time_unit": 45.0,
+      "population_per_region": 500.0,
+      "infection_per_day": "500*0.1*exp(theta[0])/45",
+      "recovery_per_day": "18*exp(theta[1])/45",
+      "infection_positive_normal_mean_sd": [
+        2.0,
+        1.0
+      ],
+      "recovery_positive_normal_mean_sd": [
+        0.4,
+        0.5
+      ],
+      "observation_variance_multiplier": "exp(2*theta[2])",
+      "inverse_gamma_shape": 1.0,
+      "inverse_gamma_scale": 1.0,
+      "adaptation": "declared synthetic time calibration; Gaussian variance prior replaces inapplicable NB dispersion prior",
+      "nominal": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "167db5fb6835008b3200097da3bd3fc4d51d9ed2c89a257d58720b12f2dc6a64",
+      "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "0ea2581c3e3699321a0af7eb99a5ed4f42c2cc3288dd83246369bd7fa1ced7d3",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "a27b6aa17b16796dfc53a28d751276f2ccb114b5902bb905f56c35abe87e5a84",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "b60f4377527b0ddcf3a46051cc52b53d7549ffee9700b7d57e6581a1b9b25e69",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "f159b7a4a032bcc74057a84d5ed8576b7f1b5fa13e85fd2751cc2b2496c89b8f",
+      "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+      "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py": "4f86288b7246ba60f6630d8e660717f9f302096eb2fec69ffd2bc0764fcc35c2",
+      "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "8947515c408475e46749497482727e8daff6e3e4a9528d8dcac089f3d92660ca",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "af9440721acce3e0fae65eabd48e9555139c0231460f57ba29ee49f20a009c90",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "feb7a5ff62fbb15c75f8a144644531f7c7ed706fddb12fe5411192ef2e275e0c",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    },
+    "training_target": "matched_finite_LEDH_loglik_plus_prior",
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 5,
+      "reset_epsilon": 1.0,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25,
+      "shared_gaussian_contraction": "direct"
+    },
+    "beta": [
+      0.10000000149011612,
+      0.056054115295410156,
+      0.8439459800720215
+    ],
+    "observations_sha256": "734dcceead11517619b2560da2d837a4aab5efde84432972ab40946a8434d89a",
+    "chart_center_sha256": "7b52a897641eb0751cba4e85d9db7734a36c2d89e008d1d08311ca873b57da4b",
+    "fixed_design_sha256": [
+      "20525e40e0baab26770e9896c1612536dcbab5adbe97c590cf02a2f614f12edf",
+      "d2d323fd09d6ac2c5520e4359f00b17e0bd3f1dac5c22d8518bd28c6a8a21ac3",
+      "d12f4f00fa0d79fc2e83e78c4e536f02533f2f0d0c30633439a74a4ae951aad9"
+    ],
+    "additional_source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_sir_neutra.py": "1c6116a6f5b8b6d672825c3db12cfcd225bcc4d71af86d1747c87636a793773d",
+      "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+      "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py": "4f86288b7246ba60f6630d8e660717f9f302096eb2fec69ffd2bc0764fcc35c2"
+    }
+  },
+  "target_signature": "73a5dfbfd0958a2c6f86d0c160bb0cfe8206db5d49fc47a1e8b3cbfadb803042",
+  "job": {
+    "kind": "train",
+    "key": "w9-lr0.001-s100-r64",
+    "tuning": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/001-tuning",
+    "scale": 0.35,
+    "width": 9,
+    "rate": 0.001,
+    "seed": 100,
+    "updates": 64
+  },
+  "loss_role": "nomination only; no supported superiority ranking",
+  "posterior_qualified": false,
+  "default_ready": false,
+  "allocator": {
+    "current": 25231872,
+    "peak": 562120960
+  }
+}

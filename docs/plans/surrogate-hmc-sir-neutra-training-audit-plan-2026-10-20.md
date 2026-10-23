@@ -5,7 +5,25 @@ Inspected HEAD: `10884528ca8b1a7463895256d30b9655d69c0955`, plus the existing
 working tree. This is an audit and implementation plan, not authorization or
 evidence for a new long training run. Existing unrelated changes are preserved.
 
-## Active checkpoint
+## Current executable campaign
+
+2026-10-22 owner correction: the objective is one working NeuTra method, not a
+comparison. Training and frozen-map checks are complete. The dense-affine run
+was stopped with its elapsed time charged. The updated execution plan/master
+reuse the trained map and allocate the remaining 17.674803 HMC hours to NeuTra
+alone. Twenty-four focused tests pass. Older comparator requirements below are
+superseded; posterior convergence still requires the existing HMC diagnostics.
+
+2026-10-21: the owner requested prerequisite completion, review and execution,
+and authorized 24 additional GPU hours for downstream HMC alongside the existing
+16-hour training allowance. The [execution plan](sir-neutra-training-execution-2026-10-21.md)
+and `scripts/run_sir_neutra_training.py` now implement that progression. The
+engineering review has 71 passing focused tests; GPU prerequisites are the next
+stage. This supersedes the unimplemented/unbudgeted status below, which remains
+historical source and implementation context. No trained-map quality or SIR
+posterior convergence has yet been established.
+
+## Earlier integration checkpoint
 
 2026-10-21, after the [optimization implementation and equivalence campaign](surrogate-hmc-optimization-results-2026-10-21.md): the matched SIR analytical
 value/score adapter, native complete-update sharding and frozen-map HMC binding
@@ -494,7 +512,8 @@ campaign. The frozen map changes coordinates, not the endpoint. Tune acceptance
 toward 0.70. Preserve the current adaptive warmup convention: minimum 2,000,
 latest 1,000-transition assessment window, modern R-hat <=1.05, maximum 10,000
 per chain. Retained sampling grows cumulatively toward modern R-hat <=1.01,
-with the owner's 20,000-per-chain ceiling and the campaign's declared ESS
+with the owner's 20,000-per-chain ceiling. ESS and MCSE are diagnostic only
+under the owner's 2026-10-23 clarification, not convergence or completion
 criteria. Do not require every sliding retained window to pass. There is no
 additional posterior validation chain, and all eligible retained draws count
 toward inference. Finite energy errors remain explanatory; invalid states and
@@ -553,7 +572,9 @@ silently because one sampler run looks faster.
 | Invalid training batch | Reject/rollback that update; repeated failures trigger repair, not conditional-on-valid training |
 | ELBO, transformed residuals, probe-point validity, covariance, acceptance, finite energy error | Explanatory or candidate-nomination evidence only; never posterior certification or an automatic campaign stop |
 | Warmup maximum reached without readiness | Current candidate not ready; proceed to the next planned geometry/initialization repair if budget remains |
-| Cumulative posterior R-hat/ESS and same-target posterior comparison | Downstream inference criteria; a failure prevents promotion but does not cancel a planned repair |
+| Cumulative posterior R-hat and sampler validity | Downstream convergence diagnostic and validity criteria; a failure triggers the planned repair if budget remains |
+| Bulk/tail ESS and mean MCSE | Precision diagnostics only; no convergence, stopping or completion veto |
+| Same-target posterior comparison | Separate accuracy evidence when a comparison is within scope; not an extra validation-sampling phase |
 | Loss to a simple baseline with adequate comparison evidence | Performance-promotion veto; no declaration of useful acceleration |
 | Exhausted compute, corrupted artifacts, unresolved target/transition invalidity | Continuation limit until budget or correctness is restored |
 
