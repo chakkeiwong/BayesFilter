@@ -868,9 +868,9 @@ Their covariance is the actual matrix \(S_y\). The transformed covariance is
  =L_wL_w^\top=P_w\).
 \end{proof}
 
-This construction specifies the mathematics of a candidate reset; it does
-not assert that an existing repository callable executes every operation
-written here. In particular, adding a ridge to either matrix changes this
+The current shared \path{reset_cloud} implements this ordering: weighted
+source moments, finite transport, then Cholesky recolouring. It records the
+factor margins and moment-restoration residuals. Adding a ridge to either matrix changes this
 identity unless its effect is explicitly accounted for. The basic algorithm
 rejects rank failure and records numerical validity separately from the
 model likelihood. A failed factorization does not imply that the model's
@@ -1626,10 +1626,18 @@ density and one-step importance identity, the reset's first two moments,
 the rotation's invariants and displacement bounds, and the derivative
 recurrences for the stated finite program. Global accuracy, weak convergence
 of the entire composite method, reliable tail moments, efficient computation,
-and suitability for HMC remain to be demonstrated.
+and general suitability for HMC do not follow from those identities.
+The completed five-model surrogate-HMC runs now establish the narrower,
+finite-target sampling screens reported in
+Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
 
 
-\section{Implementation and first numerical checks}
+\section{The October 8 implementation checks}
+
+The following results describe the first directional implementation and its
+bounded October 8 study. The current batched implementation is described at
+the end of this chapter; the early particle limit, precision and iteration
+counts below are historical settings.
 
 The optional TensorFlow implementation in
 \texttt{covariance\_proposal\_tf.py} executes Algorithms~1 and~2 through one
@@ -1801,3 +1809,52 @@ MathDevMCP found the requested operations and terms but returned unverified
 obligations, including parser limitations. The mathematical derivations,
 executable invariants and derivative tests supply partial, explicitly scoped
 evidence; they do not constitute a formal certificate for the whole filter.
+
+
+\section{Batched implementation and HMC use}
+\label{sec:bf-covariance-proposal-current-code}
+
+The current five-model consumer is
+\path{make_batched_score_filter} in \path{covariance_proposal_score_batch_tf.py}.
+It instantiates \path{NativeModels}, whose model callbacks supply analytical
+transition, observation and parameter partials, and calls the common
+\path{build_maps} and \path{draw_from_maps} authorities in
+\path{covariance_proposal_score_tf.py}. The time recurrence carries values and
+all parameter sensitivities together. It does not execute the full filter once
+per parameter. The directional implementation remains an independent parity
+reference; it is not the training target or HMC force implementation.
+
+The implemented model family has additive Gaussian transitions with a common
+process covariance. The general conditional-moment and augmented-observation
+interfaces in Algorithm~1 describe mathematical extensions; they are not claims
+that the current consumer supports every non-additive model. The common UKF
+rule uses $\alpha=1$, $\beta=2$ and $\kappa=0$, and the conditional mean is the
+local flow linearization point. The actual observation density, including the
+KSC mixture, enters the marginal importance ratio.
+
+The native recurrence preserves a leading parameter-row batch dimension in
+its linear algebra and analytical sensitivity tensors. TensorFlow loops handle
+time and finite transport iterations; they do not invoke a scalar filter for
+each batch row. Repeated numerical functions have stable input signatures and
+XLA compilation. Python constructs the fixed configuration and orchestrates
+phases outside those kernels. Immutable mixture labels can be prepared once;
+the Gaussian evaluator shares factorizations where the covariance is shared,
+without substituting a different density for different execution lanes.
+
+Transport uses the repository exact-divisor chunk rule. At $N=4032$ the row
+and column extent is $K=2016$, giving four exact tiles, so the first
+implementation's dense $N\leq3000$ restriction no longer describes this route.
+The completed campaign used FP32 filter arithmetic with TF32 disabled, five
+reset iterations with entropic scale one, and no optional higher-moment
+correction. The flow count was 32 for LGSSM and 16 for the other four models;
+branch probabilities were selected separately for each scope and frozen.
+These are the recorded campaign settings, not recommendations for an untested
+scope. The optional correction's mathematical bounds do not establish its
+nonlinear accuracy because this campaign did not enable it.
+
+The filter supplies a proposal force to a separately evaluated Metropolis
+endpoint. The distinction matters: the LGSSM endpoint is exact Kalman, whereas
+the four nonlinear endpoints are explicitly stated numerical approximations.
+Chapter~\ref{ch:bf-surrogate-hmc-five-models} gives that construction, the
+frozen SIR NeuTra composition, the adaptive sampling policy, all five final
+R-hat and acceptance summaries, and the saved-draw credible intervals.

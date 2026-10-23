@@ -1,0 +1,392 @@
+\chapter{The Completed Surrogate-HMC Case Study}
+\label{ch:bf-surrogate-hmc-five-models}
+
+This chapter records the completed end-to-end test of the surrogate Hamiltonian
+Monte Carlo construction.  The question is deliberately specific: can a fixed
+LEDH particle-filter computation supply a useful proposal force while a separate
+Metropolis correction samples the declared finite posterior target?  The test
+is therefore about the HMC construction, including its endpoint and its
+sampling diagnostics.  A finite-filter agreement check is evidence about the
+filter; it is not a substitute for the HMC run.  The numerical results are the
+runs archived on 23 October 2026.  Their frozen configurations and recorded
+source revisions define the tested method; these chains do not evaluate later
+optional guidance or proposal variants.
+
+\section{What ``surrogate'' means here}
+\label{sec:bf-surrogate-meaning}
+
+For an unconstrained parameter $q$, let $\theta=C(q)$ be the physical model
+chart and let $\widehat\ell_F(q)$ be the log likelihood returned by the fixed
+LEDH covariance-guided particle filter.  The filter carries an analytical
+sensitivity for every parameter through one time recursion, so it returns
+$\nabla_q\widehat\ell_F$ for the same finite program that returned
+$\widehat\ell_F$ on valid regions, with the branch labels and numerical controls held fixed.  The proposal routine uses the gradient of the finite negative log posterior,
+\begin{equation}
+ U_F(q)=-\log p_q(q)-\widehat\ell_F(q),\qquad F_F(q)=\nabla_q U_F(q).
+ \label{eq:bf-surrogate-filter-force}
+\end{equation}
+The word surrogate refers to this proposal force: it is a computational guide
+and need not be the derivative of the endpoint potential used for acceptance.
+It does not mean that the Metropolis step accepts against an unspecified or
+silently replaced target.
+
+The endpoint is written $U_E(q)=-\log\widetilde\pi_E(q)$ and is evaluated
+separately.  For LGSSM, $\widetilde\pi_E$ uses the exact Kalman likelihood.
+For KSC stochastic volatility it uses the fixed 1,201-node grid refinement.
+For predator--prey and SIR it is the average of four fixed bootstrap endpoint
+likelihood estimates, and for range--bearing it is the average of four fixed,
+full-support trajectory-importance estimates.  The latter four endpoints are
+explicit approximate numerical targets; they are not exact model oracles.
+Only the LGSSM endpoint is exact; this does not imply that its finite LEDH score
+equals the Kalman score.  The correction below targets the stated endpoint
+under the proposal conditions proved in Section~\ref{sec:bf-surrogate-mh-proof}.
+
+The SIR NeuTra run adds a frozen change of variables $q=T(z)$.  Its endpoint and
+force are
+\begin{align}
+ U_Z(z) &= U_E(T(z))-\log|\det DT(z)|,\\
+ F_Z(z) &= DT(z)^T F_F(T(z))
+          -\nabla_z\log|\det DT(z)|.
+ \label{eq:bf-surrogate-neutra-composition}
+\end{align}
+The map is frozen before HMC.  No parameter-dependent retraining or retuning
+occurs during the chain.
+
+\section{One shared finite-filter sweep}
+\label{sec:bf-surrogate-shared-sweep}
+
+All five model adapters enter the same consumer call chain:
+\begin{center}
+\small
+\path{surrogate_hmc_five_model.py}\ $\rightarrow$
+\path{make_batched_score_filter}\ $\rightarrow$
+\path{NativeModels}\ $\rightarrow$
+\path{build_maps/draw_from_maps}\ $\rightarrow$
+\path{reset_cloud}\ $\rightarrow$
+\path{analytical score}.
+\end{center}
+The adapter supplies transition, observation and parameter-partial callbacks; it
+does not contain a second model-specific filtering recurrence.  The repeated
+numerical kernels are TensorFlow functions with stable signatures and XLA
+enabled.  Time, transport-iteration and native-shard loops are TensorFlow
+loops.  Python orchestrates phases and writes provenance outside the numerical
+kernel.
+
+After the preceding reset, the $N$ ancestors have equal weights.  Write
+$m_{t,j}=f_\theta(x_{t-1,j})$ and $Q_\theta$ for the transition mean and
+additive process covariance.  The shared recurrence forms
+\begin{equation}
+ \bar m_t=\frac1N\sum_jm_{t,j},\qquad
+ P_t=Q_\theta+\frac1N\sum_j(m_{t,j}-\bar m_t)(m_{t,j}-\bar m_t)^T.
+ \label{eq:bf-surrogate-predictive-mixture}
+\end{equation}
+It constructs one UKF observation guide and three proposal components: the
+prior transition, the UKF-guided component, and a local affine LEDH flow.
+Let $A_{t,cj}$ and $b_{t,cj}$ be the affine map for component $c$ and ancestor
+$j$.  Component zero has $A_{t,0j}=I$ and $b_{t,0j}=0$.  The component densities
+and incremental likelihood are
+\begin{align}
+ q_{t,c}(x)&=\frac1N\sum_j\mathcal N\!\left(x;A_{t,cj}m_{t,j}+b_{t,cj},
+                         A_{t,cj}Q_\theta A_{t,cj}^T\right),\\
+ q_t(x)&=\sum_{c=0}^2\beta_c q_{t,c}(x),\qquad
+ r_{t,i}=\frac{g_\theta(y_t\mid x_{t,i})q_{t,0}(x_{t,i})}{q_t(x_{t,i})},\\
+ \widehat\ell_t&=\log\left(\frac1N\sum_i r_{t,i}\right),\qquad
+ \widehat\ell_F=\sum_{t=1}^T\widehat\ell_t.
+ \label{eq:bf-surrogate-mixture-correction}
+\end{align}
+The numerator uses the whole predictive mixture, not the transition density
+conditional on a single sampled ancestor.  Normalize the ratios to weights
+$w_i$ and compute the weighted posterior moments $(\mu,P_w)$.  Finite Sinkhorn
+transport produces a cloud $y_i$ with unweighted moments $(\bar y,S_y)$.
+The reset is then
+\begin{equation}
+ z_i=\mu+L_{P_w}L_{S_y}^{-1}(y_i-\bar y).
+ \label{eq:bf-surrogate-reset}
+\end{equation}
+On valid positive-definite inputs this restores the weighted posterior moments
+in exact arithmetic; the code checks finite-precision residuals and removes the
+residual mean of the centered cloud.  The same operations, including mixture
+responsibilities, Cholesky tangents, transport contractions and reset weights,
+are differentiated analytically.
+Thus the reported score is a total derivative of the implemented finite value
+program, not a partial derivative of only the transported cloud.  Invalid
+rows are marked and carried as telemetry; a finite large energy error is not a
+sampler stopping rule.
+
+\section{Why the endpoint correction is legitimate}
+\label{sec:bf-surrogate-mh-proof}
+
+Write $M$ for the fixed diagonal mass matrix and $F=\nabla U_F$ for the frozen
+proposal force.  One symmetric numerical step in the implementation is
+\begin{align}
+ p_{1/2}&=p_0-\tfrac{\epsilon}{2}F(q_0),\\
+ q_1&=q_0+\epsilon M^{-1}p_{1/2},\\
+ p_1&=p_{1/2}-\tfrac{\epsilon}{2}F(q_1),
+ \end{align}
+repeated for a fixed number of steps and followed by one terminal momentum
+flip.  Each kick and drift is a triangular shear with
+unit determinant, so their composition has unit volume determinant.  Reversing
+the momentum and applying the same shears in reverse order gives the original
+state, provided the frozen force is a deterministic function of position.
+The Metropolis probability therefore uses the endpoint Hamiltonian,
+\begin{equation}
+ a((q,p),(q',p'))=\min\left\{1,
+ \exp[-H_E(q',p')+H_E(q,p)]\right\},\qquad
+ H_E=U_E+\tfrac12p^TM^{-1}p.
+ \label{eq:bf-surrogate-mh-correction}
+\end{equation}
+The proposal force can be inexact or based on a different finite likelihood;
+that changes efficiency and energy error, while the acceptance correction
+addresses the declared endpoint.  The statement requires a fixed, measurable,
+finite proposal field and a correctly evaluated endpoint.  It does not prove
+that an approximate endpoint equals the scientific model posterior.
+
+\section{Scope, priors, and numerical settings}
+\label{sec:bf-surrogate-scope}
+
+The five cases use the scientific priors recorded in the local paper ledger
+\path{docs/plans/surrogate-hmc-literature-priors-2026-10-15.md}.  The
+predator--prey box is the unchanged Zhao--Cui setting
+\citep{zhao2024ttsequential}; the other choices are documented adaptations of
+published state-space and disease-transmission settings
+\citep{dahlin2019particle,sarkka2009recursive,grinsztajn2021bayes,sarkka2013variational}.
+The LGSSM prior is $\phi\sim\mathcal N(0,0.5)$ conditioned on
+$|\phi|<0.55$, independent process and observation variance multipliers
+$v_Q,v_R\sim\operatorname{IG}(1,1)$, and an initial-mean coefficient
+$m\sim\mathcal N(0,1)$.  Here the Normal second argument is a variance and
+$\operatorname{IG}(a,b)$ has density proportional to
+$v^{-a-1}\exp(-b/v)$.  Restricting the AR prior and applying the inverse-Gamma
+family to a process multiplier are declared modeling adaptations.
+
+KSC uses $(\gamma+1)/2\sim\operatorname{Beta}(20,1.5)$ conditioned on
+$0<\gamma<1$ and $\log\beta\sim\mathcal N(0,1.25)$, with state innovation
+variance fixed at one.  Its benchmark likelihood and initial law are preserved;
+this is not a full reproduction of the source model.  Predator--prey uses
+independent uniform priors with lower bounds $(0.1,110,20,0.1,0,0)$ and upper
+bounds $(1.1,130,30,1.1,1,1)$ for $(r,K,a,s,u,v)$.  The logistic sampling chart
+preserves this physical box.
+
+For SIR, the daily infection and recovery rates have positive-truncated Normal
+priors $b\sim\mathcal N_+(2,1^2)$ and
+$g\sim\mathcal N_+(0.4,0.5^2)$.  The synthetic calibration is 500 people per
+region and 45 days per benchmark time unit, so the code uses
+$b=500(0.1)e^{\theta_1}/45$ and $g=18e^{\theta_2}/45$.
+This unit calibration is a local assumption.  The Gaussian observation
+variance multiplier has $\operatorname{IG}(1,1)$ prior; the source paper's
+negative-binomial dispersion prior does not apply to this observation model.
+Range--bearing uses independent $\operatorname{IG}(1,1)$ priors on the common
+process and observation variance multipliers, preserving their covariance
+shapes.  These are proper priors, although $\operatorname{IG}(1,1)$ has infinite
+mean.  They are recorded choices, not uniquely determined scientific priors.
+
+Every density is evaluated in the sampled coordinates, including its chart
+Jacobian.  The benchmark data are one synthetic data set per model, so truth
+containment below is a diagnostic of those fixed targets, not repeated-data
+coverage.
+
+\begin{table}[ht]
+\centering\small
+\caption{Claim-bearing surrogate-HMC scopes.  The filter is ordinary FP32 with
+TF32 disabled and $N=4032$; the map and HMC arithmetic use the recorded
+scope precision.}
+\label{tab:bf-surrogate-scopes}
+\begin{tabular}{lrrrrll}
+\toprule
+Model & $T$ & state $d$ & obs. $o$ & param. $p$ & endpoint & filter\\
+\midrule
+LGSSM & 50 & 3 & 3 & 4 & exact Kalman & FP32\\
+KSC SV & 50 & 1 & 1 & 2 & 1201-node grid & FP32\\
+Predator--prey & 50 & 2 & 2 & 6 & 4 bootstrap estimates & FP32\\
+Range--bearing & 20 & 4 & 2 & 2 & 4 trajectory estimates & FP32\\
+SIR NeuTra & 50 & 18 & 9 & 3 & 4 bootstrap estimates & FP32\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The selected transport controls are scope-specific.  All cases use five reset
+iterations, reset scale $\epsilon_{\rm reset}=1$, no optional higher-moment
+correction, correction basis four, rate $0.1$ and radius $0.25$.  Flow steps
+are 32 for LGSSM and 16 for the other four models.  The branch probabilities
+$(\beta_0,\beta_1,\beta_2)$ are respectively
+\begin{center}\small
+\begin{tabular}{lccc}
+\toprule
+LGSSM & 0.1000 & 0.2981 & 0.6019\\
+KSC SV & 0.1000 & 0.5958 & 0.3042\\
+Predator--prey & 0.1000 & 0.8790 & 0.0210\\
+Range--bearing & 0.1000 & 0.7494 & 0.1506\\
+SIR & 0.1000 & 0.0561 & 0.8439\\
+\bottomrule
+\end{tabular}
+\end{center}
+These settings were selected in disjoint calibration and validation partitions
+for each scope, then frozen for the claim runs.  They are not universal defaults
+for another horizon, particle count, dtype or model.
+
+\section{Adaptive sampling and diagnostics}
+\label{sec:bf-surrogate-sequential-sampling}
+
+The shared sequential controller archives every warm-up chunk and excludes it
+from posterior summaries.  It checks the maximum of rank-normalized split and
+folded R-hat on the latest 1,000 transitions after at least 2,000 warm-up
+transitions.  Readiness requires $\widehat R\leq1.05$; warm-up can extend to
+10,000 per chain.  Retained draws grow
+cumulatively; the controller checks all retained draws at each scheduled look,
+accepts $\widehat R\leq1.01$, and can extend to 20,000 per chain.  This is why
+retained counts differ across models below.  There is no fixed ``2,000 samples
+and stop'' rule and no extra validation-sample phase.
+
+Acceptance rate, effective sample size, MCSE and finite energy error are
+reported diagnostics.  They explain sampler behavior and estimator precision;
+acceptance is not convergence evidence, ESS is not a convergence criterion, and
+a finite energy error does not veto a transition.  A non-finite proposal endpoint or Hamiltonian difference forces rejection.
+Retained chunks must still satisfy their finite-state, endpoint, log-acceptance
+and declared health checks.  A failed filter force is replaced by the fixed
+position-only zero extension and recorded; it does not replace the endpoint.  The current
+runs recorded zero divergences; range--bearing recorded one force-fallback
+telemetry event, which was finite and retained under the declared fallback
+policy.
+
+\section{Results}
+\label{sec:bf-surrogate-results}
+
+The final runs used four chains and the recorded scientific priors.  The table
+reports the maximum physical-coordinate R-hat, retained draws per chain, and
+per-chain acceptance.  ``Truth in interval'' means that each generating value
+was inside its marginal equal-tail 95\% interval in the saved-draw audit.
+\begin{table}[ht]
+\centering\scriptsize
+\caption{Completed five-model run.  Acceptance is descriptive; R-hat is the
+stated retained-sample convergence screen.}
+\label{tab:bf-surrogate-results}
+\begin{tabular}{lrrlcc}
+\toprule
+Model & warm-up & retained & max $\widehat R$ & acceptance by chain & truth\\
+\midrule
+LGSSM & 2000 & 1000 & 1.00708 & .743,.745,.743,.739 & 4/4\\
+KSC SV & 2000 & 1000 & 1.00600 & .698,.726,.685,.693 & 2/2\\
+Predator--prey & 3000 & 6000 & 1.00703 & .713,.714,.720,.713 & 6/6\\
+Range--bearing & 2000 & 1000 & 1.00362 & .702,.680,.684,.687 & 2/2\\
+SIR NeuTra & 2000 & 2000 & 1.00960 & .793,.792,.765,.759 & 3/3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The maximum R-hat is below 1.01 for every sampled parameter.  Separately, the truth
+containment audit passes its declared one-data-set diagnostic for all
+17 parameters.  The SIR pooled acceptance is $0.777$ and is above the
+campaign's requested 0.65--0.75 band; this is a tuning observation to explain,
+not a reason to discard a chain that passed the R-hat and health screen.
+SIR's maximum R-hat in the NeuTra coordinates $z$ is 1.00982.  Its bulk ESS values range from
+412 to 595 and its tail ESS from 199 to 1,129; these quantities describe Monte
+Carlo precision and are not additional stopping criteria.  The largest finite
+absolute energy error was 6.45 for SIR.  The range--bearing maximum was much
+larger, 2.91$\times10^5$, but the endpoint correction retained finite states and
+reported no divergence.  These values are diagnostic evidence about numerical
+movement, not convergence gates.
+
+The saved-draw audit gives the following physical-coordinate intervals.  They
+are included so that the coverage statement is inspectable rather than a claim
+based only on a count.
+\begin{center}\scriptsize
+\begin{longtable}{p{.25\textwidth}rrr r}
+\caption{Generating value and marginal 95\% interval.}\label{tab:bf-surrogate-intervals}\\
+\toprule Model--parameter & truth & lower & upper & $\widehat R$\\
+\midrule
+\endfirsthead
+\toprule Model--parameter & truth & lower & upper & $\widehat R$\\
+\midrule
+\endhead
+LGSSM--$\phi$ & .1347 & -.0636 & .5340 & 1.00569\\
+LGSSM--$v_Q$ & .1800 & .1138 & .2910 & 1.00495\\
+LGSSM--$v_R$ & .1200 & .1197 & .3095 & 1.00708\\
+LGSSM--$m$ & .0400 & -1.6899 & 1.7173 & 1.00296\\
+KSC--$\gamma$ & .9332 & .5714 & .9789 & 1.00546\\
+KSC--$\beta$ & 1.0000 & .2958 & 2.2522 & 1.00600\\
+Predator--prey--$r$ & .6000 & .4426 & .6369 & 1.00058\\
+Predator--prey--$K$ & 114.0 & 112.7827 & 115.3278 & 1.00056\\
+Predator--prey--$a$ & 25.0 & 20.3177 & 29.7029 & 1.00703\\
+Predator--prey--$s$ & .3000 & .1203 & .6668 & 1.00133\\
+Predator--prey--$u$ & .5000 & .0143 & .9698 & 1.00598\\
+Predator--prey--$v$ & .5000 & .1145 & .9396 & 1.00583\\
+Range--bearing--$v_Q$ & 1.0000 & .3941 & 3.2510 & 1.00362\\
+Range--bearing--$v_R$ & 1.0000 & .4298 & 1.4440 & 1.00158\\
+SIR--infection multiplier & 1.0000 & .9617 & 1.0185 & 1.00960\\
+SIR--recovery multiplier & 1.0000 & .9798 & 1.0242 & 1.00365\\
+SIR--observation multiplier & 1.0000 & .9953 & 1.1435 & 1.00705\\
+\bottomrule
+\end{longtable}
+\end{center}
+
+\section{SIR transport training and computation}
+\label{sec:bf-surrogate-sir-neutra}
+
+The SIR map is the canonical repaired author-style IAF: three stages, two
+width-six ELU conditioner layers per stage, author block masks, full coordinate
+reversal, variance-scaled initialization, and the free bias outside the
+conditional scale cap $c=2$.  The selected target-specific training arm used
+512 accepted updates at learning rate $0.01$, scale $0.35$ and seed 201.  The
+optimizer consumed batches of eight, evaluated as two native four-row target
+shards, and applied one checked Adam update after the shard reductions.  The
+map's inverse reconstruction error was below $10^{-15}$ in the saved artifact,
+and its log-determinant round trip was zero to the recorded precision.
+
+A forward/reverse NAF study exists as a separately labeled alternative
+architecture experiment.  It is not the map used for this SIR result and does
+not change the canonical IAF claim.  The SIR training target and HMC proposal force use the analytical LEDH
+value/score adapter.  HMC acceptance uses the separate bootstrap endpoint;
+both force and endpoint are composed with the same frozen map.
+
+A bounded optimization study measured the native implementation on paired
+$N=4032$, $K=2016$, FP32, TF32-off, XLA evaluations.  The candidate and
+protected baseline were bitwise equal in value and score for LGSSM, KSC,
+predator--prey and SIR; range--bearing differed only at the recorded floating
+roundoff level (maximum absolute value difference $8.8\times10^{-5}$ and score
+component difference $8.6\times10^{-4}$ in that diagnostic).  Warmed medians
+were 3.95, 1.79, 2.83, 8.17 and 1.58 seconds for LGSSM, KSC, predator--prey,
+SIR and range--bearing in the candidate arm.  These are single-machine
+engineering measurements, not a statistical speed ranking or a claim that the
+filter is exact.
+
+\section{What the completed tests establish}
+\label{sec:bf-surrogate-boundaries}
+
+The five completed runs passed the retained-sample R-hat and health checks
+for their fixed numerical targets.  The proposal construction is supported by
+the reversible, volume-preserving argument above and by the focused tests of
+the implemented force, endpoint and map composition.  All 17 generating
+values lie within their respective marginal intervals.  This is a useful
+one-dataset check for each model, although it does not measure repeated-data
+coverage.
+
+The exact Kalman endpoint makes the LGSSM posterior target exact under its
+stated model and prior, subject to numerical precision and Monte Carlo error.
+The four nonlinear endpoints define approximate posteriors.  Convergence to
+those numerical targets does not establish their equality to the original
+nonlinear posteriors.  Nor does this campaign establish a ranking against
+bootstrap or Gaussian filters: that would require a comparison with those
+methods and uncertainty across replicated data.
+
+The run summary and the physical-coordinate audit are preserved in the
+following directory under \path{docs/plans/artifacts/}:
+\begin{quote}\small
+\path{surrogate-hmc-five-model-completion-20261023-01/}\\
+\path{summary.json} and \path{posterior-audit-03/report.json}.
+\end{quote}
+The focused CPU audit exercised the SIR adapter, literature-prior derivatives,
+frozen-map pullback, finite-force fallback, NeuTra route ledger and all five
+native batched filter consumers.  The computational account and documentation
+audit, including test results and rendered-document checks, are preserved under
+\path{docs/plans/}:
+\begin{quote}\small
+\path{surrogate-hmc-optimization-results-2026-10-21.md}\\
+\path{surrogate-hmc-latex-audit-plan-2026-10-23.md}.
+\end{quote}
+
+This result does not claim independent repeated-data coverage, equality to the
+exact nonlinear posterior, statistical superiority over bootstrap or Gaussian
+filters, or a universal acceptance-rate target.  It establishes a reproducible
+five-model test of the declared surrogate-HMC construction and identifies the
+remaining scientific limitation: the endpoint approximation must be improved or
+benchmarked against stronger references before exact nonlinear-posterior claims
+are made.

@@ -163,8 +163,13 @@ must compute. Accuracy relative to the model score is a separate question.
 Angle-branch boundaries and failed factorizations remain explicit validity
 conditions.
 
-\section{The complete implemented recursion}
+\section{The complete October 2026 marginal-extension recursion}
 \label{sec:bf-pfpf-current-recursion}
+
+This section names the earlier marginal-extension implementation explicitly.
+It is preserved as a derivation and historical diagnostic snapshot.  The
+current covariance-guided shared consumer used by the five-model HMC campaign
+is the three-branch recurrence documented in Chapter~\ref{ch:bf-ukf-covariance-proposal}.
 
 The executable filter performs the following sequence at each observation.
 Its score uses analytical recursive tangents; automatic differentiation and
@@ -350,8 +355,10 @@ failed later at mixture-weight factorization under both tested control sets.
 They produced no valid paired accuracy comparison. The failure triggered
 the selective precision repair described below; it does not contradict the
 marginal identity.
-The remaining horizon and particle-count scopes continue under the stated
-time limit; rejected scopes and unfinished comparisons remain explicit.
+At the time of that October snapshot, the remaining horizon and particle-count
+scopes continued under the stated time limit; rejected scopes and unfinished
+comparisons were explicit there.  They are historical status statements, not a
+claim that the current five-model HMC campaign is still waiting for its run.
 
 A bounded follow-up captured the covariance inputs from the unchanged consumer.
 With TF32 enabled, the failing pushed-covariance products had relative

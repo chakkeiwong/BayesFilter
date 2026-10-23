@@ -16,8 +16,12 @@ answer used by Li--Coates. We then derive BayesFilter's optional marginal-mixtur
 answer and its analytical total derivative. The final recursion includes the
 UKF covariance lifecycle, Contract E--Chol transport reset, and dual-cap GenUT
 correction; the later transport chapters develop those reset operations in
-detail. The implementation and numerical evidence described here are current
-through 6 October 2026.
+detail. The implementation and numerical evidence described in this chapter are the
+6 October 2026 PF-PF/marginal-extension snapshot.  It remains the derivation
+of the proposal-correction identities and their earlier diagnostic evidence;
+the later covariance-guided consumer and its surrogate-HMC use are audited in
+Chapter~\ref{ch:bf-ukf-covariance-proposal} and
+Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
 
 \section{Objects, assumptions, and source roles}
 \label{sec:bf-pfpf-objects}
@@ -564,6 +568,9 @@ flow-as-transport from flow-as-proposal.
 This chapter derives both ancestor-conditioned and marginal-mixture importance
 corrections, the analytical derivative of the implemented finite filter, and
 how the weighting step composes with the UKF, OT reset, and GenUT correction.
-The October experiments support a conditional partial repair. The expanded
-fresh-data campaign and the later HMC assessment must still establish how the
-component behaves across datasets, larger scopes, and posterior inference.
+The October experiments support a conditional partial repair of this
+proposal-correction construction.  The completed five-model surrogate-HMC
+campaign is now reported in Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
+That campaign establishes the declared finite targets and their retained-sample
+screens for one data set per model; it does not turn the nonlinear endpoint
+approximations into exact posterior or repeated-data coverage claims.
