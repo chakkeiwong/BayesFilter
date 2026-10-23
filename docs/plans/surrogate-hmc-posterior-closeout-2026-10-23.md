@@ -94,3 +94,19 @@ execution evidence remains byte-for-byte unchanged.
 The commit includes the otherwise ignored JSON run records and logs needed to
 reproduce the archived results, including SIR's frozen map. Temporary lock files
 are excluded. No experiment was rerun or tuned for the requested acceptance band.
+
+## Git integration record
+
+Campaign commit `1cd67e5d2` contains the implementation, tests, archived training
+and sampling evidence, and full posterior audit. The repository's CPU oracle
+contract pre-commit hook passed all three checks in 116.93 seconds.
+Main merge commit `ba3d9916d` incorporates this branch without conflicts.
+`git fetch origin` succeeded; merging `origin/main` then reported already up to
+date, so no remote conflict required resolution. The numerical source tree on
+main is identical to the tested campaign branch.
+
+This documentation-only main commit records those checked results. Delivery
+uses `git push origin main`, followed by `git merge --ff-only main` in the
+campaign worktree. Final verification requires main, origin/main and
+`ledh-graceful-failure-execution-20260917` to resolve to the same commit, with
+both participating worktrees clean. The final response reports those checks.

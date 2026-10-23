@@ -62,7 +62,7 @@ accuracy.
 | Primary criterion | All recorded parameter-chart cumulative modern R-hat maxima are <=1.01 and sampling completed. |
 | Veto diagnostic status | All five saved sampler results report `VERIFIED`; SIR's previous ESS-based completion veto was removed under the owner directive. |
 | Main uncertainty | Finite-run convergence diagnostics and approximate endpoint accuracy remain distinct. |
-| Next justified action | No further compute phase is required. Complete the owner's requested commit, main/remote merge, push and branch synchronization under the closeout plan. |
+| Next justified action | No further compute phase is required. The completed campaign and posterior audit are committed and merged into main; Git delivery follows the closeout record. |
 | What is not concluded | Exact-posterior accuracy, statistical superiority, or default readiness. |
 
 | Inference status | Finding |
