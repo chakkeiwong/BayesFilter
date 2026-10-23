@@ -47,5 +47,55 @@ and investigate a localized failure before asking for direction.
 
 ## Execution record
 
-Pending. No new GPU budget is spent by this synchronization. Historical
-campaign allowances are not silently reset or reassigned to a new N1008 study.
+The LEDH snapshot is committed as `9bc3e7ec7` (355 files: authored source,
+tests, paper/PDF, plans and compact evidence). Bulk generated datasets, source
+copies, profiler dumps and images remain local. Essential N1008 analysis,
+parity, campaign-manifest and disqualification JSON files are also explicitly
+retained with this planning refresh; their ignored status is not an evidence
+policy.
+
+Fetched `origin/main`; its tip was `4a1990d7d`, matching local main. Merge
+`90515228c` integrates LEDH into main and has been fast-forwarded back to LEDH.
+No textual conflict required manual resolution. The only automatically merged
+code file was `covariance_proposal_score_batch_tf.py`: main's nonshared Gaussian
+helper and invariant transport packing coexist with LEDH's pre/post-reset
+diagnostics and scale-aware mean validity check. Neither side was replaced
+wholesale.
+
+During integration main acquired nine unrelated modified LaTeX/bibliography
+files. Their paths did not overlap the incoming change, and they remained
+unstaged. The existing untracked LaTeX audit plan and new results chapter were
+also excluded. The dirty root `surrogate-hmc` checkout was not modified.
+
+Validation used the `tftwogpu` environment with `CUDA_VISIBLE_DEVICES=-1`,
+`TF_CPP_MIN_LOG_LEVEL=2`, `TF_NUM_INTRAOP_THREADS=2`,
+`TF_NUM_INTEROP_THREADS=2`, and `PYTHONPATH=.`:
+
+- Before merge, `python -m pytest -q` on
+  `tests/test_sir_n1008_runtime_diagnostic.py`,
+  `tests/test_sir_runtime_repair_diagnostic.py`,
+  `tests/highdim/test_ledh_checked_flow_determinant.py`,
+  `tests/highdim/test_ledh_flow_guard_batching_tf.py`,
+  `tests/highdim/test_ledh_neural_kdm_tf.py`, and
+  `tests/highdim/test_ledh_physical_proposal_tf.py`: 97 passed in 340.72 s.
+  Log: `/tmp/ledh-main-sync-20261023-premerge-tests.log`.
+- On the merged main tree, `python -m pytest -q` on
+  `tests/highdim/test_covariance_proposal_packed_score.py`,
+  `tests/highdim/test_covariance_proposal_precision_guard.py`, and
+  `tests/highdim/test_covariance_proposal_native_batch.py`: 56 passed in 217.03 s.
+  Log: `/tmp/ledh-main-sync-20261023-merged-tests.log`.
+- The existing CPU-only oracle commit hook passed; it was not bypassed.
+  Whitespace and unresolved-conflict checks passed. Small fixture results
+  establish integration mechanics only, not N1008 scientific or speed claims.
+
+The active master and checkpoint now point to
+[the reviewed fresh restart](controlled-smc-kdm-n1008-restart-20261023.md).
+It identifies the remaining hard-coded N64 callers, the row-loop neural
+training lane, the need for actual-consumer gradient/validity checks and the
+fresh calibration/train/heldout separation. This documentation update is
+committed on LEDH and synchronized through main; final verification compares
+the two branch tips and trees and checks that unrelated work remains unstaged.
+
+No new GPU budget is spent by this synchronization. Historical campaign
+allowances are not reset or reassigned to the new N1008 study. No push is
+included in this request.

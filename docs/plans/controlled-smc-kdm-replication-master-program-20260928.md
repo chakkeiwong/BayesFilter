@@ -1,5 +1,44 @@
 # Authoritative master: controlled SMC and KDM/IWSG replication
 
+## Active program after main synchronization — 23 October 2026
+
+Continue on `ledh-refactor-with-policy-fix` in
+`.localresources/worktrees/ledh-iapf-execution-20260922`. The LEDH source,
+tests, paper and compact evidence were committed as `9bc3e7ec7`, merged into
+main as `90515228c`, and brought back to LEDH. The merge retained main's
+batched Gaussian/transport optimizations and the guarded guide implementation.
+There were no textual conflicts. Focused CPU regressions passed (97 before
+integration and 56 on the merged batch path), and the oracle commit hook
+passed. These are engineering checks, not fresh N1008 efficacy results.
+See the [integration record](controlled-smc-kdm-main-sync-and-refresh-20261023.md).
+
+The active research question is whether freshly fitted controlled-SMC-derived
+and SIR neural-KDM proposals improve the terminal moments of the actual
+corrected LEDH consumer at N>=1008. The
+[reviewed restart plan](controlled-smc-kdm-n1008-restart-20261023.md) replaces
+all older execution instructions below. Its next step is to remove hard-coded
+N64 scope assumptions from the campaign callers and propagate a single explicit
+scope through training, evaluation, continuation, reset design and manifests.
+The source audit also found that the current neural trainer sums row gradients
+inside a TensorFlow loop: main's separate batched optimization does not prove
+that this guide consumer uses a batch-native target.
+
+After the source/configuration repair, check a real N1008 training update and
+analytical-score consumer before sizing a new campaign. Use fresh simulation
+labels, calibration, initialization and heldouts; compare plain LEDH, a
+current-observation proposal, a simple quadratic future-message proposal,
+controlled-SMC-derived guidance and neural KDM. Train actual terminal first
+and raw-second moments, not a model score or a guide-only proxy. Paired heldout
+loss and conditional heuristic comparisons answer the moment question; score
+accuracy requires a separate qualified reference and downstream evaluation.
+
+Retain OT(1,5), the shared Contract-E/full-correction path and its validity
+checks. Do not restart the completed slowdown investigation or remove guards
+as a shortcut. No trained-guide efficacy or universal speed claim is currently
+supported. This refresh spends no new GPU time and does not reuse historical
+campaign allowances. The restart plan specifies the preparation, evidence
+requirements and budget-sizing step; it is not a launch of the old N64 commands.
+
 ## Owner reset: previous 64-particle results disqualified — 23 October 2026
 
 All previous N64 results in this investigation are disqualified for scientific
@@ -29,6 +68,13 @@ The isolated intervention timings are not used for guard-specific percentages
 because the diagnostic workers shared the target GPU. A future repair must
 preserve rejection semantics and optimize the checked path rather than remove
 its safeguards.
+
+## Historical chronology — superseded execution instructions
+
+The sections below preserve the investigation history. Their N64 performance
+and scientific conclusions are disqualified, and their next-action statements
+do not govern the active restart. Read the current program and restart plan
+above before executing anything.
 
 ## Guard-placement repair complete; overall speed criterion fails — 22 October 2026
 

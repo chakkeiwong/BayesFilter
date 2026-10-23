@@ -1,50 +1,45 @@
 # Controlled-SMC / KDM active checkpoint
 
-Updated 23 October 2026: owner disqualifies all previous N64 results.
-Worktree: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922.
-Branch: ledh-refactor-with-policy-fix; HEAD 90a3acebd3965da5bdd64cb165dfdfe2d8cf0649.
+Updated 23 October 2026 after the owner-requested commit/main synchronization.
+Worktree: `/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922`.
+Branch: `ledh-refactor-with-policy-fix`.
+Source snapshot: `9bc3e7ec7`; tested main integration: `90515228c`, brought back
+to LEDH. The refreshed planning state belongs to the subsequent documentation
+commit. See the [sync record](controlled-smc-kdm-main-sync-and-refresh-20261023.md).
 
-Active task: explain the N1008 slowdown through the actual consumer.
-Reviewed plan: [N1008 source and cost trace](ledh-sir-n1008-slowdown-trace-20261023.md).
-No old N64 runtime, training, moment, score, or efficacy conclusion is admissible.
-The master, primary old result notes and machine-readable disqualification notice
-record this reset. No old result, weight or calibration is consumed by this run.
+Active question: do freshly fitted controlled-SMC-derived and SIR neural-KDM
+proposals improve moments produced by the actual corrected LEDH consumer at
+N>=1008, using simulated labels rather than unknown model scores?
+Stage: synchronization complete; fresh research preparation reviewed.
+Authoritative next plan: [N1008 restart](controlled-smc-kdm-n1008-restart-20261023.md).
 
-Stage: trace complete; report [slowdown cause](artifacts/ledh-sir-n1008-slowdown-trace-20261023/result.md)
-and [fresh measurements](artifacts/ledh-sir-n1008-runtime-20261023/result.md).
-Harness tests:8 passed. Fresh CPU-only data/source prepared in6.68 seconds.
-The first tf-gpu import failed (Sylvester binary ABI); the corrected environment
-is /home/chakwong/anaconda3/envs/tftwogpu/bin/python. No packages were changed.
+Checked findings:
 
-Artifact root: docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02.
-GPU attempt: attempt-01 complete; launch-01.log records progress. Three isolated source
-workers: premerge, checked, current. N1008/T5/FP64/XLA, fresh paired inputs,
-plain/conditional/physical arms, zero/e0 directions, 16 paired timing blocks.
-All612 calls valid/repeatable; all24 cross-source parity checks pass. No retracing
-or source drift. Current/pre-merge e0 ratios: plain1.2133, conditional1.3585,
-physical0.7282; pointwise95% intervals exclude1, both datasets agree. Current versus
-checked-repair grouping does not pass uniform speed non-harm. No trained guide
-or native parameter batch is timed. Actual target GPU was idle at both run
-boundaries; earlier busy preflight does not prove contention during measurement.
+- All prior N64 timing, training, selection, moment and score results are
+  disqualified. Do not reuse their weights, calibration or simulated datasets.
+- The N1008 guide-free runtime and dependency investigations are complete:
+  [runtime](artifacts/ledh-sir-n1008-runtime-20261023/result.md) and
+  [trace](artifacts/ledh-sir-n1008-slowdown-trace-20261023/result.md).
+  They do not establish learned-guide training feasibility or efficacy.
+- Determinant and innovation validity remain checked. Keep OT(1,5), the shared
+  Contract-E reset, full correction and analytical model-score recursion.
+- The campaign callers still hard-code N64. The neural trainer uses a traced
+  per-row gradient loop; it is not a batch-native target implementation.
+- CPU-only integration checks passed: 97 focused tests, 56 merged batch-path
+  tests and the oracle commit hook. No GPU performance claim follows.
 
-GPU wall509.35 seconds; resident-worker sum1327.79 seconds. All task workers
-stopped, within2700s elapsed/8100s summed caps. No extra retry needed. The LaTeX
-withdrawal notice is in the rebuilt PDF; no scientific efficacy claim was made.
-The source/HLO trace is complete. It shows that the merged determinant-validity
-and innovation-validity checks are live dependencies in the plain and beta=1
-conditional analytical recurrences. The physical beta=.9 arm already needed
-the determinant and benefits from the current 9x9 low-rank form replacing the
-pre-merge 18x18 QR route. The intervention timings are not used for percentage
-attribution because five XLA workers shared the target GPU. See
-`artifacts/ledh-sir-n1008-slowdown-trace-20261023/attempt-01/`.
-Exact next action: if repair is requested, design a guard-preserving kernel
-optimization and validate it at N>=1008; do not remove the checks based on the
-diagnostic variants.
-Harness8 tests pass. Pre-merge/current warm calls and all diagnostic variants
-complete; 24 healthy cross-source parity checks pass. Cap20min elapsed/100
-summed worker-minutes, enforced by supervisor.
-Production source and safeguards remain unchanged. Process-local interventions
-are diagnostic only and are explicitly ineligible as runtime fixes.
-Guide efficacy needs
-fresh N>=1008 training rather than reusing disqualified weights/results.
-Preserve unrelated changes. No commit or push requested for this task.
+Exact next action: execute restart step 1's scope/configuration repair, followed
+by actual-consumer wiring and gradient checks. Then measure a bounded fresh
+N1008 update before sizing the training/holdout campaign. Keep final-cloud
+moment loss distinct from local proposal diagnostics and model-score accuracy.
+
+Execution budget: no new GPU time spent or assigned by this sync/refresh.
+Historical campaign caps are not reset. Record a feasibility cap and command
+before its launch, and a measured adequate total budget before new training.
+Environment for focused checks: `/home/chakwong/anaconda3/envs/tftwogpu/bin/python`;
+CUDA was deliberately hidden. GPU work requires escalated access and verified
+memory growth. No task experiment is running.
+
+Preserve the root `surrogate-hmc` edits, main's concurrent LaTeX work and local
+bulk experiment files. The current request authorizes local commits and branch
+synchronization; no remote push was requested.
