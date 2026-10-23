@@ -107,15 +107,18 @@ examined four proposition labels successfully. It reports diagnostic-only,
 no_proposal, no veto reasons, and unresolved proof obligations rather than
 certification. Its concerns about inverse/logdet domains are covered by the
 stated SPD/bijection assumptions and will receive executable checks. Compound
-equations will be expanded into single derivation lines. Formal proof closure
-and the independent existing LEDH flow-Jacobian question remain open.
+equations were expanded into single derivation lines. Formal certification
+remains open. The subsequent LEDH-branch continuation checks the conditional
+flow Jacobian with a derivation and actual-consumer finite differences; see
+the [validation result](artifacts/ledh-backward-guide-jacobian-20261016/result.md).
 
 Review verdict: proceed with bounded engineering checks; no scientific
 promotion. No change to observation likelihood, categorical sampling, Fisher
 score substitution or runtime policy refitting is authorized by this design.
 Status: the original checks completed on surrogate-hmc. Integration against
 main's newer shared executor passed 35 focused CPU reference tests on
-2026-10-16; the validated merge is ready to commit and synchronize. See the
+2026-10-16. The merge and synchronization are complete; the LEDH checkout is
+at `ea1018de1da55ed02a29a8d60f08a6827fce8a42`. See the historical integration
 [result](artifacts/ledh-backward-guide-20261015/result.md) and
 [run manifest](artifacts/ledh-backward-guide-20261015/run-manifest.json).
 
@@ -134,23 +137,35 @@ inspected. The final MathDevMCP audit examined all six propositions but remains
 diagnostic-only, with unresolved formalization obligations. Its three lexical
 document/code comparisons report mismatch; they are not semantic verification.
 The explicit equation map and executable checks supply the scoped consistency
-evidence. The actual localized-flow Jacobian and formal proof closure remain
-open. No score improvement, tuned default or canonical/HMC admission follows.
+evidence. The later conditional-Jacobian validation adds an invertibility
+proof and two nonlinear actual-consumer tests, with 37 regression tests passing
+on the LEDH branch. Its label-scoped MathDevMCP audit remains inconclusive.
+No score improvement, tuned default or canonical/HMC admission follows.
 
-Next research stage: validate the actual flow Jacobian, then specify a separate
-target-specific guide-fitting and heldout score experiment with conditional
-heuristic comparisons and uncertainty. This plan authorizes no such campaign.
+The [Jacobian continuation plan](ledh-backward-guide-jacobian-validation-20261016.md)
+records the completed prerequisite and its limits. The subsequent user
+continuation was executed under the separately audited
+[scalar fitted-guide plan](ledh-fitted-guide-pilot-20261016.md). That bounded
+GPU/XLA reference campaign is complete: 624 rows, all three conditions failing
+the heuristic promotion check. Its result is in
+`artifacts/ledh-fitted-guide-20261016/result.md`. The subsequent
+[Gaussian baseline diagnostic](artifacts/ledh-gaussian-score-error-20261016/result.md)
+stopped at 255/280 rows on a transport-validity veto, localized in CPU replay
+to terminal column balancing. Finite-program derivative fixtures pass while
+persistent model-score errors remain. Its checkpoint now governs the next
+bounded balancing repair and first-step proposal/weighting investigation;
+neither nonlinear transfer nor trained KDM is complete.
 
-## Authorized branch synchronization
+## Completed branch synchronization
 
-Initial heads are surrogate-hmc `feddae400`, main `023247142`, and
-ledh-refactor-with-policy-fix `b28c25a6c`. Main and LEDH are clean. Preserve the
-unrelated dirty work in the surrogate checkout. Commit only the backward-guide
-implementation, tests, manuscript, and associated plan and evidence. Check the
-remote, integrate the scoped commit into main, then fast-forward LEDH to the
-validated main result.
+Initial heads were surrogate-hmc `feddae400`, main `023247142`, and
+ledh-refactor-with-policy-fix `b28c25a6c`. Main and LEDH were clean. The scoped
+backward-guide implementation, tests, manuscript and evidence were committed
+as `ad5de4a6d`, integrated into main, and synchronized to LEDH at
+`ea1018de1da55ed02a29a8d60f08a6827fce8a42`. Unrelated surrogate edits were
+preserved. This synchronization is finished; it is not the next action.
 
-Skeptical audit: copying the old executor would discard main's newer ancestry,
+Pre-execution skeptical audit: copying the old executor would discard main's newer ancestry,
 affine-flow, and marginal-mixture weight implementation. Preserve those paths
 and integrate the guide at the shared draw and proposal-density call chain.
 Reject combinations whose corrected proposal density is not implemented.
@@ -158,10 +173,11 @@ Repeat focused engineering tests in the integrated checkout; the original CPU
 results do not validate the newer executor. The comparator remains the same
 executor without guidance, with no score ranking or default promotion.
 
-Allow up to 20 additional minutes of CPU-only validation and three localized
-repair attempts. Stop for unresolved proposal-density semantics or destructive
-overlap with unrelated edits. Record conflict decisions, check results, and
-final heads in the existing evidence directory. No research campaign is added.
+The completed integration allowed up to 20 additional minutes of CPU-only
+validation and three localized repair attempts. Stop conditions were unresolved
+proposal-density semantics or destructive overlap with unrelated edits.
+Conflict decisions, checks and heads are recorded in the integration evidence.
+No research campaign was added.
 
 Integration check: surrogate commit `ad5de4a6d` was reconciled with main
 `023247142`. The newer executor paths and marginal-balance validity guards
@@ -173,3 +189,15 @@ evidence. The final suite passed 35 tests in 128.82 wall seconds. Test and trace
 commands used 290.92 seconds of the additional budget, with three localized
 repairs. The evidence supports engineering integration only; the open scientific
 questions and promotion restrictions above remain in force.
+
+## Follow-up scalar pilot
+
+The next target-specific stage was executed separately under
+`docs/plans/ledh-fitted-guide-pilot-20261016.md` on the LEDH checkout. It
+integrated the actual replicated scalar controlled-SMC fit, exported the
+future-only quadratic factor, and passed that factor through the unchanged
+full analytical LEDH consumer. The GPU/XLA Gaussian reference completed with
+624 finite rows, but every condition retained a heuristic promotion veto;
+these results are exploratory and do not promote guidance, tuning settings,
+KDM, HMC, or nonlinear performance. The complete decision and inference
+status are in `docs/plans/artifacts/ledh-fitted-guide-20261016/result.md`.

@@ -1,6 +1,12 @@
 \section{Learning guides for moments and scores without a posterior oracle}
 \label{sec:supervised-guidance}
 
+\noindent\textbf{Empirical status, 23 October 2026.}
+The $N=64$ studies reported in this section are disqualified. Their results,
+trained selections and negative conclusions must not support scientific or
+performance decisions. The minimum particle count for fresh experiments is
+$N=1008$; the propositions below do not establish the outcome of those experiments.
+
 Contract E preserves specified moments of the weighted cloud presented to the
 reset. It cannot correct a cloud whose moments already differ from the desired
 posterior moments. We therefore keep the reset and its analytical derivative
@@ -463,3 +469,1200 @@ testable repairs, while neither better message fits nor this structural
 calculation establishes a score improvement. The derivation, consumer check,
 and exact arithmetic over the saved results are recorded in
 \path{docs/plans/artifacts/ledh-supervised-guidance-20261019/failure-review/review.md}.
+
+\subsection{Training guide coefficients against terminal moment loss}
+\label{sec:sg-moment-training}
+
+The moment-training implementation makes the simulated-moment proposal operational:
+guide coefficients change in response to the moment error of the full LEDH
+calculation. The latent state supplies the training label, while the guide
+itself receives observations only. This distinction permits supervision by
+simulation without requiring posterior moments for any observed dataset.
+The experiment uses the continuous 18-dimensional SIR model at
+$\theta=(0,0,0)$, $T=5$, and $N=64$ particles.
+
+The conditioning set matters because the backward guides use future
+observations. At an intermediate time $t<T$, an estimate computed with all
+$Y_{1:T}$ would be supervised toward a smoothing moment conditional on
+$Y_{1:T}$, even if the output were named a filtering estimate. We therefore
+train the terminal cloud, where the available information is exactly the
+filtering information $C=(\theta,Y_{1:T})$. Training a proposal conditional on
+its parent and future observations would be a separate conditional-moment
+problem, as described in Proposition~\ref{prop:sg-moment-risk}.
+
+To compare susceptible and infectious coordinates on useful scales, we first
+simulate 256 independent calibration trajectories. Their terminal states
+determine a fixed center $m$, coordinate standard deviations $d_j>0$, and
+feature standard deviations $s_j>0$; standard deviations are floored at
+$10^{-6}$. Put
+\begin{equation}
+ z_j(x)=\frac{x_j-m_j}{d_j},\qquad
+ \phi(x)=\bigl(z(x),\operatorname{vech}\{z(x)z(x)^\top\}\bigr).
+ \label{eq:sg-calibrated-features}
+\end{equation}
+There are 18 first features and 171 second features. If the terminal equal
+weight cloud after Contract E and its higher-moment correction is
+$\{\widehat X_T^{(i)}\}_{i=1}^N$, its estimate is
+$A_\eta=N^{-1}\sum_i\phi(\widehat X_T^{(i)})$. A simulated terminal state
+$X_T$ gives one noisy label $\phi(X_T)$. The implemented loss gives the two
+feature blocks equal total weight:
+\begin{equation}
+ \ell_\eta=\frac{1}{2}\left[
+ \frac{1}{18}\sum_{j=1}^{18}
+     \left\{\frac{A_{\eta,j}-\phi_j(X_T)}{s_j}\right\}^2
+ +\frac{1}{171}\sum_{j=19}^{189}
+     \left\{\frac{A_{\eta,j}-\phi_j(X_T)}{s_j}\right\}^2
+ \right].
+ \label{eq:sg-terminal-training-loss}
+\end{equation}
+Thus the much larger second-feature block does not dominate simply by having
+more entries. Centering also prevents the large susceptible-population level
+from obscuring variation around that level. The same calibration is used for
+every guide and every evaluation dataset.
+
+\begin{proposition}[The implemented loss estimates a fixed moment risk]
+\label{prop:sg-implemented-moment-risk}
+Condition on the calibration sample and on the data used to learn and select
+$\eta$. On a fresh model trajectory, suppose the guide-fitting and particle
+randomness is conditionally independent of $X_T$ given $Y_{1:T}$, and the
+required second moments are finite. The expectation of
+\eqref{eq:sg-terminal-training-loss} equals the weighted MSE of $A_\eta$ for
+$\mathbb E[\phi(X_T)\mid Y_{1:T}]$, plus a term independent of $\eta$.
+It is also a fixed quadratic risk in the first and raw second moments of
+the original state coordinates.
+\end{proposition}
+\begin{proof}
+Conditional on calibration, the diagonal weights in
+\eqref{eq:sg-terminal-training-loss} are fixed and positive. Proposition
+\ref{prop:sg-moment-risk} therefore applies to $V=\phi(X_T)$.
+To identify the moments in the original coordinates, expand a second feature:
+\[
+ z_j(x)z_k(x)=\frac{x_jx_k-m_jx_k-m_kx_j+m_jm_k}{d_jd_k}.
+\]
+Consequently $\phi(x)=B\Phi(x)+c$ for a fixed matrix $B$ and vector $c$,
+where $\Phi(x)=(x,\operatorname{vech}(xx^\top))$. The constant cancels in
+an estimation error, and its quadratic weight in raw coordinates is
+$B^\top W B$. This proves the asserted risk relation. Centering introduces
+cross terms between first- and second-moment errors; it does not change the
+conditioning information.
+\end{proof}
+
+For example, improving the estimated susceptible mean can change the centered
+second-moment loss even if the estimated raw second moment stays fixed.
+We therefore retain unscaled first- and raw-second-moment label errors as
+separate descriptive measurements. None of these losses is directly the MSE
+of a covariance estimate, which also contains the estimated mean's outer
+product.
+
+The learned coefficients adapt two existing observation-fitted guide families.
+For a quadratic guide with precision $P_t$ and linear coefficient $b_t$,
+let $a_t$ be a log precision multiplier and let $\delta_t$ repeat one
+susceptible and one infectious displacement across the nine regions. The
+adapted coefficients are
+\begin{equation}
+ P_t(\eta)=e^{a_t}P_t,\qquad
+ b_t(\eta)=e^{a_t}(b_t+P_t\delta_t).
+ \label{eq:sg-quadratic-adaptation}
+\end{equation}
+Indeed, expanding $e^{a_t}\log h_t(x-\delta_t)$ gives these coefficients,
+up to an $x$-independent constant. For the positive-RBF mixture, with weights
+$\pi_{tk}$, centers $c_{tk}$ and covariances $V_{tk}$, the adaptation is
+\begin{equation}
+ h_{t,\eta}(x)=\sum_k\pi_{tk}\,\mathcal N
+       (x;c_{tk}+\delta_t,e^{-a_t}V_{tk}).
+ \label{eq:sg-rbf-adaptation}
+\end{equation}
+The mixture weights stay fixed. This covariance rescaling is not the same
+operation as raising the entire mixture density to a power. Both adaptations
+reduce to the original guide at $\eta=0$, and future guidance is inactive at
+the terminal time. These RBF coefficients are a KDM-inspired message adapter;
+the experiment does not retrain the original neural KDM.
+
+One candidate ties the three coefficients across the four active times;
+another gives each active time its own three coefficients. The resulting
+three- and twelve-parameter families test a limited form of temporal
+adaptation. Log multipliers stay within $[-\log4,\log4]$, and each displacement
+stays within two process-noise standard deviations. Region-specific
+adaptation and larger neural families remain outside this experiment.
+
+Optimization evaluates the actual shared LEDH program, including its UKF
+covariance lifecycle, flow, Contract E and dual-cap GenUT correction. At each
+update it draws four training datasets and holds their particle randomness
+fixed while comparing $\eta$, $\eta+\rho u$ and $\eta-\rho u$ for a random
+unit direction $u$. The sign of the symmetric loss difference determines
+the descent direction. Up to three successively halved step lengths are
+tested on that same minibatch; a step is accepted only when it lowers the
+minibatch loss and all numerical checks pass. Fresh minibatches and particle
+streams are used at the next update. This is continuous coefficient
+optimization using moment loss. It does not require an observed score label
+or an autodifferentiated model-score computation.
+
+The initial protocol uses 48 updates, $\rho=0.1$ and initial step length
+$0.25$, with two optimizer seeds for each family and capacity. Initialization
+and every sixteenth update are evaluated on validation data. Failure to make
+at least two accepted updates or to improve validation loss triggers a
+predeclared 96-update retry with $\rho=0.025$ and step length $0.0625$.
+All attempts are retained. The fixed analytical model-score recursion remains
+available for separate explanatory measurements; it never selects an update
+or a checkpoint.
+
+Training uses 64 simulated datasets, validation uses 16, and final evaluation
+uses 64 further datasets. Calibration, data partitions, fitting randomness
+and particle streams have separate seed namespaces. Validation and final
+evaluation each use two particle replicates per dataset. Within each guide
+family, capacity, optimizer seed and checkpoint are frozen using validation moment
+loss before final evaluation. The comparison includes unguided LEDH,
+half-strength quadratic guidance and both original guides, all evaluated
+afresh with identical datasets, particle streams and fixed numerical controls.
+OT remains at $\epsilon=1$ with five Sinkhorn iterations and 32 terminal
+balancing updates; all runs use GPU/XLA double precision as a scoped
+diagnostic.
+
+The independent unit for uncertainty is the simulated dataset. We average its
+two particle replicates before forming paired differences. Four comparisons
+contrast each trained family with its original guide and with unguided LEDH;
+10,000 paired bootstrap resamples give nominal 98.75\% two-sided intervals,
+corresponding to a Bonferroni family-wise level of 95\%. Unknown posterior
+moments are unnecessary for this comparison, but label noise remains in a
+finite test sample and can make the intervals inconclusive. Low and high
+terminal-observation regimes, separated by the calibration median, also test
+whether a favorable pooled mean hides failure against a simple guide.
+Conditional means are descriptive; underperformance against any of the four
+simple comparators prevents promotion under the declared experiment plan.
+
+\subsection{Training completed; the independent comparison stopped on baseline invalidity}
+\label{sec:sg-moment-training-result}
+
+The experiment on 20 October 2026 executed the continuous optimization just
+described. All eight initial runs and two predeclared smaller-step retries
+completed. Of 576 proposed updates, 548 were accepted; no perturbation pair
+or trial step failed numerical validity. There was one coefficient-bound
+event. These observations establish that the coefficients were actually
+trained against moment loss, rather than merely selected from a fixed bank.
+They do not establish a reduction in population moment risk.
+
+Validation selected the time-specific quadratic guide at update 16 of
+optimizer seed 262025001, and the pooled RBF guide at update 32 of the same
+optimizer seed. Their losses are shown in
+Table~\ref{tab:sg-moment-training-selection}. Both coefficient arrays are
+nonzero, and both choices were frozen before generating test data. Because
+the same validation set selected these checkpoints, the decreases are
+selection results, not independent evidence of generalization.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Guide family & Initial validation loss & Selected validation loss\\
+\midrule
+Quadratic controlled SMC & 0.744142 & 0.707827\\
+Positive RBF adapter & 0.714976 & 0.689780\\
+\bottomrule
+\end{tabular}
+\caption{Validation losses for the bounded SIR moment-training experiment.
+The RBF family adapts a KDM-inspired message; it is not original neural KDM
+retraining. These losses select coefficients and cannot certify their
+heldout benefit.}
+\label{tab:sg-moment-training-selection}
+\end{table}
+
+Independent evaluation stopped on the seventeenth dataset because the
+unguided comparator returned a nonfinite particle cloud. Sixteen datasets
+had completed all six methods and both particle replicates. Of the planned
+768 records, 192 were valid and one was invalid; the remaining 575 were not
+evaluated. Dropping that baseline failure and reporting averages only over
+the surviving datasets would change the experiment. Accordingly, no paired
+confidence intervals or heldout ranking are reported.
+
+An exact diagnostic replay reproduced the failure with identical observations,
+latent labels, particle randomness and the ten captured runtime source hashes.
+The first three filtering times remained finite. At time four, the UKF,
+transport and Contract E reset checks passed, but the subsequent higher-moment
+correction returned nonfinite values in all $64\times18=1152$ particle
+coordinates and their analytical directional tangents. Its recorded post-cap
+cloud was still finite. Further replay isolated the first nonfinite operation:
+the Cholesky factorization of the current covariance inside affine restoration.
+The largest importance weight rounded to one, although all 64 weights remained
+positive. The weighted source covariance had trace $4.77\times10^{-29}$,
+while the largest mean coordinate was about $433.68$. The capped offsets from
+that mean still had covariance trace $2.35\times10^{-29}$. Adding the mean
+rounded all particles to the same stored FP64 vector. Recomputing their
+covariance therefore gave zero, as did the existing ridge proportional to its
+trace. Cholesky of this zero matrix failed and contaminated the analytical
+tangents. The earlier pre-cap diagonal RMS of about $9.57\times10^{39}$
+indicates a severe shape correction, but it was not the first nonfinite
+operation. The failure concerns loss of representable spread, not whether
+an acceptance tolerance should reject an error of order $10^{-13}$.
+
+The repair delays addition of the common mean until after centering and
+affine restoration. This retains information already available in the
+calculation; it does not inject artificial particle variation. Write the
+pre-restoration particles as $p_i=m+o_i$, where $m$ is the common translation
+and $o_i$ are the retained offsets. Both may depend on the model parameters.
+Let bars denote uniform particle averages and let $\dot{\ }$ denote one
+parameter-direction derivative.
+
+\begin{proposition}[Translation-free evaluation of affine restoration]
+\label{prop:sg-offset-restoration}
+In real arithmetic, centering the offsets instead of the translated particles
+leaves the regularized affine-restoration map and its total directional
+derivative unchanged, wherever its covariance factors are positive definite.
+This statement includes the derivative of the existing trace-scaled ridge.
+\end{proposition}
+\begin{proof}
+Since $\bar p=m+\bar o$, the centered particles and their derivatives are
+\[
+ c_i=p_i-\bar p=o_i-\bar o,\qquad
+ \dot c_i=\dot p_i-\dot{\bar p}=\dot o_i-\dot{\bar o}.
+\]
+Thus the current covariance and its derivative can both be computed without
+adding and subtracting $m$:
+\[
+ C=\frac1N\sum_i c_i c_i^\top,\qquad
+ \dot C=\frac1N\sum_i
+ (\dot c_i c_i^\top+c_i\dot c_i^\top).
+\]
+For the fixed existing ridge coefficient $\delta$, the regularized covariance
+and derivative are $C_\delta=C+\delta\operatorname{tr}(C)I/d$ and
+$\dot C_\delta=\dot C+\delta\operatorname{tr}(\dot C)I/d$. They are
+therefore unchanged by the representation. With
+$L_C=\operatorname{chol}(C_\delta)$, target factor $L_\star$ and target
+mean $\mu_\star$ computed from the same weighted source cloud, restoration
+returns $\mu_\star+L_\star L_C^{-1}c_i$. Every argument of this map and
+its directional derivative is identical under the two representations.
+\end{proof}
+
+In floating-point arithmetic the order of evaluation matters: subtracting a
+mean cannot recover offsets already lost when that mean was added. The shared
+implementation now carries the offsets and their analytical tangents into
+restoration. The covariance ridge, OT settings $(1,5)$ and balancing count
+remain unchanged. In the three saved pre-failure clouds, the largest scaled
+change in particles or tangents was $9.82\times10^{-11}$, below the declared
+$10^{-10}$ local non-harm tolerance. The failed endpoint and a separate
+healthy endpoint then returned finite states, tangents, values and all three
+score components on GPU/XLA. All twelve central-difference checks, using
+steps $10^{-4}$ and $10^{-5}$, passed the declared normalized-error limit
+$10^{-3}$; the largest error was $7.54\times10^{-5}$. These are numerical
+checks on the implemented finite calculation, not tests against a true score.
+
+One limitation remains. The final addition of the target mean still collapses
+the exceptional cloud to one stored vector. Its materialized covariance is
+zero, and its standardized third and fourth moments are undefined. A tiny
+absolute covariance residual therefore hides a 100 percent loss of the
+target variance in this case. The calculation now explicitly reports that
+these shape diagnostics are unavailable; it neither replaces them with zero
+nor treats them as passing. Finite value and score computation is repaired,
+but complete moment fidelity and the stronger all-diagnostics-finite check
+have not been established.
+
+The distinction matters scientifically. The simulated-label risk identity in
+Proposition~\ref{prop:sg-implemented-moment-risk} remains correct under its
+stated conditioning and independence assumptions. The implemented optimizer
+can reduce its minibatch objective and select nontrivial guides. Nevertheless,
+this interrupted experiment does not show that those guides improve heldout
+moments, still less that they improve the likelihood score. The repair removes
+the identified factorization failure without resolving the lost physical
+spread. A wider comparison must first address that representation limit
+under a reviewed numerical scope, then use fresh independent test data.
+The failed comparison is preserved; no numerical controls or promotion
+criteria were relaxed to turn it into a successful experiment.
+
+\subsection{Why the proposal concentrated, and what a flow-aware guide must express}
+\label{sec:sg-proposal-collapse}
+
+The restoration failure is downstream of a severe importance-weight
+imbalance. Replaying the failed sequence with the existing moment-descent
+safeguard enabled still produces zero materialized covariance at time four.
+The endpoint now rejects the unavailable standardized moments explicitly;
+previously it collected their availability flag without using it to reject
+the result. A second diagnostic measures covariance error relative to the
+target covariance itself, rather than to the maximum of that scale and one.
+It reports relative error one on the collapsed cloud. These changes expose
+the failure; they do not create missing particle spread.
+
+To identify the preceding mechanism, fix one parent and write its transition
+mean as $a$. The SIR transition and observation at that step have the form
+\[
+ X\mid a\sim\mathcal N(a,Q),\qquad Y\mid X\sim\mathcal N(HX,R).
+\]
+Here $Q=I_{18}$, $R=100I_9$ at the parameter used in the diagnostic, and $H$
+extracts the nine infectious coordinates. The UKF predictive covariance $P$
+is a different quantity: it also propagates uncertainty around the parent.
+The shared LEDH coefficients use $P$, whereas the zero-guide pre-flow draw
+and its importance-density correction use the conditional covariance $Q$.
+This is a proposal choice, not a missing Jacobian or an incorrect density
+evaluation. An invertible proposal can have a correct importance correction
+and still produce almost unusable weights.
+
+For linear observations the implemented flow, conditional on its incoming
+cloud and covariance, is affine. Write it as $F(z)=b+Bz$ with nonsingular
+$B$. The actual zero-guide output is then
+$\mathcal N(b+Ba,BQB^\top)$. Completing the square in the conditional
+transition times the observation density gives
+\begin{align}
+ V&=(Q^{-1}+H^\top R^{-1}H)^{-1},\\
+ m&=V(Q^{-1}a+H^\top R^{-1}y),\\
+ p(x\mid a)g(y\mid x)&=\mathcal N(y;Ha,HQH^\top+R)\,\mathcal N(x;m,V).
+\end{align}
+This Gaussian is exact conditional on the one parent. It is not the exact
+nonlinear filtering distribution, which also averages over uncertain parents.
+It nevertheless supplies a decisive check on where the conditional proposal
+places its mass, without knowing any likelihood score.
+
+At time four of the failed sequence, the mean trace of $P$ across particles
+is $1038.57$, compared with $\operatorname{tr}(Q)=18$. The mean displacement
+of the flow's proposal mean from its parent transition mean is $32.81$. Its
+mean conditional Gaussian KL divergence to $\mathcal N(m,V)$ is $529.98$,
+and its realized ESS is one. Replaying only this fixed incoming cloud with
+$Q$ in the flow coefficients gives conditional KL $8.13\times10^{-9}$ and
+ESS $29.0407$; the exact conditional proposal gives ESS $29.0408$. This
+reference calculation does not replace the prescribed UKF lifecycle. It
+locates the mechanism: the actual flow moves too far for these conditional
+transition proposals. The winning particle's prior/proposal logit advantage
+is $69.784$, while the observation contributes $-0.808$. Thus the immediate
+weight collapse is not caused by a more concentrated observation update.
+
+The shared-flow replay agrees with saved children to $1.14\times10^{-13}$,
+proposal log densities to $6.04\times10^{-14}$, and the covariance carry to
+$3.46\times10^{-16}$ relative error across both five-step fixtures. The
+diagnostic therefore identifies a real proposal mismatch, not a different
+reimplementation accidentally being compared with the saved experiment.
+
+Can a guide correct this mismatch without discarding the UKF flow? It must
+place pre-flow mass where that flow will carry it, rather than treating its
+input coordinates as if they were already physical output coordinates.
+\begin{proposition}[Gaussian preimage of the desired conditional proposal]
+\label{prop:sg-gaussian-preimage}
+Fix $a,Q,m,V$ and an invertible affine map $F(z)=b+Bz$, with $Q,V$ positive
+definite. If
+\[
+ Z\sim\mathcal N(\mu_z,\Sigma_z),\qquad
+ \mu_z=B^{-1}(m-b),\quad \Sigma_z=B^{-1}VB^{-\top},
+\]
+then $F(Z)\sim\mathcal N(m,V)$. Relative to the original pre-flow density
+$\mathcal N(a,Q)$, the required multiplicative quadratic guide has precision
+and linear coefficient
+\[
+ \Lambda=B^\top V^{-1}B-Q^{-1},\qquad
+ \ell=B^\top V^{-1}(m-b)-Q^{-1}a.
+\]
+The guide need not have positive semidefinite $\Lambda$, although the product
+density has positive definite precision $Q^{-1}+\Lambda$.
+\end{proposition}
+\begin{proof}
+An affine Gaussian transformation has mean $b+B\mu_z=m$ and covariance
+$B\Sigma_z B^\top=V$. The log ratio of its preimage density to
+$\mathcal N(a,Q)$ is, up to a constant independent of $z$,
+\[
+ -\tfrac12 z^\top(\Sigma_z^{-1}-Q^{-1})z
+ +z^\top(\Sigma_z^{-1}\mu_z-Q^{-1}a).
+\]
+Substitution of $\Sigma_z^{-1}=B^\top V^{-1}B$ gives the displayed
+coefficients. Their sum with $Q^{-1}$ is positive definite because $B$ is
+invertible and $V$ is positive definite. No corresponding sign restriction
+holds for their difference. Finally, change of variables gives
+$q_z(z)/|\det B|=\mathcal N(F(z);m,V)$. When $m,V$ are the conditional
+posterior moments defined above, the corrected conditional weight is exactly
+$\mathcal N(y;Ha,HQH^\top+R)$.
+\end{proof}
+
+The saved failed step makes the capacity restriction concrete. The required
+$\Lambda$ has a minimum eigenvalue of about $-0.477$. The trained quadratic
+adapter cannot represent this exact correction: its positive-information
+conditioning can only decrease the pre-flow covariance in the Loewner order,
+while this preimage requires expansion in some directions. The more general
+quadratic class has an optional indefinite-information switch, but the trained
+adapter does not supply the parent- and flow-dependent coefficients above.
+Merely flipping that switch therefore does not implement this repair.
+
+The trained kernel-mixture consumer has a different covariance calculation.
+It uses Gaussian-mixture product moments, retaining the covariance between
+component means; that term can expand covariance. The negative eigenvalue
+therefore does not establish an expressiveness obstruction for this consumer.
+Whether its fitted components and restricted coefficient adapter can realize
+the desired preimage has not been checked. What both consumers lack is an
+explicit transformation of their proposal through the completed flow.
+
+Applying the computed preimage samples through the actual shared flow
+recovers the desired samples within $4.55\times10^{-13}$ on the failed
+sequence; its conditional weight identity holds within $1.08\times10^{-12}$.
+This verifies a fixed-cloud repair, not an integrated filter or a trained
+guide. The next implementation must express guides in the coordinates of
+the completed flow, differentiate both the map and the density through their
+parameter dependence, and then repeat independent moment evaluation. The
+UKF covariance lifecycle, Contract E and OT $(1,5)$ need not be removed to
+test that design. The present results do not rank the learned guides, and
+they do not invalidate the simulated-label moment-risk identity.
+
+\subsection{Repairing the proposal in physical output coordinates}
+\label{sec:sg-physical-repair}
+
+The failed cloud suggests a specific repair, rather than a stronger penalty
+on the same pre-flow guide. The UKF covariance describes uncertainty carried
+by the filter; the process covariance describes the distribution conditional
+on one parent. We retain the former in the canonical LEDH flow and use the
+latter when designing the conditional proposal. The proposal must be corrected
+by its actual density. Neither a plausible covariance nor a finite numerical
+score substitutes for that correction.
+
+Fix a parent, the incoming particle cloud and the auxiliary flow construction.
+Write the completed shared affine flow as $F(z)=b+Bz$, with nonsingular $B$.
+The transition is $N(a,Q)$, where $a=f_\theta(x_{t-1})$. For a linear Gaussian
+observation $y=Hx+e$, $e\sim N(0,R)$, assume $Q\succ0$ and $R\succ0$.
+Then $S\succ0$, so its inverse exists; Gaussian conditioning also gives
+$V_0\succ0$. Define
+\begin{align}
+ S&=HQH^\top+R, & K&=QH^\top S^{-1},\label{eq:sg-physical-conditional}\\
+ m_0&=a+K(y-Ha), & V_0&=Q-KHQ.\nonumber
+\end{align}
+These are the moments of $p_\theta(x_t\mid x_{t-1},y_t)$, not filtering
+moments pooled across parents. For nonlinear $h$, we instead use
+$H=Dh(a)$ and innovation $y-h(a)$. That construction is a local Gaussian
+proposal, not the exact conditional law. Its importance correction still
+uses the original observation density. SIR's linear Gaussian observation
+allows the exact identity to be tested without this additional approximation.
+
+The controlled-SMC message represents future information. Its current-time
+observation factor must not be applied a second time. A quadratic message
+with coefficients $A,c$ gives physical proposal moments
+\[
+ V=(V_0^{-1}+A)^{-1},\qquad m=V(V_0^{-1}m_0+c),
+\]
+provided the total precision is positive definite. A positive kernel mixture
+instead conditions $N(m_0,V_0)$ by each component, then retains the weighted
+component means and covariances, including between-component variation.
+We draw from the Gaussian $N(m,V)$ having these product moments. Accordingly,
+the proposal density used below is that Gaussian, not the uncollapsed kernel
+mixture. This is the existing KDM moment consumer used in new coordinates;
+its moment matching remains an approximation to the future-informed law.
+
+\begin{proposition}[Cancellation and a genuine mixture augmentation]
+\label{prop:sg-flow-cancellation}
+Let $m,V$ be independent of the particular affine flow, with $V\succ0$.
+Drawing $x=m+L\xi$, where $LL^\top=V$ and $\xi\sim N(0,I)$, and setting
+$z=B^{-1}(x-b)$ is equivalent to drawing from the preimage proposal and
+applying $F$. The resulting physical density is exactly $N(m,V)$ and does
+not depend on $F$. Thus this construction alone replaces, rather than
+improves, the LEDH proposal.
+
+Let $q_L$ be the actual physical density of the unchanged LEDH proposal
+and $q_O=N(m,V)$. For a fixed $0<\beta<1$, draw an independent uniform
+$U$, use $q_O$ if $U<\beta$ and $q_L$ otherwise, and correct by
+\begin{equation}
+ q_\beta(x)=(1-\beta)q_L(x)+\beta q_O(x).
+ \label{eq:sg-physical-mixture}
+\end{equation}
+This is a genuine mixture retaining the LEDH proposal. For any integrable
+test function $\varphi$,
+\[
+ \mathbb E_{q_\beta}\!\left[
+   \frac{f_\theta(x\mid x_{t-1})g_\theta(y_t\mid x)}{q_\beta(x)}
+   \varphi(x)\right]
+ =\int f_\theta(x\mid x_{t-1})g_\theta(y_t\mid x)\varphi(x)\,dx.
+\]
+If $q_O$ is the exact current-observation conditional, the importance
+weight is at most $p_\theta(y_t\mid x_{t-1})/\beta$.
+\end{proposition}
+\begin{proof}
+The affine change of variables gives
+\[
+ q_z(z)=N(F(z);m,V)|\det B|,\qquad
+ \frac{q_z(F^{-1}(x))}{|\det B|}=N(x;m,V).
+\]
+Using the same $\xi$ gives the stated
+pathwise equality. Independent component selection gives
+\eqref{eq:sg-physical-mixture}; cancellation of this full density inside
+the expectation proves the integral identity. Finally,
+$fg=p_\theta(y_t\mid x_{t-1})q_O$ and $q_\beta\geq\beta q_O$ prove the
+bound. Predictive likelihoods differ between parents, so this does not
+make all particle weights equal. The bound does not apply unchanged to a
+future-conditioned or locally linearized $q_O$.
+\end{proof}
+
+The mixture selects one draw; it does not average two positions. Its mixing
+weight is distinct from the existing identity/global/local covariance-design
+weights. Holding $\beta=1/2$ is an explicit hypothesis for the present repair,
+not an optimized default. The $\beta=1$ no-future conditional sampler is an
+essential cancellation control. If only that control works, we have evidence
+for replacing the proposal, not for a beneficial LEDH augmentation.
+
+\begin{proposition}[Analytical differentiation of the repaired proposal]
+\label{prop:sg-physical-tangent}
+Assume differentiable model quantities and flow coefficients, positive
+definite proposal covariances and nonsingular $B$ in an open parameter
+neighborhood. Freeze guide coefficients, $\beta$ and all exogenous random
+numbers for the finite-program derivative. For the preimage moments,
+\begin{align}
+ \mu_z&=B^{-1}(m-b), & \Sigma_z&=B^{-1}VB^{-\top},\\
+ d\mu_z&=B^{-1}(dm-db-dB\mu_z),\label{eq:sg-physical-preimage-tangent}\\
+ d\Sigma_z&=B^{-1}dVB^{-\top}-B^{-1}dB\Sigma_z
+                  -\Sigma_z dB^\top B^{-\top}.\nonumber
+\end{align}
+For $r=x-m$ and $P=V^{-1}$, the moving-point Gaussian density satisfies
+\begin{equation}
+ d\log N(x;m,V)=-r^\top P(dx-dm)
+ +\tfrac12 r^\top P(dV)Pr-\tfrac12\operatorname{tr}(P\,dV).
+ \label{eq:sg-physical-density-tangent}
+\end{equation}
+At the selected point, set
+$\rho_j=\beta_jq_j(x)/q_\beta(x)$, with
+$(\beta_L,\beta_O)=(1-\beta,\beta)$. Then
+\begin{equation}
+ d\log q_\beta(x)=\rho_Ld\log q_L(x)+\rho_Od\log q_O(x).
+ \label{eq:sg-physical-mixture-tangent}
+\end{equation}
+These are total derivatives, including movement of the selected particle,
+the incoming parent, the conditional moments and the completed flow.
+\end{proposition}
+\begin{proof}
+Differentiate $B\mu_z=m-b$ and $B\Sigma_zB^\top=V$ to obtain
+\eqref{eq:sg-physical-preimage-tangent}. Differentiating
+$-\tfrac12(r^\top V^{-1}r+\log\det V+d\log(2\pi))$, using
+$dV^{-1}=-V^{-1}(dV)V^{-1}$, gives
+\eqref{eq:sg-physical-density-tangent}. Differentiating the two-term density
+sum gives \eqref{eq:sg-physical-mixture-tangent}. The sampled component is
+constant as a function of model parameters because both $U$ and $\beta$
+are fixed. There is no parameter-dependent discrete selection to differentiate.
+For $L=\operatorname{chol}(V)$, write
+$M=L^{-1}(dV)L^{-\top}$. Then
+$dL=L(\operatorname{tril}(M)-\tfrac12\operatorname{diag}(M))$ and
+$dx=dm+dL\xi$ supply the sample tangent. All density terms are evaluated
+at that same moving point.
+\end{proof}
+
+For completeness, the conditional moments in \eqref{eq:sg-physical-conditional}
+also move with the parameter. With the observation held fixed, let
+$e=y-h_\theta(a)$ and let $dh_\theta(a)$ include both the explicit parameter
+derivative and the derivative through $a$. Product differentiation gives
+\begin{align}
+ dS&=(dH)QH^\top+H(dQ)H^\top+HQ(dH)^\top+dR,\nonumber\\
+ dK&=\bigl((dQ)H^\top+Q(dH)^\top-K\,dS\bigr)S^{-1},\nonumber\\
+ dm_0&=da+(dK)e-K\,dh_\theta(a),\label{eq:sg-physical-conditional-tangent}\\
+ dV_0&=dQ-(dK)HQ-K(dH)Q-KH(dQ).\nonumber
+\end{align}
+The second line follows by differentiating $KS=QH^\top$ and solving for
+$dK$; the other lines differentiate the definitions directly.
+If the frozen future message is quadratic, its coefficients $A,c$ have zero
+parameter differential. Write $P_0=V_0^{-1}$. Then
+\[
+ dP_0=-P_0(dV_0)P_0,\qquad
+ dV=-V(dP_0)V,\qquad
+ dm=(dV)(P_0m_0+c)+V\bigl((dP_0)m_0+P_0\,dm_0\bigr).
+\]
+For the kernel product, each component obeys the same Gaussian product rule.
+Its normalized product weight also changes: if its unnormalized weight is
+$w_k$ and $\alpha_k=w_k/\sum_jw_j$, then
+$d\alpha_k=\alpha_k(d\log w_k-\sum_j\alpha_jd\log w_j)$.
+Consequently both component-moment derivatives and weight derivatives enter
+the mixture's first and raw second moments before recovering its covariance.
+Holding these weights fixed would omit a required term.
+
+In implementation, $F(a)$ and $B$ come from the existing shared flow loop.
+The LEDH component density at any selected $x$ is evaluated through
+$\delta=B^{-1}(x-F(a))$:
+\[
+ q_L(x)=N(\delta;0,Q)/|\det B|,\qquad
+ d\delta=B^{-1}(dx-dF(a)-dB\delta).
+\]
+This avoids a second flow solver. Directly drawing the physical Gaussian is
+algebraically equivalent to the preimage-and-flow calculation while avoiding
+an unnecessary inverse/forward round trip. For nonlinear observations the
+conditional-moment tangent includes $dH$ and $dh(a)$; dropping either when
+nonzero is wrong relative to the total-derivative claim. These derivatives
+establish the derivative of the finite estimator, not equality to the exact
+model score or differentiability through later offline guide refitting.
+
+\paragraph{Algorithm and learning experiment.}
+The following order separates proposal design from the filter's covariance
+lifecycle and moment-restoring reset.
+\begin{enumerate}[leftmargin=*,label=\arabic*.]
+\item Propagate each parent's state, tangent and UKF covariance using the
+unchanged canonical recursion. Compute $a,Q$ and their tangents.
+\item Run the shared LEDH flow once on the baseline process draw; retain
+$x_L,dx_L,F(a),dF(a),B,dB$ and its log determinant and tangent.
+\item Form the current-observation conditional Gaussian in physical
+coordinates. Condition its moments with the frozen future-only cSMC or KDM
+message. Check positive definiteness and finite analytical tangents.
+\item Draw $x_O,dx_O$ from those moments. Select exactly one component using
+an independent, fixed uniform draw. Evaluate both densities and their total
+tangents at the selected point, including the full mixture denominator.
+\item Form $\log f+\log g-\log q_\beta$ and its analytical derivative;
+combine with incoming ancestor weights. Record component counts, density
+validity and weight concentration without changing acceptance criteria.
+\item Continue the shared UKF update, dual-cap GenUT correction and
+Contract E--Chol OT reset, including all direct moment and weight derivatives.
+The diagnostic experiment retains OT $(1,5)$, terminal balance32 and $K=N$.
+\end{enumerate}
+
+Offline guide adaptation still minimizes simulated-label moment risk. For
+$C=(\theta,Y_{1:T})$, $U$ independent of $X_T$ conditional on $C$, fixed
+calibration matrix $W\succeq0$ and $\mu(C)=\mathbb E[\Phi(X_T)\mid C]$,
+\[
+ \mathbb E\|\widehat\mu_\eta(C,U)-\Phi(X_T)\|_W^2
+ =\mathbb E\|\widehat\mu_\eta(C,U)-\mu(C)\|_W^2
+  +\mathbb E\|\Phi(X_T)-\mu(C)\|_W^2.
+\]
+The cross term vanishes by conditioning on $(C,U)$. This justifies learning
+without posterior-moment or score labels. It does not make a particular
+adapter expressive or its optimizer successful. New calibration, training,
+validation and untouched evaluation partitions are required after the failed
+campaign; its exposed holdout cannot become a tuning set.
+
+The comparison must distinguish three questions: whether the analytical
+implementation is correct, whether the physical conditional repair prevents
+the observed collapse, and whether future-trained guides reduce independent
+moment risk beyond the no-future repair. Plain LEDH, the cancellation control,
+the no-future mixture, untrained guides and trained guides answer different
+parts of that question. Prediction-only, observation-only and recursive
+Gaussian moment estimators provide cheap external checks in both low- and
+high-observation regimes. Heldout paired uncertainty, not training loss or
+ESS alone, is needed to establish improvement. None of these moment checks
+alone establishes exact model-score accuracy, HMC readiness or a new default.
+
+\paragraph{Executed SIR comparison.}
+The physical proposal repairs the exposed collapse, but the trained guides
+do not pass the independent moment comparison. In the integrated regression,
+the conditional-only, unguided half-mixture, cSMC and KDM physical proposals
+all remain valid on the previously failing cloud. Twelve analytical versus
+central-finite-difference checks on the healthy fixture pass, with maximum
+relative discrepancy \(8.46\times10^{-8}\). These checks establish the
+tested density and derivative calculations; the exposed cloud is not
+independent evidence of improved estimation.
+
+The subsequent experiment uses the 18-dimensional SIR model with five
+observations and 64 particles, in FP64 with GPU/XLA execution. Calibration,
+training, validation and evaluation simulations are disjoint. The adapter
+search compares pooled and time-specific coefficients, two optimizer seeds
+and two step sizes, followed by one extension per guide family. Validation
+selects pooled cSMC coefficients after eight plus 24 additional updates,
+and time-specific KDM-inspired RBF coefficients after eight updates. Both selections
+are frozen before evaluating 32 fresh datasets with two particle
+replications each. The two observation regimes use a threshold fixed by
+calibration and contain 16 datasets each. Scores are never training or
+selection labels.
+
+Every method is numerically valid on all these fresh datasets, including
+plain LEDH. Table~\ref{tab:sg-physical-risk} reports the calibrated
+simulated-label loss. Its absolute level includes irreducible label
+variation; differences estimate differences in moment-estimation risk
+under the preceding identity.
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Moment estimator & All datasets & Low observations & High observations\\
+\midrule
+Plain LEDH & 0.823548 & 0.920918 & 0.726179\\
+Conditional only, \(\beta=1\) & 0.818726 & 0.951452 & 0.685999\\
+Half-mixture, no future guide & 0.993677 & 1.198801 & 0.788553\\
+cSMC, untrained adapter & 0.954779 & 1.145529 & 0.764029\\
+cSMC, trained adapter & 0.971912 & 1.189299 & 0.754524\\
+RBF message, untrained adapter & 0.947899 & 1.154907 & 0.740890\\
+RBF message, trained adapter & 0.951518 & 1.164091 & 0.738945\\
+Prediction only & 1.325386 & 1.648705 & 1.002068\\
+Observation only & 0.965693 & 1.208127 & 0.723259\\
+Recursive Gaussian & 0.626742 & 0.760924 & 0.492559\\
+\bottomrule
+\end{tabular}
+\caption{Independent SIR moment-label losses after the physical-proposal
+repair. Lower values are favorable, but mean ordering alone does not
+establish a ranking. The Gaussian references use spherical-radial
+cubature and are separate moment estimators.}
+\label{tab:sg-physical-risk}
+\end{table}
+
+The recursive Gaussian estimator exposes the main failure. Define excess
+loss as trained-guide loss minus comparator loss. Its pointwise paired
+95\% bootstrap intervals against that estimator are
+\([0.170771,0.756844]\) and \([0.149226,0.392242]\) for cSMC in the low
+and high regimes, and \([0.138101,0.748221]\) and
+\([0.146892,0.367340]\) for KDM. Both guides therefore fail the
+predeclared simple-method comparison in both regimes. Against the
+conditional-only proposal, pooled excess losses are \(0.153186\)
+with interval \([0.066461,0.251363]\) for cSMC and \(0.132792\)
+with interval \([0.041363,0.247269]\) for KDM.
+
+Neither trained guide has an established pooled gain over its untrained
+adapter: the corresponding excess-loss intervals are
+\([-0.027241,0.063483]\) and \([-0.004336,0.013151]\).
+Nor is a gain over the no-future half-mixture established:
+\([-0.057102,0.013251]\) and \([-0.092305,0.001876]\).
+Each interval uses 2,000 paired bootstrap replicates, resampling datasets
+and keeping their particle replications together. These are pointwise
+comparisons in one short SIR experiment, not simultaneous evidence for
+a general ordering of methods.
+
+The result separates a successful numerical repair from an unsuccessful
+trained candidate. The squared-error identity remains correct; it does not
+guarantee that this adapter family and optimizer find a useful guide.
+The descriptively larger loss of the unguided half-mixture than of the
+conditional-only proposal motivates examining component allocation and
+pre- versus post-reset moments before expanding training. That comparison
+does not yet identify the cause of the gap. Further tuning requires fresh
+partitions; these evaluation datasets must remain held out. Improved
+model-score accuracy has not been evaluated, and neither guide is promoted.
+
+\subsection{A neural conditional KDM proposal for SIR}
+\label{sec:sir-neural-kdm-adaptation}
+
+The preceding RBF message was fitted from a controlled-SMC approximation and
+then adjusted by a few scalar coefficients. It did not train the replicated
+neural KDM filter. That replicated filter estimates a three-dimensional
+position-and-angle filtering distribution. SIR has eighteen state coordinates,
+and a filtering density is not a future-likelihood message. Substituting one
+for the other would change the stated conditional distribution. We therefore
+define an explicit SIR adaptation: a neural mixture used as an evaluable
+proposal inside the existing LEDH filter.
+
+For a fixed parent particle \(a\), let \(m_t(a),C_t(a)\) denote the
+current-observation conditional Gaussian used by the physical proposal, and
+write \(C_t=L_tL_t^\top\) with a positive-definite covariance. The observation
+sequence \(Y=y_{1:T}\) is the network input. A network with parameters
+\(\eta\) supplies vectors \(\delta_{t,k}(Y)\) and \(s_{t,k}(Y)\), and we set
+\begin{align}
+ m_{t,k}&=m_t+L_t\delta_{t,k},&
+ B_{t,k}&=L_t\operatorname{diag}(e^{s_{t,k}}),&
+ C_{t,k}&=B_{t,k}B_{t,k}^{\top},\label{eq:sir-neural-components}\\
+ q_\eta(x\mid a,Y)&=\frac1K\sum_{k=1}^K
+       \mathcal N(x;m_{t,k},C_{t,k}),&
+ q_{\beta,\eta}&=(1-\beta)q_{\mathrm{LEDH}}+\beta q_\eta.
+       \label{eq:sir-neural-proposal}
+\end{align}
+Here \(m_t,\delta_{t,k},s_{t,k}\in\mathbb R^{18}\) and
+\(L_t,B_{t,k},C_{t,k}\in\mathbb R^{18\times18}\). The network returns two
+arrays of shape \(T\times K\times18\). Its standardized displacements and
+bandwidth multipliers are shared across parents; each parent's own \(m_t(a)\)
+and \(L_t(a)\) turn them into different component means and covariances.
+The implementation preserves the parent and component axes separately,
+with component means of shape \(N\times K\times18\). This restricts the
+learned family: the network does not receive a separate parent-state input.
+The current Gaussian anchors the proposal to the physical model; the learned
+displacements and bandwidths can adapt it to the observations. Setting both
+network outputs to zero recovers that Gaussian exactly. The mixture is sampled
+by selecting one component, not by averaging particle positions. Its complete
+density, including all components, enters the importance denominator.
+
+This first adaptation fixes the inner component probabilities at \(1/K\)
+and freezes \(\beta\) within each candidate. It trains every neural location
+and bandwidth parameter. These restrictions permit ordinary reparameterized
+training without omitting derivatives of learned categorical probabilities.
+They also limit the family and must be tested empirically. This differs from
+the original learned KDM posterior and its IWSG update
+\citep[Section~4, equations~(14)--(15)]{younis2023}.
+The original sequence NLL is also replaced by the terminal moment objective
+below; the adaptation is not a source-faithful SIR replication.
+
+\begin{proposition}[Physical correction of a future-informed proposal]
+\label{prop:sir-neural-physical-correction}
+Fix the incoming cloud and all proposal maps. Suppose
+\(q_{\beta,\eta}(x\mid a,Y)>0\) wherever
+\(h_t(x,a)=f_\theta(x\mid a)g_\theta(y_t\mid x)>0\).
+For any feature \(\phi\) for which \(\int |\phi(x)|h_t(x,a)\,dx<\infty\),
+\[
+ \mathbb E_{q_{\beta,\eta}}\!\left[
+ \frac{h_t(X,a)}{q_{\beta,\eta}(X\mid a,Y)}\phi(X)\right]
+ =\int h_t(x,a)\phi(x)\,dx.
+\]
+Thus future observations may inform the proposal without changing the
+unnormalized current filtering target.
+\end{proposition}
+\begin{proof}
+Write the expectation as an integral against
+\(q_{\beta,\eta}(x\mid a,Y)\,dx\) and cancel that density pointwise on
+the support of \(h_t\). Integrability justifies the expectation. Summing this
+identity over parents with their incoming weights gives the corresponding
+finite-cloud predictive mixture identity. If parents are randomly selected,
+their selection probabilities must also appear in the joint denominator.
+The one-to-one consumer used here does not introduce that extra selection.
+\end{proof}
+
+This is ordinary proposal correction. It does not introduce controlled-SMC
+twisted intermediate targets or claim an unbiased normalized moment estimator
+at finite particle count. Contract E and the finite particle approximation
+remain part of the estimator whose error is measured.
+
+\begin{proposition}[Analytical model derivative of the neural proposal]
+\label{prop:sir-neural-total-derivative}
+Fix \(Y,\eta,\beta\), all component-selection uniforms and all Gaussian draws.
+Assume the physical maps are differentiable, the relevant covariances are
+positive definite, and the LEDH affine maps are invertible. The network has no
+\(\theta\) input in this experiment. A dot denotes a directional derivative
+with respect to \(\theta\). Then
+\begin{align*}
+ \dot m_{t,k}&=\dot m_t+\dot L_t\delta_{t,k},&
+ \dot B_{t,k}&=\dot L_t\operatorname{diag}(e^{s_{t,k}}),&
+ \dot C_{t,k}&=\dot B_{t,k}B_{t,k}^{\top}
+                    +B_{t,k}\dot B_{t,k}^{\top}.
+\end{align*}
+For a selected Gaussian draw, \(x=m_{t,k}+B_{t,k}z\) and
+\(\dot x=\dot m_{t,k}+\dot B_{t,k}z\). If \(\ell_j\) denotes the log
+density of any component of the full physical mixture, evaluated at this
+moving point, and \(\pi_j\) its fixed mixture probability, then
+\[
+ \dot{\log q}_{\beta,\eta}(x)
+ =\sum_j r_j(x)\dot\ell_j(x),\qquad
+ r_j(x)=\frac{\pi_j e^{\ell_j(x)}}{\sum_i\pi_i e^{\ell_i(x)}}.
+\]
+For a Gaussian component with residual \(v=x-m\), precision \(P=C^{-1}\)
+and force \(b=Pv\), the required moving-point derivative is
+\[
+ \dot\ell=-b^\top(\dot x-\dot m)
+       +\tfrac12 b^\top\dot C b-\tfrac12\operatorname{tr}(P\dot C).
+\]
+\end{proposition}
+\begin{proof}
+Differentiating \(C=LL^\top\) and multiplying by \(L^{-1}\) and
+\(L^{-\top}\) gives \(A=H+H^\top\), where
+\(A=L^{-1}\dot C L^{-\top}\) and \(H=L^{-1}\dot L\) is lower triangular.
+Hence \(H\) contains the strict lower triangle of \(A\) and half its
+diagonal, and \(\dot L=LH\). Differentiating
+\eqref{eq:sir-neural-components} now gives the displayed component derivatives.
+The selection probabilities are fixed, so a fixed uniform selects the same
+component during differentiation. Differentiating the log of the sum of
+weighted densities gives the responsibilities formula. Finally,
+\(\dot P=-P\dot C P\) and
+\(\dot{\log\det C}=\operatorname{tr}(P\dot C)\) give the Gaussian expression.
+Both the point and density parameters move; neither term may be dropped.
+\end{proof}
+
+These formulas supply the proposal terms to the existing analytical LEDH
+recursion, including the direct source-moment and transport contributions to
+Contract E. Autodiff of neural training parameters does not replace that
+model-score calculation. Agreement with finite differences of this finite
+program checks its derivative, not accuracy against the true model score.
+
+\begin{proposition}[Training the corrected estimator with simulated labels]
+\label{prop:sir-neural-moment-training}
+Let \(C=(\theta_0,Y)\), let \(\Phi(X_T)\) contain the fixed scaled first
+and raw second features, and let \(\widehat\mu_\eta(C,U)\) be the features
+averaged over the actual final corrected LEDH cloud. Suppose particle
+randomness \(U\) is conditionally independent of the simulated latent path
+given \(C\), all second moments are finite, and the scaling matrix \(W\)
+is fixed independently of the training examples. Writing
+\(\mu(C)=\mathbb E[\Phi(X_T)\mid C]\),
+\[
+ \mathbb E\|\widehat\mu_\eta-\Phi(X_T)\|_W^2
+ =\mathbb E\|\widehat\mu_\eta-\mu(C)\|_W^2
+  +\mathbb E\|\Phi(X_T)-\mu(C)\|_W^2.
+\]
+If the finite estimator is almost-everywhere differentiable in \(\eta\)
+and a locally integrable bound permits interchange of differentiation and
+expectation, its reparameterized loss gradient is a gradient of the first term.
+\end{proposition}
+\begin{proof}
+Expand the square after inserting \(\mu(C)\). Conditional independence gives
+\(\mathbb E[\Phi(X_T)-\mu(C)\mid C,U]=0\), so the cross term vanishes.
+The second term contains no \(\eta\). Fixed mixture probabilities make all
+selection uniforms independent of \(\eta\); Gaussian draws have the same
+property. Under the stated regularity and domination assumptions, differentiate
+the finite estimator along those fixed draws and interchange derivative and
+expectation. This proves the final assertion. It does not establish those
+regularity assumptions across an inadmissible covariance or a failing reset.
+\end{proof}
+
+The trained loss must therefore be computed after the shared flow, complete
+importance correction, OT and Contract-E reset. Loss on the neural proposal
+alone would optimize a different estimator. Numerical validity, nonzero
+gradients to every trainable tensor, fresh held-out moments and a separate
+model-score reference are distinct checks. The reporting and provenance
+repairs of 20 October passed their regressions without changing healthy
+values or scores; they provide no evidence that this new learner improves
+either quantity. The neural adaptation requires its own execution results.
+
+The first SIR experiment fixes \(\theta=\theta_0\), uses five observation
+times and 64 particles, and learns from independent simulated paths. The
+network receives the standardized observations at all five times. Two hidden
+\(\tanh\) layers produce the component displacements and log bandwidths at
+each time; all six weight and bias tensors are trainable. We compare two
+capacities, \((K,\text{width})=(2,16)\) and \((4,32)\), the two fixed mixture
+probabilities \(\beta=0.5,0.9\), two Adam learning rates, and two independent
+initializations. Each update averages losses from four newly simulated paths
+and independent particle draws. The original numerical filtering controls,
+including OT parameters \((1,5)\), remain fixed for this diagnostic comparison.
+
+Thirty-two separate validation paths select checkpoints after the initial
+32 updates and the 128-update continuation; a 512-update continuation is
+conditional on the measured computational budget. Validation selects the
+moment loss above, never an unavailable model score. After selection, 64
+untouched paths with four paired particle draws compare the trained network
+with the same untrained network, plain LEDH, the conditional-only proposal
+and the physical mixture without neural adaptation. Paired uncertainty is
+computed by resampling whole datasets, preserving their four particle draws.
+First- and raw-second-moment label losses are reported separately. Simple predictive,
+observation-only and recursive Gaussian estimates also test whether a learned
+proposal offers useful moment estimates in each observation regime and in
+the relative lower tail of compartment counts. A lower validation loss alone
+does not settle that comparison. These fixed-parameter, short-horizon results
+will concern the moment estimator; model-score improvement requires its own
+independent reference comparison.
+
+The distinction between label loss and posterior-moment error matters when
+interpreting a percentage reduction. For two estimators \(a,b\), the
+proposition gives
+\[
+ \mathbb E[L_a-L_b]
+ =\mathbb E\|\widehat\mu_a-\mu(C)\|_W^2
+  -\mathbb E\|\widehat\mu_b-\mu(C)\|_W^2.
+\]
+Thus the paired loss difference estimates the difference in moment-estimation
+MSE without observing \(\mu(C)\). A percentage reduction in the total label
+loss has a different denominator, because that loss also contains the
+irreducible conditional variance. It must not be reported as the same
+percentage reduction in posterior-moment MSE. A finite paired sample also
+retains uncertainty from its latent labels, which is why the independent
+comparison resamples datasets rather than treating particle replications as
+independent observations.
+
+The observation regimes and latent-compartment regimes also require different
+interpretations. Let \(R\) denote a reported subgroup, let
+\(A_a,A_b\) be two moment estimators, and write
+\(M_j=\|A_j-\mu(C)\|_W^2\) and \(L_j=\|A_j-V\|_W^2\).
+\begin{proposition}[Risk differences within a selected subgroup]
+\label{prop:sg-subgroup-risk}
+Under Assumption~\ref{ass:sg-separation}, for a subgroup of positive probability,
+\[
+ \mathbb E[L_a-L_b\mid R]
+ =\mathbb E[M_a-M_b\mid R]
+ -2\mathbb E[(A_a-A_b)^\top W(V-\mu(C))\mid R].
+\]
+If membership in \(R\) is determined by \(C\), the last term vanishes.
+If membership depends on the latent label beyond \(C\), it can be nonzero.
+\end{proposition}
+\begin{proof}
+Expand both label losses around \(\mu(C)\) and subtract. The common
+\(\|V-\mu(C)\|_W^2\) term cancels, giving the displayed expression before
+taking conditional expectations. For \(R\) measurable with respect to \(C\),
+condition first on \((C,U)\); the residual \(V-\mu(C)\) has zero conditional
+mean by Assumption~\ref{ass:sg-separation}. This argument need not hold after
+conditioning on an event that also reveals the latent label.
+\end{proof}
+For example, take \(W=1\), let \(C\) contain no information, let \(V\) take values
+\(-1,1\) with equal probability, and compare \(A_a=1\) with \(A_b=0\).
+The true conditional mean is zero and \(M_a-M_b=1\). Within the subgroup
+\(R=\{V=1\}\), however, \(L_a-L_b=-1\). Thus the pooled and
+observation-defined comparisons retain the original moment-MSE interpretation.
+The latent-compartment comparisons measure prediction loss in selected latent
+situations and supply the predeclared conservative heuristic veto. They do not
+establish a posterior-moment MSE ranking against \(\mu(C)\) in those subgroups.
+
+\subsection{The first independent neural comparison}
+\label{sec:sg-neural-result}
+
+The following is the historical account of the disqualified $N=64$ comparison;
+it does not establish whether neural proposals help at the required particle
+count. The SIR neural proposal did not meet the improvement criterion in that
+comparison completed on 21 October. Recursive Gaussian filtering
+had lower observed label loss in both observation regimes and both latent
+strata. Training also failed to establish a gain over the same network at
+initialization or over plain LEDH. These findings concern the fitted candidate
+and finite filtering procedure; they do not contradict the population risk
+identity in Proposition~\ref{prop:sg-implemented-moment-risk}.
+
+All sixteen configurations completed 32 updates, and the two selected
+initializations completed their 128-update continuations. Validation selected
+the two-component, width-16 network with \(\beta=0.9\), Adam step size
+\(10^{-3}\), and 32 updates. Its validation loss was \(0.678633\).
+The first optional 512-update continuation exceeded its time allowance after
+362 valid updates. It produced no completed checkpoint and did not enter
+selection. All six neural tensors had finite nonzero gradients throughout
+the recorded continuation. A later recovery run completed 512 updates for this
+initialization, as described in Section~\ref{sec:sg-neural-recovery}. The
+independent comparison reported here still tests the original frozen
+32-update candidate; the later checkpoints have only validation measurements.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Estimator & Total loss & First moments & Raw second moments\\
+\midrule
+Trained neural proposal & 0.770637 & 0.557711 & 0.983562\\
+Same network, untrained & 0.774066 & 0.559156 & 0.988976\\
+Plain LEDH & 0.765211 & 0.552860 & 0.977563\\
+Conditional-only proposal & 0.759526 & 0.547718 & 0.971334\\
+Physical mixture, no network & 0.774774 & 0.559207 & 0.990341\\
+Predictive Gaussian & 1.112856 & 1.056650 & 1.169062\\
+Final-observation Gaussian & 0.809329 & 0.638499 & 0.980160\\
+Recursive Gaussian & 0.533512 & 0.378388 & 0.688637\\
+\bottomrule
+\end{tabular}
+\caption{Scaled terminal simulated-label losses on 64 independent SIR
+datasets, with four paired particle draws per particle method. Total loss
+equally weights the first and raw-second blocks. The entries include
+irreducible label variance; they are not absolute posterior-moment MSEs.}
+\label{tab:sg-neural-risk}
+\end{table}
+
+For the trained-minus-untrained loss difference, the estimate is
+\(-0.003430\), with a paired 95\% bootstrap interval
+\([-0.009510,0.002454]\). The descriptive reduction is only \(0.443\%\),
+below the required \(10\%\), and the interval includes zero. Against plain
+LEDH, the difference is \(0.005425\), with interval
+\([-0.050125,0.063136]\). Neither primary comparison supports a ranking.
+The 5,000 bootstrap draws resample whole datasets, keeping all four particle
+replications together. Source, numerical-validity and complete-pairing checks
+pass for all 1,472 required evaluation rows.
+
+The simple recursive Gaussian estimator gives the more substantial negative
+result. Its low- and high-observation losses are \(0.598323\) and
+\(0.472630\), versus \(0.833695\) and \(0.711399\) for the trained
+proposal. These strata contain 31 and 33 datasets. The corresponding losses
+in the nearer-boundary and interior strata are \(0.959331,0.519776\) for
+the Gaussian estimator and \(1.338364,0.752323\) for the neural proposal.
+Only two datasets lie in the nearer-boundary stratum, so that comparison
+does not establish population-tail behavior. The pooled excess neural loss
+is \(0.237124\), with exploratory paired interval
+\([0.173759,0.305246]\). Conditional intervals are not adjusted for
+multiple comparisons. The predeclared heuristic veto rejects the candidate
+on the observed conditional losses without using them for tuning.
+
+This experiment repairs the earlier limitation to a few adapter scalars:
+the network parameters actually affect the corrected terminal loss and receive
+checked gradients. It nevertheless provides no evidence of useful independent
+moment improvement. Limited optimization, an unsuitable proposal family, and
+finite-particle correction or reset effects remain different possible
+explanations; this comparison does not identify their contributions. A broader
+claim requires a new protocol and fresh evaluation data. Model-score accuracy
+remains unevaluated, and these fixed-numerics results do not establish a new
+LEDH default.
+
+\subsection{Comparison with freshly fitted restricted proposals}
+\label{sec:sg-neural-restricted-comparison}
+
+The additional comparison uses quadratic cSMC-derived messages and positive-RBF
+messages, each fitted from observations on the same SIR datasets. These are
+restricted proposals with the same physical density correction, rather than a
+full twisted-target controlled SMC implementation or the original neural KDM
+learner. Each family is evaluated both before and after fitting its moment
+adapter. Fitting uses 512 particles, 256 validation particles and 32 RBF
+components. The fitted messages are shared between the unadapted and adapted
+versions, so adapter changes do not also change the underlying message fit.
+
+The adapter search compares three pooled coefficients with twelve time-specific
+coefficients, two random-direction seeds and step sizes \(0.05,0.15\). All
+eight configurations per family complete eight updates; the validation-selected
+trained configuration continues to 24 updates. The zero adapter remains
+eligible. Validation selects the 24-update pooled cSMC adapter and the
+24-update time-specific RBF adapter, both at step size \(0.15\). All 160
+updates are accepted, their losses remain finite and none reaches a coefficient
+bound. Final evaluation uses the same 64 datasets and four particle streams
+as Table~\ref{tab:sg-neural-risk}, after both selections are frozen.
+
+These comparisons have a narrower interpretation than an equal-budget test of
+the best available methods. The restricted proposals fix \(\beta=0.5\) and
+train with two simulated paths per update; the neural search considers two
+values of \(\beta\) and uses four paths per update. The restricted capacities
+and searches are baseline hypotheses, not established classical optima. Paired
+loss differences can describe these fitted procedures, but cannot isolate the
+effect of architecture or establish training efficiency.
+
+All 1,024 additional evaluation rows are valid and paired, and their package
+sources match the neural experiment. Table~\ref{tab:sg-restricted-risk} reports
+the completed comparison. Both adapters lower their observed mean loss, but
+the paired intervals include zero: the adapted-minus-unadapted difference is
+\(-0.007759\), with interval \([-0.050665,0.032717]\), for cSMC, and
+\(-0.002179\), with interval \([-0.008090,0.003676]\), for RBF.
+Neither comparison establishes a learning gain.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Restricted proposal & Total loss & First moments & Raw second moments\\
+\midrule
+cSMC-derived, unadapted & 0.871385 & 0.655728 & 1.087042\\
+cSMC-derived, adapted & 0.863626 & 0.644080 & 1.083172\\
+Positive RBF, unadapted & 0.875033 & 0.658915 & 1.091151\\
+Positive RBF, adapted & 0.872854 & 0.656278 & 1.089430\\
+\bottomrule
+\end{tabular}
+\caption{Fresh restricted proposals on the same 64 SIR datasets as
+Table~\ref{tab:sg-neural-risk}. Scaled simulated-label losses retain the same
+equal block weighting and irreducible-variance contribution.}
+\label{tab:sg-restricted-risk}
+\end{table}
+
+Subtracting the adapted cSMC loss from the neural loss gives \(-0.092990\).
+Its paired interval is \([-0.137859,-0.057682]\). Subtracting the adapted
+RBF loss gives \(-0.102217\), with interval \([-0.140891,-0.068721]\).
+These exploratory
+intervals favor the neural proposal over the restricted fitted proposals.
+They condition on the frozen fits, use 5,000 dataset-cluster bootstrap draws,
+and are not adjusted for multiple comparisons. A favorable comparison with
+these fitted baselines does not reverse the failed neural comparison with
+plain LEDH or its own initialization. In particular, it does not establish
+that training the neural network caused the difference.
+
+Recursive Gaussian filtering has lower observed loss than all four restricted
+arms in every required regime. In the low-observation stratum, the adapted
+cSMC and RBF losses are \(0.964081\) and \(0.965729\), versus
+\(0.598323\) for recursive Gaussian; in the high-observation stratum they
+are \(0.769260\) and \(0.785607\), versus \(0.472630\). In the two
+nearer-boundary datasets the adapted losses are \(1.550776\) and
+\(1.673232\), versus \(0.959331\); in the 62 interior datasets they are
+\(0.841460\) and \(0.847035\), versus \(0.519776\). Thus no learned
+candidate clears the predeclared heuristic comparison. The implementation and
+bounded comparison are complete, while useful moment improvement and
+independent model-score accuracy remain unestablished.
+
+\subsection{Continuing training after the interruption}
+\label{sec:sg-neural-recovery}
+
+The interrupted run left an engineering question: could the same optimization
+trajectory continue without losing accepted updates? The original runner saved
+parameters and Adam state only after completing a training stage and its
+validation. Although its log contained 362 accepted updates, its last saved
+state contained only 128. The repair therefore resumed that exact state and
+saved all neural parameters, Adam moments and iteration count, and the next
+simulation and particle seeds every eight updates. These intermediate saves
+permit recovery; only separately completed validation supplies a candidate's
+validation loss. The numerical training kernel, proposal, loss and random
+streams remained unchanged.
+
+The continuation reached 512 updates. All 384 updates after the saved
+128-update state were accepted, with finite losses and six finite nonzero
+gradient norms. For all 234 updates overlapping the interrupted run, the
+recorded loss, block losses, gradient norms and optimizer flags agreed exactly.
+The lost terminal tensors of the original run were unavailable for comparison.
+Separate interrupted-versus-uninterrupted tests checked restored parameters,
+Adam state and the next update, while the new validated saves agreed with their
+corresponding recovery states. These checks establish correct continuation of
+the implemented optimization procedure; they do not establish that its learned
+proposal improves estimation.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rr}
+\toprule
+Accepted updates & Validation loss\\
+\midrule
+32  & 0.678633\\
+128 & 0.682256\\
+192 & 0.682556\\
+256 & 0.671551\\
+384 & 0.682223\\
+512 & 0.707064\\
+\bottomrule
+\end{tabular}
+\caption{Validation along one SIR neural optimization trajectory, using the
+same 32 simulated datasets and two particle replications at each stage.
+The scaled simulated-label loss includes irreducible label variance.}
+\label{tab:sg-neural-continuation}
+\end{table}
+
+Table~\ref{tab:sg-neural-continuation} shows a lower observed validation loss at
+256 updates, followed by increases at 384 and 512. Longer training thus did not
+give a monotone improvement on this validation set. Repeated use of this small
+set and the single optimization trajectory prevent a generalization ranking;
+the pattern alone does not identify overfitting, an unsuitable learning rate,
+or convergence. Both screened initializations completed 128 updates, but only
+this initialization reached 512. The other optional continuation required more
+time than the remaining campaign allowance under the recorded timing rule.
+
+No later checkpoint was evaluated on the already exposed independent data.
+Consequently, the failed improvement criterion and recursive-Gaussian comparison
+in Section~\ref{sec:sg-neural-result} still describe the original frozen
+candidate. Establishing a benefit from a later fit requires a frozen selection
+based on validation, sufficient replication, and a fresh independent comparison
+with the same baselines and conditional heuristic checks. Successful recovery
+does not supply that missing evidence or a model-score accuracy result.

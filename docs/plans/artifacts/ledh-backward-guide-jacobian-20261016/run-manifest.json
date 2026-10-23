@@ -1,0 +1,244 @@
+{
+  "schema": "bayesfilter_bounded_engineering_validation_v1",
+  "question": "Does the guided shared consumer record its actual innovation Jacobian and the total analytical parameter derivative of that determinant?",
+  "plan_file": "docs/plans/ledh-backward-guide-jacobian-validation-20261016.md",
+  "result_file": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/result.md",
+  "git": {
+    "branch": "ledh-refactor-with-policy-fix",
+    "commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+    "worktree": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+    "initial_worktree_clean": true,
+    "commit_created": false,
+    "changed_source_sha256": {
+      "docs/papers/ledh_younis_kdm_score/ledh_backward_guidance.tex": "3aba427c93acd8ec262e4e78c1f074fce32b7d810e27d381c70ccf712b515eab",
+      "tests/highdim/test_ledh_backward_guide_tf.py": "1dea065cbc5104fd8f071679e2a6aa1391be2c08a0745b55e7e7db274757568e"
+    },
+    "unchanged_runtime_sha256": {
+      "bayesfilter/highdim/ledh_canonical_score_tf.py": "47d3eaad6ed06dd1240a1dc637feb8d85904dfad6bfb71c167bff7b51ecfdd2b",
+      "bayesfilter/highdim/ledh_backward_guide_tf.py": "0fc25ca6b8e9e2f47bc60e020c3e8188fb00aa4e64678067a8ed2a8f7b8e5148"
+    }
+  },
+  "environment": {
+    "python_executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "python_version": "3.11.15",
+    "conda_env": "tftwogpu",
+    "tensorflow": "2.20.0.dev0+selfbuilt",
+    "tensorflow_probability": "0.25.0",
+    "pytest": "9.0.2",
+    "numpy": "2.1.3",
+    "numpy_role": "diagnostic test references only",
+    "host": "DESKTOP-RF1Q5IJ",
+    "variables": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "TF_NUM_INTRAOP_THREADS": "2",
+      "TF_NUM_INTEROP_THREADS": "2"
+    },
+    "device": "CPU; GPU devices intentionally hidden before import",
+    "jit_compile": false,
+    "execution_exception": "Small reference/debug checks, including executed-endpoint instrumentation; not GPU/XLA evidence",
+    "tf32": "N/A: CPU reference exception",
+    "gpu_memory_policy": "N/A: GPU intentionally hidden; no GPU probe or job"
+  },
+  "data": {
+    "version": "Synthetic test fixture at the recorded Git commit, with the new curved-observation helper at the recorded test SHA256",
+    "fixture": "tests/highdim/test_ledh_canonical_total_gaussian_tf.py::_fixture",
+    "fixture_seed": 11260907,
+    "particle_count": 8,
+    "state_dimension": 2,
+    "observation_dimension": 2,
+    "parameter_dimension": 4,
+    "horizon": 2,
+    "dtype": "float64",
+    "flow_substeps": 7,
+    "reset_epsilon": 1,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "settings_status": "Untuned development comparator and reference fixture only",
+    "theta": [
+      0.82,
+      1.1,
+      -0.35,
+      -0.2
+    ],
+    "direction": [
+      0.4,
+      -0.3,
+      0.2,
+      0.5
+    ],
+    "observation_curvature": 0.35,
+    "guide": "Frozen mixture returned by test module _mixture; no fitting in this continuation"
+  },
+  "criteria": {
+    "innovation_jacobian": {
+      "finite_difference_step": 0.000002,
+      "rtol": 0.000002,
+      "atol": 2e-8,
+      "comparison": "Full 16x16 finite-difference Jacobian of actual consumer flow versus accumulated block-diagonal affine matrix; positive determinant and recorded log determinant"
+    },
+    "total_parameter_derivative": {
+      "finite_difference_steps": [
+        0.000002,
+        0.000001
+      ],
+      "rtol": 0.00002,
+      "atol": 2e-7,
+      "comparison": "Both observation log-determinant tangents and scalar score versus full-consumer directional differences"
+    },
+    "vetoes": [
+      "non-finite result",
+      "singular innovation Jacobian",
+      "missed consumer wiring",
+      "unexplained numerical disagreement"
+    ],
+    "timing_role": "explanatory only"
+  },
+  "test_attempts": [
+    {
+      "id": "focused",
+      "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+      "command": "/usr/bin/time -p -o docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/focused-time.txt env CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest tests/highdim/test_ledh_backward_guide_tf.py -k 'actual_nonlinear_flow_jacobian or curved_guided_flow' -q --junitxml=docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/focused-tests.xml > docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/focused-tests.log 2>&1",
+      "wall_seconds": 21.11,
+      "passed": 1,
+      "failed": 1,
+      "deselected": 13,
+      "classification": "Test harness captured symbolic tracing rather than executed endpoint inputs",
+      "repair": "Use test-only tf.py_function and control dependencies to capture executed inputs; no runtime changes",
+      "log": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/focused-tests.log",
+      "junit": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/focused-tests.xml"
+    },
+    {
+      "id": "repaired-focused",
+      "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+      "command": "/usr/bin/time -p -o docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/repaired-focused-time.txt env CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest tests/highdim/test_ledh_backward_guide_tf.py -k 'actual_nonlinear_flow_jacobian or curved_guided_flow' -q --junitxml=docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/repaired-focused-tests.xml > docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/repaired-focused-tests.log 2>&1",
+      "wall_seconds": 22.48,
+      "passed": 2,
+      "failed": 0,
+      "deselected": 13,
+      "log": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/repaired-focused-tests.log",
+      "junit": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/repaired-focused-tests.xml"
+    },
+    {
+      "id": "integration",
+      "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+      "command": "/usr/bin/time -p -o docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/integration-time.txt env CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTRAOP_THREADS=2 TF_NUM_INTEROP_THREADS=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py tests/highdim/test_ledh_marginal_weights.py::test_recursive_score_and_trace_total_finite_difference tests/highdim/test_ledh_marginal_weights.py::test_default_is_diagonal_and_unsupported_mixture_fails tests/highdim/test_ledh_canonical_score_full.py tests/highdim/test_ledh_canonical_score_recursion.py tests/highdim/test_ledh_canonical_score_stages.py tests/highdim/test_ledh_pfpf_genut_equal_weight_ancestry.py --junitxml=docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/integration-tests.xml > docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/integration-tests.log 2>&1",
+      "wall_seconds": 146.58,
+      "pytest_seconds": 142.24,
+      "passed": 37,
+      "failed": 0,
+      "warnings": "Two TensorFlow Probability distutils deprecation warnings",
+      "log": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/integration-tests.log",
+      "junit": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/integration-tests.xml"
+    }
+  ],
+  "mathematical_audit": {
+    "tool": "mcp__mathdevmcp__audit_derivation_label",
+    "arguments": {
+      "root": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+      "file": "docs/papers/ledh_younis_kdm_score/ledh_backward_guidance.tex",
+      "label": "prop:bg-flow-jacobian",
+      "before": 3,
+      "after": 85,
+      "paragraph_context": true
+    },
+    "status": "inconclusive",
+    "reason": "No proof obligation could be certified or refuted.",
+    "counts": {
+      "total": 10,
+      "verified": 0,
+      "mismatched": 0,
+      "unverified": 0,
+      "inconclusive": 10,
+      "not_encodable": 7,
+      "not_extracted": 3
+    },
+    "artifact": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/mathdev-label-audit.json",
+    "manual_derivation": "Conditional affine map, positive determinant and Jacobi derivative checked under stated SPD, fixed-grid and innovation-independent localization assumptions"
+  },
+  "manuscript_build": {
+    "initial_attempt": {
+      "executable": "latexmk",
+      "exit_code": 127,
+      "reason": "Executable not installed",
+      "wall_seconds": 0.02,
+      "log": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/manuscript-build.log",
+      "time": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/manuscript-build-time.txt"
+    },
+    "fallback": "Installed pdflatex and bibtex, without installing dependencies",
+    "pdflatex_passes": [
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/papers/ledh_younis_kdm_score",
+        "command": "/usr/bin/time -p -o ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass1-time.txt pdflatex -interaction=nonstopmode -halt-on-error -output-directory=../../plans/artifacts/ledh-backward-guide-jacobian-20261016 ledh_younis_kdm_score.tex > ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass1.log 2>&1",
+        "exit_code": 0,
+        "wall_seconds": 1
+      },
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/papers/ledh_younis_kdm_score",
+        "command": "/usr/bin/time -p -o ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass2-time.txt pdflatex -interaction=nonstopmode -halt-on-error -output-directory=../../plans/artifacts/ledh-backward-guide-jacobian-20261016 ledh_younis_kdm_score.tex > ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass2.log 2>&1",
+        "exit_code": 0,
+        "wall_seconds": 0.69
+      },
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/papers/ledh_younis_kdm_score",
+        "command": "/usr/bin/time -p -o ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass3-time.txt pdflatex -interaction=nonstopmode -halt-on-error -output-directory=../../plans/artifacts/ledh-backward-guide-jacobian-20261016 ledh_younis_kdm_score.tex > ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass3.log 2>&1",
+        "exit_code": 0,
+        "wall_seconds": 0.68
+      },
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/papers/ledh_younis_kdm_score",
+        "command": "/usr/bin/time -p -o ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass4-time.txt pdflatex -interaction=nonstopmode -halt-on-error -output-directory=../../plans/artifacts/ledh-backward-guide-jacobian-20261016 ledh_younis_kdm_score.tex > ../../plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass4.log 2>&1",
+        "exit_code": 0,
+        "wall_seconds": 0.61
+      }
+    ],
+    "bibtex": {
+      "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-backward-guide-jacobian-20261016",
+      "command": "env BIBINPUTS=/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/papers/ledh_younis_kdm_score: bibtex ledh_younis_kdm_score > bibtex.log 2>&1",
+      "exit_code": 0,
+      "wall_seconds": null
+    },
+    "inspection_commands": [
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+        "command": "pdftotext -layout docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/ledh_younis_kdm_score.pdf docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/manuscript.txt"
+      },
+      {
+        "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+        "command": "pdftoppm -f 57 -l 58 -scale-to 1600 -png docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/ledh_younis_kdm_score.pdf docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/proof-page > docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/render.log 2>&1"
+      }
+    ],
+    "final_log": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/pdflatex-pass4.log",
+    "final_warnings": [],
+    "pdf": "docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/ledh_younis_kdm_score.pdf",
+    "pages": 64,
+    "visually_inspected_pages": [
+      57,
+      58
+    ],
+    "visual_findings": "Changed proof pages render cleanly"
+  },
+  "budget": {
+    "cpu_check_limit_seconds": 1200,
+    "localized_repair_limit": 3,
+    "test_wall_seconds": 190.17,
+    "timed_build_wall_seconds": 3,
+    "total_timed_command_seconds": 193.17,
+    "remaining_timed_budget_seconds": 1006.83,
+    "localized_repairs_used": 2,
+    "repairs": [
+      "Executed-input test capture",
+      "Unavailable latexmk replaced by installed pdflatex/bibtex"
+    ],
+    "untimed_work": "Bibtex, PDF rendering, reading, mathematical review and metadata checks are not included in timed-command totals"
+  },
+  "outcome": {
+    "engineering_criterion": "pass for the tested single-cloud guided consumer and stated conditional proof assumptions",
+    "runtime_changes": false,
+    "formal_certification": "inconclusive",
+    "stochastic_ranking": "not evaluated",
+    "model_score_improvement": "not evaluated",
+    "gpu_xla_readiness": "not evaluated",
+    "canonical_default_hmc_admission": "not established",
+    "next_action": "Design separate scope-specific guide-fitting and untouched score-validation experiment; do not start that campaign from these checks"
+  }
+}

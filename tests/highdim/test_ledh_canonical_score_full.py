@@ -439,15 +439,19 @@ def test_hilbert_permutation_ancestry_score_matches_oracle():
     assert err < 1.0e-4 * scale
 
 
-def test_invalid_higher_moment_correction_fails_closed(monkeypatch):
+@pytest.mark.parametrize("failure_kind", ["value", "force"])
+def test_invalid_higher_moment_correction_fails_closed(monkeypatch, failure_kind):
     """Reject an invalid result from the shared batched correction consumer."""
     from bayesfilter.highdim import ledh_unified_correction_tf
+    from bayesfilter.highdim.ledh_failure_status_tf import FailureCode, FailureStage
 
     original = ledh_unified_correction_tf.batched_higher_moment_shape_jvp
 
     def forced_invalid(*args, **kwargs):
         result = dict(original(*args, **kwargs))
         result["valid"] = tf.zeros_like(result["valid"])
+        if failure_kind == "value":
+            result["value_valid"] = tf.zeros_like(result["value_valid"])
         return result
 
     monkeypatch.setattr(
@@ -456,17 +460,32 @@ def test_invalid_higher_moment_correction_fails_closed(monkeypatch):
     initial, covariances, noises, observations, _uniforms, kwargs = (
         _sqmc_fixture(127)
     )
-    with pytest.raises(tf.errors.InvalidArgumentError, match="higher-moment Contract-E correction is invalid"):
-        value, score = canonical_value_and_analytical_score(
-            _model(),
-            tf.constant([0.6], DTYPE),
-            initial,
-            covariances,
-            noises,
-            observations,
-            with_score=True,
-            **kwargs,
-        )
+    value, score, status = canonical_value_and_analytical_score(
+        _model(),
+        tf.constant([0.6], DTYPE),
+        initial,
+        covariances,
+        noises,
+        observations,
+        with_score=True,
+        return_status=True,
+        **kwargs,
+    )
+    assert bool(status["value_valid"]) == (failure_kind == "force")
+    assert not bool(status["force_valid"])
+    assert int(status["first_failure_stage"]) == FailureStage.CORRECTION
+    assert int(status["first_failure_time"]) == 0
+    assert int(status["force_failure_code"]) == (
+        FailureCode.RESET_CORRECTION
+        if failure_kind == "value" else FailureCode.INVALID_TANGENT
+    )
+    assert bool(tf.reduce_all(score == 0))
+    if failure_kind == "value":
+        assert float(value) == float("-inf")
+        assert int(status["value_failure_code"]) == FailureCode.RESET_CORRECTION
+    else:
+        assert bool(tf.math.is_finite(value))
+        assert int(status["value_failure_code"]) == FailureCode.OK
 
 
 def test_invalid_reset_source_marginal_returns_nonfinite(monkeypatch):

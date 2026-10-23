@@ -1,65 +1,50 @@
 # Controlled-SMC / KDM active checkpoint
 
-Updated 20 October 2026. Supervised-guidance pilot and requested failure review
-are complete. Active scientific question: can correctly composed,
-downstream-supervised cSMC/KDM-inspired guidance improve the full analytical
-LEDH score? OT remains epsilon 1, five iterations, and 32 terminal balancing
-updates. No OT tuning or new GPU campaign in this review.
+Updated 23 October 2026: owner disqualifies all previous N64 results.
+Worktree: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922.
+Branch: ledh-refactor-with-policy-fix; HEAD 90a3acebd3965da5bdd64cb165dfdfe2d8cf0649.
 
-Worktree: /home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922
-Branch: ledh-refactor-with-policy-fix
-Implementation/pilot commit: 4abbaf9f1; review committed separately.
-Preserve unrelated dirty work. Owner requested commit and thorough review.
-No push or branch synchronization requested.
+Active task: explain the N1008 slowdown through the actual consumer.
+Reviewed plan: [N1008 source and cost trace](ledh-sir-n1008-slowdown-trace-20261023.md).
+No old N64 runtime, training, moment, score, or efficacy conclusion is admissible.
+The master, primary old result notes and machine-readable disqualification notice
+record this reset. No old result, weight or calibration is consumed by this run.
 
-Checked: supervised-risk identity correct under its assumptions; actual
-shared UKF/flow/Contract-E/GenUT analytical consumer passes scoped tests.
-Guide fitted on physical states is applied before the flow, producing
-h(F^{-1}(x)) rather than h(x) afterwards. New proposition and exact Gaussian
-counterexample establish the distinction; four focused consumer/density/
-Jacobian/derivative checks pass. This is a design limitation, not an incorrect
-importance correction. Its causal SIR effect is not yet measured.
-T5 retains 96/96 valid rows, six directional checks and ten matching runtime
-hashes. Earlier T2 raw-guide PSD failures were repaired and retained separately.
+Stage: trace complete; report [slowdown cause](artifacts/ledh-sir-n1008-slowdown-trace-20261023/result.md)
+and [fresh measurements](artifacts/ledh-sir-n1008-runtime-20261023/result.md).
+Harness tests:8 passed. Fresh CPU-only data/source prepared in6.68 seconds.
+The first tf-gpu import failed (Sylvester binary ABI); the corrected environment
+is /home/chakwong/anaconda3/envs/tftwogpu/bin/python. No packages were changed.
 
-T5 unguided validation loss is lowest. Guided test means are lower; every guide
-loses on sequence 261029508. Over 99.3% of scaled loss is in the noise coordinate.
-Four test datasets establish no statistical ranking. No promotion. This is
-finite-bank selection, not neural KDM retraining or coefficient optimization
-against score risk. OT/reset causality remains unmeasured.
+Artifact root: docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02.
+GPU attempt: attempt-01 complete; launch-01.log records progress. Three isolated source
+workers: premerge, checked, current. N1008/T5/FP64/XLA, fresh paired inputs,
+plain/conditional/physical arms, zero/e0 directions, 16 paired timing blocks.
+All612 calls valid/repeatable; all24 cross-source parity checks pass. No retracing
+or source drift. Current/pre-merge e0 ratios: plain1.2133, conditional1.3585,
+physical0.7282; pointwise95% intervals exclude1, both datasets agree. Current versus
+checked-repair grouping does not pass uniform speed non-harm. No trained guide
+or native parameter batch is timed. Actual target GPU was idle at both run
+boundaries; earlier busy preflight does not prove contention during measurement.
 
-Current review: ledh-supervised-guidance-failure-review-20261019.md
-Findings/commands: artifacts/ledh-supervised-guidance-20261019/failure-review/review.md
-Exact arithmetic: same directory, analysis.json and analyze.py
-Implementation plan: ledh-supervised-guidance-20261019.md
-Result and exact evidence: artifacts/ledh-supervised-guidance-20261019/result.md
-Terminal audit: artifacts/ledh-supervised-guidance-20261019/terminal-audit.json
-Math/code audit: artifacts/ledh-supervised-guidance-20261019/audit.md
-Manuscript: ../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex
-New section: ../papers/ledh_younis_kdm_score/ledh_supervised_guidance.tex
-Final PDF: ../papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf
-88 pages; new flow-coordinate derivation is subsection 15.7, pages 80--81.
-Two clean pdflatex passes; rendered pages 80--82 visually inspected.
-Prior 86-page PDF protected in /tmp.
-
-MathDevMCP proves the scalar pullback and prior algebra identities; document/probability checks
-failed or were unencodable. Claude review could not authenticate. Direct
-proof review and executable checks are recorded; external full certification
-is not claimed. Build with installed pdflatex (latexmk absent).
-
-Owner budget: 43200 GPU-process seconds; prior charge 9325.730914790, this
-stage 570.83 (including conservative 60-second initialization reserve).
-Total 9896.560914790; remaining 33303.439085210, unchanged by this review.
-Review CPU cap 600 seconds, GPU zero; review-run.json records checks and
-attempts. One wrong-environment collection failed; tftwogpu retry passed.
-No environment was changed. All earlier evidence remains preserved.
-
-Next research action: plan/test an optional flow-aligned quadratic guide using
-the actual shared affine map and its total analytical derivatives; then a fresh
-bounded original/zero/aligned comparison with downstream supervised calibration,
-fresh datasets and particle streams, and saved per-step diagnostics. Preserve
-OT (1,5). The review does not launch this campaign or select on old test data.
-
-Earlier diagnostics and budget details are linked in:
-artifacts/ledh-sir-guidance-20261019/result.md
-artifacts/ledh-sir-beta-repair-20261019/result.md
+GPU wall509.35 seconds; resident-worker sum1327.79 seconds. All task workers
+stopped, within2700s elapsed/8100s summed caps. No extra retry needed. The LaTeX
+withdrawal notice is in the rebuilt PDF; no scientific efficacy claim was made.
+The source/HLO trace is complete. It shows that the merged determinant-validity
+and innovation-validity checks are live dependencies in the plain and beta=1
+conditional analytical recurrences. The physical beta=.9 arm already needed
+the determinant and benefits from the current 9x9 low-rank form replacing the
+pre-merge 18x18 QR route. The intervention timings are not used for percentage
+attribution because five XLA workers shared the target GPU. See
+`artifacts/ledh-sir-n1008-slowdown-trace-20261023/attempt-01/`.
+Exact next action: if repair is requested, design a guard-preserving kernel
+optimization and validate it at N>=1008; do not remove the checks based on the
+diagnostic variants.
+Harness8 tests pass. Pre-merge/current warm calls and all diagnostic variants
+complete; 24 healthy cross-source parity checks pass. Cap20min elapsed/100
+summed worker-minutes, enforced by supervisor.
+Production source and safeguards remain unchanged. Process-local interventions
+are diagnostic only and are explicitly ineligible as runtime fixes.
+Guide efficacy needs
+fresh N>=1008 training rather than reusing disqualified weights/results.
+Preserve unrelated changes. No commit or push requested for this task.

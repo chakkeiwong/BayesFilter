@@ -125,6 +125,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
             body,
             (tf.constant(0), points),
             parallel_iterations=1,
+            maximum_iterations=4,
         )
         return current
 
@@ -174,6 +175,7 @@ def austria_sir_canonical_model(theta_fixed: Tensor, dtype: tf.DType = DTYPE) ->
             body,
             (tf.constant(0), points, d_points),
             parallel_iterations=1,
+            maximum_iterations=4,
         )
         return d_current
 

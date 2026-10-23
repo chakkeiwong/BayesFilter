@@ -27,10 +27,18 @@
 \title{Younis Kernel Mixtures and Model-Score Estimation\\
 From the LEDH--OT--GenUT Filter to Corrected Mixtures}
 \author{BayesFilter research note}
-\date{19 October 2026}
+\date{23 October 2026}
 
 \begin{document}
 \maketitle
+
+\noindent\textbf{Withdrawal of the 64-particle evidence (23 October 2026).}
+All previous results in the SIR controlled-SMC/KDM/LEDH investigation obtained
+with $N=64$ are disqualified. Their numerical tables and conclusions are retained
+only as historical records and provide no evidence about speed, training efficacy,
+moment or score accuracy, or rejection of the guide proposal. New experiments
+must use at least $N=1008$ particles. The mathematical derivations are separate
+from these withdrawn empirical conclusions.
 
 \begin{abstract}
 A differentiable particle filter can compute the derivative of its own
@@ -71,9 +79,12 @@ complete-data labels have the required posterior conditional means, so their
 population squared losses differ from the desired estimation risks only by
 a candidate-independent constant. A first SIR implementation selects frozen
 cSMC and kernel guide settings through the full analytical LEDH executor.
-Its short-horizon pilot passes numerical checks but does not establish a
-statistical score improvement; finite-particle bias and computational value
-remain research questions.
+The associated 64-particle empirical results have been withdrawn, leaving
+finite-particle bias and computational value unresolved. A subsequent
+SIR-specific neural mixture trains locations and bandwidths through the
+corrected terminal-moment loss. Its 64-particle comparison is also disqualified;
+fresh experiments with at least 1008 particles are required to assess moment
+and model-score accuracy.
 \end{abstract}
 \clearpage
 \tableofcontents
@@ -3877,9 +3888,43 @@ The finite-program checks have the following distinct purposes:
 \section{Subsequent discriminating comparisons}
 \label{sec:next-study}
 
-The current implementation is the supervised full-LEDH pilot in
-Section~\ref{sec:sg-pilot}. It provides a mathematically justified fitting
-objective and executable consumer checks, but no established method ranking.
+The restricted-adapter implementation trains continuous guide coefficients against
+simulated terminal moment labels through the shared LEDH calculation, as
+described in Section~\ref{sec:sg-moment-training}. Unlike the earlier
+finite-bank pilot in Section~\ref{sec:sg-pilot}, its optimizer and validation
+selector use moment loss, not score loss. In the initial campaign, executable
+consumer checks passed and training completed, but the independent comparison
+stopped on a reproduced
+nonfinite unguided baseline. Section~\ref{sec:sg-moment-training-result}
+now isolates and repairs that factorization failure, while showing why the
+exceptional cloud still loses its materialized variance. Section~\ref{sec:sg-proposal-collapse}
+traces the preceding weight collapse to a flow--conditional-proposal mismatch
+and verifies a Gaussian preimage repair on fixed clouds. Its required
+information matrix is indefinite, outside the trained quadratic adapter
+family; this does not prove the same limitation for the mixture-product
+consumer. Section~\ref{sec:sg-physical-repair} now integrates the
+physical-output repair and completes a fresh independent moment comparison.
+All methods are numerically valid on those datasets, but the trained quadratic
+and KDM-inspired RBF adapters have higher pooled moment-label loss than the conditional-only proposal
+and fail the recursive-Gaussian comparison in both observation regimes.
+No training gain over their untrained adapters is established. The repair
+therefore resolves the exposed numerical failure without establishing the
+proposed moment improvement; model-score improvement remains unevaluated.
+Section~\ref{sec:sir-neural-kdm-adaptation} develops a different, explicit SIR
+neural proposal whose locations and bandwidths all train through the final
+corrected estimator. Its independent comparison in
+Section~\ref{sec:sg-neural-result} uses fresh simulation partitions and passes
+numerical checks, but establishes no gain over initialization or plain LEDH
+and fails the recursive-Gaussian comparison. A later continuation reaches 512
+updates for one initialization in Section~\ref{sec:sg-neural-recovery}; its
+validation loss rises after 256 updates, and no later checkpoint has an
+independent evaluation. Optimization adequacy remains unresolved. The fresh
+restricted-proposal comparison
+in Section~\ref{sec:sg-neural-restricted-comparison} also establishes no adapter
+training gain and fails the recursive-Gaussian comparison. Neither the larger
+family nor the restricted adapters have demonstrated the required benefit at
+this scope; their failures do not identify a single cause or disprove the
+population moment-risk identity.
 The earlier comparisons below explain the route to that objective and retain
 their original, narrower consumer scope.
 

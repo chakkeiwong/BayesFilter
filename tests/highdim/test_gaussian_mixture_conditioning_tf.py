@@ -92,6 +92,27 @@ def test_inactive_guide_returns_exact_inputs():
         np.testing.assert_array_equal(actual, expected)
 
 
+def test_mixture_product_draw_retains_between_component_covariance_expansion():
+    guide = guides.FrozenMixtureBackwardGuide(
+        tf.zeros([1, 2], tf.float64),
+        tf.constant([[[-3.], [3.]]], tf.float64),
+        tf.ones([1, 2, 1, 1], tf.float64), tf.constant([True]),
+        conditioning="mixture_product_moments")
+    anchors = tf.zeros([2, 1], tf.float64)
+    covariance = tf.ones([1, 1], tf.float64)
+    noise = tf.constant([[-1.], [1.]], tf.float64)
+    points, tangents, log_density, density_tangent, valid = guides.guided_gaussian_draw(
+        guide, 0, anchors, tf.zeros_like(anchors), covariance,
+        tf.zeros_like(covariance), noise)
+    expected_variance = tf.constant(0.5 + 1.5 ** 2, tf.float64)
+    assert bool(valid)
+    assert float(expected_variance) > float(covariance[0, 0])
+    np.testing.assert_allclose(points, noise * tf.sqrt(expected_variance), atol=1e-12)
+    np.testing.assert_allclose(tangents, 0., atol=1e-12)
+    np.testing.assert_allclose(density_tangent, 0., atol=1e-12)
+    assert bool(tf.reduce_all(tf.math.is_finite(log_density)))
+
+
 def filter_case():
     theta = tf.constant([.8, -.3, .6, .8], tf.float64)
     clouds = (tf.random.stateless_normal([12, 2], [8218, 1], dtype=tf.float64),

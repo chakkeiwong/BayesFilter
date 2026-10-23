@@ -161,6 +161,63 @@ def _arguments(theta, direction, fixture, d_states=None, d_covariances=None):
     )
 
 
+def test_safety_only_canonical_endpoint_reaches_shared_correction(monkeypatch):
+    fixture = _fixture()
+    fixture["options"].update(correction_steps=0, pairwise_steps=0, moment_safety=True)
+    calls = []
+    original = shared_correction.batched_higher_moment_shape_jvp
+
+    def recording(*args, **kwargs):
+        calls.append(kwargs["moment_safety"])
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(shared_correction, "batched_higher_moment_shape_jvp", recording)
+    theta = tf.constant([.82, 1.1, -.35, -.2], DTYPE)
+    arguments = _arguments(theta, tf.zeros_like(theta), fixture)
+    outputs = shared_score.canonical_value_and_analytical_score(
+        _parameterized_model(theta, tf.zeros_like(theta)), theta, *arguments[2:6],
+        with_score=True, initial_state_tangent=arguments[6],
+        initial_covariance_tangent=arguments[7], **fixture["options"])
+    assert calls and all(calls)
+    tf.debugging.assert_all_finite(outputs[0], "safety-only endpoint value")
+    tf.debugging.assert_all_finite(outputs[1], "safety-only endpoint score")
+
+
+@pytest.mark.parametrize("defect", ["none", "rows", "columns"])
+def test_canonical_reset_preserves_marginal_acceptance_checks(integrated, monkeypatch, defect):
+    from bayesfilter.highdim import ledh_canonical_reset_score_tf as reset_module
+
+    fixture, _ = integrated
+    original = reset_module.sinkhorn_contract_e_reset_triple_with_tangent
+
+    def modified_reset(*args, **kwargs):
+        values = list(original(*args, **kwargs))
+        if defect == "rows":
+            values[4] *= 1.01
+        elif defect == "columns":
+            count = tf.shape(values[4])[1]
+            shift = .01 * (tf.one_hot(0, count, dtype=DTYPE)
+                           - tf.one_hot(1, count, dtype=DTYPE))
+            values[4] += shift[None, :]
+        return tuple(values)
+
+    monkeypatch.setattr(reset_module, "sinkhorn_contract_e_reset_triple_with_tangent", modified_reset)
+    theta = tf.constant([.82, 1.1, -.35, -.2], DTYPE)
+    direction = tf.constant([.4, -.3, .2, .5], DTYPE)
+    value, score, status = shared_score._value_and_analytical_score_impl(
+        _parameterized_model(theta, direction), theta,
+        fixture["initial_states"], fixture["initial_covariances"], fixture["noises"],
+        fixture["observations"], with_score=True, return_status=True,
+        **fixture["options"])
+    assert bool(status["value_valid"]) == (defect == "none")
+    assert bool(status["force_valid"]) == (defect == "none")
+    if defect == "none":
+        tf.debugging.assert_all_finite(value, "healthy reset value")
+        tf.debugging.assert_all_finite(score, "healthy reset score")
+    else:
+        assert float(value) == float("-inf")
+
+
 def _curved_observation_model(theta, direction):
     model = _parameterized_model(theta, direction)
     curvature = tf.constant(0.35, DTYPE)
@@ -196,6 +253,7 @@ def test_guided_consumer_actual_nonlinear_flow_jacobian(integrated, monkeypatch)
 
     def recording(*args, **kwargs):
         result = original(*args, **kwargs)
+        recorded_result = result[:-1] if kwargs.get("return_diagnostics") else result
         argument_count = len(args) - 1
 
         def record_executed(*values):
@@ -207,11 +265,11 @@ def test_guided_consumer_actual_nonlinear_flow_jacobian(integrated, monkeypatch)
             return tf.constant(0, tf.int32)
 
         token = tf.py_function(
-            record_executed, list(args[1:]) + [kwargs["eye"]] + list(result),
+            record_executed, list(args[1:]) + [kwargs["eye"]] + list(recorded_result),
             Tout=tf.int32,
         )
         with tf.control_dependencies([token]):
-            return tuple(tf.identity(value) for value in result)
+            return tf.nest.map_structure(tf.identity, result)
 
     monkeypatch.setattr(shared_score, "_flow_substeps_with_tangent", recording)
     theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
@@ -495,7 +553,7 @@ def test_guided_proposal_preserves_split_failure_status(integrated, monkeypatch,
         values = list(original(*args, **kwargs))
         if failure == "guide_validity":
             # Finite arithmetic must not conceal the guide's invalidity flag.
-            values[-1] = tf.constant(False)
+            values[4] = tf.constant(False)
         else:
             # A failed derivative does not invalidate the finite scalar value.
             values[3] = tf.fill(tf.shape(values[3]), tf.constant(float("nan"), DTYPE))

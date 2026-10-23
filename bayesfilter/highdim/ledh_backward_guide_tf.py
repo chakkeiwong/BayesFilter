@@ -177,21 +177,22 @@ def _information_proposal_moments(guide, time, anchors, d_anchors, covariance, d
     dimension = anchors.shape[-1]
     identity = tf.eye(dimension, dtype=anchors.dtype)
     process_factor, valid_process = _checked_cholesky(covariance)
-    precision = tf.linalg.cholesky_solve(process_factor, identity)
+    precision = tf.linalg.cholesky_solve(
+        process_factor, tf.broadcast_to(identity, tf.shape(covariance)))
     covariance_tangent = tf.zeros_like(covariance) if d_covariance is None else d_covariance
     d_precision = -precision @ covariance_tangent @ precision
-    guided_precision = precision[None] + matrices
+    guided_precision = precision + matrices
     precision_factor, valid_precision = _checked_cholesky(guided_precision)
     proposal_covariance = tf.linalg.cholesky_solve(
         precision_factor, tf.broadcast_to(identity, tf.shape(guided_precision))
     )
-    d_guided_precision = d_precision[None] + d_matrices
+    d_guided_precision = d_precision + d_matrices
     d_proposal_covariance = -proposal_covariance @ d_guided_precision @ proposal_covariance
-    natural_mean = tf.einsum("ij,nj->ni", precision, anchors) + vectors
+    natural_mean = tf.linalg.matvec(precision, anchors) + vectors
     proposal_mean = tf.einsum("nij,nj->ni", proposal_covariance, natural_mean)
     d_natural_mean = (
-        tf.einsum("ij,nj->ni", d_precision, anchors)
-        + tf.einsum("ij,nj->ni", precision, d_anchors)
+        tf.linalg.matvec(d_precision, anchors)
+        + tf.linalg.matvec(precision, d_anchors)
         + d_vectors
     )
     d_proposal_mean = tf.einsum(
@@ -203,19 +204,25 @@ def _information_proposal_moments(guide, time, anchors, d_anchors, covariance, d
             d_proposal_covariance, valid & valid_process & valid_precision)
 
 
-def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covariance, noise):
+def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covariance, noise,
+                         *, return_diagnostics=False):
     """Draw the actual Gaussian proposal and differentiate its moving density."""
     dimension = anchors.shape[-1]
     identity = tf.eye(dimension, dtype=anchors.dtype)
+    product_margin = tf.constant(0., anchors.dtype)
+    margin_measured = tf.constant(False)
     if getattr(guide, "conditioning", None) == "mixture_product_moments":
         shape = [tf.shape(anchors)[0], dimension, dimension]
         covariance_tangent = tf.zeros_like(covariance) if d_covariance is None else d_covariance
-        proposal_mean, proposal_covariance, d_proposal_mean, d_proposal_covariance, valid, _ = (
+        proposal_mean, proposal_covariance, d_proposal_mean, d_proposal_covariance, valid, product_margin = (
             guide.condition_gaussian(time, anchors, tf.broadcast_to(covariance, shape),
                 d_anchors, tf.broadcast_to(covariance_tangent, shape)))
+        margin_measured = guide.active[time]
+        product_margin = tf.where(margin_measured, product_margin, tf.zeros_like(product_margin))
     else:
         proposal_mean, proposal_covariance, d_proposal_mean, d_proposal_covariance, valid = (
             _information_proposal_moments(guide, time, anchors, d_anchors, covariance, d_covariance))
+    guide_valid = valid
     proposal_factor, valid_proposal = _checked_cholesky(proposal_covariance)
     guided_precision = tf.linalg.cholesky_solve(
         proposal_factor, tf.broadcast_to(identity, tf.shape(proposal_covariance)))
@@ -249,21 +256,27 @@ def guided_gaussian_draw(guide, time, anchors, d_anchors, covariance, d_covarian
     valid = tf.logical_and(valid, tf.reduce_all(tf.math.is_finite(log_density)))
     valid = tf.logical_and(valid, tf.reduce_all(tf.math.is_finite(d_log_density)))
     invalid = tf.cast(float("nan"), anchors.dtype)
-    return (
+    result = (
         tf.where(valid, points, invalid),
         tf.where(valid, d_points, invalid),
         tf.where(valid, log_density, invalid),
         tf.where(valid, d_log_density, invalid),
         valid,
     )
+    if return_diagnostics:
+        return result + (dict(backward_guide_valid=guide_valid,
+            guide_conditioning_min_relative_spd_margin=product_margin,
+            guide_conditioning_margin_measured=margin_measured),)
+    return result
 
 
 def build_backward_guided_ledh_kernel(
     model_factory, guide, *, horizon, particle_count, state_dimension,
     observation_dimension, parameter_dimension, dtype=tf.float32,
     jit_compile=True, dynamic_quadratic=False, mixture_components=None,
+    neural_mixture_components=None,
     allow_indefinite_information=False,
-    mixture_conditioning="positive_information", **options
+    mixture_conditioning="positive_information", physical_mixture_weight=None, **options
 ):
     """Build one fixed-signature candidate using the shared full LEDH executor.
 
@@ -276,6 +289,8 @@ def build_backward_guided_ledh_kernel(
 
     if dtype not in (tf.float32, tf.float64):
         raise ValueError("Guided LEDH requires float32 or float64")
+    if physical_mixture_weight is not None and not 0.0 <= physical_mixture_weight <= 1.0:
+        raise ValueError("Physical mixture weight must lie in [0,1]")
     if options.get("importance_weight_policy", "ancestor") != "ancestor":
         raise ValueError("Backward-guided proposals require ancestor importance weights")
     if options.get("annealed_stages", 1) != 1:
@@ -288,9 +303,15 @@ def build_backward_guided_ledh_kernel(
         raise ValueError("Guided LEDH requires the existing full higher-moment correction")
     if options.get("coordinate_cap", 0.0) <= 0:
         raise ValueError("Guided LEDH requires an explicit positive coordinate cap")
-    if dynamic_quadratic and mixture_components is not None:
+    if sum((bool(dynamic_quadratic), mixture_components is not None,
+            neural_mixture_components is not None)) > 1:
         raise ValueError("Choose one dynamic guide family")
-    if mixture_components is not None:
+    if neural_mixture_components is not None:
+        if guide is not None or neural_mixture_components < 1:
+            raise ValueError("Dynamic neural mixtures require positive component count and guide=None")
+        if physical_mixture_weight is None or physical_mixture_weight <= 0.:
+            raise ValueError("Neural KDM requires a positive physical mixture weight")
+    elif mixture_components is not None:
         if guide is not None or mixture_components < 1:
             raise ValueError("Dynamic mixtures require guide=None and positive component count")
         if mixture_conditioning not in ("positive_information", "mixture_product_moments"):
@@ -298,8 +319,10 @@ def build_backward_guided_ledh_kernel(
     elif dynamic_quadratic:
         if guide is not None:
             raise ValueError("Dynamic quadratic coefficients require guide=None")
-    else:
+    elif guide is not None:
         guide.validate(horizon, state_dimension, dtype)
+    elif physical_mixture_weight is None:
+        raise ValueError("An unguided physical control requires a physical mixture weight")
     signature = [
         tf.TensorSpec([parameter_dimension], dtype),
         tf.TensorSpec([parameter_dimension], dtype),
@@ -310,6 +333,8 @@ def build_backward_guided_ledh_kernel(
         tf.TensorSpec([particle_count, state_dimension], dtype),
         tf.TensorSpec([particle_count, state_dimension, state_dimension], dtype),
     ]
+    if physical_mixture_weight is not None:
+        signature.append(tf.TensorSpec([horizon, particle_count], dtype))
     if dynamic_quadratic:
         signature.extend([
             tf.TensorSpec([horizon, state_dimension, state_dimension], dtype),
@@ -322,17 +347,27 @@ def build_backward_guided_ledh_kernel(
             tf.TensorSpec([horizon, mixture_components, state_dimension, state_dimension], dtype),
             tf.TensorSpec([horizon], tf.bool),
         ])
+    if neural_mixture_components is not None:
+        signature.extend([tf.TensorSpec([horizon, neural_mixture_components, state_dimension], dtype)] * 2)
 
     @tf.function(input_signature=signature, jit_compile=jit_compile, autograph=False)
     def kernel(theta, direction, states, covariances, noises, observations, d_states, d_covariances, *coefficients):
+        uniforms = None
+        if physical_mixture_weight is not None:
+            uniforms, coefficients = coefficients[0], coefficients[1:]
         active_guide = (FrozenQuadraticBackwardGuide(*coefficients,
             allow_indefinite_information=allow_indefinite_information) if dynamic_quadratic else guide)
         if mixture_components is not None:
             active_guide = FrozenMixtureBackwardGuide(*coefficients, conditioning=mixture_conditioning)
+        if neural_mixture_components is not None:
+            from bayesfilter.highdim.ledh_neural_kdm_tf import FrozenConditionalKDMProposal
+            active_guide = FrozenConditionalKDMProposal(*coefficients)
         return _value_and_analytical_score_impl(
             model_factory(theta, direction), theta, states, covariances, noises,
             observations, with_score=True, initial_state_tangent=d_states,
-            initial_covariance_tangent=d_covariances, backward_guide=active_guide, **options
+            initial_covariance_tangent=d_covariances, backward_guide=active_guide,
+            physical_mixture_weight=physical_mixture_weight,
+            physical_component_uniforms=uniforms, **options
         )
 
     return kernel

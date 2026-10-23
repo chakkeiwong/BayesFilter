@@ -1,5 +1,375 @@
 # Authoritative master: controlled SMC and KDM/IWSG replication
 
+## Owner reset: previous 64-particle results disqualified — 23 October 2026
+
+All previous N64 results in this investigation are disqualified for scientific
+and performance decisions, including the conclusions in older sections below.
+Do not reuse their timing, training selections, moments or scores as evidence.
+The minimum is now N1008. Historical files remain only for provenance.
+The [fresh N1008 runtime comparison](ledh-sir-n1008-runtime-20261023.md) is complete:
+576 timed calls and36 warm calls, all valid; current/pre-merge and current/checked
+parity pass. For one analytical score direction, current/pre-merge mean ratios
+are1.2133 plain,1.3585 conditional and0.7282 physical-mixture, with pointwise95%
+intervals excluding1 in the same direction for both datasets. Uniform speed
+recovery is rejected. This is FP64/T5/single-cloud timing with guide=None, not
+native parameter-batch or learned-guide efficacy evidence. See the
+[fresh result](artifacts/ledh-sir-n1008-runtime-20261023/result.md).
+No N64 result establishes whether the guides work. Future efficacy work must
+train/evaluate anew with N>=1008.
+Completed follow-up: [trace the N1008 slowdown](ledh-sir-n1008-slowdown-trace-20261023.md)
+through the compiled consumer and isolated diagnostic cost interventions.
+Production safeguards and OT(1,5) remain unchanged; diagnostic variants are
+ineligible as algorithm candidates. The trace is complete: the merged
+determinant and innovation validity checks are live inside the 120-substep SIR
+flow recurrence per call, which explains the plain and beta=1 conditional
+slowdown. The physical beta=.9 arm already needed the determinant and benefits
+from the current 9x9 low-rank determinant versus the pre-merge 18x18 QR route.
+See the [trace result](artifacts/ledh-sir-n1008-slowdown-trace-20261023/result.md).
+The isolated intervention timings are not used for guard-specific percentages
+because the diagnostic workers shared the target GPU. A future repair must
+preserve rejection semantics and optimize the checked path rather than remove
+its safeguards.
+
+## Guard-placement repair complete; overall speed criterion fails — 22 October 2026
+
+The [reviewed execution plan](ledh-sir-guard-placement-repair-20261022.md)
+now implements bounded batching of the unchanged checked determinant in the
+shared analytical flow. Sequential state/tangent protection, chronological
+prefix checks and absorbing rejection remain. No unchecked PSD shortcut is
+used. CPU checks: 61 focused tests plus 84 consumer tests passed, one skipped.
+GPU/XLA: all 61 focused tests passed. The only test repair preserves the nested
+diagnostic output in a recorder; numerical assertions remain unchanged.
+All 2928 frozen SIR replay rows are bitwise identical to the retained checked
+baseline, including raw moments, analytical scores and exact validity flags.
+Both the eight-block comparison and independent fixed 48-block confirmation
+failed the overall speed criterion. In the latter, plain and physical-mixture
+pointwise pooled intervals favor batching; conditional-guide intervals include
+one, with no individual regression veto. The earlier regression is preserved
+and attempts are not pooled. Retain the checked shared engineering refactor;
+make no uniform speed-promotion claim. All planned tests and replay are complete.
+See the [terminal result](artifacts/ledh-sir-guard-placement-repair-20261022/result.md)
+for the decision, uncertainty, source and budget. No process is running or further
+timing launch planned. Earlier scientific vetoes remain. The next performance
+question is which conditional-endpoint cost limits the benefit; no exclusive
+cost attribution has yet established that answer.
+
+## Guard placement and repair design — 22 October 2026
+
+The [design](ledh-sir-guard-placement-repair-design-20261022.md) distinguishes
+the old boundary checks from the added substep coverage. It proposes hoisting
+invariants, preserving local protection and absorbing failure flags, and removing
+unused determinant work only with an explicit equivalence argument. A conditional
+invertibility derivation is recorded, including its unverified covariance premise.
+No runtime change or new GPU attempt follows from this source review.
+
+## Completed deeper dependency trace — 22 October 2026
+
+The [source/HLO trace](artifacts/ledh-sir-remaining-overhead-trace-20261022/result.md)
+confirms why the retained repair remains costlier than pre-merge in the plain
+and conditional consumers: determinant validation is on the state recurrence's
+critical path, and its derivative solve is on the tangent recurrence's path.
+The nine-pivot body runs 120 times per measured SIR call; seven compiled
+innovation-validation fusions remain even in the determinant ablation. These
+are checked dependencies and static counts, not exclusive timing shares.
+Auxiliary states/tangents were already present before the merge. Source identity
+and consumer-wiring assertions pass. No runtime change or GPU run occurred.
+Complete cost attribution and the first floating operation behind the plain
+score discrepancy remain unresolved; prior numerical and timing verdicts stand.
+
+## Completed bounded merge repair — 22 October 2026
+
+The owner requests tracing and repairing all identified slowdown and merge
+defects in the actual SIR consumer. Follow the reviewed
+[plan](ledh-sir-merge-repair-20261022.md) and concise
+[checkpoint](controlled-smc-kdm-checkpoint.md). The
+[source audit](artifacts/ledh-sir-merge-repair-20261022/audit-findings.md)
+identifies newly retained determinant work, an unreachable alternative batch
+optimization, dropped safety-only activation and reset marginal checks, and
+ill-conditioned moment sensitivity. The two dropped checks are restored;
+an equivalent observation-space determinant reduces factorization order18 to9.
+Final-candidate timing passes all six declared criteria against the previous
+runtime repair; 123 distinct tests and all2928 frozen replay rows pass, including
+raw moments and analytical scores. Direct pre-merge timing still shows slower
+plain nonzero and conditional calls, and plain numerical equivalence still fails.
+The completed diagnostic ablation identifies material determinant-validation cost;
+its weakened checks are ineligible for runtime use. A further checked Cholesky
+determinant candidate passes parity but fails retention because three timing
+criteria are inconclusive. Its evidence is preserved; the guarded candidate02
+repair is restored and matches the frozen tested source. No task job is running.
+See the [terminal result](artifacts/ledh-sir-merge-repair-20261022/result.md).
+Complete speed recovery and broader scientific improvement are not established.
+The next repair must distinguish numerical conditioning from a changed formula
+with an independent reference, while any further speed change must retain the
+validity contract. The original guide-quality veto remains; do not start new
+training or promote scientific conclusions from this engineering comparison.
+
+## Completed runtime repair — 21 October 2026
+
+The [repair plan](ledh-sir-runtime-repair-20261021.md) is complete on
+`ledh-refactor-with-policy-fix`. Checked same-matrix elimination replaces QR
+in the shared analytical flow while preserving validity checks, OT (1,5),
+data, controls, fitted parameters and analytical scores. Eight alternating
+blocks on four regimes give approximately10–18% less runtime than merged QR;
+all six predeclared endpoint/direction interval criteria pass. Complete replay
+passes all2496 output rows and432 nonzero score checks at the unchanged
+abs1e-8 + rel1e-8 tolerance, including raw moments, with exact flags.
+Tests total92 distinct passes and1 inherited skip; all980 captured current
+package files match the tested snapshot. The
+[terminal report](artifacts/ledh-sir-runtime-repair-20261021/result.md) records
+the proof, call-chain checks, intervals and limitations. Independent Claude
+review was unavailable; skeptical executor review and executable checks pass.
+
+This accepts a scoped implementation optimization. It does not prove complete
+pre-merge speed recovery, resolve the earlier plain-arm pre-merge numerical
+discrepancy, or improve guide/score accuracy. The guide's existing heuristic
+promotion veto remains unchanged in every reported regime. Repair uses1821.33
+GPU-process seconds; parent total6964.23 of19800, with12835.77 remaining.
+All processes exited; no authorized repair stage remains. Changes remain
+uncommitted and unrelated dirty work is preserved. Broader claims require
+fresh scoped evidence.
+
+## Completed slowdown diagnosis — 21 October 2026
+
+The [runtime follow-up](artifacts/ledh-sir-postmerge-runtime-20261021/attempt-01/result.md)
+checks actual optimized consumer HLO and eight alternating timing blocks.
+New flow-validity dependencies retain QR determinant/tangent work in plain and
+conditional endpoints that XLA previously removed. Physical mixtures already
+needed it. The guided consumer does not call the newly optimized native batch
+factory. Observed zero-direction ratios are1.822/1.878 for plain/conditional
+and.940 for the physical control; these are descriptive one-dataset timings.
+All108 calls reproduce their own archived results exactly; source/input checks,
+validity and single tracing pass. No guard or numerical setting was changed.
+The follow-up uses412.984804 GPU-process seconds; combined replay/diagnosis uses
+5142.898765 of19800, leaving14657.101235 at that checkpoint. All processes
+exited. The repair above preserves validity checks while removing redundant
+factorization work.
+This explains extra computation; it does not repair plain numerical parity or
+establish a general speed ratio. Earlier sequential timing caveats remain valid.
+
+## Completed frozen merge replay — 21 October 2026
+
+The [paired replay plan](ledh-sir-postmerge-replay-20261021.md) is complete on
+`ledh-refactor-with-policy-fix`. Both source versions ran2496 holdout rows and432
+nonzero analytical directional checks; the old version exactly reproduces its
+archive, with no invalid rows in either version. Eight non-plain particle arms
+pass numerical parity. Plain LEDH exceeds the fixed tolerance: maximum loss
+change4.282215e-6, value change1.252784e-4 and derivative change.02394952.
+No tolerance was relaxed. The frozen moment results retain the previous negative
+conclusion and every heuristic promotion veto. This is exposed-data replay,
+not fresh training or score-accuracy evidence.
+
+Plain and conditional warm evaluations were2.249 and2.360 times longer in this
+sequential replay; changing machine load prevents a causal performance claim.
+All10 reporting integrity tests pass after correcting the saved regime label.
+Four launches used4729.913960 of19800 GPU-process seconds; all have exited and
+the fifth continuation was unnecessary. The
+[terminal report](artifacts/ledh-sir-postmerge-replay-20261021/attempt-01/result.md)
+records exact provenance, complete tables, budget and inference limits.
+The later runtime investigation above completes the proposed interleaved check;
+focused numerical attribution remains open. No step remains in this replay;
+future guide promotion still needs independent untouched moment-risk evidence.
+
+## Completed training recovery — 21 October 2026
+
+The user's renewed execution request is complete under the
+[reviewed continuation plan](ledh-sir-neural-kdm-continuation-20261021.md).
+The prior512-update timeout lost accepted neural/Adam state because the runner
+saved only after a complete rung and validation. A thin recovery runner now
+inherits the actual training loop, preserves state every8updates, and marks
+recovery records unselectable.43 CPU checks pass, including exact resumed Adam,
+parameter and next-seed parity. Numerical package source remains unchanged.
+Attempt21 completed256 and attempt22 completed512. All234 overlapping updates
+exactly reproduce the original interrupted run, and all76 terminal inspection
+checks pass. Validation loss is.671551 at256,.682223 at384 and.707064 at512;
+these reused validation measurements establish no independent improvement.
+Cumulative process charge21785seconds leaves1981.197895057seconds. Both
+initializations completed128; the other initialization's optional512 rung
+requires at least3872.684seconds before validation and is under-budgeted.
+No process remains live. No exposed holdout was reused or candidate promoted;
+the previous negative comparison remains unchanged. The
+[continuation result](artifacts/ledh-sir-neural-kdm-20261020/attempt-20-recovery/result.md)
+records the terminal review, budget and next evidence needed. The active
+checkpoint identifies the remaining research question.
+
+## Completed bounded repair and comparison — 21 October 2026
+
+The [staged repair plan](ledh-guidance-repair-plan-20261020.md) governs execution.
+Phase A is complete: actual validity flags, strict paired-result validation,
+retained conditioning diagnostics and full package-source capture passed 59
+focused tests and the GPU/XLA smoke. Healthy values/scores are unchanged; the
+original 544-row conclusions remain unchanged. See the
+[repair result](artifacts/ledh-guidance-repair-20261020/attempt-01/result.md).
+Phase B is complete for the user-selected **SIR-specific neural KDM proposal**,
+an explicit adaptation of the replicated three-state bearings method. The
+[neural plan](ledh-sir-neural-kdm-adaptation-20261020.md) specifies its density,
+conditioning, full-consumer moment loss, derivatives and fresh-data protocol.
+LaTeX propositions and a rebuilt PDF are available; MathDevMCP is inconclusive
+on probability formalization, while direct derivations and consumer tests pass.
+Phase C engineering passes three fresh GPU/XLA minibatch updates, with all neural
+tensors updated. The nested-gradient constant-specialization defect is repaired;
+warm timing is recorded by training phase, including the later slowdown.
+A scoped CUDA command-buffer workaround
+avoids the independently localized WSL driver segfault without disabling XLA.
+Attempt12 completed the16-configuration screen. After its supervisor exited143,
+the numerical child completed unchanged; attempt14 completed both128-update
+continuations. Its optional512 process timed out after362 valid updates without
+a completed checkpoint. Attempt16 selected from completed32/128 checkpoints and
+finished64 fresh paired datasets:1472 valid rows, unchanged source. The trained
+loss is.770637 versus.774066 untrained,.765211 plain and.533512 recursive Gaussian.
+The primary paired intervals include zero; the10% criterion and heuristic veto
+fail. See [neural result](artifacts/ledh-sir-neural-kdm-20261020/attempt-01/neural-holdout-result.md).
+Fresh restricted cSMC/RBF comparisons completed in attempt19:1024 valid rows,
+unchanged source, adapted losses.863626/.872854. Neither adapter's paired
+learning-gain interval excludes zero; all four restricted arms lose to recursive
+Gaussian in every required regime. The combined analysis contains2496 rows and
+does not change the failed neural primary decision. The exploratory neural-versus-
+restricted intervals favor the neural fit, but do not establish a learning gain
+or compare the full original methods. See the
+[terminal result](artifacts/ledh-sir-neural-kdm-20261020/attempt-01/result.md).
+At that comparison's close, attempt19 had charged3685seconds and
+4891.197895057 remained; the completed continuation above gives current totals.
+All previous failed charges remain debited. No candidate/default is promoted.
+Broader integration is incomplete; this candidate fails to establish heldout
+moment benefit, and score accuracy remains unevaluated. See the checkpoint for the exact next
+action; the old restricted adapters are not full neural training.
+
+## Additional implementation audit — 20 October 2026
+
+The [bounded consumer audit](artifacts/ledh-guidance-implementation-audit-20261020/result.md)
+confirms two additional defects: the physical branch leaves guide-specific
+validity flags true for an invalid guide, and its result assembler accepts
+missing, duplicated or unpaired particle replications as valid comparisons.
+The overall numerical rejection still works. The saved544-row holdout is
+complete and paired; these defects do not explain that result.23 focused CPU
+tests pass. Computed mixture-conditioning margins are discarded, and the
+eight-file provenance check omits executed dependencies. The eight recorded
+hashes match, but do not establish full executable source identity.
+
+Actual neural KDM integration, full cSMC twisting, flexible message/policy
+training, adaptive proposal allocation and downstream score improvement remain
+incomplete or unevaluated. The implemented restricted moment pilot must not be
+described as completion of that larger proposal. No additional arithmetic error
+was established in the inspected physical density or analytical derivatives.
+Audit complete; runtime unchanged; no active process or new GPU charge.
+Next repair should close diagnostic/evidence defects before another training
+campaign. Remaining budget23826.197895057 GPU-process seconds.
+
+## Completed training diagnosis — 20 October 2026
+
+The [code/math diagnosis](artifacts/ledh-moment-training-failure-diagnosis-20261020/result.md)
+completes the next question from the physical-proposal pilot below. Its112
+traces and7 exact consumer-parity checks confirm a correct simulated-moment
+objective and effective adapter controls. The executed learner has only3/12
+parameters; the kernel arm approximates a cSMC message rather than calling the
+replicated KDM learner. Fixed beta=.5 allocates about31/64 final draws to a flow
+component with negligible weight in the checked runs. Small-minibatch descent
+does not establish generalization. Reset moment discrepancies are at roundoff,
+not an explanation for the failed training. No OT retuning is justified here.
+
+The consumer corrects to the filtering target at each time; the ideal full
+controlled-SMC twisting argument therefore does not prove its moment benefit.
+The result derives this distinction and records remaining causal uncertainty.
+No algorithm/default changed or new candidate was selected. A next repair must
+address learner capacity, proposal allocation/flow quality and training-signal
+reliability on fresh partitions; beta=1 is a conditional-only comparator, not
+LEDH success. Diagnosis complete, no active GPU process. Campaign remaining
+23826.197895057 GPU-process seconds after419.199960844 charged to this stage.
+
+## Completed physical-proposal pilot — 20 October 2026
+
+The [reviewed flow-aware plan](ledh-flow-aware-proposal-repair-20261020.md)
+supersedes the next actions in the historical sections below. The optional
+physical-output proposal is integrated through the shared LEDH executor, with
+full mixture-density correction and total analytical derivatives. Beta=1
+cancels the affine flow and is a comparator; beta=0.5 retains the LEDH density
+component. UKF, GenUT, Contract E and diagnostic OT(1,5) remain unchanged.
+
+The43 distinct focused CPU tests pass. GPU integration repairs the known failed fixture
+for all four physical arms;12/12 healthy derivative checks pass with maximum
+relative error8.46e-8. This establishes scoped engineering evidence, not moment
+or score superiority. Fresh training and32 independent datasets/two particle
+replications are complete; all holdout methods are valid. Both trained guides
+fail the recursive-Gaussian comparison in both observation regimes, and have
+higher pooled loss than the conditional-only proposal. Neither establishes a
+gain over its own untrained adapter or the no-future half-mixture.
+
+The [terminal result](artifacts/ledh-flow-aware-proposal-repair-20261020/result.md)
+separates successful numerical repair from failed candidate promotion. The
+mathematical objective remains correct; score improvement was not evaluated.
+The manuscript now contains the full derivation and independent negative
+result. Math/code audit and executable call-chain checks are complete;
+MathDevMCP matrix checks are inconclusive, not proof certificates. The98-page
+PDF builds cleanly and the new mathematics/results have been visually reviewed.
+Campaign remaining24245.397855901 GPU seconds at this pilot's completion,
+before the diagnosis recorded above. Component allocation and pre/post-reset
+moments have now been investigated; this holdout cannot tune a next candidate.
+All experimental phases of this pilot are complete.
+
+## Completed collapse investigation — 20 October 2026
+
+The [reviewed collapse repair](ledh-moment-collapse-repair-20261020.md) fixes
+the training endpoint's ignored shape-availability flag and exposes complete
+covariance loss at its actual scale. 112 focused tests pass. GPU replay leaves
+both baseline state traces unchanged; six healthy analytical/FD checks pass.
+The existing moment-safety switch does not repair the failed time4 cloud.
+
+The [terminal result](artifacts/ledh-moment-collapse-repair-20261020/result.md)
+traces the upstream mechanism to a flow based on large predictive UKF P acting
+on conditional Q proposals. The density correction is correct, but the
+proposal is poorly matched: failed-step ESS1 versus29.04 for the exact
+conditional reference on the same fixed cloud. This is not evidence for
+replacing the UKF lifecycle. An exact affine preimage repair passes numerical
+identity checks, but has not been integrated into the full filter.
+
+Terminal call-chain review corrected an overbroad capacity claim: the negative
+required information eigenvalue excludes the trained quadratic adapter only.
+The kernel arm uses mixture-product moments and can expand covariance; its
+ability to realize this preimage is not checked. A regression now protects
+that distinction. The updated manuscript is94 pages, Section15.10 and
+Proposition45; final builds and changed-page inspection pass.
+
+Next: review and implement an optional flow-aware proposal through the shared
+consumer, including total analytical derivatives of map and proposal density.
+Retain UKF, Contract E and OT(1,5). Do not resume the old failed holdout or
+claim efficacy from fixed-cloud identities. Scope-specific calibration and
+fresh independent moment evaluation follow numerical consumer validation.
+This supersedes the next actions in the historical sections below.
+
+## Active restoration repair — 20 October 2026
+
+The [reviewed repair plan](ledh-moment-restoration-repair-20261020.md) governs
+the current action. Exact replay isolates rounding loss when tiny particle
+offsets are added to a large mean, followed by Cholesky of an exactly zero
+covariance. The shared restoration now retains offsets through centering;
+OT settings and the covariance ridge are unchanged. Local non-harm and
+derivative tests pass; final GPU endpoints are finite and 12/12 score
+finite-difference checks pass. All 100 focused tests pass. The materialized
+time4 covariance is nevertheless zero and standardized shape diagnostics
+remain undefined, now explicitly flagged. The [terminal repair result](artifacts/ledh-moment-restoration-repair-20261020/result.md)
+accepts the narrow factorization repair, not full moment fidelity. Next:
+review the remaining representation limit before a fresh numerical scope
+and independent efficacy comparison. The prior heldout comparison remains
+incomplete and cannot support a guide ranking.
+
+## Active simulated moment training — 20 October 2026
+
+The owner requested implementation, plan review and execution of simulated
+moment training. The [reviewed plan](ledh-simulated-moment-training-20261020.md)
+governs the completed training stage; the repair section above governs the
+current action and supersedes the proposed next study below.
+Continuous cSMC and positive-RBF guide coefficients are optimized against
+terminal first/second-moment loss through the existing shared LEDH executor.
+Score labels are explanatory only. All 35 focused tests and both actual GPU
+consumer/analytical-derivative smoke checks pass. All training runs completed,
+but campaign-01 stopped on a reproduced nonfinite unguided baseline at the
+seventeenth heldout dataset. No heldout ranking is justified. The
+[terminal result](artifacts/ledh-moment-training-20261020/result.md) separates
+successful implementation from the incomplete scientific comparison. The
+subsequent numerical repair is complete with the limitations recorded above.
+OT stays `(1,5)`. The RBF adapter is KDM-inspired, not original neural KDM
+retraining. See the [active checkpoint](controlled-smc-kdm-checkpoint.md) and
+[execution record](artifacts/ledh-moment-training-20261020/execution.md).
+
 ## Failure review — 20 October 2026
 
 Implementation and supervised pilot committed as `4abbaf9f1` on
