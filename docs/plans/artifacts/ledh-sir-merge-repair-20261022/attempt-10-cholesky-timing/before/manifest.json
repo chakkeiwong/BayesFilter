@@ -1,0 +1,101 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/scripts/diagnose_sir_postmerge_runtime.py",
+    "--worker",
+    "--repository",
+    ".",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-merge-repair-20261022/attempt-10-cholesky-timing/before",
+    "--source",
+    "docs/plans/artifacts/ledh-sir-merge-repair-20261022/candidate-02-final-source",
+    "--reference",
+    "docs/plans/artifacts/ledh-sir-postmerge-replay-20261021/attempt-01/after",
+    "--plan",
+    "docs/plans/ledh-sir-merge-repair-20261022.md",
+    "--datasets",
+    "263043001",
+    "263043004",
+    "263043021",
+    "263043052"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "git_commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+  "source": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-merge-repair-20261022/candidate-02-final-source",
+  "source_index_sha256": "1f9749e982e80596fbd686d3b6395b1a8b82e08f0cf3ca845e529aa168a48c99",
+  "gpu_uuid": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "gpu_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "data_version": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "datasets": [
+    263043001,
+    263043004,
+    263043021,
+    263043052
+  ],
+  "particle_seeds": {
+    "263043001": 283030000,
+    "263043004": 283030012,
+    "263043021": 283030080,
+    "263043052": 283030204
+  },
+  "reset_seed": 263040002,
+  "input_sha256": {
+    "263043001": "631f93626238931fa6f8b194df7d83b9964c39ba35ffedb1664bdef5f297b4be",
+    "263043004": "23a22ef67d9c01382e93d03d82da25fcd9df522d7129348248bcf443461a9bf1",
+    "263043021": "c8c4a165a30972a820fbb8616491f17b15cc763d4b1d3f00ff774408d2d19915",
+    "263043052": "629fe00c148fb368e405a1f563353f9cc377100d58217b8b3445a2dd2227e629"
+  },
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "output": "docs/plans/artifacts/ledh-sir-merge-repair-20261022/attempt-10-cholesky-timing/before",
+  "custom_op_sha256": "661f11b9db1f6e9ab9ce4aae8ae86591779cdbdfe6fda777a7c87956ec2686fa",
+  "plan": "docs/plans/ledh-sir-merge-repair-20261022.md",
+  "result": "docs/plans/artifacts/ledh-sir-merge-repair-20261022/attempt-10-cholesky-timing/before/rows.jsonl",
+  "diagnostic_only": true
+}

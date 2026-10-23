@@ -11,12 +11,16 @@ def compact_control_diagnostics(trace):
     """
     trace=tf.nest.map_structure(lambda *values:tf.stack(values),*trace)
     result={key:value for key,value in trace.items() if key.startswith("higher_moment_")}
+    result.update({key:value for key,value in trace.items()
+                   if key.endswith("_valid") or key.endswith("_finite")})
     weights=trace["posterior_weights"]
     result["particle_ess_per_time"]=1/tf.reduce_sum(weights**2,axis=1)
     result["weight_sum_error_per_time"]=tf.abs(tf.reduce_sum(weights,axis=1)-1)
     transport=trace["reset_transport"]
     result["transport_row_sum_error_per_time"]=tf.reduce_max(tf.abs(tf.reduce_sum(transport,axis=2)-1),axis=1)
     result["transport_column_weight_error_per_time"]=tf.reduce_max(tf.abs(tf.reduce_mean(transport,axis=1)-weights),axis=1)
+    result["transport_column_total_variation_per_time"]=0.5*tf.reduce_sum(
+        tf.abs(tf.reduce_mean(transport,axis=1)-weights),axis=1)
     cov=tf.stack([trace["predicted_covariances"],trace["post_covariances"],
                   trace["covariances_after_reset"]])
     eigenvalues=tf.linalg.eigvalsh((cov+tf.linalg.matrix_transpose(cov))*.5)

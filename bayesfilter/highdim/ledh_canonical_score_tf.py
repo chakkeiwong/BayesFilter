@@ -31,6 +31,7 @@ from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
 
 from bayesfilter.highdim.ledh_numerical_safety_tf import (
     safe_cholesky, cholesky_differential, all_finite, finite_or_zero,
+    checked_log_abs_det_tangent,
 )
 from bayesfilter.highdim.ledh_failure_status_tf import (
     FailureCode, FailureStage, initial_status, record_failure, first_invalid_particle,
@@ -168,6 +169,7 @@ def _value_and_analytical_score_impl(
     reset_sinkhorn_steps: int = 8,
     reset_balance_steps: int = 8,
     reset_ridge: float = 1.0e-5,
+    reset_denominator_regularization: float = 1.0e-7,
     correction_steps: int = 0,
     correction_strength: float = 0.2,
     correction_lm_damping: float = 1.0e-2,
@@ -192,6 +194,8 @@ def _value_and_analytical_score_impl(
     hilbert_bits: int = 12,
     state_map_policy: str = "adaptive_empirical",
     backward_guide: object | None = None,
+    physical_mixture_weight: float | None = None,
+    physical_component_uniforms: Tensor | None = None,
 ) -> (
     tuple[Tensor, Tensor | None]
     | tuple[Tensor, Tensor | None, tuple[dict[str, Tensor | int], ...]]
@@ -250,7 +254,14 @@ def _value_and_analytical_score_impl(
         and model.transition_log_density_fn is None
         and model.transition_log_density_tangent_fn is None
     )
-    if backward_guide is not None:
+    if physical_mixture_weight is not None:
+        if not 0.0 <= physical_mixture_weight <= 1.0:
+            raise ValueError("Physical mixture weight must lie in [0,1]")
+        if physical_component_uniforms is None:
+            raise ValueError("Physical proposals require independent component uniforms")
+        if physical_component_uniforms.shape != observations.shape[:1] + initial_states.shape[:1]:
+            raise ValueError("Physical component uniforms must have shape [T,N]")
+    if backward_guide is not None or physical_mixture_weight is not None:
         if not gaussian_transition:
             raise ValueError("Backward-guided proposals require an additive Gaussian transition")
         if importance_weight_policy != "ancestor":
@@ -261,9 +272,10 @@ def _value_and_analytical_score_impl(
             raise ValueError("Backward-guided proposals require existing_one_to_one ancestry")
         if reset_policy != "contract_e":
             raise ValueError("Backward-guided proposals require the shared Contract-E reset")
-        backward_guide.validate(
-            int(observations.shape[0]), int(initial_states.shape[1]), dtype
-        )
+        if backward_guide is not None:
+            backward_guide.validate(
+                int(observations.shape[0]), int(initial_states.shape[1]), dtype
+            )
     if return_trace and annealed_stages != 1:
         raise ValueError(
             "return_trace currently supports only annealed_stages=1; "
@@ -507,19 +519,22 @@ def _value_and_analytical_score_impl(
         guided_proposal_log = None
         d_guided_proposal_log = None
         guided_proposal_valid = tf.constant(True)
-        if backward_guide is not None:
+        guide_diagnostics = dict(backward_guide_valid=tf.constant(True),
+            guide_conditioning_min_relative_spd_margin=tf.constant(0., states.dtype),
+            guide_conditioning_margin_measured=tf.constant(False))
+        if backward_guide is not None and physical_mixture_weight is None:
             from bayesfilter.highdim.ledh_backward_guide_tf import guided_gaussian_draw
 
-            pre_flow, d_pre_flow, guided_proposal_log, d_guided_proposal_log, guided_proposal_valid = (
+            pre_flow, d_pre_flow, guided_proposal_log, d_guided_proposal_log, guided_proposal_valid, guide_diagnostics = (
                 guided_gaussian_draw(
                     backward_guide, t, anchors, d_anchors,
-                    model.process_covariance, d_q, noise,
+                    model.process_covariance, d_q, noise, return_diagnostics=True,
                 )
             )
 
         observation_record = {}
         if backward_guide is not None:
-            observation_record["backward_guide_valid"] = guided_proposal_valid
+            observation_record.update(guide_diagnostics)
 
         # Per-step density evaluators shared by S4 and the annealed
         # telescope (model callback path or Gaussian fallback).
@@ -660,12 +675,37 @@ def _value_and_analytical_score_impl(
                 eye=eye,
                 innovation_geometry=geometry,
                 return_affine=gaussian_transition,
+                return_diagnostics=return_trace,
             )
+            if return_trace:
+                flow_diagnostics = flow_outputs[-1]
+                flow_outputs = flow_outputs[:-1]
             children, d_children, log_det, d_log_det, flow_value_valid, flow_force_valid = flow_outputs[:6]
             status = record_failure(status, flow_value_valid & guided_proposal_valid & all_finite(pre_flow, anchors),
                 flow_force_valid & all_finite(d_pre_flow, d_anchors), time=t, stage=FailureStage.FLOW,
                 value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(flow_value_valid))
-            if backward_guide is not None:
+            if physical_mixture_weight is not None and physical_mixture_weight > 0.0:
+                from bayesfilter.highdim.ledh_physical_proposal_tf import physical_mixture_draw
+
+                children, d_children, proposal_log, d_proposal_log, proposal_valid, component_count, guide_diagnostics = (
+                    physical_mixture_draw(
+                        model, backward_guide, t, anchors, d_anchors, observation,
+                        tf.zeros_like(model.process_covariance) if d_q is None else d_q,
+                        tf.zeros_like(model.observation_covariance) if d_r is None else d_r,
+                        noise, physical_component_uniforms[t], physical_mixture_weight,
+                        flow_outputs[:4] + flow_outputs[6:],
+                        return_diagnostics=True))
+                guided_proposal_valid = proposal_valid
+                observation_record.update(guide_diagnostics)
+                transition_log, d_transition_log = _transition_density(
+                    children, d_children, anchors, d_anchors)
+                ratio = transition_log - proposal_log
+                d_ratio = d_transition_log - d_proposal_log
+                status = record_failure(status, proposal_valid, proposal_valid,
+                    time=t, stage=FailureStage.WEIGHTS, value_code=FailureCode.FACTORIZATION)
+                observation_record["physical_proposal_valid"] = proposal_valid
+                observation_record["physical_output_component_count"] = component_count
+            elif backward_guide is not None and physical_mixture_weight is None:
                 transition_log, d_transition_log = _transition_density(
                     children, d_children, anchors, d_anchors
                 )
@@ -791,16 +831,34 @@ def _value_and_analytical_score_impl(
                 sinkhorn_steps=reset_sinkhorn_steps,
                 balance_steps=reset_balance_steps,
                 ridge=reset_ridge,
+                denominator_regularization=reset_denominator_regularization,
+            )
+            reset_row_error = tf.reduce_max(
+                tf.abs(tf.reduce_sum(reset_transport, axis=1) - 1.0)
+            )
+            reset_column_residual = (
+                tf.reduce_mean(reset_transport, axis=0) - step_weights
+            )
+            reset_column_tv_error = 0.5 * tf.reduce_sum(tf.abs(reset_column_residual))
+            d_reset_column_residual = (
+                tf.reduce_mean(d_reset_transport, axis=0) - d_step_weights
+            )
+            reset_marginals_valid = (
+                (reset_row_error <= tf.cast(1.0e-6, dtype))
+                & (reset_column_tv_error <= tf.cast(1.0e-4, dtype))
             )
             status = record_failure(status,
-                tf.reduce_all(valid_reset) & all_finite(reset_states, reset_covariances, reset_transport),
-                all_finite(d_reset_states, d_reset_covariances, d_reset_transport),
+                tf.reduce_all(valid_reset)
+                & all_finite(reset_states, reset_covariances, reset_transport)
+                & reset_marginals_valid,
+                all_finite(d_reset_states, d_reset_covariances, d_reset_transport,
+                           d_reset_column_residual),
                 time=t, stage=FailureStage.RESET, value_code=FailureCode.RESET_CORRECTION)
             reset_states = tf.where(status['value_valid'], reset_states, tf.zeros_like(reset_states))
             reset_covariances = tf.where(status['value_valid'], reset_covariances, tf.broadcast_to(eye, tf.shape(reset_covariances)))
             d_reset_states = tf.where(status['force_valid'], d_reset_states, tf.zeros_like(d_reset_states))
             d_reset_covariances = tf.where(status['force_valid'], d_reset_covariances, tf.zeros_like(d_reset_covariances))
-            if correction_steps > 0 or pairwise_steps > 0:
+            if correction_steps > 0 or pairwise_steps > 0 or moment_safety:
                 from bayesfilter.highdim.ledh_unified_correction_tf import (
                     batched_higher_moment_shape_jvp,
                 )
@@ -948,6 +1006,15 @@ def _value_and_analytical_score_impl(
                 "reset_numerical_valid": (tf.reduce_all(valid_reset)
                                           if reset_policy == "contract_e"
                                           else tf.constant(True)),
+                "reset_transport_valid": (
+                    tf.reduce_all(valid_reset) & reset_marginals_valid
+                    & all_finite(d_reset_column_residual)
+                    if reset_policy == "contract_e" else tf.constant(True)),
+                "reset_row_sum_error": (reset_row_error if reset_policy == "contract_e"
+                                        else tf.zeros([], dtype)),
+                "reset_column_tv_error": (reset_column_tv_error if reset_policy == "contract_e"
+                                          else tf.zeros([], dtype)),
+                "guided_proposal_valid": guided_proposal_valid,
                 "predicted_covariances_finite": tf.reduce_all(tf.math.is_finite(predicted_covs)),
                 "post_covariances_finite": tf.reduce_all(tf.math.is_finite(post_covs)),
                 "flow_states_finite": tf.reduce_all(tf.math.is_finite(children)),
@@ -1004,6 +1071,9 @@ def _value_and_analytical_score_impl(
                     "flow_log_determinant": log_det,
                     "d_flow_log_determinant": d_log_det,
                 })
+            if annealed_stages == 1:
+                step_record.update({f"flow_{key}": value
+                                    for key, value in flow_diagnostics.items()})
             step_record.update(status)
             step_record.update(higher_moment_record)
             step_record.update(post_reset_record)
@@ -1032,7 +1102,7 @@ def _value_and_analytical_score_impl(
                                          element_shape=value.shape), template)
 
         def traced_body(*args):
-            result, record = step_kernel(*args[:-1])
+            result, record = time_loop_body(*args[:-1])
             buffers = tf.nest.map_structure(lambda buf, value: buf.write(args[0], value),
                                             args[-1], record)
             return (*result, buffers)
@@ -1080,6 +1150,7 @@ def canonical_value_and_analytical_score(
     reset_sinkhorn_steps: int = 8,
     reset_balance_steps: int = 8,
     reset_ridge: float = 1.0e-5,
+    reset_denominator_regularization: float = 1.0e-7,
     correction_steps: int = 0,
     correction_strength: float = 0.2,
     correction_lm_damping: float = 1.0e-2,
@@ -1140,6 +1211,7 @@ def canonical_value_and_analytical_score(
         reset_sinkhorn_steps=reset_sinkhorn_steps,
         reset_balance_steps=reset_balance_steps,
         reset_ridge=reset_ridge,
+        reset_denominator_regularization=reset_denominator_regularization,
         correction_steps=correction_steps,
         correction_strength=correction_strength,
         correction_lm_damping=correction_lm_damping,
@@ -1249,8 +1321,6 @@ def _flow_substep_body_impl(
     d_actual: Tensor,
     auxiliary: Tensor,
     d_auxiliary: Tensor,
-    log_det: Tensor,
-    d_log_det: Tensor,
     model: NonlinearScoreModel,
     prior_means: Tensor,
     d_prior_means: Tensor,
@@ -1267,14 +1337,12 @@ def _flow_substep_body_impl(
     value_alive: Tensor,
     force_alive: Tensor,
     affine_state: tuple[Tensor, Tensor] | None = None,
-) -> tuple[tf.Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
-    """Single flow substep with analytical tangent.
+) -> tuple[Tensor, ...]:
+    """Advance one particle-local flow step and return its determinant inputs.
 
-    Extracted body for tf.while_loop conversion (Phase 3.5.2).
-
-    Returns:
-        (step_index + 1, updated_actual, updated_d_actual, updated_auxiliary,
-         updated_d_auxiliary, updated_log_det, updated_d_log_det)
+    Innovation, arithmetic and state checks remain local. Determinant checks
+    are batched by the enclosing flow, before any particle leaves the flow.
+    The determinant tangent excludes the step size, as in the inline program.
     """
     dtype = actual.dtype
     lam = tf.cast(step_index + 1, dtype) / tf.cast(substeps, dtype)
@@ -1384,31 +1452,31 @@ def _flow_substep_body_impl(
         + d_b_vector
     )
     step_matrix = eye[None] + eps * a_matrix
-    finite_matrix = tf.reduce_all(tf.math.is_finite(step_matrix),[-2,-1])
-    q_factor, r_factor = tf.linalg.qr(tf.where(finite_matrix[:,None,None], step_matrix, eye[None]))
-    factor_valid = finite_matrix & tf.reduce_all(tf.math.is_finite(r_factor),[-2,-1])
-    factor_valid &= tf.reduce_all(tf.abs(tf.linalg.diag_part(r_factor)) > 0,axis=-1)
-    r_factor = tf.where(factor_valid[:,None,None],r_factor,eye[None])
-    new_log_det = log_det + tf.reduce_sum(
-        tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))), axis=1
-    )
-    q_transpose_d_a = tf.linalg.matmul(q_factor, d_a_matrix, transpose_a=True)
-    solved_d_a = small_matrix.triangular_solve(r_factor, q_transpose_d_a, lower=False)
-    new_d_log_det = d_log_det + eps * tf.linalg.trace(solved_d_a)
-
-    value_alive &= innovation_valid & factor_valid
+    observation_dimension = h_jac.shape[-2]
+    state_dimension = h_jac.shape[-1]
+    if (observation_dimension is not None and state_dimension is not None
+            and observation_dimension < state_dimension):
+        determinant_matrix = tf.eye(observation_dimension, dtype=dtype)[None] - 0.5 * eps * tf.matmul(h_jac, k_lam)
+        determinant_tangent = -0.5 * (
+            tf.matmul(d_h_jac, k_lam) + tf.matmul(h_jac, d_k_lam))
+    else:
+        determinant_matrix = step_matrix
+        determinant_tangent = d_a_matrix
+    value_alive &= innovation_valid
+    value_alive &= tf.reduce_all(tf.math.is_finite(step_matrix), axis=[-2, -1])
     value_alive &= tf.reduce_all(tf.math.is_finite(new_actual),axis=-1)
-    value_alive &= tf.reduce_all(tf.math.is_finite(new_auxiliary),axis=-1) & tf.math.is_finite(new_log_det)
-    force_alive &= value_alive & tf.reduce_all(tf.math.is_finite(new_d_actual),axis=-1)
-    force_alive &= tf.reduce_all(tf.math.is_finite(new_d_auxiliary),axis=-1) & tf.math.is_finite(new_d_log_det)
+    value_alive &= tf.reduce_all(tf.math.is_finite(new_auxiliary),axis=-1)
+    force_alive &= value_alive & tf.reduce_all(tf.math.is_finite(d_a_matrix), axis=[-2, -1])
+    force_alive &= tf.reduce_all(tf.math.is_finite(new_d_actual),axis=-1)
+    force_alive &= tf.reduce_all(tf.math.is_finite(new_d_auxiliary),axis=-1)
     result = (
         step_index + 1,
         tf.where(value_alive[:,None],new_actual,tf.zeros_like(new_actual)),
         tf.where(force_alive[:,None],new_d_actual,tf.zeros_like(new_d_actual)),
         tf.where(value_alive[:,None],new_auxiliary,tf.zeros_like(new_auxiliary)),
         tf.where(force_alive[:,None],new_d_auxiliary,tf.zeros_like(new_d_auxiliary)),
-        tf.where(value_alive,new_log_det,tf.zeros_like(new_log_det)),
-        tf.where(force_alive,new_d_log_det,tf.zeros_like(new_d_log_det)),
+        determinant_matrix,
+        determinant_tangent,
         value_alive, force_alive,
     )
     if affine_state is not None:
@@ -1418,6 +1486,21 @@ def _flow_substep_body_impl(
                         + tf.linalg.matmul(step_matrix, d_matrix))
         return result + (new_matrix, new_d_matrix)
     return result
+
+
+_FLOW_DETERMINANT_HISTORY_BYTES = 16 * 1024 * 1024
+
+
+def _flow_determinant_group_size(
+    substeps: int, count: int | None, order: int, dtype: tf.DType,
+) -> int:
+    """Bound additional matrix/tangent history; unknown clouds use one step."""
+    if substeps < 1 or order < 1 or (count is not None and count < 1):
+        raise ValueError("flow dimensions and substeps must be positive")
+    if count is None:
+        return 1
+    step_bytes = 2 * count * order * order * dtype.size
+    return min(substeps, max(1, _FLOW_DETERMINANT_HISTORY_BYTES // step_bytes))
 
 
 def _flow_substeps_with_tangent(
@@ -1438,13 +1521,16 @@ def _flow_substeps_with_tangent(
     eye: Tensor,
     innovation_geometry=None,
     return_affine: bool = False,
-) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+    return_diagnostics: bool = False,
+) -> tuple:
     """S3 substep loop with analytical tangent, shared by the base path
     and the annealed telescope's tempered stages (which pass P/k, R*k and
     the correspondingly scaled tangents/inverse). H is evaluated along
     the auxiliary path; its state dependence enters through the model
-    jacobian at the moving anchor. Returns (post_flow, tangent, log_det,
-    d_log_det)."""
+    jacobian at the moving anchor. Returns the state, tangent, log determinant,
+    determinant tangent and value/force validity. Optional affine outputs and
+    substep failure diagnostics follow those six fields.
+    """
 
     if innovation_geometry is not None:
         if return_affine:
@@ -1480,12 +1566,17 @@ def _flow_substeps_with_tangent(
             observation_tangent_fn=observation_tangent, observation_jacobian_fn=jacobian,
             observation_jacobian_tangent_fn=jacobian_tangent, innovation_matrix=None,
             innovation_matrix_tangent_fn=None)
-        moved, d_moved, ld, dld, vv, fv = _flow_substeps_with_tangent(
+        reduced_outputs = _flow_substeps_with_tangent(
             reduced_model, z, dz, tf.zeros_like(z), tf.zeros_like(z), p, dp,
             observation, observation_covariance, d_observation_covariance,
-            r_inv, d_r_inv, substeps=substeps, eye=tf.eye(int(z.shape[-1]), dtype=z.dtype))
+            r_inv, d_r_inv, substeps=substeps, eye=tf.eye(int(z.shape[-1]), dtype=z.dtype),
+            return_diagnostics=return_diagnostics)
+        moved, d_moved, ld, dld, vv, fv = reduced_outputs[:6]
         x, dx = completed(moved, d_moved)
-        return x, dx, ld, dld, vv & g.value_valid, fv & g.force_valid
+        result = (x, dx, ld, dld, vv & g.value_valid, fv & g.force_valid)
+        if return_diagnostics:
+            return result + (reduced_outputs[-1],)
+        return result
 
     dtype = actual.dtype
     count = tf.shape(actual)[0]
@@ -1494,35 +1585,74 @@ def _flow_substeps_with_tangent(
     auxiliary, d_auxiliary = prior_means, d_prior_means
     log_det = tf.zeros([count], dtype)
     d_log_det = tf.zeros([count], dtype)
+    order = min(int(actual.shape[-1]), int(observation.shape[-1]))
+    group_size = _flow_determinant_group_size(substeps, actual.shape[0], order, dtype)
 
-    # Phase 3.5.2: tf.while_loop conversion for substep loop
-    def substep_cond(i, *_):
-        return i < substeps_tensor
+    def group_body(start, act, d_act, aux, d_aux, ld, d_ld, vv, fv,
+                   first_value, first_force, *affine):
+        stop = tf.minimum(start + group_size, substeps_tensor)
+        matrices = tf.TensorArray(dtype, size=group_size).unstack(
+            tf.eye(order, batch_shape=[group_size, count], dtype=dtype))
+        tangents = tf.TensorArray(dtype, size=group_size).unstack(
+            tf.zeros([group_size, count, order, order], dtype))
 
-    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld, vv, fv, *affine):
-        return _flow_substep_body_impl(
-            i,
-            act,
-            d_act,
-            aux,
-            d_aux,
-            ld,
-            d_ld,
-            model,
-            prior_means,
-            d_prior_means,
-            predicted_covs,
-            d_predicted_covs,
-            observation,
-            observation_covariance,
-            d_observation_covariance,
-            r_inv,
-            d_r_inv,
-            substeps_tensor,
-            eye,
-            eps, vv, fv,
-            affine_state=affine if return_affine else None,
-        )
+        def advance(step, state, d_state, anchor, d_anchor, value_alive, force_alive,
+                    local_first_value, local_first_force, matrix_history, tangent_history,
+                    *affine_state):
+            outputs = _flow_substep_body_impl(
+                step, state, d_state, anchor, d_anchor, model,
+                prior_means, d_prior_means, predicted_covs, d_predicted_covs,
+                observation, observation_covariance, d_observation_covariance,
+                r_inv, d_r_inv, substeps_tensor, eye, eps, value_alive, force_alive,
+                affine_state=affine_state if return_affine else None)
+            next_step, state, d_state, anchor, d_anchor, matrix, tangent, alive, force = outputs[:9]
+            local_first_value = tf.where(
+                (local_first_value < 0) & ~alive, step, local_first_value)
+            local_first_force = tf.where(
+                (local_first_force < 0) & ~force, step, local_first_force)
+            return (next_step, state, d_state, anchor, d_anchor, alive, force,
+                    local_first_value, local_first_force,
+                    matrix_history.write(step - start, matrix),
+                    tangent_history.write(step - start, tangent)) + outputs[9:]
+
+        advanced = tf.while_loop(
+            lambda step, *_: step < stop, advance,
+            (start, act, d_act, aux, d_aux, vv, fv, first_value, first_force,
+             matrices, tangents) + affine,
+            maximum_iterations=group_size)
+        step_log, step_d_log, factor_value, factor_force = checked_log_abs_det_tangent(
+            advanced[9].stack(), advanced[10].stack())
+
+        def accumulate(offset, value, derivative, value_alive, force_alive,
+                       first_bad_value, first_bad_force):
+            step = start + offset
+            value = value + step_log[offset]
+            derivative = derivative + eps * step_d_log[offset]
+            local_value_alive = (advanced[7] < 0) | (step < advanced[7])
+            local_force_alive = (advanced[8] < 0) | (step < advanced[8])
+            value_alive &= factor_value[offset] & local_value_alive & tf.math.is_finite(value)
+            force_alive &= value_alive & factor_force[offset] & local_force_alive & tf.math.is_finite(derivative)
+            first_bad_value = tf.where(
+                (first_bad_value < 0) & ~value_alive, step, first_bad_value)
+            first_bad_force = tf.where(
+                (first_bad_force < 0) & ~force_alive, step, first_bad_force)
+            return (offset + 1, tf.where(value_alive, value, tf.zeros_like(value)),
+                    tf.where(force_alive, derivative, tf.zeros_like(derivative)),
+                    value_alive, force_alive, first_bad_value, first_bad_force)
+
+        accumulated = tf.while_loop(
+            lambda offset, *_: offset < stop - start, accumulate,
+            (tf.constant(0, tf.int32), ld, d_ld, vv, fv, first_value, first_force),
+            maximum_iterations=group_size)
+        _, ld, d_ld, vv, fv, first_value, first_force = accumulated
+        return (
+            stop,
+            tf.where(vv[:, None], advanced[1], tf.zeros_like(advanced[1])),
+            tf.where(fv[:, None], advanced[2], tf.zeros_like(advanced[2])),
+            tf.where(vv[:, None], advanced[3], tf.zeros_like(advanced[3])),
+            tf.where(fv[:, None], advanced[4], tf.zeros_like(advanced[4])),
+            ld, d_ld, vv, fv, first_value, first_force,
+        ) + advanced[11:]
 
     initial_loop_vars = (
         tf.constant(0, dtype=tf.int32),
@@ -1533,21 +1663,28 @@ def _flow_substeps_with_tangent(
         log_det,
         d_log_det,
         tf.ones([count],tf.bool), tf.ones([count],tf.bool),
+        tf.fill([count], tf.constant(-1, tf.int32)),
+        tf.fill([count], tf.constant(-1, tf.int32)),
     )
 
     if return_affine:
-        initial_matrix = tf.broadcast_to(eye, [int(actual.shape[0]), int(actual.shape[1]), int(actual.shape[1])])
+        initial_matrix = tf.broadcast_to(eye, [count, int(actual.shape[1]), int(actual.shape[1])])
         initial_loop_vars += (initial_matrix, tf.zeros_like(initial_matrix))
     outputs = tf.while_loop(
-        cond=substep_cond,
-        body=substep_body_wrapper,
+        cond=lambda step, *_: step < substeps_tensor,
+        body=group_body,
         loop_vars=initial_loop_vars,
+        maximum_iterations=(substeps + group_size - 1) // group_size,
     )
 
     _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det, value_valid, force_valid = outputs[:9]
     result = (actual, d_actual, log_det, d_log_det, value_valid, force_valid)
     if return_affine:
-        return result + (auxiliary, d_auxiliary, outputs[9], outputs[10])
+        result += (auxiliary, d_auxiliary, outputs[11], outputs[12])
+    if return_diagnostics:
+        result += ({"first_value_failure_substep": outputs[9],
+                    "first_force_failure_substep": outputs[10],
+                    "determinant_group_size": tf.constant(group_size, tf.int32)},)
     return result
 
 

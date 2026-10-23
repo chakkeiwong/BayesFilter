@@ -1,0 +1,739 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/moment_restoration_diagnostic.py",
+    "--source",
+    "docs/plans/artifacts/ledh-moment-training-20261020/campaign-01",
+    "--output",
+    "docs/plans/artifacts/ledh-moment-restoration-repair-20261020/diagnostic-01"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "commit": "4d6915cc66e701c4c7b657e094306d298fdd3e76",
+  "branch": "ledh-refactor-with-policy-fix",
+  "dirty": " M bayesfilter/highdim/covariance_proposal_beta_tf.py\n M bayesfilter/score_study/control_diagnostics_tf.py\n M docs/papers/ledh_younis_kdm_score/ledh_supervised_guidance.tex\n M docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf\n M docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex\n M docs/plans/artifacts/ledh-backward-guide-20261015/checkpoint.md\n M docs/plans/controlled-smc-kdm-checkpoint.md\n M docs/plans/controlled-smc-kdm-replication-master-program-20260928.md\n M docs/plans/ledh-backward-guide-integration-20261015.md\n",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_devices": [
+    "/device:GPU:0"
+  ],
+  "cuda_visible_devices": "0",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "cpu_only": false,
+  "exception": "scoped FP64 diagnostic; no production/default promotion",
+  "plan": "docs/plans/ledh-moment-restoration-repair-20261020.md",
+  "result": "docs/plans/artifacts/ledh-moment-restoration-repair-20261020/diagnostic-01/result.json",
+  "source_hashes": {
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/moment_training_campaign.py": "5954e7aa6d33302d1ade826c95c3d2ab72363b38ed28ece5d9a2e4d76ce7f4a2",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/moment_training_tf.py": "f1267221f38f37a2b5374bf886c6a7d692359858f1f437e6d915f7c6c43416f9",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/supervised_guidance_tf.py": "c9f5bfacfc08d25d8f0710a709ef7076601621d623ac914604dde16874cb8a30",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/ledh_backward_guide_tf.py": "d17ceb2df6caa4e9119001f44d7579209f0c90baa093e07ce77d8614ffd30b0c",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": "1286275934146193a2655fcb171e3d78296fa528b63af779fb195da4f31a44da",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "f7e74d11b720077f8ddb8cee195cb80cded37e9a0b75fc9ded02726c3a59d79f",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "efe8a12bc63da9d3828b42d7a1aad4f8ed1c2d3a675df645a5c3496733ba2c8c",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "60f3b96c4b8e1c6328a3167a8840f73f629547ef33dbf71046adaa94674fa440"
+  },
+  "horizon": 5,
+  "particles": 64,
+  "chunk": 64,
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "partitions": {
+    "training": [
+      262021001,
+      262021002,
+      262021003,
+      262021004,
+      262021005,
+      262021006,
+      262021007,
+      262021008,
+      262021009,
+      262021010,
+      262021011,
+      262021012,
+      262021013,
+      262021014,
+      262021015,
+      262021016,
+      262021017,
+      262021018,
+      262021019,
+      262021020,
+      262021021,
+      262021022,
+      262021023,
+      262021024,
+      262021025,
+      262021026,
+      262021027,
+      262021028,
+      262021029,
+      262021030,
+      262021031,
+      262021032,
+      262021033,
+      262021034,
+      262021035,
+      262021036,
+      262021037,
+      262021038,
+      262021039,
+      262021040,
+      262021041,
+      262021042,
+      262021043,
+      262021044,
+      262021045,
+      262021046,
+      262021047,
+      262021048,
+      262021049,
+      262021050,
+      262021051,
+      262021052,
+      262021053,
+      262021054,
+      262021055,
+      262021056,
+      262021057,
+      262021058,
+      262021059,
+      262021060,
+      262021061,
+      262021062,
+      262021063,
+      262021064
+    ],
+    "validation": [
+      262022001,
+      262022002,
+      262022003,
+      262022004,
+      262022005,
+      262022006,
+      262022007,
+      262022008,
+      262022009,
+      262022010,
+      262022011,
+      262022012,
+      262022013,
+      262022014,
+      262022015,
+      262022016
+    ],
+    "test": [
+      262023001,
+      262023002,
+      262023003,
+      262023004,
+      262023005,
+      262023006,
+      262023007,
+      262023008,
+      262023009,
+      262023010,
+      262023011,
+      262023012,
+      262023013,
+      262023014,
+      262023015,
+      262023016,
+      262023017,
+      262023018,
+      262023019,
+      262023020,
+      262023021,
+      262023022,
+      262023023,
+      262023024,
+      262023025,
+      262023026,
+      262023027,
+      262023028,
+      262023029,
+      262023030,
+      262023031,
+      262023032,
+      262023033,
+      262023034,
+      262023035,
+      262023036,
+      262023037,
+      262023038,
+      262023039,
+      262023040,
+      262023041,
+      262023042,
+      262023043,
+      262023044,
+      262023045,
+      262023046,
+      262023047,
+      262023048,
+      262023049,
+      262023050,
+      262023051,
+      262023052,
+      262023053,
+      262023054,
+      262023055,
+      262023056,
+      262023057,
+      262023058,
+      262023059,
+      262023060,
+      262023061,
+      262023062,
+      262023063,
+      262023064
+    ]
+  },
+  "calibration_seed": 262020001,
+  "particle_namespaces": {
+    "training": 272000000,
+    "validation": 273000000,
+    "test": 274000000
+  },
+  "guide_seed_offset": 1000000,
+  "optimizer_seeds": [
+    262025001,
+    262025002
+  ],
+  "budget_seconds": 600.0,
+  "smoke": false,
+  "target": "terminal filtering centered first/raw-second moments",
+  "training_objective": "moment_loss_only",
+  "data_version": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "original_neural_kdm_training": false,
+  "role": "numerical root-cause diagnosis only",
+  "original_source_checks": {
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/moment_training_campaign.py": true,
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/moment_training_tf.py": true,
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/supervised_guidance_tf.py": true,
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/ledh_backward_guide_tf.py": true,
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": true,
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/highdim/sqmc_nonlinear_tf.py": true,
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": true,
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": true,
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": true,
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": true
+  },
+  "input_matches": {
+    "observations": true,
+    "label": true,
+    "score_label": true
+  },
+  "inspected_source_hash": "9aa4241fed50d313dac6933c18930f433ccb8983c1082b1f758e8aaac97acc55",
+  "wall_seconds": 45.42379215400433,
+  "calls": 1,
+  "findings": [
+    {
+      "time": 1,
+      "program_valid": true,
+      "positive_weights": 64,
+      "maximum_weight": 0.14759567264426862,
+      "moments": {
+        "target_mean": {
+          "finite": true,
+          "maximum_absolute": 488.38857783460264
+        },
+        "target_covariance": {
+          "finite": true,
+          "maximum_absolute": 6.900620464507112,
+          "min_eigenvalue": 0.24990448696843862,
+          "max_eigenvalue": 15.514342230411106,
+          "trace": 64.67759287429207
+        },
+        "target_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 25.133282304517508
+        },
+        "target_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 11.51877369441272
+        },
+        "target_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 6.900620464510705,
+          "min_eigenvalue": 0.2499044869720291,
+          "max_eigenvalue": 15.514342230414695,
+          "trace": 64.67759287435676
+        },
+        "target_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 11.51877369441678
+        },
+        "target_factor": {
+          "finite": true,
+          "maximum_absolute": 1.9390726080747493
+        },
+        "target_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.9786689901047914
+        },
+        "current_mean": {
+          "finite": true,
+          "maximum_absolute": 488.41114391270906
+        },
+        "current_covariance": {
+          "finite": true,
+          "maximum_absolute": 3.230718711814971,
+          "min_eigenvalue": 0.09676141800962296,
+          "max_eigenvalue": 8.401742092066671,
+          "trace": 30.241446952761525
+        },
+        "current_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 25.107324695435345
+        },
+        "current_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 4.989312860340377
+        },
+        "current_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 3.230718711816651,
+          "min_eigenvalue": 0.09676141801130304,
+          "max_eigenvalue": 8.401742092068346,
+          "trace": 30.241446952791765
+        },
+        "current_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 4.989312860342162
+        },
+        "current_factor": {
+          "finite": true,
+          "maximum_absolute": 1.3622306823914616
+        },
+        "current_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.008522454759231
+        },
+        "standardized": {
+          "finite": true,
+          "maximum_absolute": 1.9217537827913753
+        },
+        "standardized_tangent": {
+          "finite": true,
+          "maximum_absolute": 0.9171217231564176
+        },
+        "particles": {
+          "finite": true,
+          "maximum_absolute": 492.2280714009283
+        },
+        "particles_tangent": {
+          "finite": true,
+          "maximum_absolute": 26.39966855185708
+        },
+        "maximum_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 5.684341886080802e-14
+        },
+        "maximum_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 1.0470513345239851e-12
+        },
+        "maximum_normalized_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 1.163897385005154e-16
+        },
+        "maximum_normalized_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 1.5173292603316252e-13
+        }
+      }
+    },
+    {
+      "time": 2,
+      "program_valid": true,
+      "positive_weights": 64,
+      "maximum_weight": 0.9465542405842094,
+      "moments": {
+        "target_mean": {
+          "finite": true,
+          "maximum_absolute": 475.6319591509634
+        },
+        "target_covariance": {
+          "finite": true,
+          "maximum_absolute": 4.591224317483128,
+          "min_eigenvalue": 2.766881857784143e-05,
+          "max_eigenvalue": 16.683625079953934,
+          "trace": 17.785241243073294
+        },
+        "target_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 80.55534194584516
+        },
+        "target_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 68.75877206363916
+        },
+        "target_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 4.591224317484116,
+          "min_eigenvalue": 2.766881956626746e-05,
+          "max_eigenvalue": 16.683625079954915,
+          "trace": 17.785241243091075
+        },
+        "target_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 68.75877206365273
+        },
+        "target_factor": {
+          "finite": true,
+          "maximum_absolute": 1.7445492715984352
+        },
+        "target_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 17.19260618412945
+        },
+        "current_mean": {
+          "finite": true,
+          "maximum_absolute": 475.63030831956274
+        },
+        "current_covariance": {
+          "finite": true,
+          "maximum_absolute": 2.210324029389984,
+          "min_eigenvalue": 6.183415288507114e-06,
+          "max_eigenvalue": 8.01376850230295,
+          "trace": 8.522893760015892
+        },
+        "current_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 80.48960271355674
+        },
+        "current_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 33.39161328611083
+        },
+        "current_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 2.2103240293904576,
+          "min_eigenvalue": 6.183415762200473e-06,
+          "max_eigenvalue": 8.013768502303424,
+          "trace": 8.522893760024415
+        },
+        "current_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 33.391613286117426
+        },
+        "current_factor": {
+          "finite": true,
+          "maximum_absolute": 1.2303697602368318
+        },
+        "current_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 11.9601157794377
+        },
+        "standardized": {
+          "finite": true,
+          "maximum_absolute": 2.588297662714194
+        },
+        "standardized_tangent": {
+          "finite": true,
+          "maximum_absolute": 47.62849464272138
+        },
+        "particles": {
+          "finite": true,
+          "maximum_absolute": 478.6026436915739
+        },
+        "particles_tangent": {
+          "finite": true,
+          "maximum_absolute": 101.69350409768393
+        },
+        "maximum_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 2.2737367544323206e-13
+        },
+        "maximum_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 1.6432188942872017e-11
+        },
+        "maximum_normalized_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 4.780454110970805e-16
+        },
+        "maximum_normalized_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 3.5790429320343053e-12
+        }
+      }
+    },
+    {
+      "time": 3,
+      "program_valid": true,
+      "positive_weights": 64,
+      "maximum_weight": 0.4177462627028891,
+      "moments": {
+        "target_mean": {
+          "finite": true,
+          "maximum_absolute": 455.67130672725216
+        },
+        "target_covariance": {
+          "finite": true,
+          "maximum_absolute": 9.468053210904747,
+          "min_eigenvalue": 1.644449445406964e-10,
+          "max_eigenvalue": 24.256532543772057,
+          "trace": 38.28584488228556
+        },
+        "target_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 189.77877040500172
+        },
+        "target_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 191.13425920498702
+        },
+        "target_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 9.468053210906874,
+          "min_eigenvalue": 1.665719820931002e-10,
+          "max_eigenvalue": 24.25653254377417,
+          "trace": 38.28584488232385
+        },
+        "target_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 191.13425920499364
+        },
+        "target_factor": {
+          "finite": true,
+          "maximum_absolute": 2.4061051406183873
+        },
+        "target_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 65.97560765705327
+        },
+        "current_mean": {
+          "finite": true,
+          "maximum_absolute": 455.65291610051156
+        },
+        "current_covariance": {
+          "finite": true,
+          "maximum_absolute": 4.499561425417401,
+          "min_eigenvalue": 5.398594247724513e-11,
+          "max_eigenvalue": 11.504459722523677,
+          "trace": 18.21630450212566
+        },
+        "current_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 191.5324393951124
+        },
+        "current_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 87.6874572731409
+        },
+        "current_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 4.499561425418412,
+          "min_eigenvalue": 5.499787223187789e-11,
+          "max_eigenvalue": 11.504459722524684,
+          "trace": 18.216304502143874
+        },
+        "current_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 87.68745727314327
+        },
+        "current_factor": {
+          "finite": true,
+          "maximum_absolute": 1.6472472227827701
+        },
+        "current_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 44.74718301115784
+        },
+        "standardized": {
+          "finite": true,
+          "maximum_absolute": 2.155448296903752
+        },
+        "standardized_tangent": {
+          "finite": true,
+          "maximum_absolute": 214.94827416776127
+        },
+        "particles": {
+          "finite": true,
+          "maximum_absolute": 459.9845267825193
+        },
+        "particles_tangent": {
+          "finite": true,
+          "maximum_absolute": 256.4273302450255
+        },
+        "maximum_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 5.684341886080802e-14
+        },
+        "maximum_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 4.687805699177261e-12
+        },
+        "maximum_normalized_mean_residual": {
+          "finite": true,
+          "maximum_absolute": 1.2474653993263694e-16
+        },
+        "maximum_normalized_covariance_residual": {
+          "finite": true,
+          "maximum_absolute": 4.951182249142962e-13
+        }
+      }
+    },
+    {
+      "time": 4,
+      "program_valid": false,
+      "positive_weights": 64,
+      "maximum_weight": 1.0,
+      "moments": {
+        "target_mean": {
+          "finite": true,
+          "maximum_absolute": 433.68091980770936
+        },
+        "target_covariance": {
+          "finite": true,
+          "maximum_absolute": 1.3228103039081434e-29,
+          "min_eigenvalue": -1.0803342110390335e-45,
+          "max_eigenvalue": 4.6768172321537615e-29,
+          "trace": 4.7710056541860356e-29
+        },
+        "target_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 267.52298690819254
+        },
+        "target_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.035364936399335e-26
+        },
+        "target_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 1.3228103039084085e-29,
+          "min_eigenvalue": 2.6500061644596645e-42,
+          "max_eigenvalue": 4.676817232154028e-29,
+          "trace": 4.771005654190807e-29
+        },
+        "target_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.0353649363997413e-26
+        },
+        "target_factor": {
+          "finite": true,
+          "maximum_absolute": 3.6336904359614e-15
+        },
+        "target_factor_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.7969354442367635e-12
+        },
+        "current_mean": {
+          "finite": true,
+          "maximum_absolute": 433.68091980770936
+        },
+        "current_covariance": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "min_eigenvalue": 0.0,
+          "max_eigenvalue": 0.0,
+          "trace": 0.0
+        },
+        "current_mean_tangent": {
+          "finite": true,
+          "maximum_absolute": 267.5229869081925
+        },
+        "current_covariance_tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0
+        },
+        "current_safe_covariance": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "min_eigenvalue": 0.0,
+          "max_eigenvalue": 0.0,
+          "trace": 0.0
+        },
+        "current_safe_tangent": {
+          "finite": true,
+          "maximum_absolute": 0.0
+        },
+        "current_factor": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "current_factor_tangent": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "standardized": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "standardized_tangent": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "particles": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "particles_tangent": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "maximum_mean_residual": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "maximum_covariance_residual": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "maximum_normalized_mean_residual": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        },
+        "maximum_normalized_covariance_residual": {
+          "finite": false,
+          "maximum_absolute": "nan"
+        }
+      }
+    }
+  ]
+}

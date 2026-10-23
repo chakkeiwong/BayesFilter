@@ -6,18 +6,21 @@ only to preserve the reset's public diagnostic contract. This is not a claim of
 O(NK) total memory while that diagnostic return remains enabled.
 """
 from __future__ import annotations
+import math
 import tensorflow as tf
 from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
 
 
 def exact_block_transport_with_tangent(x, dx, weights, dw, covariance, dcovariance,
-                                       *, epsilon, iterations):
+                                       *, epsilon, iterations, denominator_regularization=1.0e-7):
     """Same primal and analytical derivatives as the one-block reset transport.
 
     x [B,N,D], dx [S,B,N,D]. The derivative of K r is (dK)r+K(dr),
     followed by the quotient rule for Sinkhorn scaling and actual row masses.
     Moment restoration and GenUT correction remain in their shared callers.
     """
+    if not math.isfinite(denominator_regularization) or denominator_regularization < 0:
+        raise ValueError('denominator_regularization must be finite and nonnegative')
     if x.shape[1] is None:
         raise ValueError('particle count must be static before tracing')
     selection = select_transport_chunks(int(x.shape[1]))
@@ -28,7 +31,7 @@ def exact_block_transport_with_tangent(x, dx, weights, dw, covariance, dcovarian
     dtype=x.dtype
     nf=tf.cast(n,dtype)
     eps=tf.cast(epsilon,dtype)
-    tiny=tf.cast(1e-7,dtype)
+    tiny=tf.cast(denominator_regularization,dtype)
 
     def take(v,index,axis):
         return tf.gather(v,tf.range(k)+index*k,axis=axis)
@@ -75,18 +78,24 @@ def exact_block_transport_with_tangent(x, dx, weights, dw, covariance, dcovarian
         return tf.transpose(values.concat(),[1,0]),tf.transpose(derivs.concat(),[1,2,0])
 
     uniform=tf.fill([batch,n],1/nf)
-    def balance(index,left,right,dleft,dright):
+    def balance(index,left,right,dleft,dright,valid):
         kr,dkr=product(right,dright)
         kr+=tiny
+        valid_kr=tf.math.is_finite(kr) & (kr>0)
+        valid &= tf.reduce_all(valid_kr,1)
+        kr=tf.where(valid_kr,kr,tf.ones_like(kr))
         left=uniform/kr
         dleft=-uniform[None]*dkr/tf.square(kr)[None]
         kl,dkl=product(left,dleft,transpose=True)
         kl+=tiny
+        valid_kl=tf.math.is_finite(kl) & (kl>0)
+        valid &= tf.reduce_all(valid_kl,1)
+        kl=tf.where(valid_kl,kl,tf.ones_like(kl))
         right=weights/kl
         dright=dw/kl[None]-weights[None]*dkl/tf.square(kl)[None]
-        return index+1,left,right,dleft,dright
-    _,left,right,dleft,dright=tf.while_loop(lambda index,*_:index<iterations,balance,
-        (tf.constant(0),tf.ones_like(uniform),tf.ones_like(uniform),tf.zeros_like(dw),tf.zeros_like(dw)),parallel_iterations=1)
+        return index+1,left,right,dleft,dright,valid
+    _,left,right,dleft,dright,valid_scaling=tf.while_loop(lambda index,*_:index<iterations,balance,
+        (tf.constant(0),tf.ones_like(uniform),tf.ones_like(uniform),tf.zeros_like(dw),tf.zeros_like(dw),tf.ones([batch],tf.bool)),parallel_iterations=1)
 
     payload=tf.concat([x,tf.reshape(covariance,[batch,n,dim*dim])],axis=-1)
     dpayload=tf.concat([dx,tf.reshape(dcovariance,[directions,batch,n,dim*dim])],axis=-1)
@@ -110,9 +119,12 @@ def exact_block_transport_with_tangent(x, dx, weights, dw, covariance, dcovarian
             (tf.constant(0),tf.zeros([batch,k],dtype),tf.zeros([directions,batch,k],dtype),couplings,dcouplings),parallel_iterations=1)
         coupling=tf.transpose(couplings.concat(),[1,2,0])
         dcoupling=tf.transpose(dcouplings.concat(),[1,2,3,0])
+        valid_mass=tf.math.is_finite(mass) & (mass>0)
+        valid &= tf.reduce_all(valid_mass,1)
+        mass=tf.where(valid_mass,mass,tf.ones_like(mass))
         transport=coupling/mass[:,:,None]
         dtransport=dcoupling/mass[None,:,:,None]-coupling[None]*dmass[:,:,:,None]/tf.square(mass)[None,:,:,None]
-        valid &= tf.reduce_all(tf.math.is_finite(transport),[1,2]) & tf.reduce_all(mass>0,1)
+        valid &= tf.reduce_all(tf.math.is_finite(transport),[1,2]) & tf.reduce_all(tf.math.is_finite(dtransport),[0,2,3])
         def payload_body(j,value,derivative):
             matrix=take(transport,j,2)
             dmatrix=take(dtransport,j,3)
@@ -125,7 +137,7 @@ def exact_block_transport_with_tangent(x, dx, weights, dw, covariance, dcovarian
         return (i+1,values.write(i,tf.transpose(value,[1,0,2])),derivs.write(i,tf.transpose(derivative,[2,0,1,3])),
                 plans.write(i,tf.transpose(transport,[1,0,2])),dplans.write(i,tf.transpose(dtransport,[2,0,1,3])),valid)
     _,values,derivs,plans,dplans,valid=tf.while_loop(lambda i,*_:i<blocks,row_body,
-        (tf.constant(0),values,derivs,plans,dplans,tf.ones([batch],tf.bool)),parallel_iterations=1)
+        (tf.constant(0),values,derivs,plans,dplans,valid_scaling),parallel_iterations=1)
     value=tf.transpose(values.concat(),[1,0,2])
     derivative=tf.transpose(derivs.concat(),[1,2,0,3])
     return (value[:,:,:dim],derivative[:,:,:,:dim],

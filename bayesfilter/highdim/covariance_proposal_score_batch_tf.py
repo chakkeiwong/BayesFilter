@@ -267,13 +267,22 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
             z,mu,pw,vr,rd=reset_cloud(child,logw,controls,precision_policy)
             reset_particles=z.v; cd=tf.zeros([batch,3],dtype)
             if controls.correction_steps:
+                pre_mean,pre_covariance=moments(z,x.constant(tf.fill([batch,n],tf.constant(1./n,dtype))))
+                pre_mean_error=tf.reduce_max(tf.abs(pre_mean.v-mu.v),1)
+                pre_covariance_error=tf.linalg.norm(pre_covariance.v-pw.v,axis=[1,2])/tf.maximum(tf.linalg.norm(pw.v,axis=[1,2]),tf.constant(1e-30,dtype))
                 from bayesfilter.highdim.covariance_proposal_score_moments_tf import repair_moments
                 z,cd=repair_moments(child,w,z,mu,pw,controls)
             zm,zp=moments(z,x.constant(tf.fill([batch,n],tf.constant(1./n,dtype))))
             eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
             mean_error=tf.reduce_max(tf.abs(zm.v-mu.v),1)
             cov_error=tf.linalg.norm(zp.v-pw.v,axis=[1,2])/tf.maximum(tf.linalg.norm(pw.v,axis=[1,2]),tf.constant(1e-30,dtype))
-            mean_ok=mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu.v),1))
+            if not controls.correction_steps:
+                pre_mean_error,pre_covariance_error=mean_error,cov_error
+            mean_scale=tf.maximum(tf.reduce_max(tf.abs(mu.v),1),tf.sqrt(tf.reduce_max(tf.linalg.diag_part(pw.v),1)))
+            mean_limit=tf.sqrt(eps)*mean_scale
+            roundoff_mean_limit=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu.v),1))
+            roundoff_warning=(mean_error>roundoff_mean_limit) | (cov_error>100*eps*d)
+            mean_ok=mean_error<=mean_limit
             covariance_ok=tf.math.is_finite(cov_error) & (cov_error<=covariance_tolerance)
             coordinate_move=tf.reduce_max(tf.abs(z.v-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw.v))[:,None],[1,2])
             cap=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
@@ -283,6 +292,11 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
                 tf.math.is_finite(inc.v),tf.reduce_all(tf.math.is_finite(inc.t),0)],1)
             good=tf.reduce_all(checks,1)
             row=tf.stack([inc.v,inc.t[0],1/tf.reduce_sum(w.v*w.v,1),tf.reduce_max(w.v,1),tf.reduce_max(tf.exp(densities.v[:,:,0]-lq.v),1),mean_error,cov_error,rd[:,0],maps[7],maps[8],cd[:,0],cd[:,1],cd[:,2],tf.cast(good,dtype),rd[:,1],rd[:,2],rd[:,3],coordinate_move],1)
+            extra=tf.stack([pre_mean_error,pre_covariance_error,mean_limit,
+                tf.cast(mean_ok & covariance_ok,dtype),tf.cast(tf.reduce_all(checks[:,2:5],1),dtype),
+                tf.fill([batch],covariance_tolerance),tf.cast(roundoff_warning,dtype),mean_scale,
+                roundoff_mean_limit,tf.fill([batch],100*eps*d)],1)
+            row=tf.concat([row,extra],1)
             # Freeze failed rows after their first failing step. Healthy rows
             # continue independently; a bad row cannot poison another chain.
             accepted=valid & good

@@ -1,7 +1,7 @@
 \section{Backward information as a proposal, not a replacement score}
 \label{sec:backward-guidance}
 
-The proposal developed here keeps one LEDH particle cloud, the existing
+The first construction below keeps one LEDH particle cloud, the existing
 per-particle UKF covariance recursion, OT, Contract--E--Chol and the GenUT
 dual-cap correction. Future observations inform where to propose particles;
 they are not appended to the observation likelihood. The returned score is
@@ -9,6 +9,9 @@ the analytical total derivative of the returned finite log normalizer. This
 choice differs from the two-cloud Fisher-score construction: a Fisher
 estimate of the model score need not differentiate a finite particle
 likelihood. Neither construction has established lower model-score error.
+The final subsection develops a separate composition with the existing
+identity/global/local density-mixture proposal. Its moment-restoring reset is
+distinct from this first construction's Contract--E--Chol implementation.
 
 \subsection{What travels backward}
 
@@ -107,6 +110,69 @@ controlled-SMC twisted-potential algorithm. Policies depending on the current
 observation may still be corrected as proposals, but only a future-only
 policy can support the specific lookahead interpretation above.
 
+\begin{proposition}[Exporting future information from a fitted scalar policy]
+\label{prop:bg-fitted-future}
+Fix a pilot reference transition
+$z\mid x\sim\mathcal N(\alpha_\star x,Q_\star)$ with $Q_\star>0$.
+Suppose its fitted next-time policy is
+$\widehat\psi_{t+1}(z)=\exp(-a_{t+1}z^2-\beta_{t+1}z-c_{t+1})$,
+where $a_{t+1}\geq0$. Write
+$D_{t+1}=1+2Q_\star a_{t+1}$. The future-only factor
+$\widehat h_t(x)=M^\star_{t+1}\widehat\psi_{t+1}(x)$ has coefficients
+\begin{equation}
+ H_t=\frac{2\alpha_\star^2 a_{t+1}}{D_{t+1}},
+ \qquad b_t=-\frac{\alpha_\star\beta_{t+1}}{D_{t+1}},
+ \qquad H_T=b_T=0.                                      \label{eq:bg-fitted-future}
+\end{equation}
+These coefficients are frozen when differentiating the evaluation model.
+For a scalar linear Gaussian observation model, a backward quadratic fit
+starting from the zero policy recovers the exact pilot backward information
+in exact arithmetic if every regression design has full column rank and
+the precision projection is inactive.
+\end{proposition}
+\begin{proof}
+The Gaussian integral exists because $D_{t+1}>0$. With
+$a=a_{t+1}$, $\beta=\beta_{t+1}$, $c=c_{t+1}$ and $D=D_{t+1}$,
+completion of the square gives
+\begin{align*}
+ \widehat h_t(x)
+ &=\frac{1}{\sqrt{2\pi Q_\star}}
+   \int_{\mathbb R}
+   \exp\!\left[-\frac{(z-\alpha_\star x)^2}{2Q_\star}
+                   -az^2-\beta z-c\right]\,dz,\\
+ \log\widehat h_t(x)
+ &=-\frac12\log D-c+\frac{Q_\star\beta^2}{2D}
+   -\frac{\alpha_\star^2a}{D}x^2
+   -\frac{\alpha_\star\beta}{D}x .
+\end{align*}
+Comparison with $-\tfrac12 H_t x^2+b_t x$ proves the formula.
+The terminal factor is one because there is no subsequent observation.
+
+For the exact-fit statement, write the scalar observation model as
+$y_t=Cx_t+\varepsilon_t$, $\varepsilon_t\sim\mathcal N(0,R)$,
+with $R>0$. If the future factor has precision $J_t$ and linear
+coefficient $r_t$, then the current-and-future policy satisfies
+\[
+ -\log\psi_t(x)
+ =\frac12(J_t+C^2/R)x^2-(r_t+Cy_t/R)x+\text{constant}.
+\]
+At the terminal time this is a quadratic, with $J_T=r_T=0$.
+The integral just derived preserves the quadratic form at the preceding
+time. Starting from zero policy, the replicated controlled-SMC backward
+regression fits precisely the negative log current likelihood plus the
+negative log integral of the newly fitted next-time policy. Its design
+columns are $(x^2,x,1)$; full column rank therefore gives the unique exact
+coefficients. Backward induction proves the assertion.
+\end{proof}
+
+This construction uses the next fitted policy, not the current one: the
+current policy already contains $y_t$. When $\alpha_\star=0$, the future
+observations supply no information about $x_t$ and both exported coefficients
+vanish. A mismatched pilot still defines an importance-corrected proposal,
+but its guide represents the pilot model's future information rather than
+the evaluation model's exact backward information. Floating-point regression
+conditioning and any active precision projection must be checked separately.
+
 \subsection{What a kernel mixture can contribute}
 
 A separate optional representation is a positive frozen Gaussian mixture
@@ -173,11 +239,72 @@ $\log q^0(U)$ is wrong for this proposal. The guide is not multiplied into
 $g_t$. Initialization is unchanged: this bounded implementation does not
 twist the initial law.
 
+The shared flow evaluates the observation and its Jacobian along a separate
+auxiliary trajectory initialized at the physical prediction. This trajectory
+does not depend on the current proposal draw $U$. A nonlinear observation can
+therefore give an affine map of $U$ after conditioning on the incoming cloud.
+The distinction matters: the coefficients still depend on $\theta$, including
+through earlier resets, and their parameter derivatives must be retained.
+
+\begin{proposition}[Actual Jacobian of the auxiliary-localized flow]
+\label{prop:bg-flow-jacobian}
+Condition on the incoming cloud, guide and current observation. Suppose the
+predicted covariance $P$ and observation covariance $R$ are positive definite,
+and all auxiliary evaluations are finite. Fix $S\geq1$ uniform Euler steps,
+put $\epsilon=1/S$ and $\tau_s=(s+1)\epsilon$, and let $H_s$ be the observation
+Jacobian evaluated at the auxiliary point at step $s$. The shared flow uses
+\[
+ A_s=-\tfrac12 PH_s^\top(\tau_sH_sPH_s^\top+R)^{-1}H_s,
+ \qquad M_s=I+\epsilon A_s,
+ \qquad x_{s+1}=M_sx_s+\epsilon b_s,
+ \qquad x_0=U,
+\]
+where $b_s$, like $H_s$, is independent of $U$. Then $F(U)=x_S$ is an affine
+bijection of $\R^d$, with
+\begin{equation}
+ D_UF=M_{S-1}\cdots M_0,
+ \qquad j=\log\det D_UF=\sum_{s=0}^{S-1}\log\det M_s.
+ \label{eq:bg-flow-jacobian}
+\end{equation}
+On a differentiable parameter neighborhood satisfying these conditions,
+\[
+ \dot j=\sum_{s=0}^{S-1}
+       \operatorname{tr}\!\left(M_s^{-1}\epsilon\dot A_s\right),
+\]
+where $\dot A_s$ is the total derivative, including the auxiliary trajectory,
+$P$, $R$ and the observation Jacobian.
+\end{proposition}
+\begin{proof}
+The auxiliary recurrence starts from the physical prediction and uses its own
+previous point, so induction makes every $H_s$, $A_s$ and $b_s$ independent of
+$U$. Differentiating the affine recurrence with respect to $U$ gives the
+product in \eqref{eq:bg-flow-jacobian}.
+
+To check invertibility rather than assume it, write $P=LL^\top$ and
+$C_s=R^{-1/2}H_sL$. Then
+\[
+ L^{-1}M_sL
+ =I-\tfrac{\epsilon}{2}
+ C_s^\top(I+\tau_sC_sC_s^\top)^{-1}C_s.
+\]
+For a singular value $\sigma$ of $C_s$, the corresponding eigenvalue of the
+subtracted matrix before multiplication by $\epsilon/2$ is
+$\sigma^2/(1+\tau_s\sigma^2)<1/\tau_s$; any remaining eigenvalues are zero.
+Consequently, every eigenvalue of $L^{-1}M_sL$ is strictly greater than
+$1-\epsilon/(2\tau_s)\geq1/2$. Each $M_s$ is invertible with positive
+determinant. Their product is invertible, proving the global affine
+bijection and the sum of log determinants. Finally, Jacobi's formula gives
+$\dd\log\det M_s=\operatorname{tr}(M_s^{-1}\dd M_s)$ and
+$\dot M_s=\epsilon\dot A_s$ because the step schedule is fixed. This proves
+the stated total derivative.
+\end{proof}
+
 \begin{proposition}[Conditional importance identity and its limitation]
 \label{prop:bg-correction}
-Condition on the incoming cloud and guide. If $F$ is a differentiable
-bijection on the proposal support and $j=\log|\det D_UF|$ is its actual
-Jacobian, then for integrable $\varphi$,
+Condition on the incoming cloud and guide. If $q^0$ is positive on $\R^d$,
+$F$ is a differentiable bijection of $\R^d$ and
+$j=\log|\det D_UF|$ is its actual Jacobian, then, whenever the right-hand
+integral is absolutely finite,
 \[
  \mathbb E_{U\sim q^0}\!\left[
  \varphi(F(U))\frac{f_\theta(F(U)\mid z)g_t(F(U))e^j}{q^0(U)}\right]
@@ -188,13 +315,10 @@ Jacobian, then for integrable $\varphi$,
 Cancel $q^0$ against the sampling density and substitute $x=F(u)$.
 The absolute Jacobian converts $\dd u$ into $\dd x$.
 \end{proof}
-The bijection and actual-Jacobian conditions are substantive. If a localized
-flow records only a frozen-coefficient affine determinant while its
-coefficients depend on the transported particle, this proposition cannot
-certify that implementation. Differentiating the recorded determinant
-correctly does not repair that measure mismatch. This work preserves the
-existing finite LEDH calculation and audits its derivative; it does not
-silently certify those independent flow assumptions. Furthermore, the
+Proposition~\ref{prop:bg-flow-jacobian} establishes the bijection and
+actual-Jacobian conditions for this auxiliary-localized flow under its stated
+covariance and finiteness assumptions. Localizing instead at the transported
+particle would change $D_UF$ and would require another argument. The
 deterministic OT/Contract-E/GenUT reset is not multinomial resampling and
 does not inherit an unbiased full-filter normalizer from this one-step
 identity.
@@ -290,9 +414,1102 @@ Gaussian square-completion checks, moving-anchor mixture tangents, and
 finite differences of the complete same-value recursion. The development
 comparator uses $\epsilon=1$ and five Sinkhorn iterations; balancing counts,
 ridge, correction and cap settings are reported independently. These are
-untuned settings. CPU-only small reference tests do not establish GPU/XLA
-readiness. Pilot fitting on actual models, equal-compute repeated-seed score
-comparisons, per-scope tuning, batch-native consumer coverage and any
-scientific or default promotion remain subsequent work. In particular,
-accepting coefficient arrays is not evidence that the replicated fitting
-endpoints have been integrated or that their output represents $h_t$.
+untuned settings. The scalar Gaussian reference now fits a quadratic policy
+through the replicated controlled-SMC forward and backward endpoints, exports
+its future-only factor by \eqref{eq:bg-fitted-future}, and supplies those
+coefficients to the shared analytical LEDH consumer. The closure checks compare
+the fitted factor with an independent Gaussian backward recursion. This is a
+test of actual pilot integration on that restricted model, rather than mere
+acceptance of coefficient arrays; it does not identify a future factor for an
+arbitrary nonlinear model. One-component KDM conversion is a representation
+check, not a trained mixture guide. Equal-compute comparisons on the nonlinear
+targets, scope-specific tuning, batch-native consumer coverage and scientific
+or default promotion remain subsequent work. A bounded GPU/XLA Gaussian
+reference experiment, even when it completes, cannot by itself establish
+those claims.
+
+The completed scalar fitted-guide pilot contains 624 evaluations, but the
+tested LEDH candidates fail the conditional comparison with simpler particle
+methods in every condition. A subsequent plain-LEDH Gaussian diagnostic
+completed 255 of 280 planned evaluations before a transport-validity rejection.
+On two six-coordinate fixtures, the analytical score agrees with finite
+differences of its own finite likelihood program to a maximum scaled error of
+$2.46\times 10^{-9}$. That agreement does not establish accuracy for the model
+likelihood score: persistent-condition errors remain large when the flow
+resolution increases from 48 to 192 steps. The observed error averages are
+descriptive; they do not support a statistical ranking of stochastic methods.
+
+A CPU reconstruction of the rejected case isolates a terminal transport-column
+total-variation residual of $2.7055\times 10^{-4}$, above the unchanged
+$10^{-4}$ validity threshold. Both XLA and non-XLA replays reject the case.
+The failed GPU random tensors were not archived, so exact identity with that
+reconstruction has not been checked. Separately, on completed cases the reset
+restores its weighted input mean and variance to machine precision, yet the
+weighted variance is already too small before the first reset. The following
+two calculations distinguish the transport failure from this earlier proposal
+problem. Neither derivative parity nor moment restoration alone is sufficient
+evidence for accurate model-score estimation.
+
+\subsection{Why more balancing does not remove an additive mass error}
+
+Consider the entrywise positive kernel matrix $K\in\mathbb R^{N\times N}$
+used to construct the transport, the desired row masses $a_i=1/N$, and
+source weights $w\in\mathbb R^N$ with $w_j>0$ and $\sum_j w_j=1$. The shared
+implementation adds a fixed number $\delta$ to both scaling denominators.
+This prevents division by zero, but changes the equations being solved.
+
+\begin{proposition}[Marginal deficit under additive scaling]
+\label{prop:bg-additive-scaling}
+Suppose positive vectors $u,v\in\mathbb R^N$ are a fixed point of
+\begin{equation}
+ u_i=\frac{a_i}{(Kv)_i+\delta},\qquad
+ v_j=\frac{w_j}{(K^{\mathsf T}u)_j+\delta},\qquad \delta\geq0.
+ \label{eq:bg-additive-scaling}
+\end{equation}
+For $C=\operatorname{diag}(u)K\operatorname{diag}(v)$, the row and column
+masses are respectively $a_i-\delta u_i$ and $w_j-\delta v_j$.
+When $\delta=0$ they equal the requested marginals. When $\delta>0$,
+normalizing each row of $C$ need not recover the requested column masses.
+\end{proposition}
+\begin{proof}
+The row sum is $u_i(Kv)_i=u_i[a_i/u_i-\delta]=a_i-\delta u_i$;
+the column calculation is identical. The row-normalized transport satisfies
+$T_{ij}=C_{ij}/(a_i-\delta u_i)$. Its induced source mass is therefore
+$\sum_i a_iC_{ij}/(a_i-\delta u_i)$, which does not in general equal $w_j$.
+For a concrete positive-kernel counterexample, take $a=w=(1/2,1/2)$,
+$\delta=1/4$, $K=\bigl(\begin{smallmatrix}5&1\\1&1\end{smallmatrix}\bigr)$,
+and $u=v=(1/4,1/2)$. Both fixed-point equations hold. The coupling is
+$C=\bigl(\begin{smallmatrix}5/16&1/8\\1/8&1/4\end{smallmatrix}\bigr)$,
+so its row-normalized transport is
+$T=\bigl(\begin{smallmatrix}5/7&2/7\\1/3&2/3\end{smallmatrix}\bigr)$.
+Its induced source masses are $(11/21,10/21)$ rather than $(1/2,1/2)$.
+\end{proof}
+
+The fixed-point calculation alone does not locate the error after a finite
+number of updates. A frozen-input comparison does. In the reconstructed
+rejection, increasing the terminal count from 32 to 256 reduces column
+total variation only from $2.7055\times10^{-4}$ to $2.5292\times10^{-4}$;
+both fail the unchanged $10^{-4}$ test. An independent log-domain calculation
+matches the existing $\delta=10^{-7}$ transport to machine precision.
+At the same $5+32=37$ updates, setting $\delta=0$ reduces the rejected
+cloud's residual to $4.45\times10^{-11}$.
+
+This is an untuned FP64 CPU/XLA diagnostic, not production TF32 validation.
+An optional zero-$\delta$ setting in the shared implementation passes mass
+checks on all 18 frozen clouds and four new-noise full-consumer fixtures.
+Analytical reset tangents agree with finite differences to a maximum scaled
+error of $1.34\times10^{-8}$; the full-consumer maximum is
+$3.30\times10^{-8}$. However, 13 of the 17 previously accepted clouds exceed
+the predeclared $10^{-6}$ state-change tolerance, with a largest change of
+$4.67\times10^{-6}$. Thus this candidate is rejected as an interchangeable
+repair under that test. The default remains unchanged. The result does not
+reject unperturbed scaling as a separately calibrated numerical method.
+
+\subsection{A conditional proposal can be narrower than its flow covariance}
+
+The first-step discrepancy needs a different explanation because no reset has
+yet occurred. Consider the scalar model $X=\alpha Z+\eta$,
+$Y=HX+\varepsilon$, with $Z\sim N(\mu_0,P_0)$, $\eta\sim N(0,Q)$ and
+$\varepsilon\sim N(0,R)$ mutually independent, where $Q,R>0$ and
+$P_0\geq0$. The predictive UKF variance
+is $P=\alpha^2P_0+Q$. Conditional on a sampled ancestor $Z=z$, however,
+the physical proposal is $X_0=a+\eta$, where $a=\alpha z$, and its variance
+is $Q$, not $P$.
+
+\begin{proposition}[Conditional spread under the scalar Gaussian flow]
+\label{prop:bg-conditional-spread}
+Hold $a,P,H,R$ fixed while integrating the continuous affine LEDH flow whose
+linear coefficient is
+\begin{equation}
+ A_\lambda=-\frac{PH^2}{2(R+\lambda PH^2)},\qquad 0\leq\lambda\leq1,
+ \label{eq:bg-scalar-flow-coefficient}
+\end{equation}
+and whose affine term is
+$b_\lambda=(1+2\lambda A_\lambda)
+[(1+\lambda A_\lambda)PHy/R+A_\lambda a]$.
+Applied to $X_0\mid z\sim N(a,Q)$, the endpoint has mean and variance
+\begin{equation}
+ m_F=a+\frac{PH}{R+PH^2}(y-Ha),\qquad
+ V_F=\frac{QR}{R+PH^2}.
+ \label{eq:bg-conditional-flow}
+\end{equation}
+The exact physical conditional $X\mid z,y$ instead has mean
+$m_c=a+QH(y-Ha)/(R+QH^2)$ and variance $V_c=QR/(R+QH^2)$.
+Consequently
+\begin{equation}
+ \frac{V_F}{V_c}=\frac{R+QH^2}{R+PH^2}\leq1,
+ \label{eq:bg-conditional-variance-ratio}
+\end{equation}
+with strict inequality when $H\alpha\ne0$ and $P_0>0$.
+\end{proposition}
+\begin{proof}
+The sensitivity of the flow to its initial point solves
+$\dot M_\lambda=A_\lambda M_\lambda$, $M_0=1$. Integration gives
+\[
+ M_\lambda=\exp\!\left[-\frac12
+   \log\frac{R+\lambda PH^2}{R}\right]
+ =\sqrt{\frac{R}{R+\lambda PH^2}}.
+\]
+Thus $\operatorname{Var}(X_1\mid z)=M_1^2Q$.
+For the mean, substitute
+$m_\lambda=a+\lambda PH(y-Ha)/(R+\lambda PH^2)$ into the ODE:
+both $\dot m_\lambda$ and $A_\lambda m_\lambda+b_\lambda$ equal
+$PHR(y-Ha)/(R+\lambda PH^2)^2$, and $m_0=a$.
+For the physical conditional, completing the square in
+\[
+ -\frac{(x-a)^2}{2Q}-\frac{(y-Hx)^2}{2R}
+ =-\frac12\left(Q^{-1}+H^2/R\right)x^2
+   +\left(a/Q+Hy/R\right)x+\text{constant}
+\]
+gives $V_c=(Q^{-1}+H^2/R)^{-1}$ and
+$m_c=V_c(a/Q+Hy/R)$, which simplify to the stated expressions.
+Dividing the two positive variances and substituting
+$P=\alpha^2P_0+Q$ proves the stated ratio and strictness condition.
+\end{proof}
+
+For $\alpha=0.9$, $P_0=1$, $Q=0.09$, $R=0.25$, $H=1$, the ratio is
+$0.34/1.15\simeq0.296$. These are conditional proposal variances, not
+the marginal filtering variance. In the saved persistent fixture, the latter
+is approximately $0.1957$, the sampled-ancestor conditional mixture has
+variance $0.1920$, and the weighted child cloud has variance $0.0453$.
+Increasing flow resolution from 48 to 192 moves the affine proposal closer
+to the continuous calculation but does not remove the observed concentration.
+The independent prior, proposal, observation-density and weight identities
+agree to $1.5\times10^{-14}$. Hence these checks support a proposal-coverage
+explanation rather than an omitted Gaussian density factor. They do not prove
+that every finite-sample realization has the same error.
+
+This distinction concerns the single-flow consumer tested above. The existing
+mixture of identity, global and local maps already uses the conditional covariance $Q$ in
+its local bridge, so the calculation does not diagnose that mixture as having
+the same defect. A positive-semidefinite
+quadratic guide reduces the pre-flow covariance to
+$(Q^{-1}+J)^{-1}\leq Q$ in this scalar case, so it cannot repair the
+current-observation conditional spread merely by further contraction through
+the same affine map. Future conditioning can legitimately require a smaller
+variance; the statement is not a rejection of future information. Rather,
+controlled-SMC backward information and KDM approximations must be evaluated
+after composition with the actual proposal maps. A useful guide before the
+flow need not remain useful after it. We therefore turn to the three-branch
+mixture already developed for this purpose. Its separate reset does not
+replace the UKF and Contract--E construction above or establish conformance
+with it.
+
+\subsection{Backward guidance in the identity/global/local density mixture}
+\label{sec:bg-three-map-mixture}
+
+The three choices are transformations of a transition draw: leave it alone,
+apply a common global map, or apply an ancestor-specific local map. A particle
+chooses one transformation. Averaging transformed positions would define a
+different proposal density. This distinction also determines where backward
+information belongs: it changes the global and local maps while preserving
+the unchanged transition as a defensive component.
+
+Fix the incoming equal-weight cloud $z_1,\ldots,z_N$ and an additive Gaussian
+transition $U\mid j\sim\mathcal N(m_j,Q)$, where $m_j=f_\theta(z_j)$ and $Q$
+is positive definite. The predictive density represented by that cloud is
+\begin{equation}
+ p_N^-(x)=\frac1N\sum_{j=1}^N\varphi(x;m_j,Q).
+ \label{eq:bg-mixture-predictive}
+\end{equation}
+The maps below are computed from this cloud, the current observation, and a
+frozen future guide before drawing the new branch, ancestor or innovation.
+They may depend on $\theta$ and on the incoming cloud; freezing a guide's
+coefficients does not freeze these dependencies.
+
+A controlled-SMC quadratic future message supplies a positive-semidefinite
+precision $J_t$ and natural vector $r_t$, representing
+$\psi_t(x)\propto\exp(-x^TJ_tx/2+r_t^Tx)$. For a frozen Gaussian mixture
+$\psi_t(x)=\sum_k\pi_{tk}\varphi(x;c_{tk},S_{tk})$, define responsibilities
+$\rho_k(a)=\pi_{tk}\varphi(a;c_{tk},S_{tk})/\psi_t(a)$ at a deterministic
+anchor $a$. The local quadratic used by the maps has coefficients
+\begin{equation}
+ J_t(a)=\sum_k\rho_k(a)S_{tk}^{-1},\qquad
+ r_t(a)=\sum_k\rho_k(a)S_{tk}^{-1}c_{tk}.
+ \label{eq:bg-mixture-future-information}
+\end{equation}
+Indeed $r_t(a)-J_t(a)a=\nabla\log\psi_t(a)$, by differentiating the mixture
+sum and dividing by $\psi_t(a)$. Its precision is positive definite when
+the component covariances are positive definite. It matches the spatial
+gradient at the anchor; it is not the mixture's exact negative Hessian or
+exact Gaussian conditioning on the mixture. The omitted score-covariance
+term in that Hessian is the reason these interpretations differ.
+
+\begin{proposition}[Mixture information and omitted uncertainty]
+\label{prop:bg-mixture-information-gap}
+For the positive Gaussian mixture in
+\eqref{eq:bg-mixture-future-information}, put
+$s_k(a)=S_{tk}^{-1}(c_{tk}-a)$ and $\bar s(a)=\sum_k\rho_k(a)s_k(a)$.
+Then
+\begin{equation}
+ -\nabla^2\log\psi_t(a)
+ =J_t(a)-\sum_k\rho_k(a)(s_k(a)-\bar s(a))(s_k(a)-\bar s(a))^T.
+ \label{eq:bg-mixture-hessian-gap}
+\end{equation}
+Thus $J_t$ exceeds the negative log-message Hessian by a positive-semidefinite
+matrix. In one dimension, suppose all component variances equal $h^2>0$.
+For $S>0$, multiplying the message by the same Gaussian $\varphi(x;a,S)$ used by the
+global construction gives component variances and means
+\[
+ C_0=(S^{-1}+h^{-2})^{-1},\qquad
+ b_k=C_0(S^{-1}a+h^{-2}c_k),
+ \qquad
+ \alpha_k=\frac{\pi_k\varphi(a;c_k,S+h^2)}
+ {\sum_j\pi_j\varphi(a;c_j,S+h^2)}.
+\]
+The exact normalized product therefore has variance
+\begin{equation}
+ V_{\rm product}=C_0+\sum_k\alpha_k(b_k-\bar b)^2,
+ \qquad \bar b=\sum_k\alpha_kb_k,
+ \label{eq:bg-mixture-product-gap}
+\end{equation}
+whereas the covariance in \eqref{eq:bg-mixture-global-moments} is $C_0$.
+The two covariances coincide for one component; distinct component means with
+positive weights give a strictly positive gap in one dimension.
+\end{proposition}
+\begin{proof}
+Differentiating the normalized responsibilities gives
+$\nabla\rho_k=\rho_k(s_k-\bar s)$, while
+$\nabla s_k=-S_{tk}^{-1}$. Hence differentiating
+$\nabla\log\psi_t=\sum_k\rho_ks_k$ gives
+$\nabla^2\log\psi_t=\sum_k\rho_ks_ks_k^T-\bar s\bar s^T-J_t$,
+which proves \eqref{eq:bg-mixture-hessian-gap}. Completing the square in
+$\varphi(x;a,S)\varphi(x;c_k,h^2)$ gives a Gaussian with moments
+$(b_k,C_0)$ and integrated mass $\varphi(a;c_k,S+h^2)$.
+Normalizing these masses gives $\alpha_k$. The law of total variance now
+gives \eqref{eq:bg-mixture-product-gap}. The omitted term is a variance:
+it is nonnegative, and vanishes exactly when all component posterior means
+with positive weight agree.
+\end{proof}
+
+This distinction matters even when the fitted message is accurate as a
+density. With equal kernel variances, the information used by the consumer is
+$h^{-2}$ regardless of how far apart the kernel centers lie. A smaller
+bandwidth can therefore narrow the Gaussian map without representing the
+uncertainty across centers. The exact product here is only the product with
+the current-observation Gaussian approximation, not the exact filtering or
+smoothing distribution. Nor does the result justify replacing $J_t$ by the
+negative Hessian: the latter can be indefinite. It identifies a mechanism to
+test before changing the proposal.
+
+The global map can retain this uncertainty without using an indefinite
+Hessian. At a fixed time, write $R_k=S_{tk}$, $c_k=c_{tk}$ and let $\pi_k>0$
+be the fixed normalized mixture weights. Multiplying each component by the
+current-observation Gaussian is tractable in every state dimension. The
+mixture remains non-Gaussian; only its first two moments determine the common
+affine proposal map.
+
+\begin{proposition}[Gaussian-product moments and their total derivatives]
+\label{prop:bg-product-moments}
+Let $S$ and every $R_k$ be positive definite. The normalized product of
+$\varphi(x;a,S)$ and $\sum_k\pi_k\varphi(x;c_k,R_k)$ is a mixture with
+component covariances, means and weights
+\begin{align}
+ \Lambda&=S^{-1}, & C_k&=(\Lambda+R_k^{-1})^{-1}, &
+ b_k&=C_k(\Lambda a+R_k^{-1}c_k),\label{eq:bg-product-components}\\
+ B_k&=S+R_k, &
+ \alpha_k&=\frac{\pi_k\varphi(a;c_k,B_k)}
+ {\sum_j\pi_j\varphi(a;c_j,B_j)}.\label{eq:bg-product-weights}
+\end{align}
+Its mean and covariance are
+\begin{equation}
+ b=\sum_k\alpha_k b_k,\qquad
+ V=\sum_k\alpha_k\{C_k+(b_k-b)(b_k-b)^T\}.
+ \label{eq:bg-product-moments}
+\end{equation}
+In particular, $V$ is positive definite. These moments include uncertainty
+within components and uncertainty about which component generated the state.
+
+Hold $\pi_k,c_k,R_k$ fixed and let a dot denote any parameter direction
+through $a,S$. With $n_k=\Lambda a+R_k^{-1}c_k$ and
+$u_k=B_k^{-1}(a-c_k)$, their derivatives satisfy
+\begin{align}
+ \dot\Lambda&=-\Lambda\dot S\Lambda,&
+ \dot C_k&=-C_k\dot\Lambda C_k,\label{eq:bg-product-component-tangent}\\
+ \dot n_k&=\dot\Lambda a+\Lambda\dot a,&
+ \dot b_k&=\dot C_k n_k+C_k\dot n_k,\nonumber\\
+ \eta_k&=-u_k^T\dot a+
+ \tfrac12\{u_k^T\dot S u_k-\operatorname{tr}(B_k^{-1}\dot S)\},&
+ \dot\alpha_k&=\alpha_k\Bigl(\eta_k-\sum_j\alpha_j\eta_j\Bigr).
+ \label{eq:bg-product-weight-tangent}
+\end{align}
+Put $\delta_k=b_k-b$ and $M_k=C_k+\delta_k\delta_k^T$. Then
+\begin{align}
+ \dot b&=\sum_k(\dot\alpha_k b_k+\alpha_k\dot b_k),\nonumber\\
+ \dot\delta_k&=\dot b_k-\dot b,\nonumber\\
+ \dot V&=\sum_k\left[\dot\alpha_k M_k+
+ \alpha_k\{\dot C_k+\dot\delta_k\delta_k^T+
+ \delta_k\dot\delta_k^T\}\right].
+ \label{eq:bg-product-moment-tangent}
+\end{align}
+These are total derivatives of the stated moments under the frozen-message
+assumption, including the changing mixture weights.
+\end{proposition}
+\begin{proof}
+Completing the square in each product gives
+\[
+ \varphi(x;a,S)\varphi(x;c_k,R_k)
+ =\varphi(a;c_k,S+R_k)\varphi(x;b_k,C_k).
+\]
+Integration over $x$ gives its component mass and hence
+\eqref{eq:bg-product-weights}. Conditional expectation gives $b$; the law of
+total covariance gives $V$. For nonzero $z$,
+$z^TVz=\sum_k\alpha_k\{z^TC_kz+(z^T\delta_k)^2\}>0$ because every
+$C_k$ is positive definite.
+
+Differentiating $S\Lambda=I$ gives the first inverse derivative.
+Differentiating $(\Lambda+R_k^{-1})C_k=I$ and $b_k=C_kn_k$ gives
+\eqref{eq:bg-product-component-tangent}. For the mixture mass, differentiate
+\[
+ \log\varphi(a;c_k,B_k)
+ =-\tfrac d2\log(2\pi)-\tfrac12\log\det B_k
+  -\tfrac12(a-c_k)^TB_k^{-1}(a-c_k).
+\]
+Since $\dot B_k=\dot S$,
+$\partial\log\det B_k=\operatorname{tr}(B_k^{-1}\dot S)$ and
+$\partial B_k^{-1}=-B_k^{-1}\dot S B_k^{-1}$, this derivative is $\eta_k$.
+Differentiating the normalized exponential weights gives the centered
+expression for $\dot\alpha_k$. Finally, the ordinary product rule applied to
+each term of \eqref{eq:bg-product-moments} yields
+\eqref{eq:bg-product-moment-tangent}.
+\end{proof}
+
+The optional implementation uses $(b,V)$ for the global map and propagates
+$(\dot b,\dot V)$ through the same Cholesky recoloring and subsequent score
+recursion. Its TensorFlow routine accepts a batch of Gaussians in arbitrary
+state dimension; the shared filter calls it for the current global Gaussian.
+Checked factorizations reject nonfinite, asymmetric or relatively singular
+covariances. They introduce no ridge into accepted results. With an inactive
+future message the input moments and derivatives pass through unchanged.
+The local maps continue to use the positive information in
+\eqref{eq:bg-mixture-local-information}, and the actual mixture proposal
+density still enters the importance denominator. Thus the construction
+changes a proposal, not the likelihood being estimated. Exactness of its
+product moments does not make the current-observation Gaussian exact or
+prove a reduction in finite-particle score error.
+
+\begin{proposition}[Guided global and local affine maps]
+\label{prop:bg-mixture-guided-maps}
+Let $(\bar m,P)$ be the predictive cloud moments, including $Q$, and let
+$(a,S)$ be the current-observation quadrature update of these moments.
+Assume $P,S,Q$ are positive definite. Evaluate the future information at $a$.
+Multiplying the current-observation Gaussian by the local quadratic message
+approximation gives moments
+\begin{equation}
+ C=(S^{-1}+J_t(a))^{-1},\qquad
+ b=C\{S^{-1}a+r_t(a)\}.
+ \label{eq:bg-mixture-global-moments}
+\end{equation}
+The optional product-moment construction in
+Proposition~\ref{prop:bg-product-moments} replaces these two moments when the
+future message is represented as a Gaussian mixture.
+Writing $L_VL_V^T=V$ for a Cholesky factorization, the common affine map
+$T_G(u)=b+L_CL_P^{-1}(u-\bar m)$ sends a distribution with moments
+$(\bar m,P)$ to one with moments $(b,C)$.
+
+For ancestor $j$, linearize the current observation as
+$H_jx+o_j$, with Gaussian guide covariance $R$. Evaluate the future
+information at $m_j$ and set
+\begin{equation}
+ B_j=H_j^TR^{-1}H_j+J_t(m_j),\qquad
+ v_j=H_j^TR^{-1}(y_t-o_j)+r_t(m_j).
+ \label{eq:bg-mixture-local-information}
+\end{equation}
+The local Gaussian bridge has moments
+$C_j(\lambda)=(Q^{-1}+\lambda B_j)^{-1}$ and
+$b_j(\lambda)=C_j(\lambda)(Q^{-1}m_j+\lambda v_j)$.
+The existing finite affine integration of this bridge defines $T_{Lj}$.
+Its actual finite map, rather than a continuous-time endpoint approximation,
+defines the proposal density.
+\end{proposition}
+\begin{proof}
+Adding the Gaussian log density with mean $a$ and covariance $S$ to the
+future quadratic yields
+$-x^T(S^{-1}+J)x/2+x^T(S^{-1}a+r)+\mathrm{constant}$.
+Completing the square proves \eqref{eq:bg-mixture-global-moments}.
+The affine image has mean $b$ and covariance
+$L_CL_P^{-1}P L_P^{-T}L_C^T=C$. This is a moment statement; the incoming
+mixture need not itself be Gaussian.
+
+For the local bridge, raise the current linearized Gaussian likelihood and
+future quadratic to power $\lambda$ and multiply by
+$\mathcal N(m_j,Q)$. Collecting quadratic and linear terms gives precisely
+$Q^{-1}+\lambda B_j$ and $Q^{-1}m_j+\lambda v_j$.
+Differentiating these moments gives
+$\dot b_j=C_j(v_j-B_jb_j)$ and
+$\dot C_j=-C_jB_jC_j$. Thus the affine velocity
+\[
+ F_j=-\tfrac12 C_jB_j,\qquad
+ d_j=\dot b_j-F_jb_j
+\]
+has the stated Gaussian moment evolution, since
+$F_jC_j+C_jF_j^T=-C_jB_jC_j$. Composing the finite Euler steps
+$u\leftarrow(I+\Delta\lambda F_j)u+\Delta\lambda d_j$ gives an affine map
+$T_{Lj}(u)=A_{Lj}u+c_{Lj}$. The runtime checks its covariance for loss of
+rank. No equality between a finite Euler map and the limiting moments is
+needed for the density calculation that follows.
+\end{proof}
+
+For example, with a scalar linear observation and a quadratic future
+message, the limiting local conditional variance is
+$(Q^{-1}+H^2/R+J_t)^{-1}$. The predictive cloud variance does not replace
+$Q$ in this formula. Setting $J_t=r_t=0$ recovers the unguided maps.
+For nonlinear or non-Gaussian observations these maps guide the proposal;
+the actual observation density still determines the importance weight.
+
+\begin{proposition}[Complete density correction and defensive support]
+\label{prop:bg-mixture-guided-weights}
+Let $T_{bj}(u)=A_{bj}u+c_{bj}$, for $b\in\{0,G,L\}$, be nonsingular fixed
+maps conditional on the incoming cloud and guide. Let $A_{0j}=I,c_{0j}=0$.
+Draw a branch with frozen probabilities $\beta$, an independent uniform
+ancestor, and an independent Gaussian innovation. Then
+\begin{equation}
+ q_b(x)=\frac1N\sum_j\varphi(x;A_{bj}m_j+c_{bj},A_{bj}QA_{bj}^T),
+ \qquad q_\beta(x)=\sum_b\beta_bq_b(x).
+ \label{eq:bg-mixture-guided-density}
+\end{equation}
+The correct weight for the empirical predictive update is
+\begin{equation}
+ W(x)=\frac{g_\theta(y_t\mid x)p_N^-(x)}{q_\beta(x)}.
+ \label{eq:bg-mixture-guided-weight}
+\end{equation}
+If $\beta_0>0$, then $q_\beta\geq\beta_0p_N^-$ and
+$W(x)\leq g_\theta(y_t\mid x)/\beta_0$. For $N$ conditionally independent
+draws and finite second moment,
+\begin{equation}
+ \operatorname{Var}(\widehat Z\mid\text{cloud,maps})
+ =\frac1N\left\{\int\frac{[g_\theta(y_t\mid x)p_N^-(x)]^2}
+ {q_\beta(x)}\,dx-Z_N^2\right\},\qquad
+ Z_N=\int g_\theta(y_t\mid x)p_N^-(x)\,dx.
+ \label{eq:bg-mixture-guided-variance}
+\end{equation}
+\end{proposition}
+\begin{proof}
+An invertible affine image of a Gaussian has the mean and covariance in
+\eqref{eq:bg-mixture-guided-density}. Marginalizing the uniform ancestor and
+then the branch gives $q_\beta$. Multiplying it by
+\eqref{eq:bg-mixture-guided-weight} leaves exactly
+$g_\theta(y_t\mid x)p_N^-(x)$, so its integral is $Z_N$.
+The identity branch has density $p_N^-$, proving the lower bound and the
+weight bound. Integrating $W^2q_\beta$ gives the displayed second moment;
+independence divides its centered variance by $N$.
+\end{proof}
+
+Future likelihood is not multiplied into the numerator a second time. The
+formula also explains how to choose $\beta$ without an oracle normalizer:
+for fixed maps minimize the integral in braces before $-Z_N^2$, using a
+separate pilot with a known sampling density. That pilot must evaluate the
+guided maps and densities actually used; an unguided calibration does not
+automatically calibrate the guided mixture. Its Hessian has quadratic form
+$2\int [g p_N^-]^2(\sum_b u_bq_b)^2/q_\beta^3\,dx\geq0$ wherever the
+derivatives are integrable. The pilot problem is convex. A normalized
+multi-context pilot objective need not have the same optimizer as one
+unnormalized single-context integral. Freeze its selected $\beta$ before
+the score evaluation. The conditional variance identity does not establish
+smaller model-score error, and it needs modification for dependent SQMC
+draws or fixed branch counts.
+
+\begin{proposition}[Analytical total derivative of the guided finite program]
+\label{prop:bg-mixture-guided-score}
+Fix guide coefficients, $\beta$, observations and all random inputs.
+On a region where the finite program is differentiable and all its validity
+checks pass, differentiating the maps, full densities, normalized weights
+and the same moment reset gives the total derivative of its returned finite
+log normalizer. Mixture responsibilities must be differentiated through their
+moving anchors even though the guide coefficients are frozen.
+\end{proposition}
+\begin{proof}
+For a Gaussian mixture guide, let
+$s_k(a)=S_{tk}^{-1}(c_{tk}-a)$ and
+$\bar s=\sum_k\rho_ks_k$. Differentiating the normalized positive mixture
+weights gives
+\[
+ d\rho_k=\rho_k(s_k-\bar s)^Tda,\qquad
+ dJ=\sum_kd\rho_k S_{tk}^{-1},\qquad
+ dr=\sum_kd\rho_k S_{tk}^{-1}c_{tk}.
+\]
+For the global product, write $K=S^{-1}+J$. Differentiate $KC=I$ and
+$Kb=S^{-1}a+r$ to obtain
+\begin{align}
+ dC&=-C(dS^{-1}+dJ)C,\nonumber\\
+ db&=C\{dS^{-1}a+S^{-1}da+dr-(dS^{-1}+dJ)b\},
+ \qquad dS^{-1}=-S^{-1}(dS)S^{-1}.
+ \label{eq:bg-mixture-global-tangent}
+\end{align}
+The existing solve and Cholesky recurrences propagate these differentials
+through the global recolouring and every local affine step. The branch and
+ancestor selected by fixed uniforms do not change with $\theta$, because
+their probabilities are frozen. In contrast, the mixture density has
+parameter-dependent responsibilities $\omega_b=\beta_bq_b/q_\beta$, so
+$d\log q_\beta=\sum_b\omega_b\,d\log q_b$.
+Consequently
+\[
+ d\log W_i=d\log g_i+d\log p_N^-(x_i)-d\log q_\beta(x_i),\qquad
+ d\log\widehat Z_t=\sum_i\bar W_i\,d\log W_i.
+\]
+Each differential includes the particle's motion. Propagating both the
+weighted-cloud moment differentials and transport differentials through the
+implemented reset gives the next cloud differential. Induction over time
+and summation of the increment derivatives prove the claim.
+\end{proof}
+
+An execution can therefore be written without ancestor tracing or a sampled
+smoothing path:
+\begin{enumerate}
+ \item Select guide settings using separate calibration data. For the
+ observation sequence being evaluated, fit its future-only messages at a fixed
+ parameter using independent pilot randomness, then freeze the coefficients.
+ Freeze independently calibrated branch probabilities before scoring.
+ \item At each observation, propagate the incoming cloud to conditional
+ transition means and form the unchanged identity branch.
+ \item Evaluate the frozen guide at the global updated mean and the local
+ transition means. Build the guided global and local affine maps and their
+ analytical differentials before drawing new innovations.
+ \item Select one branch and one ancestor per particle, draw the transformed
+ Gaussian, and evaluate all three marginal component densities at that draw.
+ \item Apply \eqref{eq:bg-mixture-guided-weight}, accumulate the finite log
+ increment and its analytical derivative, and normalize the weights.
+ \item Apply the same five-step OT calculation with $\epsilon=1$, followed
+ by the existing Cholesky moment restoration and any declared dual-cap
+ correction; propagate all corresponding differentials and validity checks.
+\end{enumerate}
+The runtime entry is the existing
+\texttt{covariance\_proposal\_tf.make\_filter} with an optional frozen guide.
+Its reset remains the optional mixture candidate's moment-restoring reset.
+The fixed $(1,5)$ setting is the owner's comparison baseline, not a tuned
+optimum. Finite-program derivative agreement establishes this computation's
+internal derivative, while comparison with exact Gaussian model scores and
+untouched nonlinear references remains a separate empirical task.
+
+\subsection{What the first nonlinear fitted comparison establishes}
+\label{sec:bg-ksc-fitted-result}
+
+The 17 October 2026 KSC comparison uses the seven-component Gaussian
+observation approximation, process variance one, a predict-first
+$\mathcal N(0,1)$ initial state, two observations and 32 particles. The
+coordinates are $(\Phi^{-1}(\gamma),\log\beta)=(1.5,0)$. It compares
+ordinary, negative-future-tail and positive-future-tail observations
+separately. These are development comparisons with the optional mixture
+consumer, not canonical LEDH admission.
+
+Of 120 development fits, no quadratic configuration was eligible in all
+conditions: sixteen otherwise valid controlled-SMC fits had nonpositive
+guide precision and four fits were invalid. The selected positive-kernel
+fit used 256 design points, sixteen transition replicates and bandwidth
+factor 0.5. Selection used independent validation cross-entropy before
+freezing the setting for the final comparison. This local density fit is
+not original KDM training.
+
+The final comparison preserves 1,920 valid evaluations and 384 explicitly
+ineligible quadratic cells. Eight independent fitting clusters each have
+eight paired clouds per condition. Neither kernel arm passes the conditional
+heuristic comparison. Bonferroni simultaneous 95\% Student-$t$ intervals,
+retaining all 24 planned contrasts and seven degrees of freedom, support
+increased MSE for the global kernel arm in three comparisons: ordinary
+$\log\beta$, and both coordinates in the negative-future-tail condition.
+No available interval supports improvement. The other nine available
+intervals include zero; twelve quadratic contrasts are unavailable. With
+only eight clusters, the interval calculation relies materially on an
+approximate normality assumption and is conditional on these fixed datasets
+and the frozen selection.
+
+The independent numerical audit verifies references, paired clouds, unchanged
+source files and twelve frozen-guide finite-difference checks. Its largest
+derivative discrepancy is $1.392\times10^{-8}$. Correct differentiation of
+this finite program therefore coexists with poor model-score estimation.
+This motivated checking whether the uncertainty omitted in
+Proposition~\ref{prop:bg-mixture-information-gap} explains the consumer's
+behavior. The completed comparison rejects the tested fitted candidates;
+it does not establish that fitting capacity is the cause or that backward
+guidance itself cannot help. Detailed results and executable provenance are
+in the repository's 17 October fitted-KSC result note.
+
+A subsequent saved-fit calculation checks this mechanism without refitting
+or using the final scores to select a repair. Across all 24 saved kernel fits,
+using the first paired cloud of each fitting cluster, the exact product with
+the same current-observation Gaussian has variance between 2.45 and 6.18
+times the consumer covariance. The median ratios are 5.78 in the ordinary
+condition, 4.93 in the negative future tail, and 2.84 in the positive future
+tail. The corresponding exact seven-component future-message controls have
+median ratios 1.30, 1.19 and 1.10. These ratios compare local Gaussian-product
+moments; they are not ratios of score errors or of exact smoothing variances.
+The shared global map reproduces the stated consumer formula, and the
+omitted between-component variance accounts for the homoscedastic
+product-covariance gap to numerical precision.
+
+At 252 of the 792 inspected fitted-kernel anchors, the negative log-message
+Hessian is negative. Substituting that Hessian directly into a
+positive-information bridge would therefore require a new numerical design.
+Proposition~\ref{prop:bg-product-moments} instead supplies a positive-definite
+covariance from the full Gaussian product. Its optional global consumer has
+now been evaluated with new fitting and particle-cloud seeds.
+
+\subsection{Score evidence for the product-moment consumer}
+\label{sec:bg-product-result}
+
+The product-moment consumer improves four conditional comparisons against the
+old fitted global consumer, but neither repaired arm passes the simple-method
+comparison. In particular, no simultaneous interval supports improvement over
+unguided global proposals. This distinction matters: repairing the treatment
+of a fitted message can help without making that message useful relative to
+the current-observation proposal alone.
+
+The comparison keeps the selected 256-component kernel fit, 16 transition
+replicates and bandwidth factor 0.5 fixed. Each of the three known datasets
+has eight independent new fits and eight paired particle clouds per fit.
+Twelve arms give 2,304 valid evaluations. They retain $N=32$, $T=2$, the
+same branch probabilities, FP64 GPU/XLA execution and the untuned OT pair
+$(1,5)$. Twenty focused tests, two extended map checks and the independent
+terminal audit pass; all 24 two-step finite-difference checks pass, with
+largest absolute discrepancy $7.512\times10^{-7}$. The finite-program score
+therefore remains numerically consistent with its analytical derivative on
+these fixtures.
+
+Table~\ref{tab:bg-product-mse} reports descriptive score MSE. Paired
+squared-error differences are first averaged over clouds within a fit, then
+compared using the predeclared Student-$t$ intervals with seven degrees of
+freedom and Bonferroni coverage over all 24 contrasts. Four intervals exclude
+zero, all for the repaired global consumer minus the old fitted global
+consumer. For the ordinary condition they are $[-0.004678,-0.001086]$ for
+$\Phi^{-1}(\gamma)$ and $[-0.249588,-0.007418]$ for $\log\beta$; for the
+negative future tail they are $[-0.004168,-0.000065]$ and
+$[-0.332686,-0.040739]$, respectively. The other 20 intervals include zero.
+With eight fitting clusters, coverage relies materially on approximate
+normality. These conditional results do not establish an overall ordering or
+performance on new datasets.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{llrrr}
+\toprule
+Condition & Score & Old fitted/global & Product fitted/global & Unguided/global\\
+\midrule
+Ordinary & $\Phi^{-1}(\gamma)$ & 0.003160 & 0.000278 & 0.000333\\
+ & $\log\beta$ & 0.164397 & 0.035894 & 0.028721\\
+Negative future tail & $\Phi^{-1}(\gamma)$ & 0.002596 & 0.000480 & 0.000519\\
+ & $\log\beta$ & 0.240727 & 0.054015 & 0.063579\\
+Positive future tail & $\Phi^{-1}(\gamma)$ & 0.036836 & 0.055990 & 0.047481\\
+ & $\log\beta$ & 1.548788 & 0.797663 & 0.558655\\
+\bottomrule
+\end{tabular}
+\caption{Conditional score MSE on fresh fit/cloud seeds for the three fixed
+KSC datasets. The product consumer changes only global moment conditioning.
+These descriptive MSEs require the paired uncertainty analysis in the text.}
+\label{tab:bg-product-mse}
+\end{table}
+
+The repaired global and equal-mixture arms have seven and 21 descriptive
+losses, respectively, against the six predeclared simple alternatives across
+conditions and score coordinates. These losses prevent promotion under the
+stated criterion; they do not establish statistical harm or invalidate the
+computation. Both arms remain numerically viable and the runtime default is
+unchanged. Because the repair changes the product mean as well as covariance,
+the improvements cannot be attributed to between-component variance alone.
+
+The exact seven-component and fitted future messages have since been compared
+under the same product-moment consumer, alongside the old-consumer and unguided
+controls. Across the three fixed datasets, this comparison contains 2,688
+evaluations; all 36 predeclared simultaneous intervals for score squared-error
+differences include zero. The positive-tail error persists with the exact
+future message. Thus fitting error is not the only remaining source of error,
+and increasing fitting capacity is not yet the justified next repair. This
+comparison does not separate the current-observation Gaussian approximation,
+the particle-flow maps and the moment-restoring reset.
+
+Two subsequent diagnostics examine particle-count sensitivity in the positive
+future tail. The first uses 32 and 64 particles, with 768 evaluations; all 14
+simultaneous contrasts remain unresolved. The second uses fresh particle
+clouds at 64 and 128 particles, conditional on eight saved message fits and the
+fixed observations $(0.2,5)$ at horizon two. Each fit has twelve paired cloud
+replications and eight proposal arms, giving 1,536 evaluations. These are
+distinct cloud cohorts, not a single nested 32/64/128 experiment. All 9,216
+trace checks pass, and sixteen finite-difference checks have maximum error
+$4.506\times10^{-8}$. Those derivative checks concern the finite program, not
+equality of its score estimate to the model score.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{lrr}
+\toprule
+Proposal arm & $N=64$ & $N=128$\\
+\midrule
+Unguided identity & 5.417606 & 1.599848\\
+Unguided global & 0.307492 & 0.080886\\
+Unguided local & 0.715379 & 0.220078\\
+Unguided equal mixture & 1.006312 & 0.162202\\
+Gaussian-future global & 0.244775 & 0.081583\\
+Gaussian-future equal mixture & 0.655549 & 0.122387\\
+Fitted-product global & 0.309736 & 0.098673\\
+Exact-product global & 0.317615 & 0.100010\\
+\bottomrule
+\end{tabular}
+\caption{Conditional MSE for the $\log\beta$ score coordinate in the final
+positive-tail particle-count diagnostic. Both counts use the same saved fits
+and nested paired clouds within this diagnostic. The entries are descriptive;
+the simultaneous contrasts below determine which differences are supported.}
+\label{tab:bg-product-count-mse}
+\end{table}
+
+For the final diagnostic, the uncertainty analysis pairs cloud replications
+within each saved fit and uses the eight fit-cluster means, with a Student
+$t_7$ reference and Bonferroni-adjusted 95\% simultaneous intervals for fourteen
+contrasts. Four support a conditional gain: each product arm at 128 particles
+has lower squared error than its own 64-particle arm and than unguided local
+at 128 particles. For the count increases, the fitted and exact differences
+are $-0.211064$ and $-0.217606$, with intervals
+$[-0.404694,-0.017433]$ and $[-0.423695,-0.011517]$, respectively. No interval
+establishes improvement over unguided global or Gaussian-future global.
+
+Both product arms have higher observed MSE than those two global alternatives
+at 128 particles. These four descriptive losses fail the predeclared
+simple-method comparison and prevent promotion; they do not establish
+statistical harm or invalidate the numerical computation. The supported
+count effects are conditional on the saved fits and fixed observations. They
+establish neither particle-count convergence nor improvement on new fits or
+datasets, and they are not equal-compute comparisons. The next discriminating
+diagnostic should separate the current-observation Gaussian and flow-map
+approximation from the moment-restoring reset, rather than first enlarging
+the future-message fit. None of these diagnostics changes the runtime default
+or establishes equivalence of this reset to canonical Contract E.
+
+\subsection{SIR transfer with fixed transport settings}
+\label{sec:bg-sir-fixed-ot}
+
+The SIR comparison holds the entropic transport parameter and number of
+Sinkhorn iterations at $(\epsilon,L)=(1,5)$. It asks whether a frozen
+approximation to future information improves the likelihood-score estimate.
+The unguided, quadratic-guided and kernel-guided arms use the same
+three-density proposal, equal mixture probabilities, observations, particle
+counts and paired random numbers. Prior-only, defensive global and defensive
+local proposals provide simpler comparisons. The current consumer is the
+optional covariance-mixture implementation; these results do not establish
+conformance of the canonical UKF/dual-cap/Contract-E implementation.
+
+Let $x_0\sim N(m_0,I_{18})$, $x_{t+1}\mid x_t\sim
+N(f_{\theta_\star}(x_t),I_{18})$, and let the observation covariance at the
+frozen fitting parameter $\theta_\star=0$ be $100I_9$. The function $f$
+is the existing SIR transition, including its documented author-code
+discretization. To preserve the initial-state timing, the controlled-SMC
+fit has $T+1$ stages, indexed $0,\ldots,T$, and potential $g_0=1$.
+Thus it samples the actual Gaussian $x_0$ before the first transition;
+it does not replace the generally non-Gaussian predictive law of $x_1$
+by a Gaussian initial distribution.
+
+\begin{proposition}[Integrating the next fitted SIR policy]
+\label{prop:bg-sir-next-policy}
+Suppose the frozen controlled-SMC policy at time $t+1$ is
+$\psi_{t+1}(z)=\exp(-z^\top A_{t+1}z-b_{t+1}^\top z-c_{t+1})$,
+with symmetric $A_{t+1}$, and $Q^{-1}+2A_{t+1}\succ0$.
+Write $m=f_{\theta_\star}(x)$, $S=(Q^{-1}+2A_{t+1})^{-1}$ and
+$v=Q^{-1}m-b_{t+1}$. Then the future-only message obtained from this
+policy is
+\begin{align}
+ h_t(x)&=\int N(z;m,Q)\psi_{t+1}(z)\,dz,\quad t<T,
+ &h_T(x)&=1,\\
+ \log h_t(x)&=\tfrac12\log|S|-\tfrac12\log|Q|-c_{t+1}
+ +\tfrac12v^\top Sv-\tfrac12m^\top Q^{-1}m.
+ \label{eq:bg-sir-integral}
+\end{align}
+This identity integrates the fitted policy exactly; it does not assert that
+the fitted policy equals the true future likelihood.
+\end{proposition}
+\begin{proof}
+Combining the Gaussian exponent and the policy gives
+$-\tfrac12 z^\top S^{-1}z+v^\top z
+-\tfrac12m^\top Q^{-1}m-c_{t+1}$.
+Completing the square replaces its first two terms by
+$-\tfrac12(z-Sv)^\top S^{-1}(z-Sv)+\tfrac12v^\top Sv$.
+The Gaussian integral contributes $(2\pi)^{18/2}|S|^{1/2}$,
+which cancels the corresponding normalization in $N(z;m,Q)$ and gives
+\eqref{eq:bg-sir-integral}. At $T$ there is no later observation.
+The next policy includes information from time $t+1$ onward; multiplying
+the resulting proposal by the physical observation density at $t$ therefore
+does not duplicate that observation.
+\end{proof}
+
+One backward regression pass uses the replicated full-quadratic
+controlled-SMC implementation with centered QR. An independent forward
+pilot under that fitted policy supplies weighted means and covariances for
+the message-fitting design. Gaussian training and validation locations are
+drawn independently from those design distributions. No evaluation particle
+or score error enters the fit. Offline controlled SMC uses its ordinary
+ancestor resampling; the subsequent guided LEDH evaluation needs only the
+frozen coefficient arrays and does not trace smoothing ancestors.
+
+\begin{proposition}[Positive-information quadratic approximation]
+\label{prop:bg-sir-information-projection}
+Suppose regression gives $\log h_t(x)\approx
+-\tfrac12x^\top Hx+\ell^\top x-c$. For a design center $\mu$, choose a
+positive-semidefinite approximation $H_+$ and define
+$\ell_+=\ell+(H_+-H)\mu$. The two quadratic approximations have the same
+spatial gradient at $\mu$. If $H_+=H$, all coefficients except the
+irrelevant additive constant can remain unchanged.
+\end{proposition}
+\begin{proof}
+The new gradient at $\mu$ is
+$-H_+\mu+\ell+(H_+-H)\mu=-H\mu+\ell$.
+An additive constant can also match the values at $\mu$. This establishes
+only local value and gradient matching, not equality away from $\mu$.
+\end{proof}
+
+The implementation preserves a well-conditioned positive $H$ exactly.
+Otherwise it clips its eigenvalues at the explicit roundoff floor
+$64u d\|H\|_2$, where $u$ is FP64 machine epsilon and $d=18$.
+The floor protects reconstruction of zero eigenvalues; clipping negative
+curvature changes the fitted message. The number of projections and the
+heldout errors before and after projection are therefore retained.
+This is a positive-information proposal approximation, not a claim that
+future SIR log likelihoods are globally concave.
+
+The alternative representation fits positive coefficients in
+$\widetilde h_t(x)=\sum_{k=1}^{32}a_{tk}
+\exp[-\tfrac12(x-\mu_{tk})^\top C_t^{-1}(x-\mu_{tk})]$.
+Here $C_t$ is the pilot design covariance multiplied by a bandwidth squared.
+The bandwidth is selected from $\{1/2,1,2\}$ by independent message
+validation error. A fitted kernel message is active only when it improves
+on a constant message on those validation locations. Coefficient
+normalization is immaterial because a common positive factor cancels from
+local responsibilities. This local positive-kernel fit is KDM-inspired;
+it is not the replicated KDM neural training algorithm.
+
+\begin{proposition}[Frozen guidance and the evaluation derivative]
+\label{prop:bg-sir-frozen-derivative}
+Let $\eta$ denote either frozen coefficient array and let
+$\widehat\ell(\theta;\eta,\omega)$ be the finite consumer's log-likelihood
+estimate for fixed random design $\omega$. On a region where all validity
+checks pass and all discrete component selections stay fixed, analytical
+recursion through its maps, exact proposal densities, weights and reset
+computes $\partial_\theta\widehat\ell(\theta;\eta,\omega)$ when every
+state dependence is propagated. No derivative of the offline fit is needed
+for this stated target.
+\end{proposition}
+\begin{proof}
+Each fitted coefficient is constant with respect to $\theta$ in this
+evaluation. Apply the ordinary chain rule to each finite recursion step.
+For a mixture guide, responsibilities still depend on the moving state;
+their derivatives must be propagated even though centers, covariances and
+mixture coefficients are frozen. The consumer differentiates these
+responsibilities, the Gaussian maps, the mixture-density denominator and
+the moment-restoring reset. Induction over time then gives the derivative
+of the same scalar program. Refitting at each $\theta$ would define a
+different scalar program and require additional fit derivatives.
+\end{proof}
+
+The proposition concerns a finite-program derivative, not equality to the
+true model score. The SIR diagnostic checks it in all three parameter
+directions. Central differences at steps $10^{-4}$ and $5\times10^{-5}$
+exhibit truncation error in the quadratic-guided arm; halving the step
+reduces that error fourfold. Both finer steps, $2.5\times10^{-5}$ and
+$1.25\times10^{-5}$, pass the unchanged $2\times10^{-5}$ relative-error
+threshold, and their Richardson extrapolation passes $2\times10^{-6}$.
+Across the three arms the maximum extrapolated discrepancy is
+$1.81\times10^{-9}$. These checks change the numerical reference used
+to test the derivative, not the guided algorithm or its transport settings.
+Its saved Zhao--Cui reference is itself an approximate fitted score from
+importance-weighted path calculations, rather than an exact oracle.
+
+\subsection{Independent mixture calibration: what it can improve}
+\label{sec:bg-sir-beta-calibration}
+
+A future message changes the global and local proposal maps. Giving each map
+probability $1/3$ isolates this change, but may allocate many particles to a
+poor map. We therefore consider a separate, frozen calibration of the three
+proposal probabilities. This changes neither the physical transition density
+nor the importance target. It also leaves OT at $(1,5)$.
+
+For context $c$, fix the incoming particle cloud and all three maps. Write
+$a_c(x)=g_\theta(y_c\mid x)q_{c0}(x)$ and
+$h_c(x)=(q_{c0}(x)+q_{cG}(x)+q_{cL}(x))/3$. Draw $M$ pilot points
+$X_{cm}$ independently from $h_c$, and set
+\[
+ r_{cmj}=\frac{q_{cj}(X_{cm})}{h_c(X_{cm})},\qquad
+ u_{cm}=\frac{a_c(X_{cm})}{h_c(X_{cm})},\qquad
+ \bar u_c=\frac1M\sum_{m=1}^M u_{cm}.
+\]
+The implementation minimizes the following finite-pilot objective over a
+defensive simplex, with all pilot quantities held fixed:
+\[
+ \widehat J(\beta)=\sum_{c=1}^C\sum_{m=1}^M
+ \frac{\lambda_{cm}}{\sum_j\beta_jr_{cmj}},\qquad
+ \lambda_{cm}=\frac{(u_{cm}/\bar u_c)^2}{CM},\qquad
+ \beta_0\geq\delta,\quad\beta_j\geq0,\quad\sum_j\beta_j=1.
+\]
+The normalization prevents contexts with large likelihood scales from
+dominating the fit. Because $\bar u_c$ is estimated from these same points,
+this is not an unbiased estimator of a deterministic normalized population
+objective. It is an explicitly defined empirical selection criterion.
+
+\begin{proposition}[Convex calibration and its certificate]
+\label{prop:bg-sir-beta-convex}
+Suppose every denominator is positive on the feasible simplex. Then
+$\widehat J$ is convex, with
+\[
+ \nabla\widehat J=-\sum_{c,m}\frac{\lambda_{cm}r_{cm}}
+ {(\beta^\top r_{cm})^2},\qquad
+ \nabla^2\widehat J=2\sum_{c,m}\frac{\lambda_{cm}r_{cm}r_{cm}^\top}
+ {(\beta^\top r_{cm})^3}.
+\]
+If $v$ minimizes $\nabla\widehat J(\beta)^\top v$ over the feasible
+simplex, the nonnegative gap
+$G(\beta)=\nabla\widehat J(\beta)^\top(\beta-v)$ bounds
+$\widehat J(\beta)-\min_b\widehat J(b)$ from above.
+\end{proposition}
+\begin{proof}
+Differentiate each reciprocal affine denominator to obtain the displayed
+derivatives. Every Hessian summand is a nonnegative multiple of an outer
+product, so the Hessian is positive semidefinite. For a minimizer $b_*$,
+convexity gives
+$\widehat J(\beta)-\widehat J(b_*)\leq
+\nabla\widehat J(\beta)^\top(\beta-b_*)$.
+The definition of $v$ bounds the right-hand side by $G(\beta)$.
+\end{proof}
+
+At the population level, minimizing
+$J_c(\beta)=\int a_c(x)^2/q_{c\beta}(x)\,dx$ reduces the conditional
+variance of the one-step importance estimate for fixed clouds and maps.
+Neither that statement nor the proposition establishes a reduction in the
+variance or mean squared error of the recursively differentiated log-likelihood.
+Changing $\beta$ also changes later clouds, which the fixed-context objective
+does not model. The empirical gap certifies optimization, not score accuracy.
+
+The diagnostic uses $C=50$, $M=256$ and $\delta=0.1$. Separate prior-filter
+histories and mixture draws provide calibration and validation contexts. Each
+guide receives its own fitted $\beta$, frozen before fresh score-evaluation
+seeds are generated. An unguided arm at the same fitted $\beta$ separates
+the effect of the future message from that of proposal allocation. A second
+unguided arm uses its own independently fitted $\beta$. Prior-only and
+defensive-local proposals remain inexpensive comparison methods. A smaller
+validation objective cannot substitute for the paired score-error comparison.
+
+\subsection{SIR evidence with fixed transport settings}
+\label{sec:bg-sir-fixed-transport-results}
+
+The completed 19 October comparison does not show a score-estimation gain.
+It holds transport regularization at one and the number of Sinkhorn iterations
+at five, uses 256 particles over 50 observations, and evaluates eight paired
+particle seeds on each of two fixed SIR data sets. The quadratic and positive-
+kernel messages are fitted once per data set and then frozen. Table~\ref{tab:bg-sir-first-results}
+reports the square root of the mean squared Euclidean score error against the
+saved approximate Zhao--Cui reference. Thus the three parameter errors enter
+each row jointly; the table does not rescale individual coordinates.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\hline
+Proposal & Data 26100831 & Data 26100832 \\
+\hline
+Unguided, equal mixture & 1334.57 & 123.30 \\
+Quadratic guide, equal mixture & 8524.21 & 1730.43 \\
+Positive-kernel guide, equal mixture & 58237.43 & 606.03 \\
+Prior only & 116.04 & 86.63 \\
+Defensive local & 127.69 & 80.92 \\
+Defensive global & 1445125.02 & Invalid \\
+\hline
+\end{tabular}
+\caption{Conditional SIR score errors with fixed OT $(1,5)$. Each valid
+entry uses all eight prescribed particle seeds. The invalid entry is not
+replaced by an average over its seven surviving seeds.}
+\label{tab:bg-sir-first-results}
+\end{table}
+
+All four predeclared paired 98.75\% bootstrap intervals for guided minus
+unguided squared error have positive lower endpoints. Under this conditional
+analysis, both guides make the score error worse on both data sets. The prior
+and defensive-local methods have much smaller descriptive errors than the
+complex proposals; every complex arm also fails the componentwise heuristic
+comparison. Prior versus local is not statistically ranked by this experiment.
+The intervals condition on the two observed data sets and their fitted guides,
+and do not propagate uncertainty in the approximate reference. They cannot
+establish a population-wide ranking of algorithms.
+
+One defensive-global trajectory fails at observation four. An exact-seed
+replay reproduces covariance error $0.988952$ and factorization margin
+$6.25\times10^{-17}$. This is covariance rank loss, not a harmless
+$10^{-13}$ discrepancy. The partial score is not a valid full-horizon score
+and is excluded from numerical ranking, while its failure remains reported.
+
+These results concern the optional three-density diagnostic consumer, not
+the canonical UKF/dual-cap/Contract-E LEDH implementation. The positive-kernel
+message is KDM-inspired rather than the replicated neural KDM learner.
+Analytical differentiation and finite-difference agreement establish which
+finite-program derivative is computed; they do not make that derivative an
+accurate model score. The following controlled comparison fits proposal allocation
+independently and includes unguided proposals at each guided arm's fitted
+allocation. That comparison tests whether equal allocation contributed to the
+failure, without changing the transport settings or treating a lower pilot
+objective as evidence of a better score.
+
+\subsection{Independent proposal allocation does not establish a general SIR gain}
+\label{sec:bg-sir-calibrated-results}
+
+The second comparison keeps both fitted messages and OT $(1,5)$ unchanged,
+but chooses proposal probabilities using independent pilot clouds. Each of
+the three message families has its own allocation on each data set. The
+six optimizations use no reference scores; all satisfy the relative
+duality-gap tolerance $10^{-7}$. Their validation objectives are finite and
+lower than equal allocation, but this does not predict the accuracy of the
+likelihood derivative. Fresh particle seeds provide the score comparison.
+
+To distinguish guidance from allocation, an unguided filter also uses each
+guided filter's fitted probabilities. This gives seven methods, each evaluated
+on eight paired seeds per data set. All 112 trajectories complete, and all
+84 finite-difference and 42 Richardson checks pass. Table~\ref{tab:bg-sir-calibrated-results}
+uses the same score-error definition and approximate references as the first
+comparison. Calibrated unguided probabilities are effectively $(.1,0,.9)$,
+so their equality with the defensive-local results is expected.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\hline
+Proposal & Data 26100831 & Data 26100832 \\
+\hline
+Unguided, own calibrated allocation & 94.62 & 77.70 \\
+Quadratic guide, own allocation & 96.36 & 70.87 \\
+Positive-kernel guide, own allocation & 84.51 & 65.45 \\
+Unguided at quadratic allocation & 82.23 & 82.44 \\
+Unguided at kernel allocation & 83.86 & 83.60 \\
+Prior only & 82.19 & 83.89 \\
+Defensive local & 94.62 & 77.70 \\
+\hline
+\end{tabular}
+\caption{SIR score RMSE after independent proposal calibration, with fixed
+OT $(1,5)$ and eight fresh paired seeds per entry. These descriptive errors
+are not themselves statistical rankings.}
+\label{tab:bg-sir-calibrated-results}
+\end{table}
+
+Two of the eight predeclared paired comparisons support a conditional gain.
+On data 26100832, quadratic guidance minus its matched-allocation unguided
+control has squared-error difference $-1773.42$, with nominal 99.375\%
+bootstrap interval $[-3845.26,-400.55]$. The corresponding kernel difference
+is $-2705.81$, with interval $[-7192.82,-102.72]$. Both matched-allocation
+intervals on data 26100831 include zero. All four comparisons against the
+independently calibrated unguided method also include zero. Thus neither
+guide satisfies the specified requirement of gains on both data sets against
+both comparator types.
+
+The simple methods reveal a further limitation. On data 26100831, each
+guided method has larger error than prior-only proposals in every coordinate
+MSE. On data 26100832, the kernel has larger observation-noise-score MSE than
+all three simple comparators. These are the specified componentwise reasons
+not to promote the candidates, rather than statistically established
+component rankings. The quadratic guide passes that comparison on the second
+data set but not across both data sets.
+
+The allocation repair therefore changes the evidence from broad conditional
+harm to a mixed result, not to a demonstrated improved LEDH method. The two
+stages use different particle seeds, so their numerical difference is not
+a paired estimate of calibration's causal benefit. The present intervals
+condition on one fitted guide per data set and omit reference uncertainty;
+with only eight seeds, their nominal bootstrap coverage is not exact.
+The optional three-density consumer and positive-kernel approximation retain
+the scope limitations described above.
+
+The next discriminating question is whether current-observation proposal
+and reset errors obscure useful future information in SIR. That question
+requires an explicit decomposition and a checked connection to the canonical
+LEDH consumer, not another transport sweep or selection of probabilities on
+these final scores. The result leaves that research direction open while
+withholding a general accuracy claim for either present guide.

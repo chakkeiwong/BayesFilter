@@ -7,18 +7,23 @@ Transitions must be additive Gaussian; observation densities may be non-Gaussian
 """
 from dataclasses import dataclass
 import math
-import math
 import tensorflow as tf
 from bayesfilter.highdim.ledh_marginal_weights_tf import gaussian_mixture_log_density_tangent
 from bayesfilter.highdim.ledh_canonical_score_stages_tf import quadrature_update_with_parameter_tangent
 from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
 
 ALGORITHM_ID = "covariance_guided_defensive_mixture_finite_v1"
+MOMENT_VALIDITY_POLICY_ID = "relative_half_significand_fp32_covariance_1pct_v2"
 TRACE_FIELDS = ("log_increment", "score_increment", "ess", "max_weight", "max_prior_proposal_ratio",
                 "reset_mean_error", "reset_covariance_relative_error", "reset_margin",
                 "guide_margin", "map_margin", "correction_displacement", "moment_loss_before",
                 "moment_loss_after", "valid", "sinkhorn_row_error", "reset_displacement",
-                "sinkhorn_column_error", "correction_coordinate_displacement")
+                "sinkhorn_column_error", "correction_coordinate_displacement",
+                "pre_correction_mean_error", "pre_correction_covariance_relative_error",
+                "mean_error_limit", "moment_valid", "correction_cap_valid",
+                "covariance_relative_error_limit", "moment_roundoff_warning",
+                "mean_error_scale", "roundoff_mean_error_limit",
+                "roundoff_covariance_relative_error_limit")
 
 
 VALIDITY_FIELDS = ("mean", "covariance", "correction_l2", "correction_coordinate",
@@ -28,11 +33,11 @@ VALIDITY_FIELDS = ("mean", "covariance", "correction_l2", "correction_coordinate
 
 
 def covariance_restoration_tolerance(n, d, dtype):
-    """Roundoff allowance for two covariance sums; FP32 owner ceiling is 1%.
+    """Shared FP64 moment budget and FP32 owner covariance ceiling of 1%.
 
     The FP64 accumulation allowance is 2*sqrt(d)*gamma_(N+2), in addition
-    to the existing matrix-operation margin. It is not a bound on the whole
-    centering/factorization pipeline; its other validity checks remain active.
+    to the matrix-operation margin, with the LEDH branch's half-significand
+    floor. This acceptance budget is not an error bound on the whole pipeline.
     """
     dtype = tf.as_dtype(dtype)
     if n < 1 or d < 1 or dtype not in (tf.float32, tf.float64):
@@ -44,9 +49,9 @@ def covariance_restoration_tolerance(n, d, dtype):
         raise ValueError("covariance accumulation roundoff bound is undefined")
     coefficient = tf.constant((n + 2)*eps, dtype)
     gamma = coefficient/(1 - coefficient)
-    return tf.minimum(tf.constant(.01, dtype),
-                      tf.constant(100*eps*d, dtype) +
-                      2*tf.sqrt(tf.cast(d, dtype))*gamma)
+    return tf.minimum(tf.constant(.01, dtype), tf.maximum(
+        tf.sqrt(tf.constant(eps, dtype)),
+        tf.constant(100*eps*d, dtype) + 2*tf.sqrt(tf.cast(d, dtype))*gamma))
 
 @dataclass(frozen=True)
 class ProposalControls:
@@ -57,8 +62,11 @@ class ProposalControls:
     correction_basis: int = 4
     correction_rate: float = 0.1
     correction_radius: float = 0.25
+    global_guide_conditioning: str = "positive_information"
     shared_gaussian_contraction: str = "direct"
     def __post_init__(self):
+        if self.global_guide_conditioning not in ("positive_information", "mixture_product_moments"):
+            raise ValueError("unsupported global guide conditioning")
         if self.shared_gaussian_contraction not in ("direct", "matrix"):
             raise ValueError("unknown shared Gaussian contraction")
         if min(self.flow_steps, self.reset_steps, self.correction_basis) < 1:
@@ -115,7 +123,14 @@ def moments(x,dx,w,dw):
     dp=tf.einsum('n,ni,nj->ij',dw,e,e)+tf.einsum('n,ni,nj->ij',w,de,e)+tf.einsum('n,ni,nj->ij',w,e,de)
     return mu,dmu,sym(p),sym(dp)
 
-def build_maps(model,theta,ancestors,d_ancestors,observation,controls):
+def _backward_information(guide, time, anchors, d_anchors):
+    """Keep invalid guide inputs out of solves while retaining their veto."""
+    precision, linear, d_precision, d_linear, valid = guide.evaluate(time, anchors, d_anchors)
+    values = (precision, linear, d_precision, d_linear)
+    return (*[tf.where(valid, value, tf.zeros_like(value)) for value in values], valid)
+
+
+def build_maps(model,theta,ancestors,d_ancestors,observation,controls,*,backward_guide=None,time=None):
     """Chapter bridge-moments, local-ode, affine-composition and global-map."""
     n,d=ancestors.shape; dtype=ancestors.dtype
     m=model.transition_mean_fn(theta,ancestors)
@@ -129,9 +144,33 @@ def build_maps(model,theta,ancestors,d_ancestors,observation,controls):
     upd=quadrature_update_with_parameter_tangent(mean[None],p[None],dmean[None],dp[None],
         model.observation_fn,model.observation_tangent_fn,r,observation,d_observation_covariance=dr,jitter=0.)
     up,pc,dup,dpc,vu=upd
-    # The shared quadrature authority returns validity per cloud.
     vu = tf.reduce_all(vu)
+    future_valid = tf.constant(True)
+    product_margin = tf.constant(float("inf"), dtype)
+    if controls.global_guide_conditioning == "mixture_product_moments":
+        if backward_guide is None or not callable(getattr(backward_guide, "condition_gaussian", None)):
+            raise ValueError("mixture product conditioning requires a mixture guide")
+        up, pc, dup, dpc, future_valid, product_margin = backward_guide.condition_gaussian(
+            time, up, pc, dup, dpc)
+    elif backward_guide is not None:
+        future_precision, future_linear, d_future_precision, d_future_linear, future_valid = _backward_information(
+            backward_guide, time, up, dup)
+        posterior_factor, _, posterior_valid, _ = checked_chol(pc[0], dpc[0])
+        identity = tf.eye(d, dtype=dtype)
+        posterior_precision = tf.linalg.cholesky_solve(posterior_factor, identity)
+        d_posterior_precision = -mm(mm(posterior_precision, dpc[0]), posterior_precision)
+        guided_covariance, d_guided_covariance = solve_pair(
+            posterior_precision + future_precision[0], d_posterior_precision + d_future_precision[0],
+            identity, tf.zeros_like(identity))
+        natural_mean = mv(posterior_precision, up[0]) + future_linear[0]
+        d_natural_mean = mv(d_posterior_precision, up[0]) + mv(posterior_precision, dup[0]) + d_future_linear[0]
+        guided_mean = mv(guided_covariance, natural_mean)
+        d_guided_mean = mv(d_guided_covariance, natural_mean) + mv(guided_covariance, d_natural_mean)
+        up, dup = guided_mean[None], d_guided_mean[None]
+        pc, dpc = sym(guided_covariance)[None], sym(d_guided_covariance)[None]
+        future_valid &= posterior_valid
     ag,dag,vg,guide_margin=recolour(pc[0],dpc[0],p,dp)
+    guide_margin = tf.minimum(guide_margin, product_margin)
     cg=up[0]-mv(ag,mean); dcg=dup[0]-mv(dag,mean)-mv(ag,dmean)
     eye=tf.eye(d,dtype=dtype); eye_n=tf.broadcast_to(eye,[n,d,d])
     # Deterministic conditional-mean pilot, fixed before transition innovations.
@@ -146,6 +185,14 @@ def build_maps(model,theta,ancestors,d_ancestors,observation,controls):
     rz,drz=solve_pair(r[None],dr[None],residual[...,None],dresidual[...,None])
     a=mv(tf.linalg.matrix_transpose(h),rz[...,0])
     da=mv(tf.linalg.matrix_transpose(dh),rz[...,0])+mv(tf.linalg.matrix_transpose(h),drz[...,0])
+    if backward_guide is not None:
+        future_precision, future_linear, d_future_precision, d_future_linear, local_valid = _backward_information(
+            backward_guide, time, m, dm)
+        info += future_precision
+        dinfo += d_future_precision
+        a += future_linear
+        da += d_future_linear
+        future_valid &= local_valid
     lq,dlq,vq,qmargin=checked_chol(q,dq)
     qi=tf.linalg.cholesky_solve(lq,eye); dqi=-mm(mm(qi,dq),qi)
     qm=mv(qi,m); dqm=mv(dqi,m)+mv(qi,dm)
@@ -170,7 +217,7 @@ def build_maps(model,theta,ancestors,d_ancestors,observation,controls):
     cov=mm(mm(aa,q),tf.linalg.matrix_transpose(aa))
     dcov=mm(mm(daa,q),tf.linalg.matrix_transpose(aa))+mm(mm(aa,dq),tf.linalg.matrix_transpose(aa))+mm(mm(aa,q),tf.linalg.matrix_transpose(daa))
     _,_,vm,map_margin=checked_chol(cov,dcov)
-    return means,dmeans,cov,dcov,aa,daa,cc,dcc,m,dm,lq,dlq,vu & vg & vq & vm,tf.minimum(guide_margin,qmargin),map_margin
+    return means,dmeans,cov,dcov,aa,daa,cc,dcc,m,dm,lq,dlq,vu & vg & vq & vm & future_valid,tf.minimum(guide_margin,qmargin),map_margin
 
 def component_densities(x,dx,means,dmeans,cov,dcov):
     n=x.shape[0]; dtype=x.dtype
@@ -270,11 +317,20 @@ def reset_cloud(x,dx,logw,dlogw,controls):
     diagnostics=tf.stack([tf.reduce_max(tf.abs(zm-mu)),tf.linalg.norm(zp-p)/tf.maximum(tf.linalg.norm(p),tf.constant(1.e-30,dtype)),margin,rowerr,tf.reduce_max(tf.linalg.norm(z-y,axis=1)),colerr])
     return z,dz,mu,dmu,p,dp,valid,diagnostics
 
-def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True):
-    """Compile a stable-signature value/analytical directional-score program."""
+def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,*,backward_guide=None):
+    """Compile the shared mixture program, optionally with a frozen future guide.
+
+    Guide coefficients and beta stay fixed during parameter differentiation;
+    moving-anchor dependence is propagated analytically through both maps.
+    """
     dtype=tf.as_dtype(dtype); d=spec.dimension; p=spec.parameter_count
     o=getattr(spec,'observation_dimension',d)
     if n<=d or horizon<1: raise ValueError("require N>d and T>=1")
+    if controls.global_guide_conditioning == "mixture_product_moments" and not callable(
+            getattr(backward_guide, "condition_gaussian", None)):
+        raise ValueError("mixture product conditioning requires a mixture guide")
+    if backward_guide is not None:
+        backward_guide.validate(horizon, d, dtype)
     sig=[tf.TensorSpec([p],dtype),tf.TensorSpec([p],dtype),tf.TensorSpec([horizon,o],dtype),tf.TensorSpec([n,d],dtype),tf.TensorSpec([horizon,n,d],dtype),tf.TensorSpec([horizon,n,2],dtype),tf.TensorSpec([3],dtype)]
     @tf.function(input_signature=sig,jit_compile=jit_compile,autograph=False)
     def program(theta,direction,observations,initial,innovations,uniforms,beta):
@@ -285,7 +341,8 @@ def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True):
         beta_valid=tf.reduce_all(tf.math.is_finite(beta)) & tf.reduce_all(beta>=0) & (beta[0]>0) & (tf.abs(tf.reduce_sum(beta)-1)<tf.cast(1.e-6,dtype))
         def step(t,x,dx,ell,score,valid,trace,history):
             history=history.write(t,x)
-            maps=build_maps(model,theta,x,dx,observations[t],controls)
+            guide_arguments = {} if backward_guide is None else dict(backward_guide=backward_guide, time=t)
+            maps=build_maps(model,theta,x,dx,observations[t],controls,**guide_arguments)
             child,dchild=draw_from_maps(maps,beta,uniforms[t],innovations[t])
             logdens,ddens,vd=component_densities(child,dchild,*maps[:4])
             logmix=logdens+tf.math.log(beta)[None]
@@ -305,17 +362,17 @@ def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True):
             eps=tf.constant(2.220446049250313e-16 if dtype==tf.float64 else 1.1920928955078125e-7,dtype)
             mean_error=tf.reduce_max(tf.abs(zm-mu))
             cov_error=tf.linalg.norm(zp-pw)/tf.maximum(tf.linalg.norm(pw),tf.constant(1e-30,dtype))
-            # Owner precision policy (2026-10-10): allow 1% relative covariance
-            # restoration error for FP32, including TF32 matrix products. Only
-            # rejection changes; accepted values and analytical tangents do not.
-            # FP64 also accounts for accumulation over the particle cloud.
-            covariance_tolerance=covariance_restoration_tolerance(n,d,dtype)
-            moment_ok=(mean_error<=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))) & tf.math.is_finite(cov_error) & (cov_error<=covariance_tolerance)
+            moment_tolerance=covariance_restoration_tolerance(n,d,dtype)
+            mean_scale=tf.maximum(tf.reduce_max(tf.abs(mu)),tf.sqrt(tf.reduce_max(tf.linalg.diag_part(pw))))
+            mean_limit=tf.sqrt(eps)*mean_scale
+            roundoff_mean_limit=100*eps*d*tf.maximum(tf.constant(1.,dtype),tf.reduce_max(tf.abs(mu)))
+            roundoff_warning=(mean_error>roundoff_mean_limit) | (cov_error>100*eps*d)
+            moment_ok=(mean_error<=mean_limit) & tf.math.is_finite(cov_error) & (cov_error<=moment_tolerance)
             coordinate_move=tf.reduce_max(tf.abs(z-reset_particles)/tf.sqrt(tf.linalg.diag_part(pw))[None])
             cap_limit=tf.constant(controls.correction_radius,dtype)*(1+100*eps*n)
             cap_ok=(cd[0]<=cap_limit) & (coordinate_move<=cap_limit) & tf.reduce_all(tf.math.is_finite(cd))
             good=moment_ok & cap_ok & maps[12] & vd & vr & tf.reduce_all(tf.math.is_finite(z)) & tf.reduce_all(tf.math.is_finite(dz)) & tf.math.is_finite(increment) & tf.math.is_finite(ds)
-            row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move])
+            row=tf.stack([increment,ds,1/tf.reduce_sum(w*w),tf.reduce_max(w),tf.reduce_max(tf.exp(logdens[:,0]-lq)),mean_error,cov_error,rd[2],maps[13],maps[14],cd[0],cd[1],cd[2],tf.cast(good,dtype),rd[3],rd[4],rd[5],coordinate_move,rd[0],rd[1],mean_limit,tf.cast(moment_ok,dtype),tf.cast(cap_ok,dtype),moment_tolerance,tf.cast(roundoff_warning,dtype),mean_scale,roundoff_mean_limit,100*eps*d])
             return t+1,z,dz,ell+increment,score+ds,valid & good,trace.write(t,row),history
         completed,x,dx,ell,score,valid,trace,history=tf.while_loop(lambda t,x,dx,ell,score,valid,trace,history:(t<horizon) & valid,step,(0,x,dx,tf.constant(0.,dtype),tf.constant(0.,dtype),beta_valid,trace,history),parallel_iterations=1)
         return dict(value=ell,score=score,valid=valid,steps_completed=completed,particles=x,particle_tangent=dx,trace=trace.stack(),ancestor_history=history.stack())

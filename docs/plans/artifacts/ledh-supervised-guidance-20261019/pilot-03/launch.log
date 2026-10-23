@@ -1,0 +1,140 @@
+2026-10-19 20:58:58.397034: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-10-19 20:58:58.407886: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792414738.420363  665526 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1792414738.424326  665526 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792414738.433736  665526 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792414738.433796  665526 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792414738.433800  665526 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792414738.433801  665526 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-10-19 20:58:58.436627: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1792414740.899863  665526 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+2026-10-19 20:59:01.373637: I external/local_xla/xla/service/service.cc:152] XLA service 0x57b0a3fb4370 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-10-19 20:59:01.373681: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-10-19 20:59:01.381153: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+I0000 00:00:1792414741.560000  665526 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792414742.477305  665526 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+labels_complete {}
+I0000 00:00:1792414744.757336  665526 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x57b0a15e2cf0
+fit_start {'partition': 'calibration', 'seed': 261029501}
+2026-10-19 20:59:25.459945: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/AssertGuard/Assert
+2026-10-19 20:59:34.371941: I external/local_xla/xla/stream_executor/cuda/subprocess_compilation.cc:346] ptxas warning : Registers are spilled to local memory in function 'loop_add_fusion_10', 8 bytes spill stores, 8 bytes spill loads
+
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'unguided', 'valid': True, 'rows': 1}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_half', 'valid': True, 'rows': 2}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_original', 'valid': True, 'rows': 3}
+2026-10-19 20:59:45.306857: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/AssertGuard/Assert
+2026-10-19 20:59:53.549694: I external/local_xla/xla/stream_executor/cuda/subprocess_compilation.cc:346] ptxas warning : Registers are spilled to local memory in function 'loop_add_fusion_10', 8 bytes spill stores, 8 bytes spill loads
+
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_raw', 'valid': True, 'rows': 4}
+2026-10-19 21:00:02.353082: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/AssertGuard/Assert
+2026-10-19 21:00:11.595105: I external/local_xla/xla/stream_executor/cuda/subprocess_compilation.cc:346] ptxas warning : Registers are spilled to local memory in function 'loop_add_fusion_10', 8 bytes spill stores, 8 bytes spill loads
+
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'kernel_information', 'valid': True, 'rows': 5}
+2026-10-19 21:00:17.616448: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_equal_1/Assert/AssertGuard/Assert
+2026-10-19 21:00:30.524303: I external/local_xla/xla/stream_executor/cuda/subprocess_compilation.cc:346] ptxas warning : Registers are spilled to local memory in function 'loop_add_fusion_10', 8 bytes spill stores, 8 bytes spill loads
+
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'kernel_product', 'valid': True, 'rows': 6}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'unguided', 'valid': True, 'rows': 7}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_half', 'valid': True, 'rows': 8}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_original', 'valid': True, 'rows': 9}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'csmc_raw', 'valid': True, 'rows': 10}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'kernel_information', 'valid': True, 'rows': 11}
+evaluation {'partition': 'calibration', 'seed': 261029501, 'method': 'kernel_product', 'valid': True, 'rows': 12}
+fit_start {'partition': 'calibration', 'seed': 261029502}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'unguided', 'valid': True, 'rows': 13}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_half', 'valid': True, 'rows': 14}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_original', 'valid': True, 'rows': 15}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_raw', 'valid': True, 'rows': 16}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'kernel_information', 'valid': True, 'rows': 17}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'kernel_product', 'valid': True, 'rows': 18}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'unguided', 'valid': True, 'rows': 19}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_half', 'valid': True, 'rows': 20}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_original', 'valid': True, 'rows': 21}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'csmc_raw', 'valid': True, 'rows': 22}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'kernel_information', 'valid': True, 'rows': 23}
+evaluation {'partition': 'calibration', 'seed': 261029502, 'method': 'kernel_product', 'valid': True, 'rows': 24}
+fit_start {'partition': 'validation', 'seed': 261029503}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'unguided', 'valid': True, 'rows': 25}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_half', 'valid': True, 'rows': 26}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_original', 'valid': True, 'rows': 27}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_raw', 'valid': True, 'rows': 28}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'kernel_information', 'valid': True, 'rows': 29}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'kernel_product', 'valid': True, 'rows': 30}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'unguided', 'valid': True, 'rows': 31}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_half', 'valid': True, 'rows': 32}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_original', 'valid': True, 'rows': 33}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'csmc_raw', 'valid': True, 'rows': 34}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'kernel_information', 'valid': True, 'rows': 35}
+evaluation {'partition': 'validation', 'seed': 261029503, 'method': 'kernel_product', 'valid': True, 'rows': 36}
+fit_start {'partition': 'validation', 'seed': 261029504}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'unguided', 'valid': True, 'rows': 37}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_half', 'valid': True, 'rows': 38}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_original', 'valid': True, 'rows': 39}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_raw', 'valid': True, 'rows': 40}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'kernel_information', 'valid': True, 'rows': 41}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'kernel_product', 'valid': True, 'rows': 42}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'unguided', 'valid': True, 'rows': 43}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_half', 'valid': True, 'rows': 44}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_original', 'valid': True, 'rows': 45}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'csmc_raw', 'valid': True, 'rows': 46}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'kernel_information', 'valid': True, 'rows': 47}
+evaluation {'partition': 'validation', 'seed': 261029504, 'method': 'kernel_product', 'valid': True, 'rows': 48}
+fit_start {'partition': 'test', 'seed': 261029505}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'unguided', 'valid': True, 'rows': 49}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_half', 'valid': True, 'rows': 50}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_original', 'valid': True, 'rows': 51}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_raw', 'valid': True, 'rows': 52}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'kernel_information', 'valid': True, 'rows': 53}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'kernel_product', 'valid': True, 'rows': 54}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'unguided', 'valid': True, 'rows': 55}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_half', 'valid': True, 'rows': 56}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_original', 'valid': True, 'rows': 57}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'csmc_raw', 'valid': True, 'rows': 58}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'kernel_information', 'valid': True, 'rows': 59}
+evaluation {'partition': 'test', 'seed': 261029505, 'method': 'kernel_product', 'valid': True, 'rows': 60}
+fit_start {'partition': 'test', 'seed': 261029506}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'unguided', 'valid': True, 'rows': 61}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_half', 'valid': True, 'rows': 62}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_original', 'valid': True, 'rows': 63}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_raw', 'valid': True, 'rows': 64}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'kernel_information', 'valid': True, 'rows': 65}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'kernel_product', 'valid': True, 'rows': 66}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'unguided', 'valid': True, 'rows': 67}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_half', 'valid': True, 'rows': 68}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_original', 'valid': True, 'rows': 69}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'csmc_raw', 'valid': True, 'rows': 70}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'kernel_information', 'valid': True, 'rows': 71}
+evaluation {'partition': 'test', 'seed': 261029506, 'method': 'kernel_product', 'valid': True, 'rows': 72}
+fit_start {'partition': 'test', 'seed': 261029507}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'unguided', 'valid': True, 'rows': 73}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_half', 'valid': True, 'rows': 74}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_original', 'valid': True, 'rows': 75}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_raw', 'valid': True, 'rows': 76}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'kernel_information', 'valid': True, 'rows': 77}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'kernel_product', 'valid': True, 'rows': 78}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'unguided', 'valid': True, 'rows': 79}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_half', 'valid': True, 'rows': 80}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_original', 'valid': True, 'rows': 81}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'csmc_raw', 'valid': True, 'rows': 82}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'kernel_information', 'valid': True, 'rows': 83}
+evaluation {'partition': 'test', 'seed': 261029507, 'method': 'kernel_product', 'valid': True, 'rows': 84}
+fit_start {'partition': 'test', 'seed': 261029508}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'unguided', 'valid': True, 'rows': 85}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_half', 'valid': True, 'rows': 86}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_original', 'valid': True, 'rows': 87}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_raw', 'valid': True, 'rows': 88}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'kernel_information', 'valid': True, 'rows': 89}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'kernel_product', 'valid': True, 'rows': 90}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'unguided', 'valid': True, 'rows': 91}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_half', 'valid': True, 'rows': 92}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_original', 'valid': True, 'rows': 93}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'csmc_raw', 'valid': True, 'rows': 94}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'kernel_information', 'valid': True, 'rows': 95}
+evaluation {'partition': 'test', 'seed': 261029508, 'method': 'kernel_product', 'valid': True, 'rows': 96}
+complete {'rows': 96}
+real 249.51
+user 170.80
+sys 34.52

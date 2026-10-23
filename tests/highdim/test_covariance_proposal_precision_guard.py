@@ -61,9 +61,10 @@ def test_relaxed_covariance_does_not_disable_other_guards(monkeypatch, failure):
 
 def test_particle_count_roundoff_allowance_and_fp32_policy():
     small = float(runtime.covariance_restoration_tolerance(32, 4, tf.float64))
-    large = float(runtime.covariance_restoration_tolerance(4032, 4, tf.float64))
-    assert 0 < small < large < 1.e-10
-    assert large > 9.370636310897042e-14  # observed healthy Gram roundoff
+    ordinary = float(runtime.covariance_restoration_tolerance(4032, 4, tf.float64))
+    large = float(runtime.covariance_restoration_tolerance(100000000, 4, tf.float64))
+    assert small == ordinary == pytest.approx(2.220446049250313e-16**.5)
+    assert ordinary < large < .01
     for n in (32, 4032, 100000):
         tf.debugging.assert_equal(
             runtime.covariance_restoration_tolerance(n, 4, tf.float32),

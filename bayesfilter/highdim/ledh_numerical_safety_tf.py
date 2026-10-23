@@ -22,6 +22,68 @@ def finite_or_zero(value: tf.Tensor) -> tf.Tensor:
     return tf.where(tf.math.is_finite(value), value, tf.zeros_like(value))
 
 
+def checked_log_abs_det_tangent(matrix: tf.Tensor, tangent: tf.Tensor):
+    """Log absolute determinant and tr(matrix^{-1} tangent) by shared elimination.
+
+    Partial pivoting and row operations act on the same matrix and right-hand
+    side. One native TensorFlow loop supports fixed square matrices with any
+    leading batch axes under XLA. No inverse, ridge, or pivot clipping is used.
+    Invalid factors return placeholders with false value and force masks;
+    nonfinite tangents reject force independently of a healthy value.
+    """
+    matrix = tf.convert_to_tensor(matrix)
+    tangent = tf.convert_to_tensor(tangent, dtype=matrix.dtype)
+    rank = matrix.shape.rank
+    order = matrix.shape[-1]
+    if (matrix.dtype not in (tf.float32, tf.float64) or rank is None
+            or rank < 2 or order is None or matrix.shape[-2] != order):
+        raise ValueError("checked determinant requires fixed square real matrices")
+    if tangent.shape != matrix.shape:
+        raise ValueError("determinant tangent must have the matrix shape")
+    identity = tf.eye(order, batch_shape=tf.shape(matrix)[:-2], dtype=matrix.dtype)
+    value_valid = tf.reduce_all(tf.math.is_finite(matrix), axis=[-2, -1])
+    force_valid = tf.reduce_all(tf.math.is_finite(tangent), axis=[-2, -1])
+    work = tf.where(value_valid[..., None, None], matrix, identity)
+    rhs = tf.where(force_valid[..., None, None], tangent, tf.zeros_like(tangent))
+    indices = tf.range(order)
+
+    def eliminate(column, work, rhs, valid):
+        magnitudes = tf.where(indices >= column, tf.abs(work[..., :, column]),
+                              tf.cast(-1., matrix.dtype))
+        pivot = tf.argmax(magnitudes, axis=-1, output_type=tf.int32)
+        permutation = tf.where(indices == column, pivot[..., None],
+                               tf.where(indices == pivot[..., None], column, indices))
+        work = tf.gather(work, permutation, axis=-2, batch_dims=rank - 2)
+        rhs = tf.gather(rhs, permutation, axis=-2, batch_dims=rank - 2)
+        diagonal = work[..., column, column]
+        pivot_valid = tf.math.is_finite(diagonal) & (diagonal != 0)
+        divisor = tf.where(pivot_valid, diagonal, tf.ones_like(diagonal))
+        multiplier = tf.where(indices > column, work[..., :, column] / divisor[..., None],
+                              tf.zeros([order], matrix.dtype))
+        updated = work - multiplier[..., :, None] * work[..., column, None, :]
+        work = tf.where((indices[:, None] > column) & (indices[None, :] >= column),
+                        updated, work)
+        rhs = rhs - multiplier[..., :, None] * rhs[..., column, None, :]
+        return column + 1, work, rhs, valid & pivot_valid
+
+    _, factor, rhs, value_valid = tf.while_loop(
+        lambda column, *_: column < order, eliminate,
+        (tf.constant(0), work, rhs, value_valid), maximum_iterations=order,
+        parallel_iterations=1)
+    value_valid &= tf.reduce_all(tf.math.is_finite(factor), axis=[-2, -1])
+    factor = tf.where(value_valid[..., None, None], factor, identity)
+    log_abs_det = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(factor))), axis=-1)
+    value_valid &= tf.math.is_finite(log_abs_det)
+    force_valid &= value_valid & tf.reduce_all(tf.math.is_finite(rhs), axis=[-2, -1])
+    rhs = tf.where(force_valid[..., None, None], rhs, tf.zeros_like(rhs))
+    solution = small_matrix.triangular_solve(factor, rhs, lower=False)
+    derivative = tf.linalg.trace(solution)
+    force_valid &= tf.math.is_finite(derivative)
+    return (tf.where(value_valid, log_abs_det, tf.zeros_like(log_abs_det)),
+            tf.where(force_valid, derivative, tf.zeros_like(derivative)),
+            value_valid, force_valid)
+
+
 def safe_cholesky(matrix: tf.Tensor, name: str = 'cholesky') -> tuple[tf.Tensor, tf.Tensor]:
     """Factor a full symmetric covariance [..., n, n], preserving batch shape.
 

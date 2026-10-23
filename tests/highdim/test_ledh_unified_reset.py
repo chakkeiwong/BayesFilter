@@ -7,6 +7,7 @@ import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.ledh_canonical_reset_score_tf import (
@@ -52,16 +53,18 @@ def _batched_inputs(batch_size: int = 3, direction_count: int = 2):
     )
 
 
-def _run(values):
+def _run(values, denominator_regularization=1.0e-7):
     return batched_sinkhorn_contract_e_reset_triple_with_tangent(
-        *values, **KWARGS
+        *values, denominator_regularization=denominator_regularization, **KWARGS
     )
 
 
-def test_b1_k1_matches_legacy_single_cloud_authority():
+@pytest.mark.parametrize("denominator_regularization", [1.0e-7, 0.0])
+def test_b1_k1_matches_legacy_single_cloud_authority(denominator_regularization):
     base = _reset_inputs()
     old = sinkhorn_contract_e_reset_triple_with_tangent(
-        *(tf.constant(value, DTYPE) for value in base), **KWARGS
+        *(tf.constant(value, DTYPE) for value in base),
+        denominator_regularization=denominator_regularization, **KWARGS
     )
     values = tuple(
         tf.constant(value, DTYPE)
@@ -75,12 +78,12 @@ def test_b1_k1_matches_legacy_single_cloud_authority():
             base[6],
         )
     )
-    new = _run(values)
+    new = _run(values, denominator_regularization)
     for index, (expected, actual) in enumerate(zip(old, new)):
         if index == 6:
-            # The existing numerical helper squeezes a singleton batch flag.
-            assert actual.shape == expected.shape == tf.TensorShape([])
-            np.testing.assert_array_equal(actual.numpy(), expected.numpy())
+            assert actual.shape == tf.TensorShape([1])
+            assert expected.shape == tf.TensorShape([])
+            np.testing.assert_array_equal(actual[0].numpy(), expected.numpy())
             continue
         unbatched = actual[0, 0] if index in (1, 3, 5) else actual[0]
         np.testing.assert_allclose(
@@ -88,9 +91,10 @@ def test_b1_k1_matches_legacy_single_cloud_authority():
         )
 
 
-def test_batched_rows_and_directions_equal_independent_calls():
+@pytest.mark.parametrize("denominator_regularization", [1.0e-7, 0.0])
+def test_batched_rows_and_directions_equal_independent_calls(denominator_regularization):
     values = _batched_inputs()
-    batched = _run(values)
+    batched = _run(values, denominator_regularization)
     batch_size = int(values[0].shape[0])
     direction_count = int(values[1].shape[0])
     for row in range(batch_size):
@@ -104,12 +108,12 @@ def test_batched_rows_and_directions_equal_independent_calls():
                 values[5][direction : direction + 1, row : row + 1],
                 values[6],
             )
-            independent = _run(one)
+            independent = _run(one, denominator_regularization)
             for index, (full, expected) in enumerate(zip(batched, independent)):
                 if index == 6:
                     assert full.shape == tf.TensorShape([batch_size])
-                    assert expected.shape == tf.TensorShape([])
-                    np.testing.assert_array_equal(full[row].numpy(), expected.numpy())
+                    assert expected.shape == tf.TensorShape([1])
+                    np.testing.assert_array_equal(full[row].numpy(), expected[0].numpy())
                     continue
                 if index in (1, 3, 5):
                     selected = full[direction, row]
@@ -122,9 +126,10 @@ def test_batched_rows_and_directions_equal_independent_calls():
                 )
 
 
-def test_total_tangents_match_finite_difference():
+@pytest.mark.parametrize("denominator_regularization", [1.0e-7, 0.0])
+def test_total_tangents_match_finite_difference(denominator_regularization):
     values = _batched_inputs(batch_size=2, direction_count=2)
-    result = _run(values)
+    result = _run(values, denominator_regularization)
     epsilon = tf.constant(2.0e-6, DTYPE)
     for direction in range(2):
         primal_plus = list(values)
@@ -140,8 +145,8 @@ def test_total_tangents_match_finite_difference():
         )
         for collection in (primal_plus, primal_minus):
             collection[1], collection[3], collection[5] = zeros
-        plus = _run(tuple(primal_plus))
-        minus = _run(tuple(primal_minus))
+        plus = _run(tuple(primal_plus), denominator_regularization)
+        minus = _run(tuple(primal_minus), denominator_regularization)
         for primal_output, tangent_output in ((0, 1), (2, 3), (4, 5)):
             finite_difference = (
                 plus[primal_output] - minus[primal_output]
@@ -152,6 +157,20 @@ def test_total_tangents_match_finite_difference():
                 rtol=4.0e-6,
                 atol=4.0e-8,
             )
+
+
+@pytest.mark.parametrize("regularization", [-1.0e-7, float("inf"), float("nan")])
+def test_invalid_denominator_regularization_rejected(regularization):
+    with pytest.raises(ValueError, match="finite and nonnegative"):
+        _run(_batched_inputs(), regularization)
+
+
+def test_zero_denominator_rejects_degenerate_scaling():
+    values = list(_batched_inputs(batch_size=2, direction_count=1))
+    values[4] = tf.zeros_like(values[4])
+    values[5] = tf.zeros_like(values[5])
+    result = _run(tuple(values), 0.0)
+    assert not bool(tf.reduce_any(result[6]))
 
 
 def test_analytical_tangents_match_autodiff_oracle():

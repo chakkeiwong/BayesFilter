@@ -47,6 +47,13 @@ _SCALAR_FLOAT_KEYS = (
     "maximum_diagonal_scaled_system_condition",
     "maximum_diagonal_pre_cap_particle_rms",
     "maximum_diagonal_post_cap_particle_rms",
+    "affine_restoration_applied",
+    "affine_restoration_current_covariance_trace",
+    "affine_restoration_target_covariance_trace",
+    "affine_restoration_materialized_covariance_trace",
+    "affine_restoration_relative_covariance_residual",
+    "affine_restoration_normalized_covariance_residual",
+    "affine_restoration_normalized_mean_residual",
 )
 
 _SCALAR_FLOAT_KEYS += SAFETY_KEYS
@@ -63,6 +70,7 @@ def _output_signature(
         "target_source_id": tf.TensorSpec([], tf.int32),
         "valid": tf.TensorSpec([], tf.bool),
         "value_valid": tf.TensorSpec([], tf.bool),
+        "materialized_shape_available": tf.TensorSpec([], tf.bool),
     }
     signature.update({key: tf.TensorSpec([], tf.bool) for key in (
         "target_covariance_valid", "initial_standardization_valid", "diagonal_iterations_valid",
@@ -77,7 +85,7 @@ def _output_signature(
         {key: tf.TensorSpec([], dtype) for key in _SCALAR_FLOAT_KEYS}
     )
     if return_stages:
-        for stage in ("raw_reset", "pre_cap", "post_cap"):
+        for stage in ("raw_reset", "pre_cap", "post_cap", "post_cap_offsets"):
             signature["stage_" + stage] = tf.TensorSpec([particle_count, state_dim], dtype)
             signature["stage_" + stage + "_tangent"] = tf.TensorSpec([particle_count, state_dim, direction_count], dtype)
     return signature
