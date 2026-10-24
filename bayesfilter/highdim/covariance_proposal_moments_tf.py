@@ -32,14 +32,22 @@ def feature_jets(s,ds,gs,dgs,indices):
         y,dy,gy,dgy=y*x,dy*x+y*dx,gy*x[None]+y[None]*gx,dgy*x[None]+gy*dx[None]+dy[None]*gx+y[None]*dgx
     return y,dy,gy,dgy
 
-def skew_basis(n,r,dtype):
+def skew_basis_factors(n,r,dtype):
+    """Cosine columns and small skew cores; no orthogonality assumption."""
     if 2*r>=n: raise ValueError("Cayley basis requires 2*basis < N")
     ix=tf.cast(tf.range(n),dtype)+.5
     cols=tf.cos(tf.constant(math.pi/n,dtype)*ix[:,None]*tf.cast(tf.range(1,2*r+1),dtype)[None])
     cols-=tf.reduce_mean(cols,0,keepdims=True)
     cols/=tf.linalg.norm(cols,axis=0,keepdims=True)
-    a=tf.transpose(cols[:,::2]); b=tf.transpose(cols[:,1::2])
-    return (a[:,:,None]*b[:,None,:]-b[:,:,None]*a[:,None,:])/tf.sqrt(tf.constant(2.,dtype))
+    a=tf.one_hot(tf.range(0,2*r,2),2*r,dtype=dtype)
+    b=tf.one_hot(tf.range(1,2*r,2),2*r,dtype=dtype)
+    cores=(a[:,:,None]*b[:,None,:]-b[:,:,None]*a[:,None,:])/tf.sqrt(tf.constant(2.,dtype))
+    return cols,cores
+
+
+def skew_basis(n,r,dtype):
+    cols,cores=skew_basis_factors(n,r,dtype)
+    return tf.linalg.matmul(tf.linalg.matmul(cols,cores),cols,transpose_b=True)
 
 def cayley_jets(v,dv,basis,kappa):
     g=tf.einsum('r,rij->ij',v,basis); dg=tf.einsum('r,rij->ij',dv,basis)

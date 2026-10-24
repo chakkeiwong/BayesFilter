@@ -417,6 +417,8 @@ class HMCTuningRunnerBinding:
     required_metadata_fields: tuple[str, ...]
     source_dependency_closure: Mapping[str, Any]
     artifact_authority: bool = False
+    diagnostic_transform: Callable[..., Any] | None = field(default=None, repr=False, compare=False)
+    diagnostic_identity: str | None = None
 
     def __post_init__(self) -> None:
         if self._issuer_token is not _RUNNER_BINDING_ISSUER_TOKEN:
@@ -425,6 +427,12 @@ class HMCTuningRunnerBinding:
             raise TypeError("runner must be callable")
         if not callable(self.tensor_kernel_factory):
             raise TypeError("tensor_kernel_factory must be callable")
+        if (self.diagnostic_transform is None) != (self.diagnostic_identity is None):
+            raise ValueError("diagnostic transform and identity must be supplied together")
+        if self.diagnostic_transform is not None:
+            if not callable(self.diagnostic_transform):
+                raise TypeError("diagnostic_transform must be callable")
+            _nonempty_text(self.diagnostic_identity, "diagnostic_identity")
         for name in (
             "runner_identity",
             "algorithm_family",
@@ -503,6 +511,8 @@ class HMCTuningRunnerBinding:
 
     def _identity_payload(self) -> Mapping[str, Any]:
         return {
+            **({"diagnostic_identity": self.diagnostic_identity}
+               if self.diagnostic_identity is not None else {}),
             "schema": HMC_TUNING_RUNNER_BINDING_SCHEMA,
             "runner_identity": self.runner_identity,
             "algorithm_family": self.algorithm_family,
@@ -691,6 +701,8 @@ def _issue_hmc_tuning_runner_binding(
     required_diagnostic_fields: tuple[str, ...],
     required_metadata_fields: tuple[str, ...],
     source_dependency_closure: Mapping[str, Any],
+    diagnostic_transform: Callable[..., Any] | None = None,
+    diagnostic_identity: str | None = None,
 ) -> HMCTuningRunnerBinding:
     """Issue a binding from a repository-owned algorithm module."""
 
@@ -723,6 +735,8 @@ def _issue_hmc_tuning_runner_binding(
         required_metadata_fields=required_metadata_fields,
         source_dependency_closure=source_dependency_closure,
         artifact_authority=False,
+        diagnostic_transform=diagnostic_transform,
+        diagnostic_identity=diagnostic_identity,
     )
 
 

@@ -104,7 +104,8 @@ def verify_sir_training_scope(case, payload, scope):
 
 
 def frozen_neutra_bindings(payload, *, target_signature, raw_force, raw_target,
-                           target_scope):
+                           target_scope, model_parameter_transform=None,
+                           model_parameter_identity=None):
     """Compose a verified fixed map with force and independent MH endpoint.
 
     U_z(z)=U_q(T(z))-log|det DT(z)| and
@@ -147,6 +148,8 @@ def frozen_neutra_bindings(payload, *, target_signature, raw_force, raw_target,
     fixed_target = FrozenTargetPotential(endpoint, raw_target.identity+":"+identity,
         coordinate_system="transformed", includes_chart_log_jacobian=True)
     binding = bind_neural_force_hmc_tuning_runner(force=fixed_force, target=fixed_target,
+        model_parameter_transform=model_parameter_transform,
+        model_parameter_identity=model_parameter_identity,
         target_scope=target_scope+":"+identity, frozen_transport=loaded)
     return dict(force=fixed_force, target=fixed_target, binding=binding,
                 transport=transport, artifact=loaded)

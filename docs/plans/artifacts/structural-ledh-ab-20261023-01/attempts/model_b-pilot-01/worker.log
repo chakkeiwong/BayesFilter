@@ -1,0 +1,43 @@
+2026-10-23 23:29:01.595327: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792769341.612840  571787 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792769341.618477  571787 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792769341.633125  571787 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792769341.633167  571787 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792769341.633169  571787 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792769341.633170  571787 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792769344.162061  571787 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792769344.867298  571787 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792769345.003417  571787 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792769347.172416  571787 service.cc:152] XLA service 0x42b5ad00 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792769347.172464  571787 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792769348.778800  571787 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-23 23:31:35.051669: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_likelihood_9463__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.12253] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-23 23:31:40.868953: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2m5.817549924s
+
+********************************
+[Compiling module a_inference_likelihood_9463__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.12253] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792769500.871155  571787 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 518, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 510, in main
+    if args.command=='worker': return worker(args.job)
+                                      ^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 171, in worker
+    result=WORKERS[job['kind']](tf,job,out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 158, in probe
+    start=time.monotonic(); value,score,valid=target.likelihood(q)
+                                              ^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 53, in quick_execute
+    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.ResourceExhaustedError: Out of memory while trying to allocate 15115643928 bytes. [Op:__inference_likelihood_9463]

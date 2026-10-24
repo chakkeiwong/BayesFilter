@@ -290,6 +290,7 @@ class TensorFlowHMCKernelTuningConfig:
     non_xla_reason: str | None = None
     max_step_size: float | None = None
     energy_error_max: float | None = None
+    numerical_device: str | None = None
 
     def __post_init__(self) -> None:
         dimension = _positive_int(self.parameter_dimension, "parameter_dimension")
@@ -334,6 +335,8 @@ class TensorFlowHMCKernelTuningConfig:
             raise ValueError("TensorFlow bound tuning currently requires target status none")
         if not isinstance(self.use_xla, bool):
             raise ValueError("use_xla must be a Python bool")
+        if self.numerical_device not in (None, '/CPU:0', '/GPU:0'):
+            raise ValueError('numerical_device must be None, /CPU:0 or /GPU:0')
         if self.non_xla_reason is not None and not str(self.non_xla_reason).strip():
             raise ValueError("non_xla_reason must be nonempty when supplied")
         if not isinstance(self.acceptance_policy, FourChainMeanBandAcceptancePolicy):
@@ -467,6 +470,7 @@ class TensorFlowHMCKernelTuningConfig:
             "chain_execution_mode": self.chain_execution_mode,
             "target_status_trace_policy": self.target_status_trace_policy,
             "use_xla": self.use_xla,
+            **({'numerical_device': self.numerical_device} if self.numerical_device else {}),
             "candidate_selection": "first_passing_predeclared_candidate",
             "ranking_claim": False,
             "artifact_authority": False,
@@ -555,6 +559,7 @@ class TensorFlowHMCKernelTuningConfig:
             non_xla_reason=payload.get("non_xla_reason"),
             max_step_size=payload.get("max_step_size"),
             energy_error_max=payload.get("energy_error_max"),
+            numerical_device=payload.get("numerical_device"),
         )
 
 
@@ -1664,6 +1669,16 @@ def _normalize_initial_chain_positions(
     )
 
 
+def _call_numerical_graph(graph, *args, numerical_device=None):
+    """Keep host assertions/reporting separate from an explicitly placed kernel."""
+    if numerical_device is None:
+        return graph(*args)
+    if numerical_device == '/GPU:0' and not tf.config.list_physical_devices('GPU'):
+        raise RuntimeError('Explicit GPU numerical execution requires a visible GPU')
+    with tf.device(numerical_device):
+        return graph(*args)
+
+
 def _run_tensorflow_hmc_tuning(
     *,
     adapter: Any,
@@ -1700,7 +1715,7 @@ def _run_tensorflow_hmc_tuning(
     tf.debugging.assert_all_finite(scales, "parameter_scales must be finite")
     tf.debugging.assert_positive(scales, "parameter_scales must be positive")
     graph = _build_tuning_graph(config, runner_binding, adapter_signature)
-    values = dict(graph(position, scales))
+    values = dict(_call_numerical_graph(graph, position, scales, numerical_device=config.numerical_device))
     values["initial_position_was_replicated"] = position_was_replicated
     result = TensorFlowHMCKernelTuningResult(
         config=config,
@@ -1946,7 +1961,7 @@ class BoundRetainedHMCArchiveRunner:
                 "health_passed": decision.passed,
             }
 
-        values = execute()
+        values = _call_numerical_graph(execute, numerical_device=tuning.config.numerical_device)
         for artifact_path, tensor_value in (
             (sample_path, values["raw_samples"]),
             (log_accept_path, values["log_accept_ratio"]),

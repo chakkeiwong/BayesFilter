@@ -1,0 +1,127 @@
+{
+  "nomination": {
+    "schema": "bayesfilter.tensorflow_hmc_tuning.v3",
+    "numerical_backend": "tensorflow_only",
+    "dtype": "float64",
+    "parameter_dimension": 3,
+    "chain_count": 4,
+    "initial_chain_state_policy": "explicit_four_chain_bank_or_diagnostic_single_position_replication",
+    "candidate_initial_position_policy": "explicit_four_chain_bank_required",
+    "mass_window_leapfrog_steps": 1,
+    "evidence_role": "candidate",
+    "mass_window_results": [
+      128,
+      256
+    ],
+    "metric_state_count_by_window": [
+      512,
+      1024
+    ],
+    "metric_rank_eligible": true,
+    "step_adaptation_results": 256,
+    "verification_results": 128,
+    "max_leapfrog_steps": 4,
+    "trajectory_candidates": [
+      1,
+      2,
+      4
+    ],
+    "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+    "candidate_policy_metadata_role": "historical_graph_helper_only; active candidate stages use shared search/execution configs",
+    "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+    "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+    "initial_step_size": 0.01,
+    "max_step_size": null,
+    "energy_error_max": null,
+    "budget_provenance": "Owner 48 GPU hour structural Model A/B master",
+    "initial_step_size_provenance": "Small standardized warm start, adapted on this target",
+    "geometry_provenance": "Own-target mass windows, identity shrinkage .1; no transferred covariance",
+    "target_scope": "fee0940c631c94b78ff891fd6c5e5cf18c465031236efbf9b41fb932fce77eb0:3608efde0c1568e27b636d45be6222beda8f64b475cdacf8353cda3468fd14b1",
+    "acceptance_policy": {
+      "schema": "bayesfilter.four_chain_mean_band_acceptance.v1",
+      "chain_count": 4,
+      "chain_weighting": "equal_chain_means",
+      "overall_band": [
+        0.6,
+        0.8
+      ],
+      "per_chain_band": [
+        0.4,
+        0.9
+      ],
+      "boundaries": "inclusive",
+      "negative_infinity_log_acceptance": "probability_zero",
+      "nan_or_positive_infinity_log_acceptance": "invalid"
+    },
+    "target_accept_prob": 0.7,
+    "verification_repair_rounds": 2,
+    "step_repair_factor": 1.5,
+    "mass_shrinkage": 0.1,
+    "covariance_jitter": 0.0,
+    "eigenvalue_floor": 1.4210854715202004e-14,
+    "max_condition_number": 67108864.0,
+    "seed": [
+      261027,
+      11
+    ],
+    "chain_execution_mode": "tf_function",
+    "target_status_trace_policy": "none",
+    "use_xla": true,
+    "numerical_device": "/GPU:0",
+    "candidate_selection": "first_passing_predeclared_candidate",
+    "ranking_claim": false,
+    "artifact_authority": false,
+    "posterior_admission_authority": false,
+    "admission_supported": false,
+    "mechanics_handoff_supported": true,
+    "handoff_eligibility": "result_dependent_candidate_screen",
+    "fresh_rhat_verification": "not_part_of_tuning_handoff",
+    "rhat_role": "retained_explanatory_only",
+    "xla_qualification": "requires_external_qualification",
+    "xla_mode": "requested_full_chain_compilation",
+    "nonclaims": [
+      "diagnostic_only results cannot issue a tuning handoff",
+      "candidate handoff authorizes only the same frozen mechanics",
+      "R-hat and ESS are retained-run explanatory diagnostics",
+      "the route is not XLA qualified",
+      "no retained posterior convergence claim"
+    ]
+  },
+  "initial_chain_positions": [
+    [
+      -4.386078696137393,
+      -1.8677135555906361,
+      -5.2985530392774915
+    ],
+    [
+      -2.1774042273225955,
+      0.21592630920954645,
+      -0.880117760309218
+    ],
+    [
+      -0.14289797627519987,
+      1.6278721175420512,
+      2.5263993449682713
+    ],
+    [
+      1.3955807158170186,
+      2.571264620918492,
+      4.22057195198145
+    ]
+  ],
+  "initialization_provenance": "Four dispersed prior-coordinate starts, transformed through frozen map when present",
+  "warmup_results": 2000,
+  "verification_results": 1000,
+  "fresh_seed": [
+    261027,
+    12
+  ],
+  "energy_error_max": 1000.0,
+  "warmup_max_results": 10000,
+  "verification_max_results": 20000,
+  "chunk_results": 250,
+  "check_every_results": 1000,
+  "warmup_check_window_results": 1000,
+  "warmup_rhat_max": 1.05,
+  "resume_manifest": null
+}

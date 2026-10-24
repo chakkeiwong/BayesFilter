@@ -69,6 +69,23 @@ def test_xla_nomination_roundtrip_remains_diagnostic():
     assert cfg.nomination.payload()["xla_qualification"] == "requires_external_qualification"
 
 
+def test_explicit_numerical_device_roundtrip_and_execution():
+    from bayesfilter.inference.hmc_tensorflow_tuning import _call_numerical_graph
+    cfg=dataclasses.replace(nomination(),numerical_device='/CPU:0')
+    assert TensorFlowHMCKernelTuningConfig.from_payload(cfg.payload()) == cfg
+    assert 'numerical_device' not in nomination().payload()
+    @tf.function(input_signature=[tf.TensorSpec([2],tf.float64)],jit_compile=True)
+    def graph(x):return x*x+1
+    result=_call_numerical_graph(graph,tf.constant([2.,3.],tf.float64),numerical_device='/CPU:0')
+    np.testing.assert_array_equal(result,[5.,10.])
+    assert 'CPU:0' in result.device
+    if not tf.config.list_physical_devices('GPU'):
+        with pytest.raises(RuntimeError,match='visible GPU'):
+            _call_numerical_graph(graph,tf.ones([2],tf.float64),numerical_device='/GPU:0')
+    with pytest.raises(ValueError,match='numerical_device'):
+        dataclasses.replace(cfg,numerical_device='/GPU:9')
+
+
 def test_health_rejects_stuck_chain_and_numerical_endpoint_failure():
     states = tf.ones([4,4,2],tf.float64)
     status = tf.concat([tf.ones([4,4,1],tf.int32),tf.zeros([4,4,9],tf.int32)],axis=-1)

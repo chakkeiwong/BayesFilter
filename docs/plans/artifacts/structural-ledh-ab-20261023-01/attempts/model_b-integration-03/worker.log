@@ -1,0 +1,43 @@
+2026-10-24 00:12:37.498454: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792771957.508293  614000 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792771957.511084  614000 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792771957.521203  614000 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771957.521287  614000 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771957.521289  614000 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771957.521291  614000 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771959.920944  614000 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792771960.600043  614000 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792771960.743219  614000 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792771961.318357  614000 service.cc:152] XLA service 0x27d66d30 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792771961.318412  614000 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+Traceback (most recent call last):
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 681, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 670, in main
+    if args.command=='worker': return worker(args.job)
+                                      ^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 226, in worker
+    result=WORKERS[job['kind']](tf,job,out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 198, in integration
+    checks=map_checks(tf,transport)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 184, in map_checks
+    inverse_error,logdet_error=map(float,check())
+                                         ^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 53, in quick_execute
+    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Detected unsupported operations when trying to compile graph __inference_check_2202[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263] on XLA_GPU_JIT: LogMatrixDeterminant (No registered 'LogMatrixDeterminant' OpKernel for XLA_GPU_JIT devices compatible with node {{node LogMatrixDeterminant}}){{node LogMatrixDeterminant}}
+The op is created at: 
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 681, in <module>
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 670, in main
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 226, in worker
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 198, in integration
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 184, in map_checks
+File "tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 183, in check
+	tf2xla conversion failed while converting __inference_check_2202[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_check_2202]

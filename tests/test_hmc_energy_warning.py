@@ -37,6 +37,28 @@ def test_finite_energy_is_warning_only(error):
     assert bool(old["energy_valid"]) == (abs(error) <= 1000)
 
 
+@pytest.mark.parametrize("error", [float("inf"), -float("inf"), float("nan")])
+def test_nonfinite_energy_is_serializable_without_clearing_health_veto(error):
+    c = chunk(error)
+    d = verified._chunk_diagnostics(c, None, 1000.)
+    assert json.loads(json.dumps(d, allow_nan=False)) == d
+    assert d["energy"]["max_abs_error"] is None
+    assert d["energy"]["nonfinite_count"] == 8
+    assert d["energy"]["nonfinite_count_by_chain"] == [2] * 4
+    assert d["energy"]["max_finite_abs_error"] is None
+    assert not bool(verified._health(c, tf.zeros([4, 2], tf.float64), 1000.)["finite"])
+
+
+def test_mixed_finite_and_invalid_energy_preserves_finite_summary():
+    c = chunk(2.)._replace(delta_h=tf.constant(
+        [[float("inf"), 3., float("nan"), -2000.], [2., 3., 4., 5.]], tf.float64))
+    d = verified._chunk_diagnostics(c, None, 1000.)
+    json.dumps(d, allow_nan=False)
+    assert d["energy"]["nonfinite_count"] == 2
+    assert d["energy"]["max_finite_abs_error"] == 2000.
+    assert d["energy"]["threshold_exceedance_count"] == 1
+
+
 def test_energy_policy_does_not_hide_nonfinite_or_endpoint_failures():
     c = chunk(float("nan"))
     assert not bool(verified._health(c, tf.zeros([4, 2], tf.float64), 1000.)["finite"])
