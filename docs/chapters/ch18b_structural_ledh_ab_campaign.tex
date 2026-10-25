@@ -1,0 +1,465 @@
+\section{Structural LEDH and Surrogate HMC}
+\label{sec:bf-structural-ledh-ab-campaign}
+
+The experiment completed on 24 October 2026 asks whether an LEDH proposal
+defined on the declared innovations can support parameter estimation when
+part of the state transition is deterministic.  It tests a linear model with
+an exact likelihood and a nonlinear model with a deterministic completion.
+Both four-chain HMC runs met the prescribed retained-sample $\widehat R<1.01$
+criterion.  The linear model also passed a comparison of posterior means with
+a refined exact-likelihood calculation.  The nonlinear run samples a fixed
+finite-particle posterior; agreement with its exact model posterior remains
+unestablished.  These are different conclusions, and the construction below
+explains why.
+
+Here \emph{campaign Model A} and \emph{campaign Model B} name the two software
+test fixtures.  These letters do not identify Worked Examples A and B earlier
+in this chapter.  The experiment extends the five-model case study in
+Chapter~\ref{ch:bf-surrogate-hmc-five-models}; its data and configurations are
+separate from those earlier runs.
+
+\subsection{The two models and their parameter distributions}
+
+Write the state as $x_t=(m_t,k_t)^T$.  Each model has two state coordinates,
+one observation, and one new stochastic innovation per date.  All innovations
+$e_t$ and observation errors $\eta_t$ below are independent standard normal
+variables, also independent of the initial state.
+Campaign Model A is the companion representation of an AR(2) process:
+\begin{align}
+ m_t &= 0.35m_{t-1}-0.10k_{t-1}+\sigma e_t,
+ & k_t &= m_{t-1}, \label{eq:bf-campaign-a-transition}\\
+ y_t &= m_t+\tau\eta_t,
+ & x_0 &\sim N(0,I_2).
+\end{align}
+The unknown parameters are $(\sigma,\tau)$, with generating values
+$(0.25,0.15)$.  In coordinates $q=(\log\sigma,\log\tau)$ the prior is
+\[
+ q\sim N\!\left(
+   \begin{bmatrix}\log 0.4\\\log 0.3\end{bmatrix},
+   \operatorname{diag}(0.7^2,0.7^2)\right).
+\]
+There is no innovation in the second transition equation.  Nevertheless, its
+predictive variance is generally positive because the preceding $m$ is
+uncertain.  A Kalman filter handles the rank-one process covariance directly;
+it provides the exact likelihood used at Model A's Metropolis endpoints.
+
+Campaign Model B replaces the lag identity with a nonlinear completion:
+\begin{align}
+ m_t &= \rho m_{t-1}+\sigma e_t,
+ & k_t &=0.55k_{t-1}+\beta\tanh(m_t),
+ \label{eq:bf-campaign-b-transition}\\
+ y_t &=m_t+k_t+0.30\eta_t,
+ & x_0 &\sim N\!\left(0,\operatorname{diag}(0.25,0.20)\right).
+\end{align}
+The unknown parameters are $(\rho,\sigma,\beta)$, with generating values
+$(0.7,0.25,0.8)$.  Define
+$q=(\operatorname{atanh}\rho,\log\sigma,\log\beta)$ and use
+\[
+ q\sim N\!\left(
+ \begin{bmatrix}0.5\\\log 0.4\\\log 0.7\end{bmatrix},
+ \operatorname{diag}(0.8^2,0.7^2,0.6^2)\right).
+\]
+These are declared regularizing priors for synthetic experiments, not priors
+attributed to an application paper.  Their densities are defined with respect
+to $dq$.  Thus the HMC target in $q$ uses these normal densities directly;
+one must not add a second Jacobian as though the same normal prior had been
+defined on the physical parameters.  Credible intervals are computed after
+transforming each retained draw back to the physical coordinates.
+
+\subsection{Proposing an innovation and completing the state}
+
+After the preceding filter reset, let $x_{t-1}^{(j)}$, $j=1,\ldots,N$, be
+the equally weighted parent cloud.  Denote structural completion by
+$F_\theta(x,e)$, using either
+\eqref{eq:bf-campaign-a-transition} or
+\eqref{eq:bf-campaign-b-transition}.  Conditional on a chosen parent, the
+proposal is a density in the scalar $e$, not a bivariate Gaussian density on
+$x_t$.  It has three components:
+\begin{equation}
+ r_j(e)=0.2\,\phi(e)+0.4\,r_{j,\mathrm{SP}}(e)
+                       +0.4\,r_{j,\mathrm{LEDH}}(e),
+ \label{eq:bf-structural-campaign-mixture}
+\end{equation}
+where $\phi$ is the standard normal density, $r_{j,\mathrm{SP}}$ is the
+shared sigma-point Gaussian proposal, and $r_{j,\mathrm{LEDH}}$ is the shared
+local-flow Gaussian proposal.  Both guided components observe the completed
+state through $h(F_\theta(x_{t-1}^{(j)},e))$.  The required derivatives with
+respect to $e$ are $\sigma$ in A and
+\[
+ \frac{\partial h(F_\theta(x,e))}{\partial e}
+   =\sigma\{1+\beta[1-\tanh^2(m)]\}
+\]
+in B.  This derivative includes the effect of the innovation on the
+deterministically completed coordinate.
+
+The algorithm chooses a parent uniformly, chooses a mixture component, draws
+its innovation, and computes $x_t=F_\theta(x_{t-1}^{(j)},e)$.
+All three densities in \eqref{eq:bf-structural-campaign-mixture} are evaluated
+at that same innovation and that same parent.  The incremental weight is
+\begin{equation}
+ w_t^{(i)}=
+ \frac{g_\theta(y_t\mid F_\theta(x_{t-1}^{(j_i)},e_i))\phi(e_i)}
+      {r_{j_i}(e_i)},
+ \qquad
+ \widehat\ell_F(q)=\sum_{t=1}^T
+       \log\!\left\{\frac1N\sum_{i=1}^N w_t^{(i)}\right\}.
+ \label{eq:bf-structural-campaign-weights}
+\end{equation}
+The uniform parent probability cancels between target and proposal on the
+augmented space $(j,e)$.  Both numerator and denominator are densities with
+respect to the same innovation measure $de$, so no ambient-state Jacobian is
+needed.  Summing proposal densities over other parents would instead mix
+different completion curves and would not compute this importance ratio.
+
+Every propagated child satisfies its deterministic equation by construction.
+The subsequent weighted-cloud reset approximates the unconditional filtering
+distribution in state space; a reset point need not lie on a particular
+previous parent's completion curve.  At the next propagation the conditional
+structural identity is imposed again.  This distinction matters: structural
+propagation avoids artificial process noise, but it does not make the
+finite-cloud reset exact Bayesian filtering.
+
+The structural adapter connects each model to the shared map builder.
+It is implemented in \path{structural_completion_proposal_tf.py}.
+The consumer in the shared
+batched score recurrence selects this adapter for structural models, then
+uses the shared weight, transport, moment-reset, and correction operations.
+The state and all parameter tangents travel together through the recursion.
+In particular,
+\[
+ D_qx_t=D_xF_\theta(x_{t-1},e)D_qx_{t-1}
+          +D_eF_\theta(x_{t-1},e)D_qe
+          +\partial_qF_\theta(x_{t-1},e),
+\]
+and the same chain rule differentiates proposal densities and weight
+normalizations.  The production score is this analytical tangent calculation,
+not a separate finite-difference filter run for each parameter.  Fixed draw
+designs, component labels, and parent labels define the finite computation;
+numerical validity and local branch behavior are checked separately.
+
+The campaign also replaces the dense Cayley-matrix calculation in the shared
+moment correction with an algebraically equivalent compact action.  If the
+cosine basis is $U\in\mathbb R^{N\times2r}$, its skew core is $A$, and
+$G=U^TU$, write the scaled skew generator as $K=UDU^T$.  The normalization
+used by the original algorithm is retained:
+\[
+ D=\frac{\kappa A}{\sqrt{1+\operatorname{tr}(A^T G A G)}}.
+\]
+For the Cayley transform $O=(I-K/2)^{-1}(I+K/2)$, the correction needs
+$O^TZ$, not the full $N\times N$ matrix.  Since
+$O^T=I-(I+K/2)^{-1}K$ and
+$(I+UDU^T/2)^{-1}U=U(I+DG/2)^{-1}$, it follows that
+\[
+ O^TZ=Z-U(I+DG/2)^{-1}DU^TZ.
+\]
+Only a $2r$-dimensional solve is required.  Retaining $G$, rather than
+replacing it by the identity, preserves the actual finite cosine basis even
+when its columns are not exactly orthogonal.  Tests compare the compact and
+dense actions, parameter tangents, and mixed derivatives in FP32 and FP64,
+including deliberately nonorthogonal columns, and compare full-filter values
+and scores on both structural models.  This removes the dense intermediate;
+the campaign does not provide a paired timing estimate of its speedup.
+
+\subsection{The force, the endpoint, and NeuTra whitening}
+
+Let $p_q$ be the stated prior density and define the finite-filter force
+\[
+ G_F(q)=\nabla_q[-\log p_q(q)-\widehat\ell_F(q)].
+\]
+The force supplies the momentum kicks of leapfrog.  The potential evaluated
+in the Metropolis decision is
+\begin{equation}
+ U_E(q)=
+ \begin{cases}
+ -\log p_q(q)-\ell_{\mathrm{Kalman}}(q),&\text{Model A},\\
+ -\log p_q(q)-\widehat\ell_F(q),&\text{Model B}.
+ \end{cases}
+ \label{eq:bf-structural-campaign-endpoints}
+\end{equation}
+For A the force is a surrogate for the gradient of an exact endpoint.  For B
+the endpoint itself is the fixed finite-LEDH likelihood approximation.  Its
+random design is frozen; this is not a pseudo-marginal sampler with a fresh
+unbiased likelihood estimate at each proposal.  Metropolis correction cannot
+remove B's finite-filter approximation error.
+
+The proposal argument does not require the force to equal the endpoint
+gradient.  A kick $(q,p)\mapsto(q,p-\epsilon G_F(q))$ and a drift
+$(q,p)\mapsto(q+\epsilon M^{-1}p,p)$ are triangular shears with determinant
+one.  Symmetric composition and momentum reversal give the usual reversible,
+volume-preserving proposal in exact arithmetic.  Acceptance using
+$\min\{1,\exp[-H_E(q',p')+H_E(q,p)]\}$ therefore corrects this proposal
+against the declared endpoint.  Numerical checks remain necessary for the
+implemented finite-precision calculation; the argument does not identify
+the two endpoints in \eqref{eq:bf-structural-campaign-endpoints}.
+
+Model A uses affine tuning.  Model B uses a frozen NeuTra map $q=\mathcal T(z)$
+trained against its own finite-filter posterior.  Its transformed endpoint
+and force include the map's change of volume:
+\begin{align}
+ U_Z(z)&=U_E(\mathcal T(z))-\log|\det D\mathcal T(z)|,\\
+ G_Z(z)&=D\mathcal T(z)^T G_F(\mathcal T(z))
+             -\nabla_z\log|\det D\mathcal T(z)|.
+\end{align}
+The existing author-style IAF training implementation and the shared frozen-map
+HMC bindings are reused.  The architecture and optimizer were tested on B,
+rather than promoted merely because they had worked for SIR.  Four initial
+arms combine two settings---hidden widths $(18,18)$ at learning rate
+$10^{-3}$ and $(36,36)$ at $3\times10^{-4}$---with seeds 17 and 29.
+Each received 256 accepted updates.  The nominated width-18, seed-29 arm was
+extended to 1,024 accepted updates in 1,051 attempts.  Training used batch
+size eight, shards of four, Adam parameters $(0.9,0.999,10^{-7})$, gradient
+norm cap one, conditional scale cap two, and an initial affine scale equal
+to half the prior standard deviation.  The map has three IAF stages with ELU
+hidden activations.  Training minimizes the reverse-KL objective
+\[
+ \mathcal L(\psi)=\mathbb E_{z\sim N(0,I)}
+ \bigl[U_E(\mathcal T_\psi(z))
+        -\log|\det D\mathcal T_\psi(z)|\bigr]+\text{constant},
+\]
+using B's declared finite-filter endpoint.  Thirty-two common heldout latent
+draws and map inverse/derivative checks nominate a frozen map; downstream HMC
+provides the sampling evidence.  This finite search nominates a map;
+it does not establish an optimal architecture or statistically rank maps.
+
+\subsection{The precision failure and its localized repair}
+
+The first B attempt exposed a numerical failure in reset recoloring, not an
+error in the deterministic transition law.  For transported particles $y_i$,
+the reset uses a source covariance factor $L_y$ and a target weighted factor
+$L_w$ to construct
+\[
+ z_i=\mu_w+L_wL_y^{-1}(y_i-\bar y).
+\]
+Some source covariances were sufficiently ill-conditioned that their relative
+spectral margins, approximately $1.32$--$1.92\times10^{-7}$ at four inspected
+endpoints, fell below the FP32 guard of approximately
+$2.38\times10^{-7}$ in dimension two.  The invalid factorization fallback
+could then produce a very large reported covariance error.  That flagged
+fallback was not an accepted scientifically valid reset.
+
+The optional \path{conditional_fp64} policy first executes the usual FP32
+reset.  If a row fails its reset validity check, it recomputes the reset
+moments, factorizations, recoloring, and their tangents in FP64, using the
+already computed transported cloud, and casts the repaired row back to FP32.
+Healthy rows retain their original result.  It does not add process noise,
+add a covariance ridge, relax the validity threshold, or rerun the whole
+particle filter in FP64.  The selected B run uses this policy; A retains the
+ordinary precision policy.
+
+The dedicated check repeated the four failing endpoints and four healthy
+ones over all 50 observations.  All eight became valid.  The failing rows
+required six, three, one, and one local fallbacks; the healthy rows required
+none and retained bit-identical likelihoods and scores.  Against full-FP64
+evaluation at these eight points, the largest relative log-likelihood
+difference was $6.24\times10^{-7}$ and the largest relative score-vector
+error was $4.09\times10^{-5}$.  The largest covariance-restoration error was
+$1.52\times10^{-4}$, below the declared one-percent tolerance.  These are
+pointwise numerical checks, not an accuracy bound over the posterior.
+
+Because this repair changes the finite numerical target at failing rows,
+the earlier B chain was not appended to the repaired run.  Training resumed
+from the nominated map parameters with fresh Adam state and fresh training
+draws, accepting 256 of 256 further updates in about 856 seconds.  A new map
+was frozen and fresh HMC warmup and sampling followed.  A separate checkpoint
+serialization repair records nonfinite diagnostic counts and a null summary
+when necessary, rather than crashing while writing JSON.  It does not turn
+a nonfinite endpoint into a valid one.
+
+\subsection{Reference checks, tuning, and stopping}
+
+The model ladder covers $T=2,10,50$ for A and $T=2,3,10,50$ for B, with
+separate calibration, validation, and final datasets.  The short cases test
+structural propagation and likelihood/score calculations; the final posterior
+runs both use $T=50$.  A is compared with Kalman likelihoods; the reference
+score diagnostic uses centered finite differences of that exact likelihood.
+B uses path quadrature of orders 24 and 32 for $T\leq3$.  At $T=10,50$ it
+uses bootstrap-filter references with Fisher path scores, eight replications
+at each of 16,384 and 65,536 particles, reporting replication MCSE and the
+change under refinement.  Those finite-particle references retain unresolved
+bias.  EKF and cubature calculations provide cheap comparison points; no
+paired runtime study establishes a computational advantage over them.
+
+For transparency, Table~\ref{tab:bf-structural-ab-likelihoods} records the
+historical final-scope likelihood checks before the reset precision repair.
+The centered error compares changes from the generating parameter at four
+probe points (that parameter, two local displacements, and the prior center):
+\[
+ \max_{q\in\mathcal P}\left|
+ [\widehat\ell_F(q)-\widehat\ell_F(q_\star)]
+ -[\ell_{\rm ref}(q)-\ell_{\rm ref}(q_\star)]\right|.
+\]
+Centering removes a constant log-likelihood offset; it does not remove shape
+error or certify posterior agreement outside these four points.
+\begin{table}[htbp]
+\centering\small
+\caption{Historical original-precision likelihood probes.  Values are at
+the generating parameter; the last column uses all four probe points.}
+\label{tab:bf-structural-ab-likelihoods}
+\begin{tabular}{lrrrr}
+\toprule
+Model & $T$ & LEDH log likelihood & Reference & Max. centered error\\
+\midrule
+A & 2  & $-2.57224$ & $-2.59398$ & 0.01323\\
+A & 10 & $-1.72441$ & $-1.73745$ & 0.00258\\
+A & 50 & $-2.04097$ & $-1.97456$ & 0.02935\\
+B & 2  & $-2.53654$ & $-2.49504$ & 0.05296\\
+B & 3  & $-5.99398$ & $-5.84991$ & 0.15853\\
+B & 10 & $-7.98445$ & $-8.05226$ & 0.03907\\
+B & 50 & $-48.00130$ & $-48.31778$ & 0.22429\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The saved final-scope likelihood probes precede the conditional-precision
+repair and remain labeled as such.  For example, at B's $T=50$ generating
+parameter they give the $q$-score $(-1.2137,2.9454,1.1045)$, compared with
+$(-1.7131,4.0065,1.2723)$ from the larger bootstrap reference.  The reference
+MCSEs are $(0.0274,0.1003,0.1430)$, with additional finite-particle bias not
+accounted for by those MCSEs.  The first two discrepancies are substantial
+relative to the reported replication error.  This historical comparison
+does not measure the repaired posterior's bias, but it prevents interpreting
+successful HMC as proof of exact nonlinear likelihood or posterior accuracy.
+
+All final particle filters use $N=4032$ and FP32.  The selected controls are
+16 LEDH flow steps for A and eight for B, with transport epsilon one, five
+reset iterations, and one correction iteration in both cases.  The tested
+control ladder was $(16,5),(8,5),(16,10)$ for flow steps and reset iterations.
+These are campaign selections, not universal defaults.  HMC coordinates and
+bookkeeping use FP64, as does A's exact endpoint; B additionally has the
+conditional reset repair just described.  TF32 is disabled.  The repeated
+numerical kernels use stable TensorFlow graphs with XLA where enabled by the
+runner; Python still performs orchestration, checkpointing, and reporting.
+The recorded environment is TensorFlow 2.19.1 on an NVIDIA RTX 5080.
+
+Four chains start from dispersed prior-coordinate locations.  Kernel tuning
+targets acceptance 0.70 and permits at most four leapfrog steps.  Warmup is
+adaptive: at least 2,000 and at most 10,000 transitions per chain, with a
+recent 1,000-draw readiness window and $\widehat R\leq1.05$.
+Retained sampling starts only after warmup, checks cumulative diagnostics
+every 1,000 draws per chain, and continues to $\widehat R\leq1.01$ for every
+parameter or to the cap of 20,000 retained draws per chain.  Diagnostics
+include physical as well as transformed coordinates.  ESS and finite
+Hamiltonian energy errors are reported as explanatory diagnostics, not extra
+sampling stop conditions.  The legacy storage name \emph{verification}
+denotes these retained inference samples; it is not a separate validation phase.
+
+\subsection{Posterior results and their interpretation}
+
+Table~\ref{tab:bf-structural-ab-sampling} gives the terminal diagnostics.
+Every monitored parameter has $\widehat R<1.01$.  B's fourth chain has
+acceptance $76.8\%$, slightly above the preferred $65$--$75\%$ band; its pooled
+acceptance is $73.075\%$.  It would therefore be wrong to report that every
+chain met that preferred acceptance band.  No force fallback was recorded
+in either retained run.  The reported ESS and energy summaries describe
+these runs and are not a statistical comparison between methods.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Completed $T=50$ structural-model sampling.  Draw counts are per
+chain; all four chains contribute to the posterior summaries.}
+\label{tab:bf-structural-ab-sampling}
+\begin{tabular}{lrr}
+\toprule
+Quantity & Model A & Model B\\
+\midrule
+Warmup draws & 2,000 & 2,000\\
+Retained draws & 3,000 & 1,000\\
+Maximum monitored $\widehat R$ & 1.003236 & 1.003858\\
+Acceptance, chain 1 (\%) & 71.30 & 70.50\\
+Acceptance, chain 2 (\%) & 72.47 & 72.30\\
+Acceptance, chain 3 (\%) & 70.40 & 72.70\\
+Acceptance, chain 4 (\%) & 72.07 & 76.80\\
+Pooled acceptance (\%) & 71.558 & 73.075\\
+Minimum bulk ESS & 771 & 985\\
+Minimum tail ESS & 506 & 563\\
+Maximum absolute energy error & 62.46 & 13.11\\
+HMC worker wall time (hours) & 2.875 & 3.552\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering\small
+\caption{Physical-parameter posterior summaries.  Intervals are marginal
+95\% credible intervals from retained draws.}
+\label{tab:bf-structural-ab-posterior}
+\begin{tabular}{llrrr}
+\toprule
+Model & Parameter & Generating value & Posterior mean & 95\% interval\\
+\midrule
+A & $\sigma$ & 0.25 & 0.1975 & $[0.0990,0.2740]$\\
+A & $\tau$ & 0.15 & 0.1444 & $[0.0547,0.2448]$\\
+B & $\rho$ & 0.70 & 0.6541 & $[0.3271,0.9213]$\\
+B & $\sigma$ & 0.25 & 0.3192 & $[0.1686,0.4966]$\\
+B & $\beta$ & 0.80 & 0.7307 & $[0.2146,1.7434]$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All five generating values lie in their marginal intervals in
+Table~\ref{tab:bf-structural-ab-posterior}.  Each model has only one final
+inference dataset, so this observation does not establish repeated-sampling
+coverage.  B's interval for $\beta$ is wide: successful mixing need not imply
+precise identification.
+
+For A, an additional deterministic calculation integrates its exact
+Kalman-posterior density in $q$ on grids with 129 and 257 points per axis.
+The two posterior mean errors in $q$ of the HMC sample against the finer grid are
+$0.01144$ and $0.01306$.  Their declared tolerances are $0.02411$ and
+$0.03872$, respectively, each calculated as the larger of one tenth of the
+reference posterior standard deviation and twice the sample mean MCSE plus
+the grid-refinement difference.  The grid mean changes are below
+$2.6\times10^{-12}$ and boundary mass is approximately $1.8\times10^{-12}$.
+Thus the stated mean-agreement check passes.  It does not test every feature
+of the posterior distribution.  B has no corresponding exact-posterior
+comparison: its reported draws and intervals belong to the fixed repaired
+finite-LEDH target in \eqref{eq:bf-structural-campaign-endpoints}.
+
+The completed campaign therefore supports a specific implementation result:
+structural propagation in innovation coordinates, the shared score recurrence, a
+localized reset precision repair, and frozen-map HMC can execute together
+and satisfy the declared sampling diagnostics on these two examples.
+It supplies exact-endpoint mean agreement for A and finite-target sampling
+evidence for B.  Resolving B's nonlinear posterior approximation error would
+require an independent posterior reference or a controlled refinement study;
+neither a smaller $\widehat R$ nor higher acceptance answers that question.
+
+\subsection{Reproducing the recorded experiment}
+
+The following repository files define the experiment and preserve its results.
+The campaign master plan is supplemented by the dated continuation and
+endpoint-recovery notes.  The analysis file distinguishes original-precision
+scope probes from repaired sampling, and the terminal review records the
+remaining reference limits.
+\begin{quote}\small\raggedright
+Executable master:\par
+\path{scripts/run_structural_ledh_ab.py}\par
+Model and endpoint adapters:\par
+\path{bayesfilter/testing/structural_ledh_models_tf.py}\par
+\path{bayesfilter/testing/structural_ledh_target.py}\par
+Campaign master plan:\par
+\path{docs/plans/structural-ledh-model-ab-master-2026-10-23.md}\par
+Result root:\par
+\path{docs/plans/artifacts/structural-ledh-ab-20261023-01/}\par
+Terminal results and exact-mean comparison, relative to that root:\par
+\path{attempts/model_a-hmc-01/result.json}\par
+\path{attempts/model_b-reset-hmc-01/result.json}\par
+\path{attempts/reset-posterior-assessment-01/result.json}
+\end{quote}
+The archive retains raw posterior draws and checkpoints.  Its
+\path{ARCHIVE.md} gives the reconstruction command for the 21 large random
+design files omitted from Git; all 21 reconstructed files were checked against
+their original SHA-256 hashes during documentation closeout.
+
+Final $T=50$ dataset seeds are 26104350 for A and 26104450 for B; their fixed
+particle-design seeds are the corresponding dataset seeds plus 10,000.
+Manifests preserve commands, configurations, source identities, environment,
+and output hashes.  The campaign ended at 10:14 UTC on 24 October 2026,
+using 11.522 charged GPU-worker hours of its 48-hour allowance.  This charge
+includes compilation and worker overhead and is not measured GPU utilization.
+The documentation closeout reran 75 focused CPU tests with GPU devices
+deliberately hidden, covering structural completion, references, the master,
+reset precision, compact transport algebra, mapped diagnostics, energy
+reporting, and retained-sample semantics.  Passing these tests is evidence
+about the implementation; the posterior conclusions remain those supported
+by the saved experiment above.

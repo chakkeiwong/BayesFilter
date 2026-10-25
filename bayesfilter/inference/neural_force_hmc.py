@@ -1240,6 +1240,8 @@ def bind_neural_force_hmc_tuning_runner(
     target: FrozenTargetPotential,
     target_scope: str,
     frozen_transport: Any = None,
+    model_parameter_transform: Any = None,
+    model_parameter_identity: str | None = None,
 ) -> HMCTuningRunnerBinding:
     """Bind neural-force mechanics to the ordinary public tuning ladder.
 
@@ -1274,6 +1276,31 @@ def bind_neural_force_hmc_tuning_runner(
                 or not target.identity.endswith(":"+identity)
                 or not scope.endswith(":"+identity)):
             raise InvalidNeuralForceHMCConfiguration("frozen-map coordinate identity mismatch")
+
+    if (model_parameter_transform is None) != (model_parameter_identity is None):
+        raise ValueError("model parameter transform requires its frozen identity")
+    if model_parameter_transform is not None:
+        if not callable(model_parameter_transform):
+            raise TypeError("model_parameter_transform must be callable")
+        _require_nonempty(model_parameter_identity, "model_parameter_identity")
+
+    diagnostic_transform = None
+    diagnostic_identity = None
+    # Explicit opt-in preserves archived bindings and unrelated campaigns.
+    # The structural campaign requests this with its physical parameter map.
+    if model_parameter_transform is not None:
+        def diagnostic_transform(position):
+            coordinates = [position]
+            raw = position
+            if frozen_transport is not None:
+                raw = frozen_transport.transport.forward_batch(position)
+                coordinates.append(raw)
+            if model_parameter_transform is not None:
+                coordinates.append(model_parameter_transform(raw))
+            return tf.concat(coordinates, axis=-1)
+        diagnostic_identity = "sampler_and_model_parameters_v1:" + str((
+            frozen_transport.manifest.transport_hash if frozen_transport is not None else None,
+            model_parameter_identity))
 
     def bound_runner(adapter: Any, initial_state: Any, config: Any) -> Any:
         return run_full_chain_neural_force_hmc(
@@ -1344,6 +1371,8 @@ def bind_neural_force_hmc_tuning_runner(
             "chain_execution_mode",
         ),
         source_dependency_closure=_neural_force_tuning_source_dependency_closure(),
+        diagnostic_transform=diagnostic_transform,
+        diagnostic_identity=diagnostic_identity,
     )
 
 

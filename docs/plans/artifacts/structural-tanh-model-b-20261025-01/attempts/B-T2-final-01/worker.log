@@ -1,0 +1,30 @@
+2026-10-25 02:12:25.695478: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792865545.702641 1715900 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792865545.705881 1715900 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792865545.712451 1715900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792865545.712483 1715900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792865545.712485 1715900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792865545.712486 1715900 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792865547.972061 1715900 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792865548.348697 1715900 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792865548.427761 1715900 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792865550.484894 1715900 service.cc:152] XLA service 0x1d276080 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792865550.484935 1715900 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792865551.734222 1715900 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-25 02:12:36.453452: E external/local_xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %multiply.2780 = f32[3,4,8,8]{3,2,1,0} multiply(f32[3,4,8,8]{3,2,1,0} %constant.5425, f32[3,4,8,8]{3,2,1,0} %broadcast.8765), metadata={op_type="Mul" op_name="while/while_6/mul_12" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-25 02:12:36.453786: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 3.592459693s
+Constant folding an instruction is taking > 1s:
+
+  %multiply.2780 = f32[3,4,8,8]{3,2,1,0} multiply(f32[3,4,8,8]{3,2,1,0} %constant.5425, f32[3,4,8,8]{3,2,1,0} %broadcast.8765), metadata={op_type="Mul" op_name="while/while_6/mul_12" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+I0000 00:00:1792865565.127720 1715900 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.

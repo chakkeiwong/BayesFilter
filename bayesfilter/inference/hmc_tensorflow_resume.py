@@ -134,7 +134,8 @@ def replay_then_continue(*, config, nomination, binding, source_root, records,
         else:
             if count not in graphs:
                 graphs[count] = verified._chunk_graph(nomination, binding, count)
-            chunk = graphs[count](state, seed)
+            chunk = stage._call_numerical_graph(graphs[count], state, seed,
+                numerical_device=nomination.config.numerical_device)
         # Materialization synchronizes the GPU before recording a chunk forecast.
         chunk.final_state.numpy()
         timing["last_chunk_wall_seconds"] = time.monotonic() - started
@@ -168,9 +169,9 @@ def replay_then_continue(*, config, nomination, binding, source_root, records,
                 {"legacy_energy_gate": True} if legacy_energy_gate else {})),
         diagnose_chunk=lambda chunk: (verified._force_diagnostics(chunk, binding)
             if legacy_energy_gate else verified._chunk_diagnostics(chunk, binding, config.energy_error_max)),
-        diagnose=lambda samples: verified._rhat_graph(
-            int(samples.shape[0]), config.nomination.parameter_dimension)(samples),
-        transform=affine.latent_to_position, archive=archive, persist=persist,
+        diagnose=verified._diagnostic_rhat,
+        transform=lambda states: verified._diagnostic_samples(states, affine, binding),
+        archive=archive, persist=persist,
         verification_threshold=verified.HMC_TUNING_ORDINARY_RHAT_THRESHOLD, permit_chunk=permit)
     if cursor[0] != len(records):
         raise ValueError("resume archive has chunks after its replay stopping point")

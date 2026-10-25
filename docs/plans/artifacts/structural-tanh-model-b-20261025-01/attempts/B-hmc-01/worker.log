@@ -1,0 +1,38 @@
+2026-10-25 03:56:18.999978: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792871779.008163 1818566 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792871779.011032 1818566 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792871779.031885 1818566 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792871779.032028 1818566 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792871779.032079 1818566 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792871779.032081 1818566 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792871781.577415 1818566 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792871782.061224 1818566 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792871782.160066 1818566 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792871795.314515 1818566 service.cc:152] XLA service 0x865d1310 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792871795.314556 1818566 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792871827.045504 1818566 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-25 04:09:11.356601: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_47170__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1097479] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-25 05:18:22.025823: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 1h11m10.669254463s
+
+********************************
+[Compiling module a_inference_run_47170__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1097479] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792876702.033460 1818566 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+HMC sequential {'warmup': 250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1000, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 0} RUNNING {'bulk': [1.0029653529091085, 1.0053380669814538, 1.0059250281485184, 1.0038216493603085, 1.005253210443673, 1.0087739418704278, 1.0038216493603085, 1.005253210443673, 1.0087739418704278], 'folded': [1.0015595048747719, 1.0003102840448457, 1.0005484255606525, 1.0010981951928701, 1.0004597280102463, 1.0013605649796957, 0.9999315628592566, 1.0003463102066192, 1.003075258656741], 'maximum': [1.0029653529091085, 1.0053380669814538, 1.0059250281485184, 1.0038216493603085, 1.005253210443673, 1.0087739418704278, 1.0038216493603085, 1.005253210443673, 1.0087739418704278]}
+HMC sequential {'warmup': 2000, 'verification': 250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1000} VERIFIED {'bulk': [1.0052882829844925, 1.0039569343744983, 1.001198992245552, 1.005595121117761, 1.0031388637025815, 1.0006269174430984, 1.005595121117761, 1.0031388637025815, 1.0006269174430984], 'folded': [1.0055908543451098, 1.0018260715740037, 1.0060726018903685, 1.0074470562061357, 1.0011018006841534, 1.002650031975995, 1.0034162870662904, 1.0010745388869862, 1.0026938328138966], 'maximum': [1.0055908543451098, 1.0039569343744983, 1.0060726018903685, 1.0074470562061357, 1.0031388637025815, 1.002650031975995, 1.005595121117761, 1.0031388637025815, 1.0026938328138966]}
+I0000 00:00:1792887621.117140 1818566 service.cc:152] XLA service 0x78c85cf5eb30 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792887621.117234 1818566 service.cc:160]   StreamExecutor device (0): Host, Default Version

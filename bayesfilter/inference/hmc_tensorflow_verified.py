@@ -162,13 +162,30 @@ def _chunk_diagnostics(chunk, binding, energy_max):
     """Finite Hamiltonian errors describe efficiency; endpoint MH decides acceptance."""
     result = _force_diagnostics(chunk, binding)
     errors = tf.abs(chunk.delta_h)
-    breaches = tf.math.is_finite(errors) & (errors > energy_max)
+    finite_errors = tf.math.is_finite(errors)
+    breaches = finite_errors & (errors > energy_max)
     count = int(tf.reduce_sum(tf.cast(breaches, tf.int64)))
+    maximum = float(tf.reduce_max(errors))
     result["energy"] = dict(policy="finite_energy_error_warning_only_v1",
-        warning_threshold=float(energy_max), max_abs_error=float(tf.reduce_max(errors)),
+        warning_threshold=float(energy_max),
+        max_abs_error=maximum if math.isfinite(maximum) else None,
         threshold_exceedance_count=count,
         threshold_exceedance_count_by_chain=
             tf.reduce_sum(tf.cast(breaches, tf.int64), axis=0).numpy().tolist())
+    # Invalid endpoints may deliberately produce infinite Hamiltonian errors.
+    # Preserve their health veto and raw tensor evidence; strict JSON must still
+    # be writable so that the actual numerical failure is reported. Keep the
+    # finite-only payload unchanged for existing checkpoint replay.
+    nonfinite_count = int(tf.reduce_sum(tf.cast(~finite_errors, tf.int64)))
+    if nonfinite_count:
+        finite_values = tf.boolean_mask(errors, finite_errors)
+        result["energy"].update(
+            nonfinite_count=nonfinite_count,
+            nonfinite_count_by_chain=tf.reduce_sum(
+                tf.cast(~finite_errors, tf.int64), axis=0).numpy().tolist(),
+            max_finite_abs_error=float(tf.reduce_max(finite_values))
+                if int(tf.size(finite_values)) else None)
+        result["warnings"].append("nonfinite_energy_error")
     if count:
         result["warnings"].append("large_finite_energy_error")
     return result
@@ -203,6 +220,32 @@ def _rhat_graph(count, dimension):
     return run
 
 
+def _diagnostic_samples(states, affine, binding):
+    """Preserve draws/chains while mapping every frozen convergence quantity.
+
+    This host-side diagnostic never changes the transition state or MH target.
+    The binding identity records the same map for fresh execution and replay.
+    """
+    with tf.device('/CPU:0'):
+        samples = affine.latent_to_position(states)
+        mapping = getattr(binding, 'diagnostic_transform', None)
+        if mapping is None:
+            return samples
+        flat = tf.reshape(samples, [-1, samples.shape[-1]])
+        mapped = tf.convert_to_tensor(mapping(flat), tf.float64)
+        tf.debugging.assert_rank(mapped, 2)
+        tf.debugging.assert_equal(tf.shape(mapped)[0], tf.shape(flat)[0])
+        return tf.reshape(mapped, [int(samples.shape[0]), 4, int(mapped.shape[-1])])
+
+
+def _diagnostic_rhat(samples):
+    dimension = int(samples.shape[-1])
+    if not bool(tf.reduce_all(tf.math.is_finite(samples))):
+        return {key: tf.fill([dimension], tf.constant(float('inf'), tf.float64))
+                for key in ('bulk', 'folded', 'maximum')}
+    return _rhat_graph(int(samples.shape[0]), dimension)(samples)
+
+
 def _all_checks(checks):
     return all(bool(value) for value in checks.values())
 
@@ -226,13 +269,8 @@ def _fresh_checks(config, nomination, warmup, verification, runner_binding=None)
     checks.update({f"verification_{name}": value for name, value in
                    _health(verification, warmup.final_state, config.energy_error_max, runner_binding).items()})
     checks["nomination_passed"] = nomination.heuristic_screen_passed
-    samples = affine.latent_to_position(verification.states)
-    finite_samples = bool(tf.reduce_all(tf.math.is_finite(samples)))
-    if finite_samples:
-        rhat = _rhat_graph(int(samples.shape[0]), config.nomination.parameter_dimension)(samples)
-    else:
-        rhat = {key: tf.fill([config.nomination.parameter_dimension], tf.constant(float("inf"), tf.float64))
-                for key in ("bulk", "folded", "maximum")}
+    samples = _diagnostic_samples(verification.states, affine, runner_binding)
+    rhat = _diagnostic_rhat(samples)
     checks["fresh_rhat"] = tf.reduce_all(tf.logical_and(tf.math.is_finite(rhat["maximum"]),
                                              rhat["maximum"] <= HMC_TUNING_ORDINARY_RHAT_THRESHOLD))
     return checks, rhat
@@ -347,7 +385,8 @@ def _fresh_sequence(config, nomination, binding, root, *, replay=None):
             return _read_chunk(root, record["archive"]["tensors"])
         if count not in graphs:
             graphs[count] = _chunk_graph(nomination, binding, count)
-        return graphs[count](state, seed)
+        return stage._call_numerical_graph(graphs[count], state, seed,
+            numerical_device=nomination.config.numerical_device)
 
     def archive(phase, index, chunk, state, seed):
         if replay is not None:
@@ -371,8 +410,9 @@ def _fresh_sequence(config, nomination, binding, root, *, replay=None):
     result = run_sequential_neutra_hmc(config=config, initial_state=initial,
         run_chunk=run, health=lambda chunk, start: _health(chunk, start, config.energy_error_max, binding),
         diagnose_chunk=lambda chunk: _chunk_diagnostics(chunk, binding, config.energy_error_max),
-        diagnose=lambda samples: _rhat_graph(int(samples.shape[0]), config.nomination.parameter_dimension)(samples),
-        transform=affine.latent_to_position, archive=archive, persist=persist,
+        diagnose=_diagnostic_rhat,
+        transform=lambda states: _diagnostic_samples(states, affine, binding),
+        archive=archive, persist=persist,
         verification_threshold=HMC_TUNING_ORDINARY_RHAT_THRESHOLD,
         permit_chunk=None if replay is not None else runtime_budget_guard())
     if replay is not None:
@@ -556,7 +596,8 @@ class VerifiedTensorFlowHMCRunner:
             raise FileExistsError("retained output must be new")
         root.mkdir(parents=True)
         graph = self._compiled_chunk_graph(tuning, config.num_results)
-        chunk = graph(state, tf.constant(config.seed))
+        chunk = stage._call_numerical_graph(graph, state, tf.constant(config.seed),
+            numerical_device=tuning.nomination.config.numerical_device)
         checks = _health(chunk, state, tuning.config.energy_error_max, self.runner_binding)
         raw = _affine(tuning.nomination).latent_to_position(chunk.states)
         records = _save_chunk(root, "retained", chunk)

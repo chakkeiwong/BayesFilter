@@ -194,7 +194,16 @@ def precision_transport(x, log_weights, controls, precision_policy="uniform"):
             tf.cast(row_error, x.v.dtype), tf.cast(column_error, x.v.dtype))
 
 
-def reset_cloud(x,logw,controls,precision_policy="uniform"):
+def reset_cloud(x,logw,controls,precision_policy="uniform",reset_precision_policy="uniform",return_fallback=False):
+    """Optional FP64 moments/factors for failed FP32 rows; reuse transport.
+
+    Healthy rows retain their original values and analytical tangents exactly.
+    The fallback has its own factorization guard and applies no diagonal ridge.
+    """
+    if reset_precision_policy not in ("uniform","conditional_fp64"):
+        raise ValueError("unknown reset precision policy")
+    if reset_precision_policy=="conditional_fp64" and x.v.dtype!=tf.float32:
+        raise ValueError("conditional FP64 reset requires FP32 recurrence")
     batch,n,d=x.v.shape
     mu,p=moments(x,exp(logw))
     y,rowerr,colerr=precision_transport(x,logw,controls,precision_policy)
@@ -202,10 +211,29 @@ def reset_cloud(x,logw,controls,precision_policy="uniform"):
     ar,valid,margin=recolour(p,sy,batch_ndims=1)
     centered=mv(ar[:,None],y-ym[:,None]); centered=centered-centered.mean(1)[:,None]
     z=mu[:,None]+centered
-    return z,mu,p,valid,tf.stack([margin,rowerr,tf.reduce_max(tf.linalg.norm(z.v-y.v,axis=2),1),colerr],1)
+    rd=tf.stack([margin,rowerr,tf.reduce_max(tf.linalg.norm(z.v-y.v,axis=2),1),colerr],1)
+    fallback_used=tf.zeros([batch],tf.bool)
+    if reset_precision_policy=="conditional_fp64":
+        fallback_used=~valid
+        def fallback():
+            x64,y64,lw64=(_cast_jet(a,tf.float64) for a in (x,y,logw))
+            mu64,p64=moments(x64,exp(lw64))
+            ym64,sy64=moments(y64,x64.constant(tf.fill([batch,n],tf.constant(1./n,tf.float64))))
+            ar64,good64,margin64=recolour(p64,sy64,batch_ndims=1)
+            centered64=mv(ar64[:,None],y64-ym64[:,None])
+            centered64=centered64-centered64.mean(1)[:,None]
+            repaired=_cast_jet(mu64[:,None]+centered64,x.v.dtype)
+            zv=tf.where(valid[:,None,None],z.v,repaired.v)
+            zt=tf.where(valid[None,:,None,None],z.t,repaired.t)
+            diag=tf.stack([tf.cast(margin64,x.v.dtype),rowerr,tf.reduce_max(tf.linalg.norm(zv-y.v,axis=2),1),colerr],1)
+            return zv,zt,valid|good64,tf.where(valid[:,None],rd,diag)
+        zv,zt,valid,rd=tf.cond(tf.reduce_all(valid),lambda:(z.v,z.t,valid,rd),fallback)
+        z=Jet(zv,zt)
+    result=(z,mu,p,valid,rd)
+    return result+(fallback_used,) if return_fallback else result
 
 
-def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,batch_size=2,record_history=False,precision_policy="uniform",fixed_draw_design=None):
+def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,batch_size=2,record_history=False,precision_policy="uniform",fixed_draw_design=None,reset_precision_policy="uniform"):
     """Build the shared recurrence, optionally binding a fixed draw design.
 
     fixed_draw_design=(beta, uniforms) snapshots the immutable mixture weights
@@ -216,6 +244,10 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
     authority; the continuous FP32 recurrence needs no FP64 index arithmetic.
     """
     dtype=tf.as_dtype(dtype); d=spec.dimension; p=spec.parameter_count; o=getattr(spec,"observation_dimension",d); batch=int(batch_size)
+    if reset_precision_policy not in ("uniform","conditional_fp64"):
+        raise ValueError("unknown reset precision policy")
+    if reset_precision_policy=="conditional_fp64" and dtype!=tf.float32:
+        raise ValueError("conditional FP64 reset requires FP32 recurrence")
     if precision_policy not in PRECISION_POLICIES:
         raise ValueError("unknown score precision policy")
     if precision_policy != "uniform" and dtype != tf.float64:
@@ -231,40 +263,49 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
                 raise ValueError("fixed draw design requires beta [3] and uniforms [T,N,2]")
             prepared_indices = tuple(tf.reshape(value,[horizon,n]) for value in
                 fixed_design_indices(fixed_beta,tf.reshape(fixed_uniforms,[horizon*n,2]),n))
-    sig=[tf.TensorSpec([batch,p],dtype),tf.TensorSpec([horizon,o],dtype),tf.TensorSpec([n,d],dtype),tf.TensorSpec([horizon,n,d],dtype),tf.TensorSpec([horizon,n,2],dtype),tf.TensorSpec([3],dtype)]
+    structural_factory = getattr(spec, "structural_model", None)
+    innovation_d = getattr(spec, "innovation_dimension", d)
+    if structural_factory is not None and precision_policy != "uniform":
+        raise ValueError("structural completion currently requires uniform precision")
+    sig=[tf.TensorSpec([batch,p],dtype),tf.TensorSpec([horizon,o],dtype),tf.TensorSpec([n,d],dtype),tf.TensorSpec([horizon,n,innovation_d],dtype),tf.TensorSpec([horizon,n,2],dtype),tf.TensorSpec([3],dtype)]
     @tf.function(input_signature=sig,jit_compile=jit_compile,autograph=False)
     def program(theta,observations,initial,innovations,uniforms,beta):
         from bayesfilter.highdim.covariance_proposal_native_models_tf import NativeModels
-        models=NativeModels(spec,theta)
+        models=NativeModels(spec,theta) if structural_factory is None else structural_factory(theta)
         x=models.initial_cloud(initial)
         trace=tf.TensorArray(dtype,horizon,element_shape=[batch,len(TRACE_FIELDS)]).unstack(tf.fill([horizon,batch,len(TRACE_FIELDS)],tf.constant(float("nan"),dtype)))
         score_trace=tf.TensorArray(dtype,horizon,element_shape=[batch,p]).unstack(tf.fill([horizon,batch,p],tf.constant(float("nan"),dtype)))
         validity_trace=tf.TensorArray(tf.bool,horizon,element_shape=[batch,len(VALIDITY_FIELDS)]).unstack(tf.zeros([horizon,batch,len(VALIDITY_FIELDS)],tf.bool))
+        reset_fallback_trace=tf.TensorArray(tf.bool,horizon,element_shape=[batch]).unstack(tf.zeros([horizon,batch],tf.bool))
         covariance_tolerance=covariance_restoration_tolerance(n,d,dtype)
         beta_valid=tf.reduce_all(tf.math.is_finite(beta)) & tf.reduce_all(beta>=0) & (beta[0]>0) & (tf.abs(tf.reduce_sum(beta)-1)<tf.cast(1e-6,dtype))
         ancestors=tf.TensorArray(dtype,horizon if record_history else 0,element_shape=[batch,n,d])
         if record_history:
             ancestors=ancestors.unstack(tf.fill([horizon,batch,n,d],tf.constant(float("nan"),dtype)))
-        def step(t,xv,xt,ell,score,valid,completed,trace,score_trace,ancestors,validity_trace):
+        def step(t,xv,xt,ell,score,valid,completed,trace,score_trace,ancestors,validity_trace,reset_fallback_trace):
             if record_history:
                 # History after a row stops is unavailable, independently of
                 # whether other rows (or other shards) continue to execute.
                 ancestors=ancestors.write(t,tf.where(valid[:,None,None],xv,
                     tf.constant(float("nan"),dtype)))
             x=Jet(xv,xt)
-            maps=build_maps(models,x,observations[t],controls)
             indices = None if prepared_indices is None else tuple(value[t] for value in prepared_indices)
-            child=draw_from_maps(maps,beta,uniforms[t],innovations[t],indices=indices)
-            means,cov=maps[:2]
-            density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or models.constant_observation_jacobian,contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
-            densities=stack([part[0] for part in density_parts],-1)
-            vd=tf.reduce_all(tf.stack([part[1] for part in density_parts]),0)
+            if structural_factory is None:
+                maps=build_maps(models,x,observations[t],controls)
+                child=draw_from_maps(maps,beta,uniforms[t],innovations[t],indices=indices)
+                means,cov=maps[:2]
+                density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or models.constant_observation_jacobian,contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
+                densities=stack([part[0] for part in density_parts],-1)
+                vd=tf.reduce_all(tf.stack([part[1] for part in density_parts]),0)
+            else:
+                from bayesfilter.highdim.structural_completion_proposal_tf import structural_proposal
+                child,densities,vd,maps=structural_proposal(models,x,observations[t],controls,beta,uniforms[t],innovations[t],indices=indices)
             lq=logsumexp(densities+tf.math.log(beta)[None,None],-1)
             lg=models.observation_density(child,observations[t])
             lr=lg+densities[:,:,0]-lq
             normalizer=logsumexp(lr,1)
             inc=normalizer-tf.math.log(tf.cast(n,dtype)); logw=lr-normalizer[:,None]; w=exp(logw)
-            z,mu,pw,vr,rd=reset_cloud(child,logw,controls,precision_policy)
+            z,mu,pw,vr,rd,fallback_used=reset_cloud(child,logw,controls,precision_policy,reset_precision_policy,True)
             reset_particles=z.v; cd=tf.zeros([batch,3],dtype)
             if controls.correction_steps:
                 pre_mean,pre_covariance=moments(z,x.constant(tf.fill([batch,n],tf.constant(1./n,dtype))))
@@ -303,12 +344,14 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
             return (t+1,tf.where(accepted[:,None,None],z.v,xv),tf.where(accepted[None,:,None,None],z.t,xt),
                 ell+tf.where(accepted,inc.v,0),score+tf.where(accepted[None],inc.t,0),accepted,
                 completed+tf.cast(valid,tf.int32),trace.write(t,tf.where(valid[:,None],row,tf.constant(float("nan"),dtype))),
-                score_trace.write(t,tf.where(valid[:,None],tf.transpose(inc.t),tf.constant(float("nan"),dtype))),ancestors,validity_trace.write(t,valid[:,None] & checks))
+                score_trace.write(t,tf.where(valid[:,None],tf.transpose(inc.t),tf.constant(float("nan"),dtype))),ancestors,validity_trace.write(t,valid[:,None] & checks),
+                reset_fallback_trace.write(t,valid & fallback_used))
         initial_valid=tf.fill([batch],beta_valid)
-        _,xv,xt,ell,score,valid,completed,trace,st,ancestors,vt=tf.while_loop(lambda t,xv,xt,ell,score,valid,*_:(t<horizon)&tf.reduce_any(valid),step,
-            (0,x.v,x.t,tf.zeros([batch],dtype),tf.zeros([p,batch],dtype),initial_valid,tf.zeros([batch],tf.int32),trace,score_trace,ancestors,validity_trace),parallel_iterations=1)
+        _,xv,xt,ell,score,valid,completed,trace,st,ancestors,vt,rft=tf.while_loop(lambda t,xv,xt,ell,score,valid,*_:(t<horizon)&tf.reduce_any(valid),step,
+            (0,x.v,x.t,tf.zeros([batch],dtype),tf.zeros([p,batch],dtype),initial_valid,tf.zeros([batch],tf.int32),trace,score_trace,ancestors,validity_trace,reset_fallback_trace),parallel_iterations=1)
         result=dict(value=ell,score=tf.transpose(score),valid=valid,steps_completed=completed,particles=xv,particle_tangent=tf.transpose(xt,[1,0,2,3]),trace=tf.transpose(trace.stack(),[1,0,2]),score_trace=tf.transpose(st.stack(),[1,0,2]),
-            validity_trace=tf.transpose(vt.stack(),[1,0,2]),covariance_tolerance=covariance_tolerance)
+            validity_trace=tf.transpose(vt.stack(),[1,0,2]),covariance_tolerance=covariance_tolerance,
+            reset_precision_fallback=tf.transpose(rft.stack(),[1,0]))
         if record_history:
             result["ancestor_history"]=tf.transpose(ancestors.stack(),[1,0,2,3])
         return result
