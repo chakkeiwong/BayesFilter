@@ -52,6 +52,8 @@ def scope_key(model,horizon): return f'{model}-T{horizon}'
 
 def source_identity():
     paths=[ROOT/'scripts/run_structural_ledh_ab.py']
+    confirmation=ROOT/'scripts/run_structural_tanh_confirmation.py'
+    if confirmation.exists(): paths.append(confirmation)
     for folder in ('bayesfilter/highdim','bayesfilter/inference','bayesfilter/testing','bayesfilter/runtime'):
         paths.extend(sorted((ROOT/folder).glob('*.py')))
     return {str(p.relative_to(ROOT)):hash_file(p) for p in paths}
@@ -96,10 +98,10 @@ def prepare(tf,job,out):
     from bayesfilter.testing.structural_ledh_models_tf import (
         StructuralModelSpec,make_structural_data,make_structural_design)
     root=Path(job['root']); receipts=[]
-    for model,horizon in SCOPES:
+    for model,horizon in job.get('scopes',SCOPES):
         spec=StructuralModelSpec(model)
         for part,partition in enumerate(PARTITIONS):
-            seed=26102300+(0 if model=='model_a' else 100)+part*1000+horizon
+            seed=26102300+(0 if model=='model_a' else 100)+part*1000+horizon+job.get('seed_offset',0)
             data=ready(make_structural_data(spec,horizon,seed))
             data.update(model=model,horizon=horizon,seed=seed,partition=partition)
             data_path,design_path=prepared_paths(root,model,horizon,partition)
@@ -118,7 +120,7 @@ def references(tf,job,out):
     from bayesfilter.testing.structural_reference_diagnostics import (
         kalman_a,quadrature_value_score,replicated_reference,gaussian_value_score)
     root=Path(job['root']); rows=[]
-    for model,horizon in SCOPES:
+    for model,horizon in job.get('scopes',SCOPES):
         for partition in PARTITIONS:
             data_path,_=prepared_paths(root,model,horizon,partition)
             data=read(data_path); probes=read(data_path.with_name(data_path.stem+'-probes.json'))
@@ -157,15 +159,24 @@ def references(tf,job,out):
 
 
 def probe(tf,job,out):
+    import numpy as np
     target=target_for(tf,job,job.get('partition','calibration'))
     data_path,_=prepared_paths(Path(job['root']),job['model'],job['horizon'],job.get('partition','calibration'))
     q=tf.constant(read(data_path.with_name(data_path.stem+'-probes.json')),tf.float32)
     rows=[]
     for repeat in range(2):
-        start=time.monotonic(); value,score,valid=target.likelihood(q)
-        row=ready(dict(value=value,score=score,valid=valid)); row['seconds']=time.monotonic()-start
+        start=time.monotonic()
+        result=target.program(q,target.observations,target.design['initial'],target.design['innovations'])
+        # Reporting stays on the host; only the compiled numerical program uses GPU.
+        valid=result['valid'].numpy() & (result['steps_completed'].numpy()==target.horizon)
+        row=ready(dict(value=result['value'],score=result['score'],valid=valid.tolist(),
+            steps_completed=result['steps_completed'],
+            reset_precision_fallback_count=np.sum(result['reset_precision_fallback'].numpy(),axis=1).tolist()))
+        row['seconds']=time.monotonic()-start
         rows.append(row); save(out/'progress.json',dict(repeat=repeat,**row))
-    return dict(status='PROBE_VALID' if all(rows[-1]['valid']) else 'CANDIDATE_INVALID',
+    repeatable=all(rows[0][key]==rows[1][key] for key in ('value','score','valid','steps_completed'))
+    return dict(status='PROBE_VALID' if repeatable and all(all(r['valid']) for r in rows) else 'CANDIDATE_INVALID',
+                fixed_target_repeatable=repeatable,
                 rows=rows,allocator=tf.config.experimental.get_memory_info('GPU:0'),
                 target_signature=target.target_signature,batch_size=4,particles=4032,chunk=2016,
                 controls=job['controls'],native_batch=True,samplewise_loop=False,scientific_promotion=False)
