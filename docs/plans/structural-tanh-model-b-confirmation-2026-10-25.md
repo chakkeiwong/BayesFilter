@@ -177,6 +177,15 @@ target repeatability, training setup, and the shared XLA HMC integration
 checks passed. The integration map inverse error was 4.44e-16 and its
 log-determinant check error was 1.06e-11. These checks establish wiring and
 numerical consistency at the tested inputs; they are not posterior mixing
-evidence. Control calibration is running, followed automatically by fresh
-NeuTra training and adaptive inference. The live state and result files under
-the versioned output root supersede this checkpoint as the run advances.
+evidence. The campaign subsequently completed on 25 October at 00:20 UTC.
+The terminal state is SAMPLING_COMPLETE_ACCURACY_UNRESOLVED. Fresh controls
+are 16 flow steps with 10 reset iterations at T=2 and 5 at T=50. Fresh NeuTra
+training completed 1,024 accepted updates; four HMC chains completed 2,000
+warmup and 1,000 retained draws each. Maximum mapped R-hat is 1.00745;
+acceptance is 72.2%, 73.3%, 72.4%, 76.4% (pooled 73.575%). All three truths
+lie in their marginal 95% intervals, without establishing repeated-sampling
+coverage or exact-model posterior accuracy. Charged GPU-worker time is 6.157
+hours of the 12-hour cap. The committed analysis.json and result.md preserve
+the full numerical evidence. Documentation closeout is recorded in
+structural-tanh-latex-update-2026-10-25.md. No further sampling or separate
+validation phase is pending under this completed confirmation.

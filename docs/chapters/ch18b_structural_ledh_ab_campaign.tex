@@ -1,21 +1,24 @@
 \section{Structural LEDH and Surrogate HMC}
 \label{sec:bf-structural-ledh-ab-campaign}
 
-The experiment completed on 24 October 2026 asks whether an LEDH proposal
+The experiments completed on 24 and 25 October 2026 ask whether an LEDH proposal
 defined on the declared innovations can support parameter estimation when
-part of the state transition is deterministic.  It tests a linear model with
-an exact likelihood and a nonlinear model with a deterministic completion.
-Both four-chain HMC runs met the prescribed retained-sample $\widehat R<1.01$
+part of the state transition is deterministic.  The original experiment tests
+a linear model with an exact likelihood and a nonlinear model with a
+deterministic completion.
+Both original four-chain HMC runs met the prescribed retained-sample $\widehat R<1.01$
 criterion.  The linear model also passed a comparison of posterior means with
 a refined exact-likelihood calculation.  The nonlinear run samples a fixed
 finite-particle posterior; agreement with its exact model posterior remains
-unestablished.  These are different conclusions, and the construction below
-explains why.
+unestablished.  A fresh-data confirmation of the nonlinear model also met the
+sampling criterion on 25 October, while retaining that approximation limitation.
+The construction below explains the distinction; the dated results separate
+the original experiment from its confirmation.
 
 Here \emph{campaign Model A} and \emph{campaign Model B} name the two software
 test fixtures.  These letters do not identify Worked Examples A and B earlier
-in this chapter.  The experiment extends the five-model case study in
-Chapter~\ref{ch:bf-surrogate-hmc-five-models}; its data and configurations are
+in this chapter.  These experiments extend the five-model case study in
+Chapter~\ref{ch:bf-surrogate-hmc-five-models}; their data and configurations are
 separate from those earlier runs.
 
 \subsection{The two models and their parameter distributions}
@@ -202,7 +205,7 @@ and force include the map's change of volume:
 \end{align}
 The existing author-style IAF training implementation and the shared frozen-map
 HMC bindings are reused.  The architecture and optimizer were tested on B,
-rather than promoted merely because they had worked for SIR.  Four initial
+rather than promoted merely because they had worked for SIR.  In the 24 October experiment, four initial
 arms combine two settings---hidden widths $(18,18)$ at learning rate
 $10^{-3}$ and $(36,36)$ at $3\times10^{-4}$---with seeds 17 and 29.
 Each received 256 accepted updates.  The nominated width-18, seed-29 arm was
@@ -320,7 +323,8 @@ relative to the reported replication error.  This historical comparison
 does not measure the repaired posterior's bias, but it prevents interpreting
 successful HMC as proof of exact nonlinear likelihood or posterior accuracy.
 
-All final particle filters use $N=4032$ and FP32.  The selected controls are
+In the original experiment, all final particle filters use $N=4032$ and FP32.
+The selected controls are
 16 LEDH flow steps for A and eight for B, with transport epsilon one, five
 reset iterations, and one correction iteration in both cases.  The tested
 control ladder was $(16,5),(8,5),(16,10)$ for flow steps and reset iterations.
@@ -345,7 +349,8 @@ denotes these retained inference samples; it is not a separate validation phase.
 
 \subsection{Posterior results and their interpretation}
 
-Table~\ref{tab:bf-structural-ab-sampling} gives the terminal diagnostics.
+Table~\ref{tab:bf-structural-ab-sampling} gives the original experiment's
+terminal diagnostics.
 Every monitored parameter has $\widehat R<1.01$.  B's fourth chain has
 acceptance $76.8\%$, slightly above the preferred $65$--$75\%$ band; its pooled
 acceptance is $73.075\%$.  It would therefore be wrong to report that every
@@ -397,9 +402,8 @@ B & $\beta$ & 0.80 & 0.7307 & $[0.2146,1.7434]$\\
 \end{table}
 
 All five generating values lie in their marginal intervals in
-Table~\ref{tab:bf-structural-ab-posterior}.  Each model has only one final
-inference dataset, so this observation does not establish repeated-sampling
-coverage.  B's interval for $\beta$ is wide: successful mixing need not imply
+Table~\ref{tab:bf-structural-ab-posterior}.  The original experiment uses one final inference dataset per model, so this
+observation does not establish repeated-sampling coverage.  B's interval for $\beta$ is wide: successful mixing need not imply
 precise identification.
 
 For A, an additional deterministic calculation integrates its exact
@@ -423,6 +427,138 @@ It supplies exact-endpoint mean agreement for A and finite-target sampling
 evidence for B.  Resolving B's nonlinear posterior approximation error would
 require an independent posterior reference or a controlled refinement study;
 neither a smaller $\widehat R$ nor higher acceptance answers that question.
+
+\subsection{Fresh-data confirmation of the nonlinear model}
+\label{sec:bf-structural-tanh-confirmation}
+
+The confirmation completed on 25 October 2026 tests exactly the nonlinear
+model in \eqref{eq:bf-campaign-b-transition}, with generating parameters
+$(\rho,\sigma,\beta)=(0.70,0.25,0.80)$.  The initial covariance, fixed
+coefficients $0.55$ and $0.30$, parameter coordinates, and synthetic priors
+are unchanged.  Fresh calibration, control-check, and final datasets were
+generated separately at $T=2$ and $T=50$.  The short series permits an
+independent quadrature check; the long series supplies the new inference
+problem.  Its likelihood values and posterior means therefore cannot be
+interpreted as before-and-after changes on the original dataset.
+
+The filter again uses 4,032 particles, FP32 with TF32 disabled, and the
+conditional FP64 reset repair.  The control search selected 16 flow steps
+at both horizons, ten reset iterations at $T=2$ and five at $T=50$;
+transport epsilon remains one and the correction count remains one.
+These fresh selections differ from the original Model B run's eight flow
+steps.  A new NeuTra map was trained against the fresh $T=50$ finite
+posterior using the same four-arm architecture/rate and seed search.
+The nominated width-18, learning-rate-$10^{-3}$, seed-29 arm completed
+1,024 accepted updates in 1,024 attempts, with batch size eight and native
+shards of four.  The protocol is reused; the learned weights are fresh and
+bound to this target.
+
+Table~\ref{tab:bf-structural-tanh-reference} reports the final-data probes at
+the generating parameter.  Scores are derivatives with respect to
+$q=(\operatorname{atanh}\rho,\log\sigma,\log\beta)$.
+At $T=2$, Gauss--Hermite path integration is refined from order 24 to 32.
+Its value changes by $6.03\times10^{-8}$ and its largest score change is
+$1.15\times10^{-6}$ at this point.  Across all four short-series probes,
+the largest refinement change is $7.43\times10^{-4}$.  The refinement movements are small relative to the flagged discrepancies;
+finite-order quadrature nevertheless remains a numerical reference.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Fresh Model B log likelihood and $q$-score at the generating
+parameter.  The last column is replication MCSE of the long-series reference;
+short-series quadrature has the refinement check described in the text.}
+\label{tab:bf-structural-tanh-reference}
+\begin{tabular}{rlrrrr}
+\toprule
+$T$ & Quantity & LEDH & Reference & LEDH minus ref. & Ref. MCSE\\
+\midrule
+2 & $\ell$ & $-1.24158$ & $-1.25600$ & $ 0.01442$ & ---\\
+2 & $\partial_{q_1}\ell$ & $-0.40876$ & $-0.44491$ & $ 0.03615$ & ---\\
+2 & $\partial_{q_2}\ell$ & $-0.71783$ & $-0.71866$ & $ 0.00083$ & ---\\
+2 & $\partial_{q_3}\ell$ & $-0.56283$ & $-0.57557$ & $ 0.01273$ & ---\\
+\midrule
+50 & $\ell$ & $-39.71753$ & $-39.68394$ & $-0.03359$ & 0.01526\\
+50 & $\partial_{q_1}\ell$ & $-2.30595$ & $-2.12535$ & $-0.18059$ & 0.02365\\
+50 & $\partial_{q_2}\ell$ & $-6.13757$ & $-6.08173$ & $-0.05584$ & 0.05944\\
+50 & $\partial_{q_3}\ell$ & $-3.60784$ & $-3.59603$ & $-0.01182$ & 0.10098\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $T=50$, eight independent bootstrap-filter replications at each of
+16,384 and 65,536 particles supply log-likelihood and Fisher-score references;
+the table uses the larger particle count.  At the generating parameter,
+the absolute refinement movements for $(\ell,\partial_{q_1}\ell,
+\partial_{q_2}\ell,\partial_{q_3}\ell)$ are
+$(0.03877,0.03468,0.19125,0.13538)$.  Replication MCSE excludes remaining
+finite-particle bias.  The log-likelihood discrepancy $-0.03359$ is about
+$0.085\%$ of the reference log-likelihood magnitude; across the four probes,
+the maximum centered log-likelihood discrepancy is $0.07208$.
+Neither number measures the difference between normalized posterior laws.
+
+For component $j$ of $a=(\ell,\nabla_q\ell)$, the saved comparison flags
+\begin{gather*}
+ |a_{F,j}-a_{{\rm ref},j}|>
+ 4\,\mathrm{MCSE}_j+\Delta_{{\rm refine},j}+0.01\,s_j,\\
+ s_0=\max(1,|\ell_{\rm ref}|),\qquad
+ s_j=\max(1,\|\nabla_q\ell_{\rm ref}\|_2)\quad(j>0).
+\end{gather*}
+This is a materiality diagnostic, not a confidence interval or an HMC
+stopping rule.  Ten of the 16 short-series entries are flagged.  At $T=50$
+one of the 16 entries is flagged: the first score component at the positive
+local displacement, where LEDH gives $-4.27395$ and the reference gives
+$-4.04547$ (MCSE $0.01146$, refinement $0.01873$).  The other 15 entries
+falling inside the envelope do not establish exact likelihood or score
+agreement.  EKF, cubature, and bootstrap comparisons are also retained by
+probe.  For example, at $T=2$ the EKF's first-score error at the generating
+parameter is $-0.00472$, compared with LEDH's $0.03615$: the observed LEDH
+calculation has no uniform accuracy advantage.  One fixed LEDH design on
+each final dataset supplies no statistically supported method ranking;
+this confirmation changes no default.
+
+Four dispersed chains completed 2,000 warmup transitions each and reached
+the retained-sample criterion at the first cumulative check, after 1,000
+retained draws per chain.  All 4,000 post-warmup draws enter inference;
+there is no additional validation phase.  Had the criterion failed, the
+controller would have continued toward the same 20,000-draw cap.
+The largest rank-normalized split/folded $\widehat R$ over both $q$ and
+physical coordinates is $1.00745$.
+Table~\ref{tab:bf-structural-tanh-posterior} records the parameter summaries.
+
+\begin{table}[htbp]
+\centering\small
+\caption{Fresh $T=50$ Model B posterior under the fixed finite-LEDH endpoint.
+The last column takes the largest monitored $\widehat R$ in transformed and
+physical coordinates, including the folded diagnostic.}
+\label{tab:bf-structural-tanh-posterior}
+\begin{tabular}{lrrrr}
+\toprule
+Parameter & Truth & Posterior mean & 95\% interval & Max. $\widehat R$\\
+\midrule
+$\rho$ & 0.70 & 0.71293 & $[0.40472,0.94409]$ & 1.00745\\
+$\sigma$ & 0.25 & 0.25094 & $[0.13125,0.39450]$ & 1.00314\\
+$\beta$ & 0.80 & 0.66838 & $[0.20120,1.59612]$ & 1.00269\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Physical-coordinate mean MCSEs are $(0.00412,0.00193,0.01081)$.
+Bulk ESS ranges from 950 to 1,250 and tail ESS from 526 to 1,672;
+these describe precision rather than imposing extra convergence requirements.
+Realized chain acceptances are $72.2\%$, $73.3\%$, $72.4\%$, and $76.4\%$, giving a pooled
+$73.575\%$.  The fourth chain exceeds the preferred $65$--$75\%$ band.
+No force fallback was recorded; the largest absolute Hamiltonian error is
+$15.995$.  Finite energy errors remain explanatory rather than a reason to
+stop sampling.
+
+All three generating values lie within their marginal 95\% intervals.
+Together with the earlier Model B run, this gives two inference datasets,
+not a calibrated coverage study.  The fresh experiment confirms that
+structural completion, the score recurrence, the reset repair, fresh NeuTra
+training, and adaptive HMC execute together and meet the declared sampling
+criterion on a new dataset.  The short-series score discrepancies and
+unresolved long-reference bias leave exact nonlinear posterior accuracy
+unestablished, regardless of the satisfactory mixing diagnostics.
 
 \subsection{Reproducing the recorded experiment}
 
@@ -463,3 +599,27 @@ reset precision, compact transport algebra, mapped diagnostics, energy
 reporting, and retained-sample semantics.  Passing these tests is evidence
 about the implementation; the posterior conclusions remain those supported
 by the saved experiment above.
+
+The fresh confirmation has a separate executable and result record:
+\begin{quote}\small\raggedright
+Executable:\par
+\path{scripts/run_structural_tanh_confirmation.py}\par
+Plan:\par
+\path{docs/plans/structural-tanh-model-b-confirmation-2026-10-25.md}\par
+Result root:\par
+\path{docs/plans/artifacts/structural-tanh-model-b-20261025-01/}\par
+Relative to that root, complete probe comparisons and terminal sampling:\par
+\path{analysis.json}\par
+\path{attempts/B-hmc-01/result.json}\par
+Selected controls and the fresh trained map:\par
+\path{selections/model_b-T50.json}\par
+\path{attempts/B-train-extend-01/frozen-map.json}
+\end{quote}
+The new data use a seed offset of 200,000 from the original preparation
+policy; receipts and manifests bind the data and fixed particle designs.
+The confirmation ended at 00:20 UTC on 25 October 2026, using 6.157 charged
+GPU-worker hours of its 12-hour cap, including a failed reference-reporting
+attempt and its localized host-aggregation repair.  The HMC worker took
+4.369 hours including tuning and sampling.  These are elapsed charges,
+not matched runtime comparisons.  The terminal decision is sampling complete
+with approximation accuracy unresolved; no further validation run is pending.
