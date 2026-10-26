@@ -1,5 +1,31 @@
 # Implementation and validation plan for modern HMC methods
 
+## Launched continuation — 26 October 2026, 17:34 Asia/Shanghai
+
+Committed campaign engineering and the refreshed plan as 81f61a2c5. The fresh
+source-isolated supervisor is active (PID 3579317) under
+N5/source-isolated-20261026-01. It preserves 1063 source/input files with
+checksums, including the actual MacroFinance dependencies. The source-invalid
+qualification-03 attempt remains preserved and is not resumed or requalified.
+
+At the latest checked heartbeat (2026-10-26T09:36:42.415324+00:00), preflight status is
+selecting_device; numerical-worker-launched is
+False. Both permitted GPUs report 100% utilization.
+The detached supervisor checks capacity every 60 seconds and will select the
+lowest-load permitted device below 50% with adequate memory. Then it runs fresh
+GPU parity, all-nine-pair pricing and the bounded full-design tuning tranche.
+No user intervention is needed for ordinary capacity recovery. This is an active
+queued campaign, not a completed numerical run.
+
+The reserved maximum is 51363.871902836305 inclusive seconds
+(14.27 hours); waiting and all child stages share that cap. Latest outer deadline
+is **27 October 2026, 07:50:39 Asia/Shanghai**. No additional allocation was
+created. Completed work may be partial; unchanged evidence requirements and
+source-matched checkpoints are retained. The separate SIR budget is untouched.
+The next review reads the live supervisor and numerical receipts, settles actual
+inclusive time once, and distinguishes candidate vetoes from execution failures.
+
+
 ## Active continuation — 26 October 2026, source isolation
 
 The owner has requested a commit and continued execution. The [source-isolated

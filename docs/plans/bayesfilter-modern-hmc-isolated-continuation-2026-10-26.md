@@ -119,3 +119,14 @@ is 51363.871902836305 seconds (14.27 hours). Current trusted telemetry shows GPU
 at 100 percent utilization, so execution may wait under the unchanged sharing
 rule. Numerical preflight retains a 600-second cap while capacity waiting is
 charged against the full remaining allocation.
+
+## Launch record
+
+Commit 81f61a2c5; source-isolated campaign N5/source-isolated-20261026-01.
+Supervisor PID 3579317 launched at 2026-10-26T09:34:34.996374+00:00. The
+reserved inclusive allowance is 51363.871902836305 seconds and the
+latest outer deadline is 2026-10-26T23:50:38.868277+00:00. At 2026-10-26T09:36:42.415324+00:00, GPU
+preflight is waiting for shared capacity; no numerical worker has started.
+The source copy contains 1063 source/input files. The supervisor remains detached
+and will progress automatically through the declared stages once capacity is
+eligible. No result or qualification is claimed from queueing.
