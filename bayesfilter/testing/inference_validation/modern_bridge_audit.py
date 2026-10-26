@@ -93,8 +93,21 @@ def audit_native_evidence(result, binding):
         if work.status == 'completed':
             if work.work_item_id not in evidence_by_work:
                 raise ValueError('completed work is missing raw evidence')
-            if 'execution_failure' not in evidence_by_work[work.work_item_id]:
+            numerical = evidence_by_work[work.work_item_id]
+            if 'execution_failure' not in numerical:
                 expected = list(range(*work.trial_range))
+                if 'hard_veto_stop' in numerical:
+                    # An irreversible candidate veto completes the work item
+                    # without executing the rest of its allocation. Reuse the
+                    # numerical authority's health, inventory and cost checks;
+                    # arbitrary missing trials must still fail this audit.
+                    from bayesfilter.inference.hmc_acceptance_trials import evidence_analysis
+                    from bayesfilter.inference.hmc_candidate_set_tuning import _json_native_sha256
+                    checked = evidence_analysis(binding, numerical)
+                    if _json_native_sha256(checked) != _json_native_sha256(numerical['analysis']):
+                        raise ValueError('early-stop analysis mismatch')
+                    expected = list(range(work.trial_range[0],
+                                          numerical['hard_veto_stop']['completed_trials']))
                 if [c['trial_ordinal'] for c in chunks] != expected:
                     raise ValueError('incomplete independent trial coverage')
                 completed_expected += sum(c['count'] for c in chunks) * 4 * candidate_gradient_work(candidate)

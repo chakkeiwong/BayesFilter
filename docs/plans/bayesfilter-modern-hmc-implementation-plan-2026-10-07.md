@@ -1,13 +1,1099 @@
 # Implementation and validation plan for modern HMC methods
 
-Date: 7 October 2026. Status: **execution in progress following the owner's
-review-and-execute instruction**. Optional typed randomized HMC, deterministic
-fully refreshed MAMS and discarded ChEES-rate/SNAPER proposals are implemented
-for engineering validation. They are experimental; the implementation is not
-a posterior, efficiency or release result. Current tests, repairs and remaining
-phases are recorded in the [active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
+## Active continuation — 26 October 2026, source isolation
 
-**Current status, 13 October:** The bounded full SGQF MAMS continuation finished;
+The owner has requested a commit and continued execution. The [source-isolated
+continuation plan](bayesfilter-modern-hmc-isolated-continuation-2026-10-26.md)
+replaces the requirement to fund the whole worst-case design before making any
+progress with an explicitly bounded, checkpointed diagnostic tranche. It keeps
+all nine candidates, the 16/32/64/128 trial ladder, multiplicity24 and the .55
+qualification floor. It promises no completion under the remaining allocation.
+The source-invalid qualification-03 checkpoint is preserved and never resumed.
+
+The launcher copies BayesFilter, diagnostic scripts, the actual MacroFinance
+source dependencies and inputs; it checks copied bytes and loaded import paths.
+Fresh whole-target/shared-chain GPU/XLA parity and two warm full-horizon prices
+per pair precede tuning. The shared checkout can then change without changing
+the running source identity. Existing GPU sharing and memory-growth rules apply.
+A resource stop preserves the entire statistical design and frozen source copy.
+
+**107 focused tests pass** for numerical audit, failed-source reporting, unique
+trial counting, scheduling, copy stability/import leakage, source-bound GPU
+capability and TFP rejection behavior. Inclusive test cost was
+113.39982459199382 seconds; the current balance is **51363.871902836305 seconds
+(14.27 hours)** after all prelaunch checks. This is one combined diagnostic allocation;
+separate SIR funds remain untouched. The fresh campaign is being prepared;
+no new qualification has yet completed.
+
+A code-trace audit found a remaining difference between execution paths: the
+October26 TFP rejected-proposal repair does not provide the same trace semantics
+in the modern randomized-HMC kernel. That kernel retains raw failed ratios and
+can still veto them. This continuation records its actual behavior; it does not
+claim that all routes implement the corrected rejection policy. No posterior,
+ranking, public-consumer admission or release authority is granted.
+
+The scoped commit preserves campaign engineering work, not every concurrent
+change in this shared checkout. Exact working-source hashes accompany the new
+run; the Git commit alone does not identify every tested runtime dependency.
+
+
+## Latest diagnostic execution — 26 October 2026, Asia/Shanghai
+
+**Qualification-03 stopped with source invalidity at 11:37:22. No worker is
+running and the campaign is not complete.** The controller recorded a change
+to its bound execution module before work43. Both that module and the candidate
+controller file were edited during execution. These are actual dependencies;
+they cannot be excluded like the earlier unrelated q20 helper. The original
+checkpoint, evidence and failure are preserved without rebinding or promotion.
+
+The final inventory contains **981 unique completed trials**, 981 corresponding
+charges and 42 cumulative observations, with no missing returned trial chunks.
+Earlier live totals such as 1,557 incorrectly summed cumulative trial prefixes
+at successive evidence rungs; they were not counts of independent executed
+trials. Progress reporting is repaired. Three candidates had passed measurement
+and verification before the source failure, but the final authoritative verified
+set is empty. They are not authorized for export or posterior use. The two .8
+nominees retain their candidate-local movement/numerical failures.
+
+A secondary diagnostic bug masked the primary stop: native auditing assumed
+that every completed work item had executed its whole trial allocation, even
+when a documented hard veto correctly stopped it early. The [closeout repair
+plan](bayesfilter-modern-hmc-qualification03-closeout-repair-2026-10-26.md) now
+reuses the existing trial validator, preserves controller failure before
+postprocessing, and counts unique new trial intervals. **15 focused CPU tests
+pass**, including actual modern-kernel early-veto evidence, corrupted inventory,
+health/cost/schema tampering, missing ordinary evidence, and source-invalid
+worker reporting. This is engineering evidence, not renewed qualification.
+
+The 10.125-hour failed attempt is charged once at its inclusive supervisor time.
+After 17.10085040400736 seconds of closeout tests, the diagnostic balance is
+**51604.53847091534 seconds (14.33 hours)**. Separate SIR funds remain untouched.
+See N5/diagnostic-extension-20261025-01/settlement.json, the preserved terminal
+review and unique-trial inventory, and the [result note](bayesfilter-modern-hmc-diagnostic-extension-result-2026-10-25.md).
+There is no outstanding running reservation and the old October27 deadline is
+no longer an active schedule.
+
+Next: isolate complete execution sources and dependencies before another launch,
+validate the snapshot/import paths, and reprice the full frozen cohort against
+the remaining balance. The old 87768.77-second budget estimate does not fit;
+do not simply relaunch it or reinterpret the source-invalid checkpoint as a
+budget-resumable run. Source-matched recovery, if developed, needs a separate
+correctness review and exact historical bytes; it must not accept current
+changed sources under the old evidence identity. Optional adaptive expansion,
+public consumer admission, posterior qualification and release remain open.
+
+## Verified repair and remaining phases
+
+The [row-isolation repair plan](bayesfilter-modern-hmc-row-isolation-repair-2026-10-25.md)
+has been reviewed and executed. Its [terminal result and audit](bayesfilter-modern-hmc-row-isolation-repair-result-2026-10-25.md)
+records **140 passing core regressions, 10 passing real-consumer checks and seven
+passing fresh GPU/XLA checks**, plus the remaining public-admission failures.
+The current diagnostic phase is described above. Earlier status sections below are historical;
+this section and its settlement control current execution.
+
+The confirmed cross-row defect is repaired in the shared stationary solver and
+MacroFinance consumer. Completed rows freeze at their own stopping iteration;
+invalid rows cannot poison healthy companions. Checked batched support works in
+non-XLA and XLA execution. Strict singleton exceptions remain intact. Saved trial
+17 and 26 counterexamples preserve all three healthy rows, with singleton,
+duplicate, permutation and CPU/GPU agreement. Modern HMC/MAMS retain terminal
+row state and bounded first-failure diagnostics. No target or health threshold
+was relaxed, and old failed evidence was not relabeled.
+
+A complete trial's hard numerical veto stops that candidate allocation with
+honest completed/attempted/unreturned/unstarted accounting and recovery. Other
+candidates continue. A generic discarded epsilon proposer retains every healthy
+tried pair independently for each L. The prospective broad driver requires an
+explicit evidence ladder, all-candidate capacity, fresh source-bound GPU checks
+and full measurement/verification pricing. Code and guide are updated; new
+consumer qualification, power and affordability are still unproved.
+
+| Phase | Current status | Next action and closure condition |
+|---|---|---|
+| C1a | Closed: operational recovery and prior evidence preserved | Preserve original 384 trials/385 charges and old outcomes |
+| C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
+| C1b | Qualification-03 source-invalid; closeout reporting repaired | Isolate execution sources, validate exact dependencies, and fund/reprice the whole cohort before fresh qualification; retain failed evidence |
+| C2 | Direct CPU/GPU diagnostics pass; public admission open | Three external tests stop at existing successor-source/clean-commit admission; reconcile exact-source admission and rerun public entry without bypass |
+| C3 | Open: posterior/reference/precision | Declare estimands and precision; use independent retained evidence and reference |
+| C4 | Open: estimator, antithetic and tail reliability | Discriminating stopped-MCSE/tail and independent-chain checks; lugsail already exists |
+| C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
+| C6 / N8 | Guide repair complete; release reconciliation open | Reconcile examples, CI integration coverage, chapter/build and exclusions; no unsupported default promotion |
+
+The diagnostic grid is L=[3,5,9,13,18,25], at most four discarded attempts per L,
+and evidence 16/32/64/128. These are scope-specific hypotheses, not promoted
+defaults. The proposer retained nine pairs; this run does not expand them and
+preserves statistical multiplicity24. Its earlier unvalidated 120-second
+proposal allowance was replaced by a reviewed 900-second diagnostic allowance;
+actual inclusive proposal work was 88.89132639503805 seconds. Constant-score
+and known-law results do not establish target-specific power. Earlier six-root
+projections are historical and cannot authorize an expanded search.
+
+The prior numerical-repair settlement left **3539.096492208382 seconds** after
+**1899.1934939198675 seconds** of repair work. That remainder is already included
+in the allocation above, not additional spendable time. Separate SIR remains
+**7363.064379415999 seconds**, untouched. Preserve
+N5/row-isolation-repair-20261025-01/final-settlement.json as historical accounting;
+the diagnostic-extension settlement now controls this continuation.
+
+C2 admission remains separate from the C1b source-isolation and qualification repair. Do not substitute
+shorter evidence, favorable seeds or relaxed thresholds for the stated design. Source
+changes require fresh evidence; prior receipts and checkpoints stay historical.
+More efficient confidence bounds, value/score/status fusion and modern native-
+trial batching are separate improvements rather than silent additions to this
+repair. N6 LAPS and N7 remain conditional.
+
+After each phase, preserve outcomes, settle attempts once and refresh the next
+costed action. GPU sharing remains below 50% load with sufficient memory at
+launch, 60-second queue checks and 1800-second active reassessment; no migration
+or kill based on the worker's own load. R-hat is reporting-only during tuning.
+NUTS is excluded. Posterior validity, public admission and release remain
+unproved. No commit or push was made for this repair.
+
+## Current status — GPU recovery and reload complete, reviewed 25 October 2026
+
+The bounded MacroFinance recovery completed on **24 October at 20:21:10
+Asia/Shanghai**. All **128/128 trials** are saved; the L=3 and L=5 randomized-HMC
+candidates at epsilon=0.1 both passed their frozen acceptance/health screens.
+Both were exported, reloaded in a fresh process and continued with preserved
+endpoints. The original 101 trials and seeds were retained. No process from
+this recovery remains running.
+
+The native audit records 129 attempts for 128 returned trials, correctly
+retaining the one interrupted-call charge. Parent evidence and source checks
+passed; GPU/XLA and verified memory growth were used. **43 recovery/scheduler
+regressions pass.** The [terminal review](bayesfilter-modern-hmc-public-gpu-recovery-result-2026-10-25.md)
+records the checks, limits and reproducibility files.
+
+Recovery plus reload took 457.44907864701236 inclusive seconds; with tests,
+this phase cost 484.0853252330271 seconds. The settled diagnostic balance is
+**28142.715105298354 seconds (7.82 hours)**; separate SIR remains
+**7363.064379415999 seconds**. See N5/public-gpu-recovery-20261024-01/settlement.json;
+child times are already included.
+
+This closes the recovery/reload phase, **not the master program**. External
+consumer integration/admission, broad candidate-specific tuning, posterior
+precision/reference evidence, remaining estimator/tail/SIR questions and N8
+release review remain open. R-hat remains reporting-only in tuning; this run
+does not establish posterior convergence or method ranking. NUTS excluded;
+the external DSGE lock remains unchanged. Earlier status sections are historical.
+
+## Current status — shared GPU diagnostic passed, 24 October 2026
+
+Shared execution and least-load placement are implemented for the active
+filter-health launcher, with reassessment every 30 minutes and no live migration.
+**39 scheduling/provenance regressions pass.** The trusted GPU diagnostic
+completed in **100.128 inclusive seconds** on GPU 1 with verified memory growth.
+All seven checks pass, including whole-target and exact shared-chain GPU/XLA,
+CPU/GPU parity and deterministic replay. The short run ended before the first
+30-minute reassessment; that timing behavior is tested with a simulated clock.
+No numerical worker or monitor remains active.
+
+The [result](bayesfilter-modern-hmc-shared-gpu-result-2026-10-24.md) and
+[continuation plan](bayesfilter-modern-hmc-shared-gpu-continuation-2026-10-24.md)
+record scope and tests. This is a two-transition internal numerical diagnostic;
+consumer readiness flags remain false. Actual consumer installation/admission,
+broad candidate-specific tuning and posterior/reference qualification are still
+open. It does not establish performance under contention or posterior validity.
+NUTS excluded; R-hat reporting-only in tuning; DSGE lock unchanged.
+
+Phase costs 107.725142126030 inclusive seconds. Remaining diagnostic balance:
+**31832.713406758325 seconds (8.8424 hours)**. Separate SIR remains
+**7363.064379415999 seconds**. Budget authority:
+N5/shared-gpu-policy-20261024-01/settlement.json. Earlier status sections are
+historical; their pending GPU statements are superseded by this narrow result.
+
+## GPU sharing and reassessment — owner clarification, 24 October 2026
+
+Shared GPU execution is permitted for this campaign. Another compute process is
+not by itself a reason to wait. The installed codex-gpu-probe selects only idle
+GPUs; its no_idle_policy_permitted_gpu result describes that helper's selection
+rule, not the campaign's sharing rule. Earlier modern-HMC recovery already
+supports shared admission in scripts/resume_modern_hmc_bridge.py. The October 24
+stop based solely on the idle-only helper was too restrictive.
+
+At launch, every **60 seconds while queued**, and every **30 minutes while
+running**, inspect trusted GPU utilization, free memory and progress. The 1,800-second reassessment
+interval comes from the owner's current instruction; it is an operational
+cadence, not a scientific threshold or a mandatory worker time limit. Select
+the lowest-load eligible GPU below 50% utilization for the next worker,
+including a device with other processes. The strict 50% launch threshold is
+the owner's subsequent clarification and supersedes the earlier unrestricted
+sharing rule. Break equal-load ties by greater memory headroom, then a stable
+physical identifier. Keep this campaign's existing GPU 0/1 scope; expanding the
+device set is a separate decision. Record physical UUID, utilization, memory,
+selection reason and time. A single snapshot is a noisy load indicator, not a
+throughput estimate.
+
+Eligibility still requires trusted device access, the same hardware class and
+adequate free memory for the worker. The existing 4,096-MiB free-memory screen is
+an inherited operational minimum, not a measured bound on the current worker's
+peak. Price and record actual allocator peak for the new GPU diagnostic before
+scaling. Configure and verify incremental memory allocation before TensorFlow
+initializes; memory growth is not a hard cap. Preserve other processes.
+
+Reassessment does not move a live TensorFlow process between devices and does
+not kill a progressing chain every 30 minutes. Change device for fresh workers
+or at a supported checkpoint/restart boundary; preserve state, seeds, numerical
+scope and all completed outcomes. If the checkpoint binds physical device
+identity, keep that identity until an explicitly compatible continuation path
+exists. Treat contention as a resource/timing issue, with progress-aware waits
+and extensions only inside the remaining budget. Do not change tuning or
+posterior criteria to compensate for load.
+
+**Implementation status:** scripts/run_modern_hmc_filter_health_gpu.py now
+selects the lowest-load eligible shared device, pins its UUID before framework
+import, and reassesses every 1800 seconds while active or waiting. The diagnostic
+has explicit CPU/GPU modes. All 39 focused scheduling/provenance checks and the
+bounded whole-chain GPU diagnostic pass. Legacy recovery launchers retain their
+historical behavior; no global external helper was changed. The completed run
+has no active monitor. This resource policy does not grant consumer admission.
+
+Skeptical audit: the selection repair changes scheduling only. It must not change
+targets, seeds, methods, precision criteria or campaign allocations. The existing
+helper is left unchanged outside the repository. Driver/visibility errors still
+require diagnosis; busy status alone does not. At the initial policy correction no numerical experiment had launched. The
+subsequent bounded GPU diagnostic and current settlement are recorded above;
+prior completed evidence remains unchanged.
+
+## Current status — filter-health repair and CPU compilation complete, 24 October 2026
+
+The [filter-health phase](bayesfilter-modern-hmc-filter-health-continuation-2026-10-24.md)
+completes implementation and CPU verification. **75 focused regressions pass.**
+The unchanged MacroFinance chart/prior with measured shared-filter health passes
+value/score parity, accepted/proposed status, whole-target CPU XLA and exact
+shared-chain CPU XLA with deterministic replay. The consumer remains unmodified
+and unadmitted, with unchanged capability flags. This is not posterior or GPU
+qualification. The tuning reference and official chapter are updated; the
+chapter builds and its changed page has been visually inspected.
+
+[Terminal result](bayesfilter-modern-hmc-filter-health-result-2026-10-24.md) records
+failures, repairs and limits. Eight numerical/test attempts plus chapter build
+cost 208.657063377 seconds. Remaining diagnostic balance: **31940.438548884 seconds
+(8.8723 hours)**; separate SIR: **7363.064379415999 seconds**.
+Budget authority: N5/filter-health-20261024-01/settlement.json. No run is active.
+
+Next: trusted GPU full-chain validation when capacity is available, actual
+consumer integration/admission, then broad tuning and target-specific posterior
+precision/reference checks. Both permitted GPUs were fully occupied at the
+trusted check; no GPU workload launched. Estimator/tail and separately priced
+independent-fit SIR evidence remain open. N6/N7 conditional; N8 scoped release
+review open. R-hat reporting-only in tuning, DSGE lock unchanged, NUTS excluded.
+Completed evidence remains preserved below and is not rerun.
+
+## Completed actual consumer diagnostic — 24 October 2026
+
+The [residual qualification phase](bayesfilter-modern-hmc-residual-qualification-2026-10-24.md)
+completes saved diagnosis and the actual MacroFinance public-path diagnostic.
+All twelve local value/score/provenance checks pass. The public randomized-HMC
+run completes all 128 independent four-start trials: L=3 and L=5 at epsilon=0.1
+both pass measurement and fresh verification, and both are retained. Fresh-process
+reload preserves their exact endpoints; both fresh continuation checks pass.
+The 41 focused regressions pass. No run from this phase is still active.
+
+This is explicit CPU/non-XLA engineering evidence using the saved nine-parameter,
+48-period synthetic target and supplied covariance hypothesis. It does not qualify
+a posterior, rank kernels or establish GPU/default readiness. The consumer lacks
+structured per-proposal filter telemetry and declares full-chain XLA readiness
+false. Existing graph assertions remain active; those gaps remain open. The
+DSGE backend lock remains unchanged. R-hat is reporting-only in tuning and
+NUTS is excluded. The completed 1152-record confirmation was not rerun.
+
+All nine numerical/test attempts consumed **503.0363995449734 inclusive seconds**.
+Remaining diagnostic allocation: **32149.0956122613 seconds**; SIR stays separately
+**7363.064379415999 seconds**. Evidence, failed attempts and exact source snapshot
+are in N5/residual-qualification-20261024-01. Its settlement.json is the current
+budget authority. The [terminal result](bayesfilter-modern-hmc-residual-qualification-result-2026-10-24.md)
+records the checked findings, uncertainty, promotion limits and next work.
+
+**The master remains open.** Next application work must supply structured filter
+health and establish full-chain GPU/XLA compatibility before broad tuning and
+posterior qualification. Do not replace missing telemetry with success constants,
+reuse short chains as convergence evidence, or silently unlock DSGE. Separately
+price independent-fit SIR against its remaining allocation; the old full cohort
+is unaffordable. Estimator/tail qualification and N6/N7 remain distinct scopes.
+
+## Completed confirmation — 24 October 2026
+
+The posterior-count confirmation completed at **00:16:50 China time on
+24 October 2026**, after recovery from the disk-full interruption. All
+**1152/1152 records** are present: 768 calibration executions and 384 validation
+slots. The scalar audit passes and **39 saved assessments replay successfully**.
+Recovery reused 1059 complete records and filled the remaining 93 slots; all
+25 recovery worker/replay attempts succeeded. No completed outcome was rerun.
+This confirmation has finished; this closeout launches no new campaign.
+
+Nine of twelve scopes select an eligible count. Of their 288 fresh validation
+executions, **286 deliver and two fail terminal precision**. Both failures are
+four-chain antithetic replicas, where estimated MCSE of the squared coordinate
+exceeds its declared limit. R-hat, bulk/tail ESS and numerical health pass.
+Three scopes refuse planning: four-chain strong dependence and persistent
+shifts at both chain counts. Their 96 validation slots are recorded as
+refusals, not generated chains or successful estimates.
+
+No adjusted heldout failure screen rejects, but this does not establish a
+failure rate below 10%: even 0/32 failures has a pointwise 95% exact upper bound
+of 10.89%. No ranking, posterior guarantee, application qualification or default
+promotion follows. R-hat remains reporting-only in kernel tuning; NUTS is excluded.
+
+The [terminal result](bayesfilter-modern-hmc-posterior-planning-result-2026-10-23.md)
+records all outcomes, uncertainty and remaining work. Authoritative receipts
+are R/confirmation-02/result.json, audit.json, replay/replay.json and
+R/disk-recovery-01/settlement.json, where R is
+ docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/posterior-planning-20261023-01.
+Compact evidence is in docs/validation/modern-hmc-20261023-posterior-planning/confirmation-02/.
+
+Recovery consumed 2562.382700319009 inclusive wall seconds, leaving
+32712.132011806272 diagnostic seconds. After a conservative 60-second
+host-reporting allowance, **32652.132011806272 seconds** remain;
+SIR stays separately **7363.064379415999 seconds**. The allowance is an
+operational accounting convention, not measured sampling time. Nested worker
+and replay costs are included already and are not charged again.
+
+**The master remains open.** Next work is saved-receipt diagnosis of strong
+positive dependence and antithetic squared-coordinate precision, followed by
+bounded estimator/tail checks, actual MacroFinance/DSGE qualification and
+separately budgeted independent-fit SIR. Do not relax criteria, raise caps or
+rerun unfavorable seeds to obtain passage. Check the question, scope, budget
+and stopping rules before any new experiment.
+
+All sections below preserve historical phase records. Their running/pending
+statements describe their original dates, not current service state.
+
+## Historical disk-full recovery launch — 23 October 2026
+
+The first confirmation stopped at **21:48:59 China time** after ENOSPC; even
+its terminal status write failed. Its old running heartbeat is historical.
+The disk cleanup restored about 878 GiB free. The recovery audit verifies all
+840 frozen source files, the external compiled op, 1059 complete record identities,
+controller/tensor checksums, full-grid assessments and 19341 expanded seeds.
+Three completed orphan records are recovered beyond the parent's 1056 inventory.
+No completed outcome is resampled or discarded. The remaining 93 slots are
+lognormal/64-chain calibration replicas 3–63 and validation replicas 0–31.
+
+The [recovery plan](bayesfilter-modern-hmc-posterior-planning-disk-recovery-2026-10-23.md)
+resumes the same frozen ca1ecd3c7 source and seeds into R/confirmation-02.
+Service: bayesfilter-posterior-calibration-20261023-02.service. Read R/live-status.json
+and R/disk-recovery-01/settlement.json for current progress and terminal state.
+The 7200-second inclusive recovery ceiling fits the original remaining allocation;
+no scientific threshold or inference default changes. A 5-GiB disk-space floor
+stops the monitored service when observed; rapid concurrent disk consumption
+can still exhaust space between checks. Journal fallback records
+status-write failures. Four focused wrapper checks and the complete saved-record
+integrity audit pass. Full-cohort statistical audit and replay are still pending.
+The expected remaining duration is roughly 1–2 hours under current workload.
+
+The interrupted attempt consumed 15354.590862 wall seconds, reconstructed from
+systemd monotonic timestamps and charged once. After integrity checks and a
+conservative 60-second host-work allowance, diagnostic balance is
+35274.51471212528 seconds before resumed execution. Separate SIR allocation
+remains 7363.064379415999 seconds. This is infrastructure recovery, not a new
+candidate experiment; all prior diagnostic failures/refusals remain evidence.
+
+Earlier launch records below are preserved as history.
+
+## Historical posterior-calibration launch — 23 October 2026
+
+The [posterior planning phase](bayesfilter-modern-hmc-posterior-planning-2026-10-23.md)
+completes saved diagnosis, the optional finite-grid repair and its mechanics
+pilot: 24/24 complete, 27 saved assessments replayed, strengthened audit passed.
+There are 96 distinct passing focused checks, including Gaussian/nonlinear
+public tuner/export/reload and fresh-estimation integration. The new scope binds
+parameter names and consumer-diagnostic identity; the scalar audit checks every
+configuration, expanded stream, full grid and terminal outcome. Kernel tuning,
+inference defaults and diagnostic thresholds remain unchanged.
+
+**Historical launch:** committed source ca1ecd3c7 is frozen at R/source-01.
+The detached service started at **17:33 China time on 23 October 2026**,
+writing R/confirmation-01, with 64 calibration + 32 fresh validation slots for each of
+12 scopes (1152 records), under a 36000-second inclusive ceiling. The full-grid
+timing projection is about 6.9 hours, with workload margin up to 10 hours. This
+is a CPU/XLA reference exception, not GPU or application qualification.
+Source, environment, failures, progress and inclusive settlement are preserved.
+Initial health check records 20 completed records and no worker errors.
+This is launch evidence only; terminal statistical audit remains pending.
+No duplicate run: inspect `R/confirmation-launch.json`, `R/live-status.json`
+and `R/confirmation-settlement.json` before any restart.
+
+Here R is `docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/posterior-planning-20261023-01`.
+The [result note](bayesfilter-modern-hmc-posterior-planning-result-2026-10-23.md)
+and `R/prelaunch-settlement.json` hold detailed evidence and funding. Separate
+SIR balance is unchanged at 7363.064379415999 seconds. After confirmation,
+review the full refusal/failure denominators before the distinct antithetic,
+nonlinear-tail/application and independent-SIR work. NUTS remains excluded.
+
+Earlier phase records below are historical status, not an instruction to rerun.
+
+Date: 7 October 2026. Status: **fresh-adaptation qualification complete; posterior-count confirmation complete; broader qualification open; refreshed 24 October 2026**. Optional typed randomized
+HMC, deterministic fully refreshed MAMS and discarded ChEES-rate/SNAPER proposals
+are implemented for engineering validation. They remain experimental. Current
+tests, repairs and remaining phases are recorded in the
+[active execution record](bayesfilter-modern-hmc-execution-2026-10-07.md).
+
+## Prior completed phase — 23 October prospective planning
+
+**Completed preparation:** [prospective planning P1/P2 and the P3 pilot](bayesfilter-modern-hmc-prospective-planning-2026-10-23.md)
+are complete. The saved audit reconciles all 1536 prior profiles and 2766
+controller receipts. The optional fixed-pilot count rule accounts separately
+for pilot-variance and future-estimate uncertainty; it requires explicit risks
+and fixed absolute tolerances. The 24-profile CPU/XLA reference pilot passes
+scalar audit and 26 saved-endpoint/public-estimator replays. There are 92
+distinct passing planner/controller/driver checks, including Gaussian and
+nonlinear public-path mechanics and crash/corruption controls. The official
+diagnostics chapter includes the derivation and inspected rendered pages.
+
+**Prospective confirmation complete and audited:** frozen source 7b9b1eda6d
+completed **1536/1536** profiles at **15:44:48 China time, 23 October**, in
+**13392.963827273998 inclusive seconds**. All 192 numerical workers and the
+replay worker succeeded. All source/record/controller checks and 26 designated
+saved-endpoint replays pass. The service is inactive; do not duplicate it.
+
+There are **0/20 adjusted risk rejections**, which do not establish calibration.
+The uncertainty arm has 887 completed estimates and no failed estimated-MCSE
+checks, but 829 deliveries: 649 plans are refused and 58 completed
+strong-positive/64-chain estimates fail posterior R-hat. Four-chain
+strong-positive feasibility is 0/128; antithetic feasibility is 1/128 and that
+one plan fails stationary-reference precision despite estimated passage.
+All 256 persistent-shift profiles are refused by both arms. No ranking,
+default promotion or application qualification follows. R-hat remains
+reporting-only during kernel tuning.
+
+The [terminal result](bayesfilter-modern-hmc-prospective-planning-result-2026-10-23.md)
+and [checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md)
+record all outcomes and settlement. Prelaunch charge is 732.7914944650116
+seconds; confirmation settlement leaves 51796.367483187234 diagnostic seconds
+before separately recorded reporting cost. SIR remains 7363.064379415999
+seconds. The existing 92 focused tests remain valid; this closeout changes
+only documents and evidence. No confirmation is active.
+
+**Independent-estimation repair and confirmation complete.** The
+[reviewed plan](bayesfilter-modern-hmc-stopping-repair-2026-10-23.md) and
+[terminal result](bayesfilter-modern-hmc-stopping-repair-result-2026-10-23.md)
+close implementation and the six-case confirmation: **1536/1536 units**,
+all 48 numerical workers and the replay worker successful, and terminal audit
+passed at **04:54:56 China time, 23 October**. The audit checks all records,
+833 source files, 20 complete endpoint trajectories and 60 public precision
+reports. The detached service is inactive; do not rerun the experiment.
+The optional API is locally committed at `fdf7e3365`, with a final combined run of 65 focused tests,
+including Gaussian/nonlinear state-space integration and checkpoint recovery.
+The source snapshot remains frozen in `stopping-repair-20261023-01/source-01`.
+
+**0/72 adjusted coverage screens reject; broader reliability is not established.**
+All 256 iid units deliver, versus 73 strong-positive, 124 strong-negative,
+216 recoverable-shift and 238 lognormal units. All 256 persistent-shift units
+are refused during planning. Across all cases, 322 completed estimates fail
+terminal precision, 306 planning outcomes are refused and one fresh estimation
+warm-up fails. Independent planning removes final-count selection but does not
+guarantee adequate length, stationary starts or coverage after final filtering.
+The strongly positive delivered-coordinate Student miss bound still spans
+[1.79%,26.32%]. Antithetic autocorrelation precision remains unavailable in
+148/251 completed coordinate estimates. The lognormal-square autocorrelation
+and lugsail-normal intervals each miss 22/256 times, with pointwise bounds
+[5.46%,12.72%], despite adjusted nonrejection. No method ranking, default change
+or application qualification follows. R-hat remains reporting-only for tuning.
+
+**Next work, in dependency order:**
+1. Diagnose low-chain feasibility and the 58 posterior R-hat refusals from
+   saved receipts. Separate planning uncertainty, count-ceiling feasibility and
+   posterior convergence. Derive and price a generic repair before fresh
+   sampling; do not relax thresholds, rerun completed failures or treat zero
+   estimated-MCSE failures as calibration.
+2. Treat antithetic estimator availability and nonlinear-tail precision as
+   distinct unresolved questions. Retain exact controls and the optional method
+   boundary; fresh evidence is needed for any revised estimator or policy.
+3. Qualify actual MacroFinance/DSGE value/score or typed-field, frozen geometry,
+   public tuning, export/reload and retained sampling under a priced plan.
+   State-space mechanics tests do not complete application qualification.
+4. Keep independently fitted SIR posterior confirmation separate. Its existing
+   remaining allocation does not fund the previous full-cohort design. N6/N7
+   remain conditional research branches, not prerequisites for scoped closeout.
+
+For the preceding completed independent-estimation phase, the inclusive
+confirmation/audit/packaging cost is **7201.119666735001 seconds**;
+prelaunch costs are **513.1647424490002 seconds**. Terminal integrity and
+chapter-build checks, final chapter rebuild and final test suite bring the total
+phase charge to **7816.779214108006 seconds**, leaving **65922.12280492624
+diagnostic seconds**.
+The final settlement is linked in the
+[checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md).
+The separate SIR balance remains **7363.064379415999 seconds**. Unused
+reservations are released, not added as funding.
+[Compact evidence](../validation/modern-hmc-20261023-independent-estimation/README.md)
+keeps all scalar results and uncertainty tables without duplicating raw chains.
+The official diagnostics chapter and tuning reference record these conclusions.
+The overall master remains open at the planning, estimator, tail, consumer and
+SIR gaps above.
+
+### Completed phases and historical balances
+
+The following records preserve prior phase outcomes. Earlier balance statements
+and next-step descriptions are historical; the active sequence and terminal
+checkpoint above control current execution.
+
+**Actual-controller precision confirmation complete:** the
+[reviewed stopping plan](bayesfilter-modern-hmc-replication-stopping-plan-2026-10-22.md)
+finished all **1280 units** at **22:45 China time, 22 October**. All 40 shards
+completed without retries or incomplete units. The numerical audit passed 830
+source files, 17751 tensors, 53585 interval decisions, 78 public precision
+replays and 136 seeded transition replays. The experiment used 256 independent
+four-chain units per Gaussian case, three public precision policies and fixed
+and selected-warm-up/fixed-count controls. All cap/refusal denominators remain.
+The [terminal result](bayesfilter-modern-hmc-replication-stopping-result-2026-10-22.md)
+and [compact evidence](../validation/modern-hmc-20261022-stopping-confirmation/README.md)
+close this experiment; the service is inactive and must not be rerun.
+
+**Statistical repair remains open:** 21/84 adjusted stationary coverage screens
+reject: 18 replication-normal, two delivered replication-Student and one
+delivered autocorrelation screen. The Student failures are the rho=.99
+coordinate (24/209 misses; adjusted miss bounds [5.26%,20.79%]) and rho=-.99
+square (29/252; [5.72%,19.85%]). Default autocorrelation misses the antithetic
+coordinate in 25/181 delivered cases ([6.48%,24.48%]). Fixed-count and
+selected-warm-up/fixed-count Student controls do not reject; these descriptive
+contrasts motivate a stopping/selection repair without identifying its sole
+cause. The absence of lugsail rejections does not establish calibration or superiority. All
+policies reach the warm-up cap in every persistent-shift unit. Numerical
+correctness and the fixed-count Gaussian theorem survive; particular delivered
+interval claims fail. Tuning membership and numerical defaults are unchanged.
+
+**Reboot recovery:** the previous confirmation service ended at 09:26:52 China
+time, before the 12:38:50 host reboot. Its entire temporary worktree disappeared;
+no terminal confirmation outcome or reusable raw unit survives. The previous
+run is evidence lost, not a demonstrated numerical failure. Its journal-based
+conservative charge is 22430 seconds. Completed fixed-count studies and the
+compact pilot remain preserved and must not be rerun.
+
+The [reviewed recovery](bayesfilter-modern-hmc-stopping-reboot-recovery-2026-10-22.md)
+reconstructs all 830 frozen source files from `0ff42e446` on persistent disk.
+Saved iid0/strong-positive0 pilot scalars, decisions, selected starts and tensor
+hashes reproduce exactly. All **50** focused recovery checks pass. A new runner
+validates saved receipts, resumes only missing units into fresh directories,
+preserves incomplete attempts and automatically audits and packages terminal
+evidence. Its first startup exposed a nightly-package metadata lookup defect;
+the repair and three-second charge are recorded, with no numerical unit started.
+
+The repaired confirmation ran from **16:33:18 to 22:45 China time, 22 October** under
+`bayesfilter-stopping-recovery-20261022-02.service`, orchestration `40c357d8a`.
+The 1280-unit design and original confirmation seeds were unchanged. Persistent root:
+`N5/replication-stopping-recovery-20261022-01/attempt-02`, under this repository's
+artifact directory. Per-unit checkpoints survive process/host restart; a later
+manual continuation validates them before reuse. Automatic boot restart is not
+claimed. No continuation of this completed numerical attempt is needed.
+
+The inclusive confirmation/audit/compact step cost 22307.797590635004 seconds;
+recovery prechecks/startup repair cost 116.23576298400076, and terminal
+verification/chapter build cost 3.6810272029979387. Recovery phase charge:
+22427.714380822003 seconds. Release its unused 13572.285619177997-second reserve
+once; this is not a new grant. The settled diagnostic balance is
+**73738.90201903426 seconds** (20.48 hours). Separate SIR funds remain
+**7363.064379415999 seconds**. The prior 22430-second lost-attempt charge remains
+charged. The official diagnostics chapter now includes the stopped-interval
+findings; its 14-page standalone build and visual inspection pass.
+[Compact pilot evidence](../validation/modern-hmc-20261022-stopping-pilot/README.md)
+preserves all ten scalar records, audits, pricing and settled costs without raw
+trajectory duplication. [Compact recovery evidence](../validation/modern-hmc-20261022-reboot-recovery/README.md)
+preserves reconstruction, parity, regression checks and failed-attempt accounting.
+
+**Preceding fixed-count precision phase complete:** the
+[replication-precision confirmation](bayesfilter-modern-hmc-precision-reliability-result-2026-10-22.md)
+finished all **1792 units / 5376 profiles**. The independent audit passed 828
+source files, every record, 171214 interval comparisons and 42 selected saved
+profiles. The first process failed after 536 units; the
+[reviewed memory recovery](bayesfilter-modern-hmc-precision-memory-recovery-2026-10-22.md)
+kept those records, avoided demonstrated graph-cache churn and completed the
+remaining 1256 units in isolated case processes. No retry was needed. All 154
+implementation checks and 39 distinct focused recovery checks pass. The
+optional replication MCSE and reliability diagnostics leave defaults and
+tuning membership unchanged.
+
+Of 240 adjusted stationary interval screens, 26 reject: 19 four-chain normal
+replication intervals and seven legacy-estimator screens. No Student screen
+rejects after adjustment. This does **not** establish nonlinear coverage: the
+short lognormal-square Student profile misses 27/256 times (10.55%), with
+pointwise miss bounds [7.07%, 14.97%] and simultaneous bounds [4.75%, 19.32%].
+The independent Gaussian fixed-count Student derivation remains valid;
+precision stopping, shared warm-up selection, tails and application targets
+require separate qualification. Persistent initialization bias remains even
+with correct variance. No method ranking or numerical default is promoted.
+
+The numerical phase, failure, repair checks and terminal audit cost
+**3328.7694716951064 diagnostic seconds**. After documentation closeout its unused 7467.950528304894-second
+reserve is released, not a fresh grant. At that phase's close, the diagnostic balance was
+**118872.03278987014 seconds** after 3.280 seconds of chapter builds
+(total phase charge 3332.0494716951066 seconds); SIR balance remains **7363.064379415999 seconds**. Both confirmation
+services from that fixed-count phase are terminal. Do not repeat those experiments.
+[Compact terminal evidence](../validation/modern-hmc-20261022-precision-confirmation/README.md)
+keeps all scalar outcomes and full-record receipts in about 4 MB.
+
+**Historical next work at the preceding phase close (now executed above):** diagnose the saved stopping traces, retaining every
+case/quantity and separating unavailable estimates, count selection and
+conditioning on delivery. Then write and price a repair that distinguishes
+independent planning followed by fresh fixed-length estimation from inference
+justified under repeated looks. Neither fixed count nor more chains alone
+establish stationarity or nonlinear-tail coverage. Preserve current baseline
+policies and exact controls, require separate calibration/untouched confirmation,
+and include correlated/antithetic, shifted and lognormal-tail adversaries plus a
+qualified state-space target. Do not tune a multiplier on this confirmation or
+promote lugsail from nonrejection. No new numerical campaign is launched by this
+closeout. Consumer value/score/tuning/export/retained qualification and actual
+HMC time-to-precision remain open; the exact-reference count study does not
+replace them. SIR remains separate and N6/N7 conditional.
+The [checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md)
+records executable next steps and the remaining consumer/SIR gaps.
+
+**Preceding completed diagnosis:** the [precision root-cause diagnosis](bayesfilter-modern-hmc-precision-root-cause-result-2026-10-22.md)
+checks all 3584 saved confirmation records and traces the public estimator
+and posterior-controller call chains. All 23 focused tests pass, with selected official
+TFP/ArviZ parity on 24 saved endpoints. The 900 TFP unavailable outcomes have
+nonpositive correlation sums. The split-monotone floor activates in every
+rho=-.99 coordinate replication, predicting its 34.25-fold variance inflation
+at 160000 draws. Exact batch expectations predict square-root lugsail's .58557
+variance ratio at rho=.99/10000, matching observed .58523. Lognormal-square
+misses additionally reflect unreliable marginal tail variance and association
+between low centers and low variance estimates; persistent shift is residual
+initialization bias. Relative mean MCSE/SD reduces to `1/sqrt(ESS)` and does
+not independently assess marginal-variance reliability. Earlier exact-reference
+information requirements also exceed the 10000-draw cap in four cases.
+
+This is explanatory saved-data reuse, with no new samples, runtime/default
+change or sampler ranking. It triggered the generic reliability assessment and
+candidate estimator treatment completed above, with fixed-count
+confirmation preceding actual stopping. Independent-chain agreement and batch
+sensitivity alone cannot prove that unobserved tails were sampled. The scoped
+diagnosis is closed; the scientific repair remains open.
+
+**Preceding completed phase:** the [fresh precision count ladder](bayesfilter-modern-hmc-precision-count-result-2026-10-21.md)
+finished all 448 calibration and 3584 confirmation units and passed both
+terminal audits at 21:54:34 China time, 21 October. All 89 distinct focused
+tests pass. Frozen source is `c3faf1f28`; the service is inactive, MainPID 0,
+exit status 0. No active worker or reservation remains. Do not duplicate it.
+
+Thirteen of 180 stationary confirmation screens reject nominal coverage.
+All five estimated-variance intervals fail for lognormal squares at 10000 and
+40000 draws/chain; split-monotone still fails at 160000. Nonflags do not prove
+calibration. TFP retains 900 unavailable functional/count outcomes, and the
+strong-antithetic split-monotone variance estimate remains excessively large.
+Known variance does not remove persistent initialization bias. This completes
+the fixed-count question while triggering generic estimator/interval reliability
+work and a distinct later actual-stopping study. No ranking, numerical default,
+tuning change, HMC execution or SIR transfer follows.
+
+**Preceding completed execution:** the [fixed-count interval diagnosis](bayesfilter-modern-hmc-interval-error-result-2026-10-21.md)
+reuses all 896 saved units and is complete. Thirteen regression tests pass;
+independent decimal arithmetic verifies 1792 known-variance interval decisions
+and 5376 paired method decisions. All 17 lognormal-square split-monotone misses
+gain coverage when only variance is replaced by its known finite-count value,
+while four disjoint units become misses. Persistent-shift posterior bias remains
+in 128/128 units for both functionals. This is explanatory evidence, not fresh
+calibration, a default change or a sampler ranking. The diagnostic chapter
+records the findings; its eleven-page standalone PDF builds and the changed
+page was inspected. The completed count/batch-length result above supersedes
+that phase's launch instruction; separately specified stopping validation
+remains open.
+
+**Completed consumer repair:** the [consumer score-contract repair](bayesfilter-modern-hmc-consumer-score-contract-result-2026-10-21.md)
+is **complete, audited and settled**. Seven baseline checks reproduced silent
+admission of an explicitly declared proposal field into exact-score routes.
+One shared guard now enforces the distinction at tuning, execution and geometry
+boundaries; the supported typed-force route remains available. Worktree suites
+pass 66 and 197 checks (overlapping); the assembled shared checkout passes 74
+focused checks, with one existing implicit-pfor test deselected. The official
+tuning chapter and API reference document the distinction. Actual extracted
+consumer declarations/forwarding and synthetic-adapter DSGE binding checks add
+engineering evidence, but do not qualify actual posteriors. One external
+bitwise XLA/eager assertion remains failed; a bounded diagnostic identifies
+reduction rounding without changing that result. No numerical defaults or
+tuning criteria change.
+
+**Previous completed precision execution:** the [mean-precision comparison](bayesfilter-modern-hmc-mean-precision-result-2026-10-21.md)
+is **complete, audited and settled** from frozen commit `7d1ceae16`. All
+896 fixed-count units and 224 separate actual-controller units finished at
+17:17:45 China time, in 1363.9479269199073 inclusive supervisor seconds.
+101 distinct focused tests pass; one existing full-ArviZ module is skipped,
+while the saved official-source estimator tests pass. The terminal audit passes
+830 source files, 5974 unique tensors and 57 precision-report recomputations.
+It does not independently recompute every statistical diagnostic. The service
+is inactive, MainPID 0, exit status 0. No duplicate run is needed.
+
+The explicit split-monotone option removes observed fixed-count unavailability
+but overestimates Gaussian −.99 mean variance by about 42.7 times on average.
+Its lognormal-square intervals fail the prespecified coverage screen (17/128
+misses). This rejects a general calibration/default claim, not the tested
+engineering implementation. The exact-reference retained-information calculation
+is also complete. The diagnostics chapter now includes its derivation and the
+terminal findings; the targeted ten-page PDF builds and affected pages were
+inspected. No default, tuning rule or numerical threshold changes.
+
+The [fresh window-validation phase](bayesfilter-modern-hmc-window-validation-result-2026-10-21.md)
+is **complete and audited**. All 192 independent four-chain units finished at
+**13:04:23 China time on 21 October**, in 1802.3659879891202 inclusive supervisor
+seconds. The audit passed 824 source and 3607 unique tensor files, all decisions,
+denominators and twelve contrasts. Five matched-delay passage contrasts are
+supported after the prespecified multiplicity correction. All persistent-shift
+units were refused; no strong-dependence case met retained precision under
+either policy. Its worker has finished. The study does not authorize a numerical
+default change.
+
+The owner's request to refresh and continue governs this sequence. The master
+is open; frozen SGQF/SIR cohorts, documentation closeout, engineering inventory
+and fresh-adaptation qualification are complete. Both 21 October actual-
+controller diagnostics are complete and audited: 288 independent four-chain
+units across two separate studies. A subsequent 128-unit saved-path replay
+confirmed the documented TFP antithetic estimator limitation and diagnosed
+warm-up window sensitivity. A reporting repair exposes invalid precision
+reasons; **126 focused tests passed** for that completed repair. The fresh
+window study adds 192 fresh units, bringing the three-study total to 480.
+The mean-precision study adds 224, bringing the four-study total to **704**.
+Its 896 independent fixed-count streams are a separate comparison; paired
+methods and profiles do not multiply the number of independent replications.
+The replay adds no independent units. NUTS remains excluded.
+The [terminal diagnostic](bayesfilter-modern-hmc-controller-stress-result-2026-10-21.md)
+and [mechanism/repair result](bayesfilter-modern-hmc-controller-mechanism-result-2026-10-21.md)
+record completed work. No estimator default, window default, retained cap or tuning criterion
+has been changed or promoted.
+
+| Order | Current work and evidence | Required next decision |
+| --- | --- | --- |
+| N5-R1: complete | Twenty planned cells and eight frozen cohorts reconcile in the source-bound inventory; 39 report checks passed. | Preserve differing price scopes and complete failure/censoring denominators. No complete-fit ranking follows. |
+| N5-R2: qualification complete; confirmation open | Both fresh SIR pilots completed. MAMS verified/exported/reloaded both roots; SNAPER verified/exported/reloaded all six roots. Terminal integrity and accounting audits pass. | Price matched repeated-fit posterior/reference confirmation with all members and full failure/censoring denominators; independent geometry-fit reliability remains unestablished. |
+| Precision: independent-estimation implementation/confirmation complete; reliability open | 1536 units and terminal audit pass; 0/72 adjusted screens reject, but 322 terminal precision failures, antithetic unavailable estimates and marginal tail warnings remain. | Analyze planning uncertainty and retain separate estimator/tail questions. Any next policy needs fresh calibration and confirmation; no ranking or default promotion. |
+| Retained information: exact-reference calculation complete | Four positive-dependence requirements need 40954–124276 draws/chain at population MCSE/SD .02, exceeding the diagnostic cap. | Estimate target-specific functional dependence, uncertainty and transition cost; validate forecasts prospectively. Do not turn these reference counts into defaults. |
+| N8-R: boundary repair complete; actual-model qualification open | Explicit proposal-field refusal is tested across exact-score boundaries and geometry wrappers. Actual consumer declaration/forwarding and synthetic DSGE binding checks are recorded. | Freeze target/data/backend and price actual target/score or typed-field, geometry, public-tuner, artifact-reload and retained-run checks. Respect the DSGE backend lock; its bitwise reference test remains failed. |
+| Scoped release | Official book and API reference reflect completed cohorts and the score/field boundary repair. | Reconcile actual-model and precision qualifications as they complete. Keep experimental, precision and application limitations explicit. |
+
+N6 LAPS and N7 alternatives remain conditional research branches, not
+prerequisites for a scoped N2–N5 release or implied new allocations. After each
+terminal phase, audit results, settle actual charges, refresh this sequence
+and execute the next feasible repair. Candidate rejection is not automatically
+a continuation veto.
+
+The historical balances at root-cause diagnosis close were separate: **7363.064379415999 SIR
+GPU-worker seconds** and **122204.08226156524 diagnostic seconds**. The
+[root-cause diagnosis settlement](../validation/modern-hmc-20261022-precision-root-causes/settlement.json)
+charges **40.777451663743705 seconds** from 122244.85971322899 and releases
+1759.2225483362563 seconds of its 1800-second allowance. No active reservation,
+new grant or transfer remains. All prior phases are already included.
+
+The preceding count ladder charged **3241.5096651259364 seconds** from its opening diagnostic
+balance of 125486.36937835492 seconds, releasing **18358.490334874063 seconds**
+of its 21600-second allowance. Its
+[settlement](../validation/modern-hmc-20261021-count-ladder/settlement.json)
+counts tests, source preparation, pilot, inclusive queue/audits and terminal
+reporting once. The original queue settlement remains preserved. No active
+reservation, new grant or pool transfer remains.
+
+Earlier settled phases are not additional charges: the
+[interval diagnosis](../validation/modern-hmc-20261021-interval-error/settlement.json)
+charged 11.338881943426472 seconds, the
+[consumer repair](../validation/modern-hmc-20261021-consumer-score-contract/settlement.json)
+563.7521492792293 seconds, and the
+[mean-precision study](../validation/modern-hmc-20261021-mean-precision/settlement.json)
+1567.9403779245913 seconds. All are already reflected in the opening count-ladder
+balance, including their failed attempts and document checks.
+
+The previous full SIR cohort alone cost 197315.48680924764 seconds;
+matched independent-fit confirmation is not affordable from the remaining SIR
+allocation. It stays open without blocking authorized diagnostic and actual-
+consumer work. Do not silently fund that cohort from the diagnostic pool.
+
+### 21 October completed diagnosis and next repairs
+
+The [first study](bayesfilter-modern-hmc-controller-diagnostic-result-2026-10-21.md)
+completed 192 units in 365.09880836308 supervisor seconds. Every persistent-
+shift replication reached the warm-up cap; the other five cases delivered.
+Four fixed-count screens flagged initialization bias. The
+[strong-dependence study](bayesfilter-modern-hmc-controller-stress-result-2026-10-21.md)
+completed 96 units in 259.50926991691813 seconds. Gaussian rho=.99 reached the
+warm-up cap in 32/32 units, Gaussian rho=-.99 reached warm-up/retained caps in
+1/31, and lognormal rho=.99 in 26/6. Neither policy delivered in any strong
+case. Nonflags with no delivered intervals supply no stopping calibration.
+The audits verified source, streams, tensor receipts and recorded decisions;
+they did not independently recompute TensorFlow diagnostics.
+
+The [saved-path mechanism replay](bayesfilter-modern-hmc-controller-mechanism-result-2026-10-21.md)
+then reproduced all original 1000-window checks and precision-validity decisions.
+Local and official TFP ESS agree to relative error below 1e-11; negative
+positive-pair denominators explain all 22 unavailable antithetic coordinate
+estimates. No local estimator arithmetic repair is justified by these results.
+The reporting repair separates unavailable from finite-but-insufficient targets,
+retains signed finite ESS and gives quantity-specific reasons. It changes no
+numerical estimate or decision. Existing chapter-25 mathematics remains correct;
+the API reference documents the additive fields.
+
+Execute this remaining sequence, preserving the separation between
+acceptance/health tuning and posterior diagnostics:
+
+1. **Complete:** the fresh actual-controller window comparison used disjoint
+   seeds and matched delays. Longer windows change passage for stationary laws;
+   persistent shifts remain refused. All strong retained arms still fail
+   precision. Keep the [audited result](bayesfilter-modern-hmc-window-validation-result-2026-10-21.md),
+   full denominators and unchanged defaults; do not rerun this mechanism study
+   as a prerequisite for the remaining precision repair.
+2. **Complete:** the [mean-precision comparison](bayesfilter-modern-hmc-mean-precision-result-2026-10-21.md)
+   preserves all unavailable/capped outcomes and 42 prespecified coverage
+   screens. The explicit split-monotone candidate remains optional. Source
+   agreement and finite estimates are not calibration. Tail and actual-stopping
+   calibration remain open; repeated execution of the same comparison is not
+   the next repair.
+3. **Complete for exact reference laws; open for actual targets:** at four
+   chains of 10000 draws, population MCSE/SD is .07018 for Gaussian rho=.99,
+   .04975 for its square and .06150/.04040 for lognormal coordinate/square.
+   The first counts meeting .02 are 124276, 62140, 95309 and 40954 per chain.
+   Target-specific functional dependence and cost estimates need uncertainty,
+   measured timing and prospective checks; these counts do not authorize cap
+   increases, forecast stopping or set burn-in.
+4. **Boundary repair complete; next actual-consumer phase:** the
+   [bounded checks](bayesfilter-modern-hmc-consumer-score-contract-result-2026-10-21.md)
+   reproduced and repaired admission of declared proposal fields to exact-score
+   execution. The supported typed-force path still passes. Preserve those
+   semantics when selecting actual MacroFinance/DSGE target, data, geometry
+   and backend snapshots. Price target-specific value/score or field/endpoint
+   checks before public tuning, artifact reload and retained-run qualification.
+   Respect the external DSGE backend lock; test the current binding without
+   silently migrating it. Its failed bitwise synthetic test needs a justified
+   reference comparison, not relaxed model criteria. The present declaration
+   guard neither verifies undeclared scores nor rules out mathematically valid
+   endpoint-corrected arbitrary-force methods.
+5. **Fixed-count studies and replication repair complete; stopping and tail
+   qualification remain:** the
+   [audited confirmation](bayesfilter-modern-hmc-precision-reliability-result-2026-10-22.md)
+   preserves all 1792 units, 240 adjusted screens, unavailable outcomes and
+   fixed-count controls. Four-chain normal replication intervals fail;
+   independent Gaussian Student intervals retain their derived fixed-count
+   scope. Zero adjusted Student rejections do not clear the short nonlinear
+   tail warning. Do not repeat the completed count ladder, silently raise caps
+   or tune new multipliers on confirmation. Price and execute a separately
+   specified actual-controller stopping study in the justified Gaussian scope;
+   preserve initialization/refusal controls and full denominators. Analyze
+   nonlinear failures descriptively before choosing a separately calibrated
+   tail repair.
+
+6. Reconcile executable consumer and precision evidence with the official
+   monograph/API. The diagnostics chapter includes the count-ladder mechanisms, optional
+   replication-estimator derivation and audited confirmation with its nonlinear
+   warning and fixed-count limitation. The 13-page standalone chapter builds
+   cleanly and its result page was visually inspected; a full monograph rebuild
+   remains separate from this focused chapter check. Broader consumer
+   qualification and independent-fit posterior confirmation remain open. The
+   latter requires a feasible design funded from its separate SIR allocation.
+
+Skeptical refresh: official-code parity establishes implementation agreement,
+not statistical validity. Withheld output cannot establish covered output.
+Longer windows at original stopping endpoints are selected observations and
+cannot supply a changed stopping distribution. Exact fixed-count variance is
+not a random-stopping oracle. A positive variance safeguard requires evaluation,
+not silent adoption. Each next phase needs fresh streams or a justified
+reference analysis, a measured price, unchanged candidate retention and a
+settled budget. This program remains open at these scientific/consumer gaps.
+
+### Completed 20 October work
+
+The [engineering continuation](bayesfilter-modern-hmc-next-phase-result-2026-10-20.md)
+passed 110 distinct checks, including LGSSM/NL-ACC integration, failure
+accounting and the sealed SIR data repair. The repair reads the existing sealed
+inputs instead of regenerating them; all original hashes remain required.
+
+The [fresh-adaptation pricing result](bayesfilter-modern-hmc-fresh-adaptation-pricing-result-2026-10-20.md)
+is terminal. MAMS completed its fresh two-root qualification and both retained
+exports/reloads in 3387.6033175517805 inclusive seconds. SNAPER completed a
+145.43969479901716-second pilot proposing six roots, then was resource-censored
+at 3600.414727978874 inclusive seconds: two roots passed measurement, two needed
+more evidence and two had not finished measurement. No root completed verification
+at that cap, and no hard health veto was recorded in the completed measurement
+records. All roots, partial trials and costs are preserved.
+
+Both terminal integrity audits passed: unchanged source/input identities,
+actual proposal inventories, 274 numerical chunks, eight completed qualification
+records, and 18 MAMS pilot windows with 432 tensor receipts. The phase charged
+6988.0180455306545 GPU-worker seconds; 211.9819544693455 reserved seconds were
+released. Settled balances were 15387.5877955943 SIR seconds and
+130643.42046399573 separate diagnostic seconds. These prices include shared-device
+contention and cannot rank methods. No posterior stage ran.
+
+### Completed continuation and remaining budget
+
+The [qualification continuation plan](bayesfilter-modern-hmc-qualification-continuation-2026-10-20.md)
+adds a bounded command around the existing public resume API. Twenty distinct
+checks pass: copied recovery matches uninterrupted samples/traces for Gaussian
+randomized HMC and MAMS, LGSSM and NL-ACC; provenance, parent preservation,
+exports, timeout/error receipts and the actual SIR factory identity are checked.
+
+The first launch stopped before tuning after 7.568048206157982 seconds because
+the new wrapper compared a bridge helper's prefixed data hash with the original
+full-model bare digest. The wrapper now uses the original full-model factory.
+The failed attempt and its unchanged checkpoint remain preserved. The repair
+changes neither target data, numerical source nor qualification law.
+
+Attempt02 ran from **18:37:51 to 20:51:28 China time on 20 October**, under detached
+service bayesfilter-modern-fresh-qualification-continuation-20261020-02.service.
+Artifact root: docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/
+fresh-qualification-continuation-20261020-02.
+It imports the original pricing snapshot at commit
+4357c9aec343ddc79ea89d86f736a48439f95bfc, copies the original six-root checkpoint,
+preserves all completed/partial trials and uses the same randomness and policy.
+The pilot is not rerun. GPU1 identity, pre-initialization memory growth, XLA
+and TF32 are recorded. It completed successfully; the service is inactive.
+
+The [terminal result](bayesfilter-modern-hmc-qualification-continuation-result-2026-10-20.md)
+records six verified roots, no repair descendants, 14 completed observations
+and 448 completed chunks: 146 preserved and 302 newly completed. One charged,
+uncommitted call was retried; all 449 attempts remain charged. No committed work
+replayed. The independent saved-evidence audit checked source/input and parent
+identities, numerical records, exported members and accounting. It passed;
+posterior diagnostics were not recomputed and no posterior stage ran.
+
+The continuation charged **8024.523416178301 GPU-worker seconds**, including
+the first failure, and released **2775.476583821699 seconds** of its 10800-second
+cap. Settled SIR balance: **7363.064379415999 seconds**. Separate diagnostic
+balance: **130417.92861862497 seconds**, including both terminal audit commands.
+Inclusive supervisor time is charged once; inherited and nested trial time
+are not additional charges.
+
+Next, price a matched all-member posterior/reference design and check its
+affordability against the separate pools. Current-source reference compatibility
+remains required. Preserving a fit across restart does not supply independent
+fit or geometry-learning replication. The
+[active checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md)
+lists terminal evidence and remaining work; this closeout launches no new run.
+
+Skeptical audit: the correct engineering comparator is uninterrupted execution
+of the same kernel and streams. A resource cap does not reject candidates or
+establish slow mixing. Original-source restoration and strict data equality
+prevent changed-target continuation; the tests and terminal audit verify those
+requirements. Three hours is a bounded cost allocation, not a promise that all
+maximum-rung trials and repairs fit. No threshold, posterior requirement or
+default changes to make this phase pass.
+
+**Earlier frozen-cohort closeout, 20 October 2026:** The
+[full-model SIR phase](bayesfilter-modern-hmc-sir-evidence-phase-2026-10-17.md)
+finished at **01:42 China time**. All four methods are terminal and the service
+is inactive. The [terminal result](bayesfilter-modern-hmc-sir-result-2026-10-20.md)
+records 24 verified tuning members, 23 completed posterior assessments and
+21 posterior/reference deliveries.
+
+| Method | Verified | Posterior checks passed | Posterior/reference deliveries | Other disposition |
+| --- | ---: | ---: | ---: | --- |
+| Fixed HMC | 8 | 7 | 6 | Member 1 reference failure; member 8 resource-censored |
+| Randomized HMC | 8 | 8 | 7 | Member 1 reference failure |
+| SNAPER-proposed randomized HMC | 6 | 6 | 6 | None in this cohort |
+| Fully refreshed MAMS | 2 | 2 | 2 | None in this cohort |
+
+All verified tuning members remain retained. Neither reference failure was
+selectively retried. Posterior R-hat, ESS, MCSE and reference agreement remain
+separate from acceptance/health-based tuning membership. These descriptive
+counts do not rank methods; candidate sets and costs differ and independent-fit
+replications remain missing. The reference applies to the declared finite-filter
+target, not the exact nonlinear state-space posterior.
+
+The [controller recovery](bayesfilter-modern-hmc-sir-controller-recovery-2026-10-18.md)
+preserved the fixed prefix without replay; its exact orchestration snapshot
+passed 185 tests. Numerical authority remains `full-model-source-e68cdf1c4`,
+and all designs, seeds, thresholds and recorded GPU/XLA/memory-growth settings
+remain frozen. Saved strict audits and a fresh closeout check passed: **5,530
+unique source/evidence hashes** plus member decisions and accounting reconcile.
+The fresh audit does not independently recompute TensorFlow ESS/R-hat/MCSE.
+
+Inclusive numerical cost was `197315.48680924764` seconds. Controller accounting,
+the previously outstanding submission receipt and measured closeout check leave
+**`22375.605841124954` seconds** from the SIR allocation. Pricing and nested
+worker time were not charged again. See the
+[closeout settlement](artifacts/modern-hmc-implementation-2026-10-07/N5/generic-adaptation/sir-cohort-20261017-01/closeout-20261020-01/settlement.json).
+The separate diagnostic pool at the SIR closeout was **`131192.0584563613` seconds**; the
+separate 3600-second hold and historical 1579.5929542018566-second balance remain
+excluded. The later engineering settlement above supersedes that diagnostic
+balance. No new posterior study has been launched or allocated.
+
+The SGQF cohorts are also terminal; SNAPER delivered five of six qualified
+members. The [stationary-stress](bayesfilter-mcse-stationary-stress-result-2026-10-18.md),
+[antithetic ESS](bayesfilter-mcse-antithetic-ess-result-2026-10-18.md),
+[saved nonlinear replay](bayesfilter-mcse-saved-nonlinear-result-2026-10-18.md)
+and [interval follow-up](bayesfilter-mcse-dependence-interval-result-2026-10-18.md)
+are complete. The interval study's 768 records represent 384 independent latent
+four-chain units: 22/108 fixed and 3/108 conditional stopped screens flagged
+undercoverage among 231 adjusted screens. Dependent cells mostly never stopped.
+No replacement estimator/default was validated, and stationary starts supply
+no burn-in evidence. The
+[documentation closeout](bayesfilter-mcse-interval-documentation-result-2026-10-18.md)
+passed 15 contract checks, a diagnostics PDF build and changed-page inspection.
+
+The 20 October documentation integration updates the official monograph's
+modern-HMC algorithm, SGQF/SIR tables and interval-study conclusions, together
+with the tuning/diagnostics chapters and API reference. The
+[documentation audit](../validation/modern-hmc-20261020/documentation-audit.md)
+records policy checks, preserved mathematics/citations, builds and rendered-page
+review. Campaign changes were merged with remote main and passed 356 regressions.
+This documentation closeout leaves the remaining scientific phases unchanged.
+
+**Next N5 phase:** scope and price a predeclared multi-model/independent-fit
+confirmation from measured all-member costs, with full failure/censoring
+denominators and uncertainty analysis. Do not selectively retry failed members
+or automatically spend the released balance. Calibrated precision/stopping and
+actual MacroFinance/DSGE consumer qualification remain open. The
+[N8 engineering slice](bayesfilter-modern-hmc-n8-consumer-audit-result-2026-10-17.md)
+passed 171 tests, 15 documentation checks and an 82-page excerpt; it is not
+external-consumer or release qualification. N6/N7 remain conditional branches,
+separate from a scoped N2–N5 release. The
+[active checkpoint](bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md)
+contains exact paths and next actions. Earlier observations below are historical
+and do not supersede this terminal SIR status.
+
+**Prior status, 15 October:** The fixed-HMC continuation is terminal: all
+eight verified candidates were assessed, seven delivered and one failed the
+declared precision/reference screen without a tuning veto. Its 48-hour grant
+settled with 137,361.195109 worker-seconds available after the held local
+reserve. The storage cleanup that preceded this refresh was performed to free
+capacity for this same program; archived evidence was retained and no separate
+campaign consumed the balance. The next prescribed comparator is the frozen
+randomized-HMC SGQF cohort. Its minimum-count price exceeds the balance, so the
+new phase is explicitly a bounded feasibility attempt with full root and repair
+denominators, not a promised complete comparison. The executable phase is in
+the [randomized-HMC feasibility plan](bayesfilter-modern-hmc-randomized-feasibility-2026-10-15.md).
+
+**Historical execution update, 15 October:** The randomized-HMC phase passed its actual
+immutable-source GPU preflight and launched as
+`bayesfilter-modern-randomized-feasibility-20261015-01.service` on GPU 1. The
+preflight performed no sampling and verified source commit
+`e68cdf1c4c6b75c16f92b86a3363a1e24690d22c`, the eight frozen roots,
+the 18-quantity reference compatibility report, data and geometry identities,
+XLA and memory growth. The launch receipt and allocation are under
+`N5/generic-adaptation/priced-comparison-01/randomized-feasibility-01/`.
+The numerical cap is 137,000 inclusive seconds from 137,361.195109 settled
+seconds; the existing 3,600-second local reserve is already held and is not
+charged twice. At that launch the worker was qualifying and resource censoring
+was possible; no ranking, default, broad validity or release conclusion was
+permitted. The recoverable phase checkpoint is
+`bayesfilter-modern-hmc-randomized-active-checkpoint-2026-10-15.md`.
+
+**Historical status, 14 October:** The fixed-HMC comparator stopped at its total
+allocation at 11:21 China time. All eight primary candidates were independently
+verified and retained; one passed posterior/reference checks, one has seven
+saved sampling chunks, and six have not started posterior assessment. The
+[fixed-HMC terminal audit](bayesfilter-modern-hmc-fixed-terminal-2026-10-14.md)
+checks source/input and saved-chunk integrity, records the reporting repair,
+and settles the allocation. The owner has now granted 48 additional hours.
+The [posterior continuation plan](bayesfilter-modern-hmc-posterior-resume-2026-10-14.md)
+reserves one hour for checks/closeout and up to 47 hours for the complete
+unfinished cohort. A separate resume driver reuses the immutable numerical
+source, all eight verified identities, completed outcomes, saved chunks and
+original seeds. Forty-two continuation/consumer tests and six supplemental
+checks pass; two additional fixed-trajectory tests and the actual-source GPU
+preflight also passed. The detached continuation launched on GPU 1 at 17:45
+China time on 14 October. Its inclusive 47-hour cap ends approximately 16:45 on
+16 October; the supervisor records heartbeats and committed work separately.
+The [active checkpoint](bayesfilter-modern-hmc-active-checkpoint-2026-10-13.md)
+records its service, output and budget receipts. Descriptive saved-price scenarios are
+25–42 hours before overhead or changed machine contention; completion within
+the allocation is not guaranteed. No tuning work is repeated.
+
+At the 14 October 23:37 China-time inspection, six members passed posterior
+and reference checks, one reached the sample cap with insufficient precision,
+and the eighth is sampling. The [interim result](bayesfilter-modern-hmc-continuation-progress-2026-10-14.md)
+records the failed second-moment screen and a passing source/checkpoint audit.
+The active cohort continues. Its failure is a posterior outcome, with tuning
+membership preserved; no reference threshold, estimator or count cap changes.
+The [closeout plan](bayesfilter-modern-hmc-cohort-closeout-2026-10-14.md)
+adds tested terminal settlement and prepares the complete randomized-HMC
+baseline next, subject to terminal audit and the actual released balance.
+
+The bounded full SGQF MAMS continuation finished;
 four of four verified candidates passed all declared posterior and finite-target
 reference screens. The [terminal note](bayesfilter-modern-hmc-priced-mams-terminal-2026-10-13.md)
 records the result and cost. N5 broader matched-model confirmation, broader
@@ -22,10 +1108,10 @@ CPU-worker seconds for a fresh optional MCSE safeguard evaluation and allocates
 unchanged SGQF design and immutable numerical source. Forty-eight focused
 settlement/report/launch tests pass. Other methods/models and independent
 replications remain unfunded in this allocation. The precision experiment
-cannot retroactively change the completed MAMS result or active comparator rules.
+cannot retroactively change the completed MAMS result or frozen comparator rules.
 
-The fixed-HMC service started at 13:18 China time and has begun recording
-native qualification receipts. The optional `lugsail_max_batch_means` policy
+The fixed-HMC service ran from 13 October at 13:18 until 14 October at 11:21
+China time, preserving 896 qualification calls. The optional `lugsail_max_batch_means` policy
 is implemented with both component estimates and activation diagnostics; 78
 focused CPU/XLA checks and nine GPU parity cases pass. Reassessment of all four saved MAMS members
 reproduces the original precision values and preserves their first passing
@@ -34,9 +1120,13 @@ calibration is complete, with all 768 records audited. The
 [terminal precision result](bayesfilter-mcse-safeguard-result-2026-10-13.md)
 records both favorable antithetic variance behavior and unresolved coverage.
 There is no supported paired coverage ranking or default promotion. Actual
-CPU-study cost is 2019.235247 seconds, releasing 1580.764753 seconds to hold
-until the next terminal refresh. The fixed-HMC ceiling and held local reserve
-remain unchanged. The book chapter and API guide document the optional policy.
+CPU-study cost is 2019.235247 seconds, releasing 1580.764753 seconds. Charging
+the fixed-HMC supervisor's 1.171799-second termination overhead leaves
+1579.592954 seconds unallocated; the full local-check reserve remains held.
+The terminal note records the accounting. This balance does not fund the
+seven remaining posterior assessments; the October 14 grant above funds their
+bounded continuation separately.
+The book chapter and API guide document the optional policy.
 
 **Earlier progress through 12 October:** D2f, D3, E3, D4a and the first D4b1
 full SGQF cohort are terminal. All 15 frozen SGQF proposals completed fresh
@@ -59,7 +1149,7 @@ unused reserves and left **133819.625 seconds (37.17 worker-hours)** unallocated
 see `preconfirmation-01/settlement-03.json` and the consumer plan. No worker
 from that deployment phase remains active. The October 13 continuation above
 has since assigned that balance to terminal pricing/MAMS charges, the held
-local-check and precision-study reserves, and the active fixed-HMC ceiling.
+local-check and precision-study reserves, and the now-settled fixed-HMC ceiling.
 It is not an additional unallocated balance and cannot fund another campaign.
 The other 45 D4a proposals, fairer classical
 search, independent paired-seed replications and broader nonlinear validation

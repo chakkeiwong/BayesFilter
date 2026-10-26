@@ -23,6 +23,8 @@ from .hmc_candidate_set_tuning import (
 
 
 NUMERICAL_SCHEMA = "bayesfilter.hmc_replicated_numerical_evidence.v2"
+TERMINATED_NUMERICAL_SCHEMA = "bayesfilter.hmc_replicated_numerical_evidence.v3"
+NUMERICAL_SCHEMAS = {NUMERICAL_SCHEMA, TERMINATED_NUMERICAL_SCHEMA}
 
 
 def validate_execution_protocol(search, execution):
@@ -252,8 +254,8 @@ def _prior(runtime, work):
         raise ValueError("missing or duplicate predecessor trial evidence")
     digest, previous = rows[0]
     prior_work = HMCWorkItem.from_payload(previous["work"])
-    if (_json_native_sha256(previous) != digest or previous.get("schema") != NUMERICAL_SCHEMA
-            or "execution_failure" in previous or prior_work.stage != work.stage
+    if (_json_native_sha256(previous) != digest or previous.get("schema") not in NUMERICAL_SCHEMAS
+            or "execution_failure" in previous or "hard_veto_stop" in previous or prior_work.stage != work.stage
             or prior_work.candidate_record_hash != work.candidate_record_hash
             or prior_work.trial_range[1] != work.trial_range[0]
             or prior_work.evidence_rung + 1 != work.evidence_rung):
@@ -354,13 +356,70 @@ def _failure_analysis(runtime, work, failure, chunks, *, failed_batch_size=1):
     return {**failure.analysis(), "trial_outcomes": outcomes}
 
 
+def _first_hard_veto(runtime, work, chunks, *, start_chunk=0):
+    """Inspect complete trials only, including discarded prefixes; never R-hat."""
+    import tensorflow as tf
+    from .hmc_candidate_set_execution import _tensor_from_payload, _trace_from_payload
+    per_trial = (trial_size(runtime)+runtime.config.chunk_max_results-1)//runtime.config.chunk_max_results
+    for offset in range(start_chunk, len(chunks)-per_trial+1, per_trial):
+        group = chunks[offset:offset+per_trial]
+        samples = [_tensor_from_payload(c["samples"]) for c in group]
+        traces = [_trace_from_payload(c["trace"]) for c in group]
+        sample = samples[0] if len(samples) == 1 else tf.concat(samples, 0)
+        trace = traces[0] if len(traces) == 1 else tf.nest.map_structure(lambda *x: tf.concat(x, 0), *traces)
+        health = runtime.analyze_trial(runtime.initial_active_state, sample, trace)
+        if health.get("hard_vetoes"):
+            return work.trial_range[0] + offset//per_trial
+    return None
+
+
+def _attempted_trial_end(work, chunks):
+    end = work.trial_range[0]
+    for chunk in chunks:
+        metadata = chunk.get("runtime", {})
+        size = metadata.get("trial_batch_size", 1)
+        row = metadata.get("trial_batch_row", 0)
+        end = max(end, chunk["trial_ordinal"] - row + size)
+    return end
+
+
+def _stop_inventory(runtime, work, trials, first_ordinal, chunks):
+    completed = len(trials)
+    # Serialization may persist only a prefix of the final native batch. The
+    # missing returns were still attempted/charged; do not call them unstarted
+    # or launch another batch after a persisted irreversible veto.
+    attempted = _attempted_trial_end(work, chunks)
+    failed_chunk = next(c for c in chunks if c["trial_ordinal"] == first_ordinal)
+    metadata = failed_chunk.get("runtime", {})
+    expected = min(work.trial_range[1], first_ordinal - metadata.get("trial_batch_row", 0)
+                   + metadata.get("trial_batch_size", 1))
+    if not first_ordinal < completed <= expected or attempted != expected:
+        raise ValueError("hard-veto stop must occur at its first completed native trial batch")
+    return {"reason": "completed_trial_hard_veto", "first_invalid_trial_ordinal": first_ordinal,
+            "planned_trials": work.trial_range[1], "completed_trials": completed,
+            "invalid_trials": sum(bool(t["health"].get("hard_vetoes")) for t in trials),
+            "attempted_trials": attempted, "attempted_without_returned_trial": attempted-completed,
+            "unstarted_trials": work.trial_range[1]-attempted,
+            "executed_trial_range": (work.trial_range[0], completed),
+            "qualification_complete": False}
+
+
+def _executed_cost(runtime, work, candidate, chunks):
+    returned = sum(c["count"] for c in chunks)*runtime.config.acceptance_policy.chain_count
+    attempted = (_attempted_trial_end(work, chunks)-work.trial_range[0])*trial_size(runtime)*runtime.config.acceptance_policy.chain_count
+    return {"transitions": attempted, "returned_transitions": returned,
+            "gradient_work": attempted*candidate_gradient_work(candidate),
+            "cost_basis": "attempted trial extent including discarded prefixes and unsaved native batch rows; retries separately charged",
+            "charge_mode": "chunk", "leapfrog_steps": candidate["leapfrog_steps"] if isinstance(candidate, Mapping) else candidate.leapfrog_steps}
+
+
 def evidence_analysis(runtime, numerical):
     from .hmc_candidate_set_execution import _tensor_payload
     work = HMCWorkItem.from_payload(numerical["work"])
     _validate_work(runtime, work)
     if tuple(numerical["evidence_rungs"]) != runtime._replicated_evidence_rungs:
         raise ValueError("replicated evidence look schedule mismatch")
-    if (numerical.get("schema") != NUMERICAL_SCHEMA or numerical["binding_hash"] != runtime.binding_hash
+    if (numerical.get("schema") not in NUMERICAL_SCHEMAS or numerical["binding_hash"] != runtime.binding_hash
             or tuple(numerical["seed"]) != work_seed(runtime, work)
             or numerical["initial_state"] != _tensor_payload(runtime.initial_active_state)):
         raise ValueError("replicated evidence identity mismatch")
@@ -369,7 +428,10 @@ def evidence_analysis(runtime, numerical):
         raise ValueError("replicated evidence predecessor hash mismatch")
     chunks = numerical["chunks"]
     failed = "execution_failure" in numerical
-    decoded = validate_chunks(runtime, work, chunks, complete=not failed, return_decoded=not failed)
+    stopped = "hard_veto_stop" in numerical
+    if stopped != (numerical.get("schema") == TERMINATED_NUMERICAL_SCHEMA) or (stopped and failed):
+        raise ValueError("hard-veto termination schema mismatch")
+    decoded = validate_chunks(runtime, work, chunks, complete=not (failed or stopped), return_decoded=not failed)
     if failed:
         failure = HMCCandidateExecutionFailure.from_payload(numerical["execution_failure"])
         per_trial = (trial_size(runtime)+runtime.config.chunk_max_results-1)//runtime.config.chunk_max_results
@@ -385,7 +447,7 @@ def evidence_analysis(runtime, numerical):
             raise ValueError("failed native batch extent mismatch")
         return _failure_analysis(runtime, work, failure, chunks, failed_batch_size=batch)
     trials = prior + _assemble_trials(runtime, work, chunks, decoded_chunks=decoded)
-    if (len(trials) != work.trial_range[1] or _json_native_sha256(trials) != _json_native_sha256(numerical["trials"])
+    if ((not stopped and len(trials) != work.trial_range[1]) or _json_native_sha256(trials) != _json_native_sha256(numerical["trials"])
             or _sha256(numerical["samples"]) != _sha256(trials[-1]["samples"])
             or _sha256(numerical["trace"]) != _sha256(trials[-1]["trace"])):
         raise ValueError("replicated trial inventory or retained endpoint mismatch")
@@ -393,8 +455,19 @@ def evidence_analysis(runtime, numerical):
     if schema not in {"bayesfilter.hmc_replicated_acceptance_evidence.v1",
                       "bayesfilter.hmc_replicated_acceptance_evidence.v2"}:
         raise ValueError("unsupported replicated acceptance evidence summary")
-    return _analyze_trials(runtime, work, trials, numerical["evidence_rungs"],
-                           compact_health=schema.endswith(".v2"))
+    analysis = _analyze_trials(runtime, work, trials, numerical["evidence_rungs"],
+                               compact_health=schema.endswith(".v2"))
+    if stopped:
+        failures = [t["ordinal"] for t in trials if t["health"].get("hard_vetoes")]
+        if not failures:
+            raise ValueError("early stop requires an actual hard-veto trial")
+        stop = _stop_inventory(runtime, work, trials, min(failures), chunks)
+        if _sha256(stop) != _sha256(numerical["hard_veto_stop"]):
+            raise ValueError("hard-veto stop inventory mismatch")
+        if _sha256(numerical["cost"]) != _sha256(_executed_cost(runtime, work, numerical["candidate"], chunks)):
+            raise ValueError("hard-veto executed cost mismatch")
+        analysis["trial_outcomes"] = stop
+    return analysis
 
 
 def observe(runtime, work, candidate):
@@ -422,7 +495,11 @@ def observe(runtime, work, candidate):
     root = work_seed(runtime, work)
     failure = None
     failed_batch_size = 1
-    while len(chunks) < maximum:
+    # Recover a veto persisted before the terminal evidence receipt without
+    # spending the rest of its allocation or replaying a completed trial.
+    first_veto = _first_hard_veto(runtime, work, chunks)
+    inspected = len(chunks)//per_trial*per_trial
+    while len(chunks) < maximum and first_veto is None:
         ordinal, within = work.trial_range[0]+len(chunks)//per_trial, len(chunks)%per_trial
         state = runtime.initial_active_state if within == 0 else _tensor_from_payload(chunks[-1]["samples"])[-1]
         take = min(size, total-within*size)
@@ -466,6 +543,8 @@ def observe(runtime, work, candidate):
                     "samples_device": result.samples.device, "runtime": result.metadata}
                 chunk["elapsed_seconds"] = native_seconds/batch + time.monotonic()-persist_started
                 chunks.append(_json_copy(chunk))
+        first_veto = _first_hard_veto(runtime, work, chunks, start_chunk=inspected)
+        inspected = len(chunks)//per_trial*per_trial
     numerical = {"schema": NUMERICAL_SCHEMA, "binding_hash": runtime.binding_hash,
         "candidate": candidate.payload(), "work": work.payload(), "seed": root,
         "initial_state": _tensor_payload(runtime.initial_active_state), "chunks": chunks,
@@ -477,15 +556,20 @@ def observe(runtime, work, candidate):
             numerical["failed_batch_size"] = failed_batch_size
         rhat = {"status": "unavailable_after_execution_failure", "role": "reporting_only"}
     else:
-        decoded = validate_chunks(runtime, work, chunks, complete=True, return_decoded=True)
+        decoded = validate_chunks(runtime, work, chunks, complete=first_veto is None, return_decoded=True)
         trials = prior + _assemble_trials(runtime, work, chunks, decoded_chunks=decoded)
         analysis = _analyze_trials(runtime, work, trials, rungs)
+        if first_veto is not None:
+            stop = _stop_inventory(runtime, work, trials, first_veto, chunks)
+            numerical.update(schema=TERMINATED_NUMERICAL_SCHEMA, hard_veto_stop=stop)
+            analysis["trial_outcomes"] = stop
         numerical.update(trials=trials, samples=trials[-1]["samples"], trace=trials[-1]["trace"])
         rhat = _report_rhat(_tensor_from_payload(trials[-1]["samples"])[runtime.config.num_warmup_steps:])
     numerical["rhat_reporting_only"] = rhat
     numerical["analysis"] = analysis
     numerical["elapsed_seconds"] = sum(c["elapsed_seconds"] for c in chunks)
-    numerical["cost"] = work_cost(runtime, work, candidate, remaining=False)
+    numerical["cost"] = (_executed_cost(runtime, work, candidate, chunks) if first_veto is not None
+                         else work_cost(runtime, work, candidate, remaining=False))
     numerical["samples_device"] = chunks[-1]["samples_device"] if chunks else "unavailable"
     digest = _json_native_sha256(numerical)
     runtime._evidence[digest] = _json_copy(numerical)

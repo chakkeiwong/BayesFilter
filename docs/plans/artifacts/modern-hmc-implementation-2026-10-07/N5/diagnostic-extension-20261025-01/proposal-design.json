@@ -1,0 +1,105 @@
+{
+  "schema": "bayesfilter.broad_prospective_design.v1",
+  "policy": {
+    "schema": "bayesfilter.hmc_replicated_acceptance_policy.v8",
+    "trial_num_results": 64,
+    "discarded_prefix": 0,
+    "base_repetitions": 16,
+    "max_repetitions": 128,
+    "max_candidates": 24,
+    "search_family_alpha": 0.05,
+    "verification_family_alpha": 0.05,
+    "diagnostic_family_alpha": 0.05,
+    "temporal_tolerance": 0.1,
+    "preferred_region": [
+      0.65,
+      0.75
+    ],
+    "qualification_region": [
+      0.55,
+      1.0
+    ],
+    "start_weights": [
+      0.25,
+      0.25,
+      0.25,
+      0.25
+    ],
+    "qualification_mode": "lower_bound",
+    "method": "bounded_betting_mixture_v1",
+    "bet_fractions": [
+      1.0,
+      0.5,
+      0.25,
+      0.125
+    ],
+    "min_movement_rate": 0.05,
+    "max_repeated_state_fraction": 0.95,
+    "min_normalized_return_displacement": 0.0001,
+    "max_abs_log_accept_energy_proxy": 1000.0,
+    "evidence_unit": "independent_fixed_horizon_trial",
+    "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+    "temporal_diagnostic_role": "preparation_investigation_not_admission",
+    "rhat_role": "reporting_only",
+    "independent_unit": "complete_start_bank_trial",
+    "default_promotion_status": "experimental_pending_validation"
+  },
+  "evidence_rungs": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "discarded_proposals": {
+    "epsilon_by_l": [
+      [
+        3,
+        0.4
+      ],
+      [
+        5,
+        0.4
+      ],
+      [
+        9,
+        0.4
+      ],
+      [
+        13,
+        0.4
+      ],
+      [
+        18,
+        0.4
+      ],
+      [
+        25,
+        0.4
+      ]
+    ],
+    "transitions": 8,
+    "attempts_per_l": 4,
+    "factor": 2.0,
+    "preferred_region": [
+      0.65,
+      0.75
+    ],
+    "seed": [
+      20261025,
+      401
+    ],
+    "max_wall_seconds": 900.0
+  },
+  "numeric_provenance": {
+    "grid_and_initial_epsilon": "Inherited starting hypotheses; six independent L searches, no universal default.",
+    "proposal_transitions_8_attempts_4_factor_2": "Convenience bounded diagnostic search; all healthy proposals retained, no statistical qualification.",
+    "pilot_wall_120": "Superseded before proposal launch: 900-second ceiling, derived conservatively from 24 attempts at maximum observed full 64-transition trial time (~49s), scaled to eight transitions plus 180s compilation/diagnostic reserve, rounded upward. Actual time charged.",
+    "evidence_16_32_64_128": "Prospective precision ladder informed by previous constant-score sensitivity; power not established.",
+    "candidate_cap_24": "Derived upper bound: six L values times four attempts; qualification family covers all nominees.",
+    "region_and_risks": "Existing policy unchanged; preferred .65-.75 guides discarded proposals only.",
+    "seed": "Predeclared reproducibility key, not selected for favorable outcomes."
+  },
+  "execution_status": "discarded_proposals_only_authorized",
+  "qualification_authority": false,
+  "next_action": "Measure current-source full-trial cost and assess power before funding the complete declared qualification scope."
+}
