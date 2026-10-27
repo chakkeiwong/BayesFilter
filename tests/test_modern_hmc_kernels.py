@@ -184,3 +184,67 @@ def test_bad_proposal_rejection_preserves_state_but_not_healthy_evidence(family)
     np.testing.assert_array_equal(out.samples[0],q)
     assert not np.any(out.trace["target_score_finite"])
     assert not np.any(out.trace["is_accepted"])
+
+
+@pytest.mark.parametrize('family', ['hmc', 'mams'])
+@pytest.mark.parametrize('jit', [False, True])
+def test_first_failure_distinguishes_initial_and_proposal_and_keeps_custom_status(family, jit):
+    class BadExcursion(GaussianTarget):
+        def target_status_telemetry(self, q):
+            bad = tf.reduce_any(q != 0., axis=-1)
+            return {'status_code': tf.cast(bad, tf.int32),
+                    'valid_pre_regularized_score': ~bad,
+                    'floor_count_value': tf.zeros([4], tf.int32),
+                    'chart_residual': tf.reduce_sum(q*q, axis=-1)}
+    r = runner(family=family, trajectory='fixed', count=1, jit=jit,
+               target=BadExcursion(), status='per_chain_step')
+    q = tf.zeros([4, 2], tf.float64)
+    out = r.run(current_state=q, seed=(918,122), step_size=.2, num_leapfrog_steps=3)
+    np.testing.assert_array_equal(out.trace['first_failure_substep'], [[1]*4])
+    np.testing.assert_array_equal(out.trace['first_failure_stage'], [[4]*4])
+    assert np.all(out.trace['first_failure_target_chart_residual'] > 0.)
+    np.testing.assert_array_equal(out.samples[0], q)
+    initial = r.run(current_state=tf.ones_like(q), seed=(918,122), step_size=.2, num_leapfrog_steps=3)
+    np.testing.assert_array_equal(initial.trace['first_failure_substep'], [[0]*4])
+    np.testing.assert_array_equal(initial.trace['first_failure_stage'], [[1]*4])
+
+
+@pytest.mark.parametrize('family', ['hmc', 'mams'])
+def test_random_duration_rows_keep_own_terminal_value_score_and_status(family):
+    # Deliberately batch-coupled diagnostic callback exposes whether evaluations
+    # after a row finishes overwrite its saved terminal target state.
+    class BatchDiagnostic(GaussianTarget):
+        def log_prob_and_grad(self, q):
+            value, score = super().log_prob_and_grad(q)
+            return value + tf.reduce_sum(q), score
+        def target_status_telemetry(self, q):
+            return {'status_code': tf.zeros([4], tf.int32),
+                    'valid_pre_regularized_score': tf.ones([4], tf.bool),
+                    'floor_count_value': tf.zeros([4], tf.int32),
+                    'batch_sum': tf.fill([4], tf.reduce_sum(q))}
+    q = tf.zeros([4,2], tf.float64)
+    r = runner(family=family, count=1, target=BatchDiagnostic(), status='per_chain_step')
+    _, trace = r.one_step(q, tf.constant([83, 122]), tf.constant(.2, tf.float64), tf.constant(9))
+    steps = trace['trajectory_steps'].numpy()
+    assert len(set(steps)) > 1
+    position, momentum = q, trace['initial_momentum']
+    _, score = r.adapter.log_prob_and_grad(position)
+    expected = np.zeros(4); sums = np.zeros(4)
+    for i in range(max(steps)):
+        if family == 'hmc':
+            middle = momentum + .1*score
+        else:
+            middle, _ = sphere_force_substep(momentum, score, tf.constant(.1, tf.float64))
+        position = tf.where((i < steps)[:,None], position + .2*middle, position)
+        value, next_score = r.adapter.log_prob_and_grad(position)
+        if family == 'hmc':
+            end = middle + .1*next_score
+        else:
+            end, _ = sphere_force_substep(middle, next_score, tf.constant(.1, tf.float64))
+        momentum = tf.where((i < steps)[:,None], end, momentum)
+        score = tf.where((i < steps)[:,None], next_score, score)
+        for row in range(4):
+            if i+1 == steps[row]:
+                expected[row] = float(value[row]); sums[row] = float(tf.reduce_sum(position))
+    np.testing.assert_allclose(trace['proposed_target_log_prob'], expected, atol=1e-14)
+    np.testing.assert_allclose(trace['proposed_target_status_telemetry']['batch_sum'], sums, atol=1e-14)

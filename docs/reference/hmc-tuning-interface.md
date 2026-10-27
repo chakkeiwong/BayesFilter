@@ -413,9 +413,25 @@ Legacy payloads retain their existing schemas and meaning. Statistical
 calibration and complete-fit delivery for the new profile remain release work;
 the lower-bound rule alone is not evidence of efficient sampling.
 
+Modern fixed/randomized HMC and fully refreshed MAMS preserve both
+`raw_log_accept_ratio` and the effective `log_accept_ratio`. The latter is minus
+infinity only for an explicitly classified numerical first failure with a valid
+current target and a rejected proposal. First-failure records remain in the
+trace. A finite target-status failure remains a veto even if later arithmetic
+overflows; an invalid initial value or score cannot become an ordinary rejection.
+The health validator checks selected position, value and score against the
+actual pre-choice and proposed quantities, including the first transition.
+These kernels re-evaluate the current target each transition rather than carrying
+TFP's persistent value/score cache, so adjacent recomputations are not subject to
+bitwise cache-continuity checks. Missing modern selection fields fail closed.
+See the [October 27 repair](../plans/bayesfilter-modern-hmc-rejection-consistency-repair-2026-10-27.md)
+for validation status; historical artifacts keep their original source identity.
+
 A multiplicative epsilon repair can jump from high acceptance directly to
-nonfinite trajectories. The nonfinite result supplies no valid acceptance
-direction, so it cannot form the opposing-evidence interval used by refinement.
+nonfinite trajectories. An unclassified nonfinite result supplies no valid
+acceptance direction, so it cannot form the opposing-evidence interval used by
+refinement. This excludes the verified numerical rejections described above,
+which contribute acceptance probability zero.
 `HMCControllerConfig(explore_failed_intervals=True, refinement_rounds=2)`
 optionally explores unvisited geometric interiors between a valid directional
 parent and its numerically rejected same-L child. Two rounds are an explicit

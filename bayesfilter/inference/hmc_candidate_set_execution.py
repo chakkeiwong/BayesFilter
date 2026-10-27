@@ -619,11 +619,32 @@ class HMCCandidateExecutionBinding:
             if not bool(tf.reduce_all((steps >= 1) & (calls >= steps + 1) & (status_calls == expected_status))):
                 raise ValueError("modern transition call accounting disagrees with realized steps")
         failures = []
+        if self.config.transition_profile is not None:
+            scalar_types = {
+                "raw_log_accept_ratio": tf.float64, "numerical_proposal_rejected": tf.bool,
+                "previous_target_valid": tf.bool, "previous_target_log_prob": tf.float64,
+                "accepted_target_score_finite": tf.bool,
+                "first_failure_stage": tf.int32, "first_failure_substep": tf.int32,
+                "first_failure_position_finite": tf.bool,
+                "first_failure_value_finite": tf.bool, "first_failure_score_finite": tf.bool,
+            }
+            for name, dtype in scalar_types.items():
+                if name not in trace or trace[name].shape != samples.shape[:2] or trace[name].dtype != dtype:
+                    raise ValueError("missing or malformed modern selection trace: " + name)
+            for name in ("previous_target_score", "proposed_target_score", "accepted_target_score"):
+                if name not in trace or trace[name].shape != samples.shape or trace[name].dtype != tf.float64:
+                    raise ValueError("missing or malformed modern selection trace: " + name)
         for key in ("is_accepted", "log_accept_ratio", "target_log_prob", "proposed_target_log_prob", "target_score_finite"):
             if key not in trace or tuple(trace[key].shape) != shape:
                 raise ValueError(f"missing or misaligned health trace: {key}")
         if trace["is_accepted"].dtype != tf.bool or trace["target_score_finite"].dtype != tf.bool:
             raise ValueError("health and acceptance bits must be boolean")
+        accepted_score = trace.get("accepted_target_score_finite", trace["target_score_finite"])
+        if accepted_score.shape != samples.shape[:2] or accepted_score.dtype != tf.bool:
+            raise ValueError("invalid accepted score health trace")
+        rejected = ((~trace["is_accepted"])
+                    & (trace["log_accept_ratio"] == -float("inf"))
+                    & accepted_score)
         if "proposed_state" not in trace or trace["proposed_state"].shape != samples.shape:
             raise ValueError("missing or misaligned proposed states")
         for key in ("initial_momentum", "final_momentum"):
@@ -639,7 +660,7 @@ class HMCCandidateExecutionBinding:
             initial, samples, trace["proposed_state"], trace["initial_momentum"],
             trace["final_momentum"], trace["log_accept_ratio"], trace["target_log_prob"],
             trace["proposed_target_log_prob"], correction, trace["is_accepted"],
-            trace["target_score_finite"]).numpy().tolist()
+            trace["target_score_finite"], accepted_score).numpy().tolist()
         names = ("state", "initial_state", "proposal", "proposal_displacement",
                  "log_accept_ratio", "target_log_prob", "proposed_target_log_prob",
                  "initial_momentum", "final_momentum", "log_acceptance_correction", "target_score")
@@ -647,6 +668,24 @@ class HMCCandidateExecutionBinding:
         # This invariant also checks the first transition and rejected proposals.
         if not valid[-1]:
             failures.append("metropolis_state_mismatch")
+        if self.config.transition_profile is not None:
+            from .hmc_candidate_health import modern_selection_program
+            selection = modern_selection_program(self.config.use_xla)(
+                trace["is_accepted"], trace["log_accept_ratio"], trace["raw_log_accept_ratio"],
+                trace["numerical_proposal_rejected"], trace["previous_target_valid"],
+                trace["previous_target_log_prob"], trace["proposed_target_log_prob"],
+                trace["target_log_prob"], trace["previous_target_score"],
+                trace["proposed_target_score"], trace["accepted_target_score"],
+                trace["accepted_target_score_finite"], trace["target_score_finite"],
+                trace["first_failure_stage"], trace["first_failure_substep"],
+                tf.cast(trace["trajectory_steps"], tf.int32),
+                trace["first_failure_position_finite"], trace["first_failure_value_finite"],
+                trace["first_failure_score_finite"]).numpy().tolist()
+            names = ("invalid_current_target", "invalid_first_failure_classification",
+                "effective_acceptance_ratio_mismatch", "unclassified_failed_proposal",
+                "metropolis_value_mismatch", "metropolis_score_mismatch",
+                "nonfinite_current_score", "proposal_health_classification_mismatch")
+            failures.extend(name for name, okay in zip(names, selection) if not okay)
         if "divergence" in trace:
             if tuple(trace["divergence"].shape) != shape or trace["divergence"].dtype != tf.bool:
                 raise ValueError("invalid native divergence trace")
@@ -654,7 +693,23 @@ class HMCCandidateExecutionBinding:
                 failures.append("native_divergence_positive")
         if self.config.target_status_trace_policy == "per_chain_step":
             for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
-                if target_status_telemetry_has_failure(trace.get(key, {}), expected_shape=shape):
+                telemetry = trace.get(key, {})
+                status_shape = shape
+                # Validate the entire schema first. Rejection cannot hide
+                # missing fields, invalid dtypes or malformed telemetry.
+                status_failed = target_status_telemetry_has_failure(telemetry, expected_shape=shape)
+                if key == "proposed_target_status_telemetry" and status_failed:
+                    numerical_failure = (~tf.reduce_all(tf.math.is_finite(trace["proposed_state"]), -1)
+                        | ~tf.math.is_finite(trace["proposed_target_log_prob"])
+                        | ~trace["target_score_finite"]
+                        | ~tf.reduce_all(tf.math.is_finite(trace["final_momentum"]), -1)
+                        | ~tf.math.is_finite(correction))
+                    status_rejection = rejected & numerical_failure
+                    telemetry = {name: tf.boolean_mask(value, ~status_rejection)
+                                 for name, value in telemetry.items()}
+                    status_shape = (int(tf.reduce_sum(tf.cast(~status_rejection, tf.int32))),)
+                    status_failed = target_status_telemetry_has_failure(telemetry, expected_shape=status_shape)
+                if status_failed:
                     failures.append(key + "_failed")
         return tuple(failures)
 

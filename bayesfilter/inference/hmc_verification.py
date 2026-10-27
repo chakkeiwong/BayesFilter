@@ -1337,7 +1337,11 @@ def _evaluate_hmc_health_context(
     candidate_invalidity = list(local_from_provenance)
     if not divergence_provenance_valid:
         candidate_invalidity.append("native_divergence_provenance_inconsistent")
-    if not finite[1]:
+    # -inf on a recorded rejection is alpha=0. NaN, +inf, or an accepted
+    # -inf are invalid; the execution binding checks state/cache integrity.
+    valid_ratio = (tf.math.is_finite(log_accept)
+                   | ((log_accept == -float("inf")) & ~accepted))
+    if not bool(tf.reduce_all(valid_ratio)):
         candidate_invalidity.append("nonfinite_log_accept_ratio")
     if target_value is not None and not finite[2]:
         candidate_invalidity.append("nonfinite_target_log_prob")
@@ -2176,7 +2180,7 @@ def _tuning_telemetry_tensors(sample_tensor: Any, log_accept: Any, accepted: Any
     finite_log_accept = tf.math.is_finite(log_accept)
     acceptance_probability = tf.exp(tf.minimum(log_accept, 0.0))
     acceptance_probability = tf.where(
-        finite_log_accept,
+        finite_log_accept | ((log_accept == -float("inf")) & ~accepted),
         acceptance_probability,
         tf.fill(tf.shape(acceptance_probability), tf.constant(float("nan"), tf.float64)),
     )

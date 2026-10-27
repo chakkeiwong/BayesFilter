@@ -104,11 +104,15 @@ class ReusableModernHMCRunner:
             raise ValueError("target must return float64 rowwise values and full scores")
         if self.status_policy == "none":
             return value, score, {}, _finite_rows(q, value, score)
-        from .hmc_verification import TARGET_STATUS_TELEMETRY_CORE_FIELDS, TARGET_STATUS_TELEMETRY_FIELDS
+        from .hmc_verification import TARGET_STATUS_TELEMETRY_CORE_FIELDS
         status = self.adapter.target_status_telemetry(q)
         if any(k not in status for k in TARGET_STATUS_TELEMETRY_CORE_FIELDS):
             raise ValueError("incomplete target status")
-        status = {k: tf.convert_to_tensor(status[k]) for k in TARGET_STATUS_TELEMETRY_FIELDS if k in status}
+        # Preserve numeric rowwise diagnostics (e.g. chart/filter residuals).
+        # Only the declared health fields below affect admission.
+        status = {k: tf.convert_to_tensor(v) for k, v in status.items()}
+        if any(not (v.dtype.is_floating or v.dtype.is_integer or v.dtype == tf.bool) for v in status.values()):
+            raise ValueError("target status must contain numeric rowwise tensors")
         if any(v.shape != value.shape for v in status.values()):
             raise ValueError("target status must preserve chain rows")
         if (not status["status_code"].dtype.is_integer or not status["floor_count_value"].dtype.is_integer
@@ -134,10 +138,35 @@ class ReusableModernHMCRunner:
             steps = tf.fill(shape[:-1], max_steps)
         value, score, status, good = self._evaluate(q)
         initial_value, initial_aux, initial_status = value, aux, status
+        initial_score, initial_good = score, good
         work = tf.zeros(shape[:-1], q.dtype)
         last = tf.reduce_max(steps)
+        # Stage codes: 0 none, 1 initial target, 2 first kick, 3 drift,
+        # 4 proposed target, 5 second kick, 6 final energy correction.
+        # Substeps are one-based; initial failures use 0, healthy rows -1.
+        failure = {
+            "substep": tf.where(good, -tf.ones_like(steps), tf.zeros_like(steps)),
+            "stage": tf.where(good, tf.zeros_like(steps), tf.ones_like(steps)),
+            "position": tf.where(good[:, None], tf.zeros_like(q), q),
+            "position_finite": tf.reduce_all(tf.math.is_finite(q), axis=-1),
+            "value_finite": tf.math.is_finite(value),
+            "score_finite": tf.reduce_all(tf.math.is_finite(score), axis=-1),
+            "momentum_finite": tf.reduce_all(tf.math.is_finite(aux), axis=-1),
+            **{"target_" + k: tf.where(good, tf.zeros_like(v), v) for k, v in status.items()},
+        }
 
-        def body(i, position, momentum, value, score, status, good, work):
+        def record_failure(old, hit, substep, stage, position, value, score, momentum, status):
+            proposed = {"substep": tf.fill(shape[:-1], substep), "stage": stage,
+                "position": position,
+                "position_finite": tf.reduce_all(tf.math.is_finite(position), axis=-1),
+                "value_finite": tf.math.is_finite(value),
+                "score_finite": tf.reduce_all(tf.math.is_finite(score), axis=-1),
+                "momentum_finite": tf.reduce_all(tf.math.is_finite(momentum), axis=-1),
+                **{"target_" + k: v for k, v in status.items()}}
+            return {k: tf.where(hit[:, None] if v.shape.rank == 2 else hit, proposed[k], v)
+                    for k, v in old.items()}
+
+        def body(i, position, momentum, value, score, status, good, work, failure):
             active = i < steps
             if self.profile.family == "hmc":
                 middle = momentum + .5 * epsilon * score
@@ -151,26 +180,67 @@ class ReusableModernHMCRunner:
                 second_work = tf.zeros_like(work)
             else:
                 end, second_work = sphere_force_substep(middle, next_score, .5 * epsilon)
-            stage_finite = (tf.reduce_all(tf.math.is_finite(middle) & tf.math.is_finite(end), axis=-1)
-                            & tf.math.is_finite(first_work) & tf.math.is_finite(second_work))
-            good &= (~active) | (next_good & stage_finite)
+            first_ok = (tf.reduce_all(tf.math.is_finite(middle), axis=-1)
+                        & tf.math.is_finite(first_work))
+            drift_ok = tf.reduce_all(tf.math.is_finite(next_q), axis=-1)
+            second_ok = (tf.reduce_all(tf.math.is_finite(end), axis=-1)
+                         & tf.math.is_finite(second_work))
+            step_good = first_ok & drift_ok & next_good & second_ok
+            stage = tf.where(~first_ok, 2, tf.where(~drift_ok, 3,
+                             tf.where(~next_good, 4, tf.where(~second_ok, 5, 0))))
+            hit = active & (failure["stage"] == 0) & ~step_good
+            failure = record_failure(failure, hit, i + 1, stage,
+                tf.where(first_ok[:, None], next_q, position),
+                tf.where(first_ok, next_value, value),
+                tf.where(first_ok[:, None], next_score, score),
+                tf.where((stage == 5)[:, None], end, middle),
+                {k: tf.where(first_ok, next_status[k], status[k]) for k in status})
+            good &= (~active) | step_good
+            # Batched evaluations still occur for inactive rows (and are
+            # charged), but must never overwrite a completed trajectory.
             return (i + 1, next_q, tf.where(active[:, None], end, momentum),
-                    next_value, next_score, next_status, good,
-                    work + tf.where(active, first_work + second_work, tf.zeros_like(work)))
+                    tf.where(active, next_value, value),
+                    tf.where(active[:, None], next_score, score),
+                    {k: tf.where(active, next_status[k], status[k]) for k in status}, good,
+                    work + tf.where(active, first_work + second_work, tf.zeros_like(work)), failure)
 
-        _, proposal, momentum, proposed_value, score, proposed_status, good, work = tf.while_loop(
+        _, proposal, momentum, proposed_value, score, proposed_status, good, work, failure = tf.while_loop(
             lambda i, *_: i < last, body,
-            (tf.constant(0), q, aux, value, score, status, good, work), parallel_iterations=1)
+            (tf.constant(0), q, aux, value, score, status, good, work, failure), parallel_iterations=1)
         if self.profile.family == "hmc":
             correction = .5 * tf.reduce_sum(tf.square(initial_aux) - tf.square(momentum), axis=-1)
         else:
             correction = -work
         log_ratio = proposed_value - initial_value + correction
-        good &= tf.math.is_finite(log_ratio)
+        ratio_finite = tf.math.is_finite(log_ratio)
+        failure = record_failure(failure, (failure["stage"] == 0) & ~ratio_finite,
+            last + 1, tf.fill(shape[:-1], 6), proposal, proposed_value, score, momentum, proposed_status)
+        # Energy correction happens after each row's own terminal step.
+        failure["substep"] = tf.where(failure["stage"] == 6, steps + 1, failure["substep"])
+        good &= ratio_finite
         log_uniform = tf.math.log(tf.random.stateless_uniform(shape[:-1], keys[2], dtype=q.dtype, alg="philox"))
         accepted = good & (log_uniform < tf.minimum(tf.zeros_like(log_ratio), log_ratio))
         result = tf.where(accepted[:, None], proposal, q)
-        trace = {"is_accepted": accepted, "log_accept_ratio": log_ratio,
+        # Report the rejection already made above without losing raw failure
+        # evidence. A finite status failure stays a veto even if later steps
+        # overflow: classify the first failure, never just the final NaN.
+        numeric_failure = ((failure["stage"] == 2) | (failure["stage"] == 3)
+            | (failure["stage"] == 5) | (failure["stage"] == 6)
+            | ((failure["stage"] == 4) & (~failure["position_finite"]
+                | ~failure["value_finite"] | ~failure["score_finite"])))
+        numerical_rejection = initial_good & numeric_failure & ~accepted
+        selected_score = tf.where(accepted[:, None], score, initial_score)
+        trace = {"is_accepted": accepted,
+                 "log_accept_ratio": tf.where(numerical_rejection,
+                     tf.constant(-float("inf"), q.dtype), log_ratio),
+                 "raw_log_accept_ratio": log_ratio,
+                 "numerical_proposal_rejected": numerical_rejection,
+                 "previous_target_valid": initial_good,
+                 "previous_target_log_prob": initial_value,
+                 "previous_target_score": initial_score,
+                 "proposed_target_score": score,
+                 "accepted_target_score": selected_score,
+                 "accepted_target_score_finite": tf.reduce_all(tf.math.is_finite(selected_score), axis=-1),
                  "target_log_prob": tf.where(accepted, proposed_value, initial_value),
                  "proposed_target_log_prob": proposed_value, "proposed_state": proposal,
                  "initial_momentum": initial_aux, "final_momentum": momentum,
@@ -178,6 +248,7 @@ class ReusableModernHMCRunner:
                  "trajectory_steps": steps, "integration_work": work,
                  "value_score_calls_per_chain": tf.fill(shape[:-1], last + 1),
                  "target_status_calls_per_chain": tf.fill(shape[:-1], last + 1 if self.status_policy != "none" else 0)}
+        trace.update({"first_failure_" + k: v for k, v in failure.items()})
         if self.status_policy != "none":
             trace["target_status_telemetry"] = {k: tf.where(accepted, proposed_status[k], initial_status[k]) for k in initial_status}
             trace["proposed_target_status_telemetry"] = proposed_status

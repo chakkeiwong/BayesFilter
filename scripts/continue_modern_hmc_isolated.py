@@ -45,20 +45,30 @@ def stage_budget(remaining, requested, reserve=0.):
     return min(requested, remaining-reserve)
 
 
-def prepare(output):
+def prepare(output, *, plan=PLAN, qualification_seed=(20261026,6101),
+            pricing_seed=(20261026,5100), reload_seed=(20261026,2001)):
+    plan_path = (ROOT/plan).resolve()
+    if not plan_path.is_relative_to(ROOT) or not plan_path.is_file():
+        raise ValueError('plan must be an existing repository file')
+    for seed in (qualification_seed, pricing_seed, reload_seed):
+        if len(seed) != 2 or any(type(v) is not int or not 0 <= v < 2**31-100 for v in seed):
+            raise ValueError('seed namespaces require two bounded nonnegative int32 components')
+    if len({tuple(seed) for seed in (qualification_seed, pricing_seed, reload_seed)}) != 3:
+        raise ValueError('qualification, pricing and reload seed namespaces must differ')
     output.mkdir(parents=True, exist_ok=False)
     manifest = capture(ROOT, '/home/ubuntu/python/MacroFinance', output/'source',
-        extra_paths=[INPUT, PLAN, 'AGENTS.md'])
+        extra_paths=[INPUT, str(plan_path.relative_to(ROOT)), 'AGENTS.md'])
     write(output/'isolated-source.json', manifest)
     cohort = read(PARENT/'frozen-cohort.json')
-    cohort.update(qualification_seed=[20261026,6101], reload_seed=[20261026,2001],
+    cohort.update(qualification_seed=list(qualification_seed), reload_seed=list(reload_seed),
+        pricing_seed=list(pricing_seed),
         prior_run=str(PARENT/'qualification-03'),
         source_semantics='fresh current rejection checks; old evidence not requalified',
         prior_veto_rule='Historical vetoes remain recorded; no posterior or default promotion')
     write(output/'frozen-cohort.json', cohort)
     write(output/'proposal-design.json', read(PARENT/'proposal-design.json'))
-    write(output/'preparation.json', dict(plan=PLAN, source=manifest['source_root'],
-        created_utc=datetime.now(timezone.utc).isoformat(), original_budget_seconds=51604.53847091534,
+    write(output/'preparation.json', dict(plan=str(plan_path.relative_to(ROOT)), source=manifest['source_root'],
+        created_utc=datetime.now(timezone.utc).isoformat(),
         historical_evidence_reused=False, completion_promised=False))
     return manifest
 
@@ -75,13 +85,15 @@ def price(campaign):
     source = read(campaign/'isolated-source.json')
     paths = validate_snapshot(source, expected_root=ROOT)
     cohort = read(campaign/'frozen-cohort.json')
+    plan = read(campaign/'preparation.json')['plan'] if (campaign/'preparation.json').exists() else PLAN
+    pricing_seed = cohort.get('pricing_seed', [20261026,5100])
     inputs = ROOT/INPUT
     adapter, memory = build(read(inputs), device='GPU', gpu_evidence=campaign/'preflight/evidence')
     import tensorflow as tf
     from bayesfilter.inference.hmc_candidate_set_tuning import HMCTuningCandidateRecord
     from bayesfilter.inference.hmc_candidate_set_execution import _tensor_payload, _trace_payload
     bound = frozen.frozen_binding(adapter, read(inputs), paths, read(campaign/'proposal-design.json'), cohort)
-    manifest = dict(plan=PLAN, source_sha256=source['source_sha256'], git_commit=source['git_commit'],
+    manifest = dict(plan=plan, source_sha256=source['source_sha256'], git_commit=source['git_commit'],
         environment={k:os.environ.get(k) for k in ('CUDA_VISIBLE_DEVICES','TF_FORCE_GPU_ALLOW_GROWTH','TF_NUM_INTRAOP_THREADS','TF_NUM_INTEROP_THREADS','OMP_NUM_THREADS')},
         physical_gpu=selected_nvidia_gpu(query_nvidia_smi_gpus()), memory_policy=memory,
         dtype='float64', use_xla=True, tf32_enabled=False, data_version='unchanged 48-period synthetic fixture',
@@ -93,7 +105,7 @@ def price(campaign):
             epsilon=epsilon, creation_ordinal=ordinal)
         # One cold call, then two complete warm prices at each declared pair.
         for repeat in range(3 if ordinal == 1 else 2):
-            seed = (20261026, 5100+ordinal*4+repeat)
+            seed = (pricing_seed[0], pricing_seed[1]+ordinal*4+repeat)
             write(out/'progress.json', dict(L=length,epsilon=epsilon,repeat=repeat,completed_calls=len(rows)))
             start = time.monotonic()
             result = bound._run(candidate,bound.initial_active_state,64,seed)
@@ -120,17 +132,18 @@ def price(campaign):
 
 def run(campaign, seconds):
     source = read(campaign/'isolated-source.json')
+    plan = read(campaign/'preparation.json')['plan'] if (campaign/'preparation.json').exists() else PLAN
     validate_snapshot(source, expected_root=ROOT)
     from scripts.run_modern_hmc_filter_health_gpu import Reassessment, stop_worker
     from bayesfilter.runtime.gpu_provenance import query_nvidia_smi_gpus
     env = dict(os.environ, PYTHONPATH=str(ROOT),
-        BAYESFILTER_DIAGNOSTIC_PLAN=PLAN,
+        BAYESFILTER_DIAGNOSTIC_PLAN=plan,
         BAYESFILTER_DIAGNOSTIC_CONSUMER_ROOT=source['consumer_root'],
         BAYESFILTER_DIAGNOSTIC_GPU_EVIDENCE=str(campaign/'preflight/evidence'),
         TF_FORCE_GPU_ALLOW_GROWTH='true', PYTHONDONTWRITEBYTECODE='1', TF_CPP_MIN_LOG_LEVEL='2',
         TF_NUM_INTRAOP_THREADS='2', TF_NUM_INTEROP_THREADS='2', OMP_NUM_THREADS='2')
     started = time.monotonic()
-    manifest = dict(status='running',active_run=True,plan=PLAN,command=[sys.executable,*sys.argv],
+    manifest = dict(status='running',active_run=True,plan=plan,command=[sys.executable,*sys.argv],
         git_commit=source['git_commit'],max_wall_seconds=seconds,stages=[],
         started_utc=datetime.now(timezone.utc).isoformat(),source_manifest=str(campaign/'isolated-source.json'))
     write(campaign/'manifest.json',manifest)
@@ -213,10 +226,15 @@ def main():
     parser.add_argument('--prepare',action='store_true')
     parser.add_argument('--price',action='store_true')
     parser.add_argument('--wall-seconds',type=float)
+    parser.add_argument('--plan', default=PLAN)
+    parser.add_argument('--qualification-seed', type=int, nargs=2, default=(20261026,6101))
+    parser.add_argument('--pricing-seed', type=int, nargs=2, default=(20261026,5100))
+    parser.add_argument('--reload-seed', type=int, nargs=2, default=(20261026,2001))
     args=parser.parse_args()
     args.campaign=args.campaign.resolve()
     if args.prepare:
-        source=prepare(args.campaign)
+        source=prepare(args.campaign, plan=args.plan, qualification_seed=args.qualification_seed,
+                       pricing_seed=args.pricing_seed, reload_seed=args.reload_seed)
         print(json.dumps(dict(campaign=str(args.campaign),source=source['source_root'],
                               source_file_count=len(source['source_sha256']))))
         return 0

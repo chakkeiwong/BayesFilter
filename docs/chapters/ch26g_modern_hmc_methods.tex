@@ -2112,6 +2112,21 @@ that passes all correctness checks but uses more total work is viable and
 possibly useful for latency, although a claimed work reduction would be
 unsupported. These distinctions determine the next repair.
 
+A numerical failure during a proposal does not imply that the retained state
+has become invalid. If the current position, log density and score are valid
+and the failed proposal is rejected while preserving those quantities, its
+Metropolis probability is zero and remains in the denominator of
+the acceptance average. The implementation preserves the raw log ratio
+and first-failure record separately from the effective log ratio of minus
+infinity. This distinction does not permit a finite target-status failure to
+be hidden by a later overflow, nor an invalid current state to be treated as
+an ordinary rejection. For each transition the recorded selected position,
+value and score must agree with the Metropolis choice. The modern kernels
+re-evaluate the current target at each transition; their actual pre-choice
+values are checked directly instead of imposing the persistent-cache lifecycle
+of the TFP kernel. These checks establish rejection bookkeeping, not posterior
+convergence or correctness of an otherwise invalid target evaluator.
+
 \section{Sources, versions and the scope of the conclusions}
 \label{sec:bf-modern-sources}
 

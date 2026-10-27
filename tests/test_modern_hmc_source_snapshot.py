@@ -73,6 +73,34 @@ def test_stage_budget_is_cumulative_and_keeps_closeout():
         with pytest.raises(ValueError):stage_budget(remaining,1800,1020)
 
 
+def test_prepare_preserves_explicit_plan_and_disjoint_seed_namespaces(tmp_path, monkeypatch):
+    from scripts import continue_modern_hmc_isolated as campaign
+    repo, consumer = fixture(tmp_path, monkeypatch)
+    (repo/'AGENTS.md').write_text('local test policy')
+    (repo/'plan.md').write_text('bounded diagnostic plan')
+    parent = tmp_path/'parent'; parent.mkdir()
+    (parent/'frozen-cohort.json').write_text('{"epsilon_by_l": [[3, [0.4]]]}')
+    (parent/'proposal-design.json').write_text('{}')
+    monkeypatch.setattr(campaign, 'ROOT', repo)
+    monkeypatch.setattr(campaign, 'INPUT', 'inputs.json')
+    monkeypatch.setattr(campaign, 'PARENT', parent)
+    monkeypatch.setattr(campaign, 'capture', lambda root, unused, out, **kwargs:
+                        snapshot.capture(root, consumer, out, **kwargs))
+    output = tmp_path/'fresh'
+    result = campaign.prepare(output, plan='plan.md', qualification_seed=(20261027,6101),
+                              pricing_seed=(20261027,5100), reload_seed=(20261027,2001))
+    cohort = json.loads((output/'frozen-cohort.json').read_text())
+    assert cohort['qualification_seed'] == [20261027,6101]
+    assert cohort['pricing_seed'] == [20261027,5100]
+    assert cohort['reload_seed'] == [20261027,2001]
+    assert json.loads((output/'preparation.json').read_text())['plan'] == 'plan.md'
+    assert str(Path(result['source_root'])/'plan.md') in result['source_sha256']
+    with pytest.raises(ValueError, match='must differ'):
+        campaign.prepare(tmp_path/'bad', plan='plan.md', qualification_seed=(1,2),
+                         pricing_seed=(1,2), reload_seed=(1,3))
+    assert not (tmp_path/'bad').exists()
+
+
 def test_frozen_sources_never_read_old_live_binding(tmp_path,monkeypatch):
     from scripts import run_modern_hmc_macrofinance_frozen_diagnostic as frozen
     repo,consumer=fixture(tmp_path,monkeypatch)

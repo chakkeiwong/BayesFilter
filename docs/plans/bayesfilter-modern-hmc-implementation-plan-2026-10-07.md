@@ -1,5 +1,20 @@
 # Implementation and validation plan for modern HMC methods
 
+## Active repair — 27 October 2026
+
+The completed diagnostic and settlement are committed as bf1986391. Execution
+continues under the [reviewed rejection-consistency repair](bayesfilter-modern-hmc-rejection-consistency-repair-2026-10-27.md).
+The modern kernels already reject failed paths, but their raw-ratio telemetry
+and missing selected-score evidence prevent consistent accounting. The repair
+adds explicit first-failure classification and actual per-transition selection
+checks without changing target, integrator, seeds or finite-status vetoes.
+Modern kernels re-evaluate targets per transition; TFP cache-continuity rules
+must not be copied onto that different lifecycle. Focused tests precede a fresh
+source-isolated GPU tranche. The working-tree suites passed 81 and 80 tests;
+60 scoped-commit tests also passed. Diagnostics have been settled, leaving
+16,964.99 seconds for the next inclusive tranche.
+No result or authority from the completed source snapshot is rewritten.
+
 ## Completed diagnostic — 27 October 2026, 02:59 Asia/Shanghai
 
 The source-isolated campaign N5/source-isolated-20261026-01 completed at
