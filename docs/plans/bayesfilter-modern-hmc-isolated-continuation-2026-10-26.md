@@ -130,3 +130,14 @@ preflight is waiting for shared capacity; no numerical worker has started.
 The source copy contains 1063 source/input files. The supervisor remains detached
 and will progress automatically through the declared stages once capacity is
 eligible. No result or qualification is claimed from queueing.
+
+## Terminal closeout — 27 October 2026
+
+The campaign completed at 02:59:46 Asia/Shanghai. All nine candidate records were
+retained; all six verified members were exported and reloaded. Terminal review
+confirms 1,127 unique trials, unchanged sources, no recorded import leakage and
+preserved reload endpoints. Three candidate vetoes remain recorded. Inclusive
+cost is 33911.35313071398 seconds, charged once; 17452.518772122326 seconds remain
+unused. See the [result and terminal review](bayesfilter-modern-hmc-isolated-continuation-result-2026-10-27.md).
+The diagnostic is complete; rejection-semantics repair and broader posterior
+validation remain open.

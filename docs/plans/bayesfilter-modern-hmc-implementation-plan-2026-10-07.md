@@ -1,32 +1,39 @@
 # Implementation and validation plan for modern HMC methods
 
-## Launched continuation — 26 October 2026, 17:34 Asia/Shanghai
+## Completed diagnostic — 27 October 2026, 02:59 Asia/Shanghai
 
-Committed campaign engineering and the refreshed plan as 81f61a2c5. The fresh
-source-isolated supervisor is active (PID 3579317) under
-N5/source-isolated-20261026-01. It preserves 1063 source/input files with
-checksums, including the actual MacroFinance dependencies. The source-invalid
-qualification-03 attempt remains preserved and is not resumed or requalified.
+The source-isolated campaign N5/source-isolated-20261026-01 completed at
+02:59:46 Asia/Shanghai. Preflight, all-candidate pricing and qualification exited
+successfully. All nine candidates remain recorded; six passed fresh verification
+and were exported and reloaded with preserved endpoints and finite continuation.
+The successful pairs are L=3,5,9,13,18 at epsilon=.4 and L=25 at epsilon=.2.
 
-At the latest checked heartbeat (2026-10-26T09:36:42.415324+00:00), preflight status is
-selecting_device; numerical-worker-launched is
-False. Both permitted GPUs report 100% utilization.
-The detached supervisor checks capacity every 60 seconds and will select the
-lowest-load permitted device below 50% with adequate memory. Then it runs fresh
-GPU parity, all-nine-pair pricing and the bounded full-design tuning tranche.
-No user intervention is needed for ordinary capacity recovery. This is an active
-queued campaign, not a completed numerical run.
+Final accounting records 1,127 unique completed trials, 45 completed work items
+and no missing returned chunks. All 1,066 execution source hashes match; all 80
+recorded local imports are within the source snapshot. The six-member set agrees
+across the controller, audit, export and reload. Trusted process inspection
+confirms the recorded workers have exited. See the
+[terminal result and review](bayesfilter-modern-hmc-isolated-continuation-result-2026-10-27.md).
 
-The reserved maximum is 51363.871902836305 inclusive seconds
-(14.27 hours); waiting and all child stages share that cap. Latest outer deadline
-is **27 October 2026, 07:50:39 Asia/Shanghai**. No additional allocation was
-created. Completed work may be partial; unchanged evidence requirements and
-source-matched checkpoints are retained. The separate SIR budget is untouched.
-The next review reads the live supervisor and numerical receipts, settles actual
-inclusive time once, and distinguishes candidate vetoes from execution failures.
+Three candidates remain rejected: L=3, epsilon=.8 for movement, and L=5, epsilon=.8
+and L=25, epsilon=.4 for non-finite numerical telemetry. The modern-kernel
+rejection-handling discrepancy still requires a generic repair; successful
+candidates do not close it. R-hat remained reporting-only during tuning.
+No posterior convergence, comparative ranking, external-consumer admission,
+default promotion or release readiness is established. **This diagnostic is
+complete; the overall master program is not.**
+
+Inclusive elapsed time was 33911.35313071398 seconds (9.42 hours), settled once
+against the existing combined allocation. The unused balance is
+17452.518772122326 seconds (4.85 hours); no active reservation remains. The
+separate SIR allowance is untouched. The next repair inspects saved first-failure
+traces, establishes explicit accepted-state/cache/MH-selection invariants across
+the modern and TFP routes, and adds focused regression tests before any fresh
+numerical campaign. Current evidence and prior source-invalid attempts remain
+preserved.
 
 
-## Active continuation — 26 October 2026, source isolation
+## Completed continuation design — 26 October 2026, source isolation
 
 The owner has requested a commit and continued execution. The [source-isolated
 continuation plan](bayesfilter-modern-hmc-isolated-continuation-2026-10-26.md)
@@ -46,10 +53,10 @@ A resource stop preserves the entire statistical design and frozen source copy.
 **107 focused tests pass** for numerical audit, failed-source reporting, unique
 trial counting, scheduling, copy stability/import leakage, source-bound GPU
 capability and TFP rejection behavior. Inclusive test cost was
-113.39982459199382 seconds; the current balance is **51363.871902836305 seconds
+113.39982459199382 seconds; the prelaunch balance was **51363.871902836305 seconds
 (14.27 hours)** after all prelaunch checks. This is one combined diagnostic allocation;
-separate SIR funds remain untouched. The fresh campaign is being prepared;
-no new qualification has yet completed.
+separate SIR funds remain untouched. Qualification, export and reload have
+completed; terminal settlement and the remaining repair are recorded above.
 
 A code-trace audit found a remaining difference between execution paths: the
 October26 TFP rejected-proposal repair does not provide the same trace semantics
