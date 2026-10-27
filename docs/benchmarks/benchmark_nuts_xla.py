@@ -93,9 +93,9 @@ def target_log_prob(tf, args):
     return log_prob
 
 
-def make_chain(tf, tfp, args, *, adapting):
+def make_chain(tf, tfp, args, *, adapting, log_prob_fn=None):
     count = args.warmup if adapting else args.draws
-    log_prob = target_log_prob(tf, args)
+    log_prob = target_log_prob(tf, args) if log_prob_fn is None else log_prob_fn
     signature = [tf.TensorSpec([args.chains, args.dimension], tf.float64),
                  tf.TensorSpec([], tf.float64), tf.TensorSpec([2], tf.int32)]
 

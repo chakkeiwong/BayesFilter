@@ -1,0 +1,187 @@
+{
+  "created_utc": "2026-10-27T07:47:24.645560+00:00",
+  "checks": [
+    {
+      "attempt": "overhead-01",
+      "status": "completed",
+      "seconds": 24.1602173630381,
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/benchmark_nuts_geometry.py",
+        "--phase",
+        "overhead",
+        "--output",
+        "docs/benchmarks/artifacts/nuts-geometry-20261027/overhead-01"
+      ],
+      "compiled_functions": 5,
+      "source_snapshots": 4,
+      "tensor_files": 8,
+      "source_hashes_verified": true,
+      "hlo_hashes_verified": true,
+      "device": "CPU",
+      "dtype": "float64",
+      "jit_compile": true
+    },
+    {
+      "attempt": "geometry-01",
+      "status": "completed",
+      "seconds": 291.82118768797955,
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/benchmark_nuts_geometry.py",
+        "--phase",
+        "geometry",
+        "--output",
+        "docs/benchmarks/artifacts/nuts-geometry-20261027/geometry-01"
+      ],
+      "compiled_functions": 120,
+      "source_snapshots": 4,
+      "tensor_files": 168,
+      "source_hashes_verified": true,
+      "hlo_hashes_verified": true,
+      "device": "CPU",
+      "dtype": "float64",
+      "jit_compile": true
+    },
+    {
+      "attempt": "geometry-repair-01",
+      "status": "completed",
+      "seconds": 79.4594099399983,
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/benchmark_nuts_geometry.py",
+        "--phase",
+        "geometry",
+        "--targets",
+        "rotated_gaussian32",
+        "--lengths",
+        "3,8,16,32,64,128",
+        "--seed-offset",
+        "10000",
+        "--output",
+        "docs/benchmarks/artifacts/nuts-geometry-20261027/geometry-repair-01"
+      ],
+      "compiled_functions": 32,
+      "source_snapshots": 4,
+      "tensor_files": 40,
+      "source_hashes_verified": true,
+      "hlo_hashes_verified": true,
+      "device": "CPU",
+      "dtype": "float64",
+      "jit_compile": true
+    }
+  ],
+  "worker_seconds": 395.44081499101594,
+  "budget_seconds": 1200,
+  "worker_attempts": 3,
+  "attempt_cap": 3,
+  "logs": [
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-tests.log",
+      "sha256": "deeacd8aa16a35a3d5d12fafaac84104adf38806a2838597940d2692e1b3a59e"
+    },
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-overhead-01.log",
+      "sha256": "03d55c0e8f8dcdbdf50cef561083449823ae669fdfb4fb8358eefe9ca8fba4a1"
+    },
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-01.log",
+      "sha256": "5388fdb1738faf84efc0ab10607ec9a0b55a09fe2ee7c4f36e1f130c69390614"
+    },
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-repair-01.log",
+      "sha256": "8ecc80a5d9e4cf69ec5c10d195730ea2f381ccf454126c21bd3ce41a3d1ae8c6"
+    },
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-final-tests.log",
+      "sha256": "f812a63354966c3b590fd40c7b0e03f563a6a08189621af9ba90713150c92bd8"
+    },
+    {
+      "path": "docs/benchmarks/artifacts/nuts-geometry-20261027/audit-01/nuts-geometry-archive-repair-test.log",
+      "sha256": "7fb09be1418fe647cd37192f09f13a658919db2b80fc5232a219a3e1f8893d54"
+    }
+  ],
+  "qualification": "Exploratory diagnostic only; no statistically supported sampler ranking",
+  "command_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "timeout_seconds": 600
+  },
+  "checkpoint": "The short-grid and longer-grid HMC candidates both fail rotated-Gaussian mixing; centered funnel fails for both. No defaults changed.",
+  "archive_filename_repair": {
+    "reason": "Executable-source guard found archived .py snapshots; renamed to .py.txt without changing bytes or launch manifests.",
+    "renamed": [
+      {
+        "old": "geometry-repair-01/source/compare_nuts_fixed_hmc.py",
+        "new": "geometry-repair-01/source/compare_nuts_fixed_hmc.py.txt",
+        "sha256": "86238b29609395a98b9030034ed760b909c26df4aeccee169575971569657b1f"
+      },
+      {
+        "old": "geometry-repair-01/source/nuts_benchmark_targets.py",
+        "new": "geometry-repair-01/source/nuts_benchmark_targets.py.txt",
+        "sha256": "dacfa60c93b96ccc535dbcdf56944d6f460d02cf33a6b443a4de3585213e18f3"
+      },
+      {
+        "old": "geometry-repair-01/source/benchmark_nuts_geometry.py",
+        "new": "geometry-repair-01/source/benchmark_nuts_geometry.py.txt",
+        "sha256": "ff1606e9e5594c609a5950db4cee564b894e77c453e594135b350c48363ddc57"
+      },
+      {
+        "old": "geometry-repair-01/source/benchmark_nuts_xla.py",
+        "new": "geometry-repair-01/source/benchmark_nuts_xla.py.txt",
+        "sha256": "593619bc0db4953a7f3b503aaf5e7154f60e6e7477c1c233e05a8362b9830b22"
+      },
+      {
+        "old": "geometry-01/source/compare_nuts_fixed_hmc.py",
+        "new": "geometry-01/source/compare_nuts_fixed_hmc.py.txt",
+        "sha256": "86238b29609395a98b9030034ed760b909c26df4aeccee169575971569657b1f"
+      },
+      {
+        "old": "geometry-01/source/nuts_benchmark_targets.py",
+        "new": "geometry-01/source/nuts_benchmark_targets.py.txt",
+        "sha256": "dacfa60c93b96ccc535dbcdf56944d6f460d02cf33a6b443a4de3585213e18f3"
+      },
+      {
+        "old": "geometry-01/source/benchmark_nuts_geometry.py",
+        "new": "geometry-01/source/benchmark_nuts_geometry.py.txt",
+        "sha256": "c2dcf644103d87aaca8652f1a5ef36ccc51847448e13705fddec340e7254ec93"
+      },
+      {
+        "old": "geometry-01/source/benchmark_nuts_xla.py",
+        "new": "geometry-01/source/benchmark_nuts_xla.py.txt",
+        "sha256": "593619bc0db4953a7f3b503aaf5e7154f60e6e7477c1c233e05a8362b9830b22"
+      },
+      {
+        "old": "overhead-01/source/compare_nuts_fixed_hmc.py",
+        "new": "overhead-01/source/compare_nuts_fixed_hmc.py.txt",
+        "sha256": "86238b29609395a98b9030034ed760b909c26df4aeccee169575971569657b1f"
+      },
+      {
+        "old": "overhead-01/source/nuts_benchmark_targets.py",
+        "new": "overhead-01/source/nuts_benchmark_targets.py.txt",
+        "sha256": "dacfa60c93b96ccc535dbcdf56944d6f460d02cf33a6b443a4de3585213e18f3"
+      },
+      {
+        "old": "overhead-01/source/benchmark_nuts_geometry.py",
+        "new": "overhead-01/source/benchmark_nuts_geometry.py.txt",
+        "sha256": "c2dcf644103d87aaca8652f1a5ef36ccc51847448e13705fddec340e7254ec93"
+      },
+      {
+        "old": "overhead-01/source/benchmark_nuts_xla.py",
+        "new": "overhead-01/source/benchmark_nuts_xla.py.txt",
+        "sha256": "593619bc0db4953a7f3b503aaf5e7154f60e6e7477c1c233e05a8362b9830b22"
+      }
+    ]
+  },
+  "tests": {
+    "prelaunch": "8 passed in 10.76s",
+    "combined": "22 passed, 1 archive filename guard failed in 30.15s",
+    "post_archive_filename_repair": "1 focused guard passed in 13.83s",
+    "full_combined_repeated_after_archive_repair": false,
+    "commands": [
+      "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest tests/test_nuts_geometry_benchmark.py -q",
+      "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest tests/test_nuts_fixed_hmc_comparison.py tests/test_nuts_xla_benchmark.py tests/test_nuts_geometry_benchmark.py tests/test_modern_hmc_nuts_comparison.py -q",
+      "CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m pytest tests/test_modern_hmc_nuts_comparison.py::test_repository_limits_executable_nuts_to_owner_benchmark -q"
+    ]
+  }
+}

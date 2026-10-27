@@ -11,6 +11,10 @@ retired entry points and defaults are not reopened by this exception.
 The October 27 follow-up permits `docs/benchmarks/compare_nuts_fixed_hmc.py`
 to orchestrate tuned fixed-L HMC versus NUTS through that same benchmark's
 compiled kernel, under `docs/plans/bayesfilter-nuts-fixed-hmc-comparison-2026-10-27.md`.
+The subsequent October 27 request extends the same standalone exception to
+`docs/benchmarks/benchmark_nuts_geometry.py` and its target helpers, under
+`docs/plans/bayesfilter-nuts-geometry-overhead-2026-10-27.md`, for broader
+geometry and execution-overhead diagnostics through the shared compiled kernel.
 
 ## Academic Research Governance Profile
 

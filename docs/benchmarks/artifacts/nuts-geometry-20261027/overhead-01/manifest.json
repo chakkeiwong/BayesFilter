@@ -1,0 +1,81 @@
+{
+  "schema": "bayesfilter.nuts_geometry_diagnostic.v1",
+  "status": "completed",
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/benchmarks/benchmark_nuts_geometry.py",
+    "--phase",
+    "overhead",
+    "--output",
+    "docs/benchmarks/artifacts/nuts-geometry-20261027/overhead-01"
+  ],
+  "git_commit": "c72299c102429cf9373c7121df303e6f08be9a5e",
+  "plan": "docs/plans/bayesfilter-nuts-geometry-overhead-2026-10-27.md",
+  "device": "CPU",
+  "gpu_intentionally_hidden": true,
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "target_data": "synthetic_analytic_reference",
+  "seed": 20261027,
+  "compiled": {
+    "hmc-c4": {
+      "node_count_including_library": 383,
+      "forbidden_ops": [],
+      "first_call_seconds": 0.8696104100090452,
+      "traces": 1,
+      "hlo_sha256": "650c69e5d5a7d80c562165f52c4f1f3b09ef98de5403b0990f78a420facdaa1d"
+    },
+    "nuts-c1": {
+      "node_count_including_library": 829,
+      "forbidden_ops": [],
+      "first_call_seconds": 1.667656541976612,
+      "traces": 1,
+      "hlo_sha256": "930110b2442a2933510d789348351fd41bd3558a04b29d75cb5b8b9b4d280c4c"
+    },
+    "nuts-c4": {
+      "node_count_including_library": 823,
+      "forbidden_ops": [],
+      "first_call_seconds": 1.559971644950565,
+      "traces": 1,
+      "hlo_sha256": "2ab5bbe2cc0efa605e4ccfe9e3807c81893ea65c96652588cd9fe314e63f32ba"
+    },
+    "nuts-c16": {
+      "node_count_including_library": 823,
+      "forbidden_ops": [],
+      "first_call_seconds": 1.6747194430208765,
+      "traces": 1,
+      "hlo_sha256": "b0abc22710cba9149b5a2b007149e499c96dd6badd25294955cb6b37dc3b577d"
+    },
+    "scalar-scheduling": {
+      "node_count_including_library": 829,
+      "forbidden_ops": [],
+      "first_call_seconds": 1.6462124640238471,
+      "traces": 1,
+      "hlo_sha256": "250b7061794e49c8dc142126b850da0d66cf1b5e681790d571325685e6286e46"
+    }
+  },
+  "sources": {
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_nuts_geometry.py": "c2dcf644103d87aaca8652f1a5ef36ccc51847448e13705fddec340e7254ec93",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_nuts_xla.py": "593619bc0db4953a7f3b503aaf5e7154f60e6e7477c1c233e05a8362b9830b22",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/compare_nuts_fixed_hmc.py": "86238b29609395a98b9030034ed760b909c26df4aeccee169575971569657b1f",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/nuts_benchmark_targets.py": "dacfa60c93b96ccc535dbcdf56944d6f460d02cf33a6b443a4de3585213e18f3"
+  },
+  "posterior_promotion": false,
+  "statistically_supported_ranking": false,
+  "tensorflow": "2.20.0",
+  "tfp": "0.25.0",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "seconds": 24.1602173630381,
+  "unavailable_numeric_fields": []
+}

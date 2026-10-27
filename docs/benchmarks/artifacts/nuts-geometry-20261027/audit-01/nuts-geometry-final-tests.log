@@ -1,0 +1,39 @@
+......................F                                                  [100%]
+=================================== FAILURES ===================================
+__________ test_repository_limits_executable_nuts_to_owner_benchmark ___________
+
+    def test_repository_limits_executable_nuts_to_owner_benchmark():
+        forbidden = {"NoUTurnSampler", "PreconditionedNoUTurnSampler", "windowed_adaptive_nuts"}
+        findings = []
+        for directory in ("bayesfilter", "scripts", "docs/benchmarks"):
+            for path in (ROOT / directory).rglob("*.py"):
+                if path.relative_to(ROOT).as_posix() == 'docs/benchmarks/benchmark_nuts_xla.py':
+                    continue  # Owner's 2026-10-27 standalone benchmark exception.
+                for node in ast.walk(ast.parse(path.read_text())):
+                    if isinstance(node, ast.Attribute) and node.attr in forbidden:
+                        findings.append((str(path.relative_to(ROOT)), node.lineno))
+                    if isinstance(node, ast.ImportFrom):
+                        for alias in node.names:
+                            if alias.name in forbidden:
+                                findings.append((str(path.relative_to(ROOT)), node.lineno))
+>       assert not findings, findings
+E       AssertionError: [('docs/benchmarks/artifacts/nuts-geometry-20261027/overhead-01/source/benchmark_nuts_xla.py', 261), ('docs/benchmarks...a.py', 261), ('docs/benchmarks/artifacts/nuts-geometry-20261027/geometry-repair-01/source/benchmark_nuts_xla.py', 105)]
+E       assert not [('docs/benchmarks/artifacts/nuts-geometry-20261027/overhead-01/source/benchmark_nuts_xla.py', 261), ('docs/benchmarks...a.py', 261), ('docs/benchmarks/artifacts/nuts-geometry-20261027/geometry-repair-01/source/benchmark_nuts_xla.py', 105)]
+
+tests/test_modern_hmc_nuts_comparison.py:127: AssertionError
+=============================== warnings summary ===============================
+tests/test_nuts_fixed_hmc_comparison.py::test_observables_retain_non_linear_banana_estimands
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_nuts_fixed_hmc_comparison.py::test_observables_retain_non_linear_banana_estimands
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_modern_hmc_nuts_comparison.py::test_repository_limits_executable_nuts_to_owner_benchmark
+  <unknown>:563: SyntaxWarning: invalid escape sequence '\('
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_modern_hmc_nuts_comparison.py::test_repository_limits_executable_nuts_to_owner_benchmark
+1 failed, 22 passed, 3 warnings in 30.15s
