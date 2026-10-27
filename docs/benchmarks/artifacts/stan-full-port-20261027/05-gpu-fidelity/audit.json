@@ -1,0 +1,177 @@
+{
+  "command": [
+    "docs/benchmarks/audit_full_stan.py",
+    "--device",
+    "gpu",
+    "--oracle",
+    "docs/benchmarks/artifacts/stan-full-port-20261027/04-complete-cpu-audit/oracle/transition-calls.jsonl"
+  ],
+  "device": "gpu",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0",
+  "gpu_intentionally_hidden": false,
+  "tf32": false,
+  "jit_compile": true,
+  "cases": 182,
+  "maximum_scaled_error": 2.775564107262884e-16,
+  "lifecycle": {
+    "unit": {
+      "config": {
+        "dimension": 2,
+        "chains": 2,
+        "warmup": 160,
+        "draws": 16,
+        "metric": "unit",
+        "depth": 6,
+        "delta": 0.8,
+        "initial_epsilon": 1.0,
+        "initial_buffer": 75,
+        "terminal_buffer": 50,
+        "window": 25,
+        "gamma": 0.05,
+        "kappa": 0.75,
+        "t0": 10.0,
+        "adapt": true,
+        "jitter": 0.0,
+        "max_delta": 1000.0,
+        "thin": 1,
+        "init_radius": 2.0
+      },
+      "warmup": {
+        "first_call_including_execution_seconds": 15.778757205000147,
+        "hlo_sha256": "06c0dfc5bedec9598363d06eec9d74026883308fa91e17ac0a4405c967203051",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 2487,
+          "forbidden_ops": []
+        }
+      },
+      "sample": {
+        "first_call_including_execution_seconds": 3.971062581986189,
+        "hlo_sha256": "bc349b99ad9237dab83ac5cf8666ae1d3bfefc7c6b743b00ce19070ab77f09ac",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 1241,
+          "forbidden_ops": []
+        }
+      },
+      "warmup_seconds": 10.91428767197067,
+      "sample_seconds": 0.9091417519957758
+    },
+    "diag": {
+      "config": {
+        "dimension": 2,
+        "chains": 2,
+        "warmup": 160,
+        "draws": 16,
+        "metric": "diag",
+        "depth": 6,
+        "delta": 0.8,
+        "initial_epsilon": 1.0,
+        "initial_buffer": 75,
+        "terminal_buffer": 50,
+        "window": 25,
+        "gamma": 0.05,
+        "kappa": 0.75,
+        "t0": 10.0,
+        "adapt": true,
+        "jitter": 0.0,
+        "max_delta": 1000.0,
+        "thin": 1,
+        "init_radius": 2.0
+      },
+      "warmup": {
+        "first_call_including_execution_seconds": 17.509469818964135,
+        "hlo_sha256": "4bb3c366a13c7aac7464840b62907655742dd7e027a24c10a44a3750c1a88525",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 2510,
+          "forbidden_ops": []
+        }
+      },
+      "sample": {
+        "first_call_including_execution_seconds": 4.089106252009515,
+        "hlo_sha256": "e26adbe05195047d415d0fe1a4803e25311d0c59ed8efcd4e5b3c2dce1682ae6",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 1253,
+          "forbidden_ops": []
+        }
+      },
+      "warmup_seconds": 11.942062363028526,
+      "sample_seconds": 1.0084047989803366
+    },
+    "dense": {
+      "config": {
+        "dimension": 2,
+        "chains": 2,
+        "warmup": 160,
+        "draws": 16,
+        "metric": "dense",
+        "depth": 6,
+        "delta": 0.8,
+        "initial_epsilon": 1.0,
+        "initial_buffer": 75,
+        "terminal_buffer": 50,
+        "window": 25,
+        "gamma": 0.05,
+        "kappa": 0.75,
+        "t0": 10.0,
+        "adapt": true,
+        "jitter": 0.0,
+        "max_delta": 1000.0,
+        "thin": 1,
+        "init_radius": 2.0
+      },
+      "warmup": {
+        "first_call_including_execution_seconds": 18.258300227986183,
+        "hlo_sha256": "4319f9b219e60c4b15b12766753ecee05ba7d4ad295eec8118d24a2bd66fa6d4",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 2671,
+          "forbidden_ops": []
+        }
+      },
+      "sample": {
+        "first_call_including_execution_seconds": 4.105410620977636,
+        "hlo_sha256": "d4097d03ce6ab64d3e55e2685fa707d0ae7488679c916b9633208694c311fe65",
+        "traces": 1,
+        "graph": {
+          "node_count_including_library": 1321,
+          "forbidden_ops": []
+        }
+      },
+      "warmup_seconds": 12.136552507989109,
+      "sample_seconds": 0.883090406015981
+    }
+  },
+  "wall_seconds": 180.0188551430474,
+  "host_max_rss_kib": 1770828,
+  "allocator": {
+    "current": 65792,
+    "peak": 160000
+  },
+  "status": "passed"
+}

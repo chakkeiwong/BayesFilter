@@ -1,0 +1,20 @@
+2026-10-27 18:57:34.636721: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793098655.642358 4122936 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_full_stan.py", line 166, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_full_stan.py", line 129, in main
+    functions['direct'],manifest['compile'][name]['direct']=direct_functions(tf,target,args,f)
+                                                            ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_full_stan.py", line 50, in direct_functions
+    initialized,ireport=old.compile_fn(tf,init,(q,tf.ones_like(q,tf.bool),seeds),folder,'initialize',args.device)
+                        ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_stan_transplant.py", line 90, in compile_fn
+    out,seconds=base.timed(fn,*args)
+                ~~~~~~~~~~^^^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_nuts_xla.py", line 174, in timed
+    result[-1].numpy().item()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+ValueError: can only convert an array of size 1 to a Python scalar

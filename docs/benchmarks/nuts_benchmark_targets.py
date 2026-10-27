@@ -21,10 +21,10 @@ NAMES = ('gaussian32', 'rotated_gaussian32', 'banana8', 'funnel10',
 
 
 def make_target(tf, name):
-    if name not in (*NAMES, 'banana2'):
+    if name not in (*NAMES, 'banana2', 'regression64'):
         raise ValueError(f'Unknown target: {name}')
     dimension = 2 if name == 'banana2' else (8 if name == 'banana8' else
-                 (10 if 'funnel' in name else 32))
+                 (10 if 'funnel' in name else (64 if name == 'regression64' else 32)))
     identity = lambda q: q
     normal = lambda q: -.5 * tf.reduce_sum(tf.square(q), axis=-1)
     if name in ('gaussian32', 'noncentered_funnel10'):
@@ -67,14 +67,15 @@ def make_target(tf, name):
                       'Centered funnel; v standard deviation 3, nine conditional coordinates')
     # A deterministic full-rank Gaussian regression posterior. The target
     # deliberately evaluates X beta, not the equivalent collapsed quadratic.
-    design = tf.random.stateless_normal([512, dimension], [20261027, 61], dtype=tf.float64)
-    precision = tf.eye(dimension, dtype=tf.float64) + tf.matmul(design, design, transpose_a=True) / 512.
+    observations = 4096 if name == 'regression64' else 512
+    design = tf.random.stateless_normal([observations, dimension], [20261027, 61], dtype=tf.float64)
+    precision = tf.eye(dimension, dtype=tf.float64) + tf.matmul(design, design, transpose_a=True) / observations
     chol = tf.linalg.cholesky(precision)
     def forward(z):
         return tf.transpose(tf.linalg.triangular_solve(chol, tf.transpose(z), adjoint=True))
     inverse = lambda q: tf.matmul(q, chol)
     def density(q):
         residual = tf.matmul(q, design, transpose_b=True)
-        return normal(q) - .5 * tf.reduce_sum(tf.square(residual), axis=-1) / 512.
+        return normal(q) - .5 * tf.reduce_sum(tf.square(residual), axis=-1) / observations
     return Target(name, dimension, density, forward, inverse,
-                  'Gaussian regression: 512x32 design, zero response, unit normal prior')
+                  f'Gaussian regression: {observations}x{dimension} design, zero response, unit normal prior')

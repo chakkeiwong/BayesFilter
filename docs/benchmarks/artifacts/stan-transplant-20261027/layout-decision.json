@@ -1,0 +1,44 @@
+{
+  "selected": "cpu scalar, four independent chains, intra-op=1",
+  "basis": "lowest observed sum of calibration target medians under matched four-worker cap; descriptive nomination, not universal device optimality",
+  "records": [
+    {
+      "attempt": "calibration-cpu-scalar-02",
+      "median_seconds": {
+        "gaussian32": 0.16756035198341124,
+        "regression32": 0.21130260449717753
+      },
+      "sum_of_target_medians": 0.37886295648058876,
+      "wall_seconds": 20.640900455997325
+    },
+    {
+      "attempt": "calibration-cpu-batch-01",
+      "median_seconds": {
+        "gaussian32": 0.1649284785380587,
+        "regression32": 0.6676477900182363
+      },
+      "sum_of_target_medians": 0.832576268556295,
+      "wall_seconds": 21.429449183982797
+    },
+    {
+      "attempt": "calibration-gpu-batch-02",
+      "median_seconds": {
+        "gaussian32": 1.6282674869871698,
+        "regression32": 1.1521177579415962
+      },
+      "sum_of_target_medians": 2.780385244928766,
+      "wall_seconds": 67.30613771500066
+    },
+    {
+      "attempt": "calibration-gpu-scalar-01",
+      "median_seconds": {
+        "gaussian32": 4.618793786532478,
+        "regression32": 3.4236204569460824
+      },
+      "sum_of_target_medians": 8.04241424347856,
+      "wall_seconds": 73.39990182599286
+    }
+  ],
+  "retry": "GPU batch01 failed CPU-only serialization after successful XLA execution; fixed explicit CPU artifact boundary; preserved and charged",
+  "cumulative_calibration_wall_seconds": 235.83735865796916
+}

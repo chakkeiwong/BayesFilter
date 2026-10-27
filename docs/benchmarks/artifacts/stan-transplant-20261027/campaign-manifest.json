@@ -1,0 +1,83 @@
+{
+  "plan": "docs/plans/bayesfilter-stan-nuts-transplant-2026-10-27.md",
+  "attempts": [
+    {
+      "attempt": "calibration-cpu-batch-01",
+      "status": "complete",
+      "wall_seconds": 21.429449183982797,
+      "failure": null
+    },
+    {
+      "attempt": "calibration-cpu-scalar-01",
+      "status": "complete",
+      "wall_seconds": 19.510140803002287,
+      "failure": null
+    },
+    {
+      "attempt": "calibration-cpu-scalar-02",
+      "status": "complete",
+      "wall_seconds": 20.640900455997325,
+      "failure": null
+    },
+    {
+      "attempt": "calibration-gpu-batch-01",
+      "status": "failed",
+      "wall_seconds": 33.55082867399324,
+      "failure": "Could not satisfy device specification '/job:localhost/replica:0/task:0/device:GPU:0'. enable_soft_placement=0. Supported device types [CPU]. All available devices [/job:localhost/replica:0/task:0/device:GPU:0, /job:localhost/replica:0/task:0/device:CPU:0]. [Op:SerializeTensor] name: "
+    },
+    {
+      "attempt": "calibration-gpu-batch-02",
+      "status": "complete",
+      "wall_seconds": 67.30613771500066,
+      "failure": null
+    },
+    {
+      "attempt": "calibration-gpu-scalar-01",
+      "status": "complete",
+      "wall_seconds": 73.39990182599286,
+      "failure": null
+    },
+    {
+      "attempt": "comparison-01",
+      "status": "failed",
+      "wall_seconds": 10.926631912006997,
+      "failure": "Stan target mismatch 0.35232893076609056 1.8429584871297688"
+    },
+    {
+      "attempt": "comparison-02",
+      "status": "complete",
+      "wall_seconds": 121.55465536302654,
+      "failure": null
+    },
+    {
+      "attempt": "comparison-03",
+      "status": "complete",
+      "wall_seconds": 120.65703811199637,
+      "failure": null
+    }
+  ],
+  "worker_launches": 9,
+  "worker_launch_limit": 12,
+  "worker_wall_seconds_total": 488.97568404499907,
+  "post_build_elapsed_seconds_at_closeout": 2007.448404788971,
+  "post_build_cap_seconds": 2700,
+  "install_build_seconds_from_manifest_and_log_mtime": 102.72389769554138,
+  "build_wall_measurement": "timestamp difference from install manifest and build log modification; not precise compiler timer",
+  "status": "campaign runs complete; no further sampler launches planned",
+  "focused_test_launches": 3,
+  "total_benchmark_and_test_launches": 12,
+  "focused_test_wall_seconds": [
+    17.24,
+    3.58,
+    30.31
+  ],
+  "budget_remained_at_terminal_verification_seconds": 180.50759363174438,
+  "result_note": "docs/plans/bayesfilter-stan-nuts-transplant-result-2026-10-27.md",
+  "terminal_verification": {
+    "focused_tests_passed": 12,
+    "local_links_checked": 8,
+    "run_source_hashes_checked": 7,
+    "hlo_hashes_checked": 12,
+    "timing_repair_sample_parity_pairs": 18
+  }
+}

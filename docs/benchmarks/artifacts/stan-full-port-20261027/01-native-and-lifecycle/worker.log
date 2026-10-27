@@ -1,0 +1,87 @@
+F
+=================================== FAILURES ===================================
+____________________ test_actual_native_transition[unit-0] _____________________
+
+tf = <module 'tensorflow' from '/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/__init__.py'>
+native = <function native.<locals>.call at 0x75e3e94f82c0>, kind = 0
+metric_kind = 'unit'
+
+    @pytest.mark.parametrize('kind',[0,1,2,3,4])
+    @pytest.mark.parametrize('metric_kind',['unit','diag','dense'])
+    def test_actual_native_transition(tf,native,kind,metric_kind):
+        cfg=port.Config(2,metric=metric_kind,depth=6,jitter=.17)
+        mshape=[1,2,2] if metric_kind=='dense' else [1,2]
+        @tf.function(input_signature=[tf.TensorSpec([1,2],tf.float64),tf.TensorSpec([1,2],tf.float64),
+            tf.TensorSpec([1],tf.float64),tf.TensorSpec(mshape,tf.float64),tf.TensorSpec([1,256],tf.float64)],
+            autograph=False,jit_compile=True)
+        def transition(q,p,e,metric,tape):
+            k=port.Kernel(tf,target(tf,kind),cfg,uniform_tape=tape,momentum=p)
+            return k.transition(q,e,metric,k.factor(metric),tf.zeros([1,2],tf.int32))
+        rnd=random.Random(20261027+kind)
+        for i in range(12):
+            q=[rnd.uniform(-.8,.8) for _ in range(2)]
+            p=[rnd.uniform(-1.5,1.5) for _ in range(2)]
+            e=[.01,.1,.5,1.2,3.,10.][i%6]
+            if kind==4 and i==0:p=[0.,0.]  # strict >0 U-turn tie
+            metric={'unit':[[1.,0.],[0.,1.]],'diag':[[.4,0.],[0.,2.]],'dense':[[1.3,.4],[.4,.8]]}[metric_kind]
+            tape=[rnd.random() for _ in range(256)]
+            if i==1:tape[1]=.5  # exact direction boundary after jitter draw
+            expected=native(kind,q,p,e,metric,tape,jitter=cfg.jitter)
+            m=metric if metric_kind=='dense' else [metric[0][0],metric[1][1]]
+>           actual=transition(*[tf.constant(x,tf.float64) for x in ([q],[p],[e],[m],[tape])])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_stan_nuts_port.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+tests/test_stan_nuts_port.py:72: in transition
+    return k.transition(q,e,metric,k.factor(metric),tf.zeros([1,2],tf.int32))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs/benchmarks/stan_nuts.py:333: in transition
+    result = tf.while_loop(lambda level,b,f,o,s,alive,*_: (level < self.config.depth) & tf.reduce_any(alive),
+docs/benchmarks/stan_nuts.py:310: in body
+    endpoint, new, seed, good, n, a, div = self.subtree(
+docs/benchmarks/stan_nuts.py:289: in subtree
+    result = tf.while_loop(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+k = <tf.Tensor 'while/while/Placeholder:0' shape=() dtype=int32>
+z = Phase(q=<tf.Tensor 'while/while/SelectV2:0' shape=(1, 2) dtype=float64>, p=<tf.Tensor 'while/while/SelectV2_1:0' shape...ile/while/SelectV2_2:0' shape=(1,) dtype=float64>, g=<tf.Tensor 'while/while/SelectV2_3:0' shape=(1, 2) dtype=float64>)
+node = Node(proposal=Phase(q=<tf.Tensor 'while/while/Placeholder_5:0' shape=(1, 2) dtype=float64>, p=<tf.Tensor 'while/while/...ceholder_11:0' shape=(1, 2) dtype=float64>, weight=<tf.Tensor 'while/while/Placeholder_12:0' shape=(1,) dtype=float64>)
+stack = Node(proposal=Phase(q=<tf.Tensor 'while/while/Placeholder_13:0' shape=(6, 1, 2) dtype=float64>, p=<tf.Tensor 'while/wh...der_19:0' shape=(6, 1, 2) dtype=float64>, weight=<tf.Tensor 'while/while/Placeholder_20:0' shape=(6, 1) dtype=float64>)
+seed = <tf.Tensor 'while/while/Placeholder_21:0' shape=(1, 2) dtype=int32>
+alive = <tf.Tensor 'while/while/Placeholder_22:0' shape=(1,) dtype=bool>
+leaps = <tf.Tensor 'while/while/add_2:0' shape=(1,) dtype=int32>
+accept = <tf.Tensor 'while/while/Placeholder_24:0' shape=(1,) dtype=float64>
+diverged = <tf.Tensor 'while/while/Placeholder_25:0' shape=(1,) dtype=bool>
+
+    def leaf_body(k, z, node, stack, seed, alive, leaps, accept, diverged):
+        next_z = self.leapfrog(z, direction*epsilon, metric)
+        z = self.choose(alive, next_z, z)
+        h = self.energy(z, metric)
+        h = tf.where(tf.math.is_nan(h), tf.constant(math.inf, self.dtype), h)
+        logw = h0-h
+        divergent = h-h0 > self.config.max_delta
+        leaps += tf.cast(alive, tf.int32)
+>       accept += tf.where(alive, tf.exp(tf.minimum(0., logw)), 0.)
+                                         ^^^^^^^^^^^^^^^^^^^^
+E       TypeError: Input 'y' of 'Minimum' Op has type float64 that does not match type float32 of argument 'x'.
+
+docs/benchmarks/stan_nuts.py:266: TypeError
+---------------------------- Captured stderr setup -----------------------------
+2026-10-27 18:45:04.550650: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+=============================== warnings summary ===============================
+tests/test_stan_nuts_port.py::test_actual_native_transition[unit-0]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_stan_nuts_port.py::test_actual_native_transition[unit-0]
+  /home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_stan_nuts_port.py::test_actual_native_transition[unit-0] - ...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 warnings in 12.69s

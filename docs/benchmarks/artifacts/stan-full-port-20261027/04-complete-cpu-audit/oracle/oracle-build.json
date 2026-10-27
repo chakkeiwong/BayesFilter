@@ -1,0 +1,42 @@
+{
+  "command": [
+    "g++",
+    "-std=c++17",
+    "-O1",
+    "-pthread",
+    "-D_REENTRANT",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/src",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/eigen_3.4.0",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/boost_1.87.0",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/tbb_2020.3/include",
+    "-I/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/sundials_6.1.1/include",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/stan_adaptation_oracle.cpp",
+    "-L/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/tbb",
+    "-Wl,-rpath,/home/ubuntu/python/BayesFilter/.localresources/cmdstan/cmdstan-2.37.0/stan/lib/stan_math/lib/tbb",
+    "-ltbb",
+    "-o",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/stan-full-port-20261027/04-complete-cpu-audit/oracle/adaptation_oracle"
+  ],
+  "wall_seconds": 9.643203044950496,
+  "returncode": 0,
+  "stan_version": "2.37.0",
+  "source_sha256": "57cf67dfe652e7b3ecc47a86231d4cd343a68a8c15fac15bf43dc21622224aab",
+  "headers": {
+    "stan/src/stan/mcmc/windowed_adaptation.hpp": "8541a39cda27d116a97a6710e7d49f0d0897b1238d6fb058dccc72caa950ea38",
+    "stan/src/stan/mcmc/stepsize_adaptation.hpp": "4d6cca63053a38371fb72fb45f8cd8c04e19d3ada62239cc91580f61d8eae543",
+    "stan/src/stan/mcmc/var_adaptation.hpp": "e21167fd00a52e3f11c4cfa8f75b4101afdeb32b18bc20b630dd48e552b44c16",
+    "stan/src/stan/mcmc/covar_adaptation.hpp": "ec56541fadb1f1db665629fd8cd1340b289ee7307146d0ad59f03ff944f30823",
+    "stan/src/stan/mcmc/hmc/base_hmc.hpp": "4c3636c191a31e7354c8d5b5591036aafe55d73b1764df1bb878d9d819c1e4e6",
+    "stan/src/stan/mcmc/hmc/integrators/base_leapfrog.hpp": "fe4752fb29d50926e7e661c174d2f1d44faee09001136fb44b5dcac956274ed3",
+    "stan/src/stan/mcmc/hmc/integrators/expl_leapfrog.hpp": "3aaff808baf33f127c4f38c6a13f0e1bf1586fae2096ab5c9b5d9aa5675be982",
+    "stan/src/stan/mcmc/hmc/nuts/adapt_diag_e_nuts.hpp": "ba2ea4005cdea9f9b9d0eb2fda1a0da75aa8ed62963e433f9bb0bd885ee0535e",
+    "stan/src/stan/mcmc/hmc/nuts/adapt_dense_e_nuts.hpp": "a14cacc74f4e043a0d3bac5799cf0348075b43895edad5b8de02e19ae9f549b1",
+    "stan/src/stan/mcmc/hmc/nuts/base_nuts.hpp": "eb646717d8c90bf73ed00cc250c34060ca0e3aadcce4d7150235e727106776c7",
+    "stan/src/stan/services/sample/hmc_nuts_diag_e_adapt.hpp": "bb5621b2b656ae94cc30f6abaf16a567adba52d74ea8805205a90e77f4d3a624",
+    "stan/src/stan/services/util/run_adaptive_sampler.hpp": "d4452ba4a23b6d9aa9353932326e947cded1a8e58a77ff49847e8eff2acf57e1",
+    "stan/lib/stan_math/stan/math/prim/fun/welford_var_estimator.hpp": "4aac8581a231f1c18ca153dbac39d849a2a2e8491a5f752e0d1da4c7bc1cc209",
+    "stan/lib/stan_math/stan/math/prim/fun/welford_covar_estimator.hpp": "d3da207fcd167c2c2c8d2a4a5c4ce51e89efb41b5df390a220170807689fcfd3"
+  },
+  "binary_sha256": "e14029cbc536f65c914a0ae66f1139c340aabc772e7fac6d9f7c2f635cbf02f0"
+}

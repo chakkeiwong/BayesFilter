@@ -15,6 +15,15 @@ The subsequent October 27 request extends the same standalone exception to
 `docs/benchmarks/benchmark_nuts_geometry.py` and its target helpers, under
 `docs/plans/bayesfilter-nuts-geometry-overhead-2026-10-27.md`, for broader
 geometry and execution-overhead diagnostics through the shared compiled kernel.
+The October 27 implementation request additionally permits the standalone
+Stan warm-up transplant, its native CmdStan installation/comparison and tuning
+guide under `docs/plans/bayesfilter-stan-nuts-transplant-2026-10-27.md`. This
+does not reopen retired public NUTS entry points or change production defaults.
+The subsequent October 27 owner request authorizes execution of the direct
+Stan Euclidean NUTS port and standalone validation/comparison under
+docs/plans/bayesfilter-full-stan-nuts-port-execution-2026-10-27.md, including
+its docs/benchmarks implementation and native oracles. This remains a
+standalone exception and does not reopen retired public APIs.
 
 ## Academic Research Governance Profile
 
