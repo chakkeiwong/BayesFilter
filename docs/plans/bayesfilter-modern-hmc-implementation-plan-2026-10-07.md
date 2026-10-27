@@ -1,5 +1,28 @@
 # Implementation and validation plan for modern HMC methods
 
+## Active execution — 27 October 2026, 14:26 Asia/Shanghai
+
+Repair commit: `c41c38941`. The source-isolated continuation
+`N5/rejection-consistency-20261027-01` launched at 14:24 with 16,964.992437
+seconds of remaining inclusive allocation. All seven fresh GPU/XLA preflight
+checks passed; the supervisor has advanced to all-nine-pair pricing. Memory
+growth was configured and verified before device initialization. Its detached
+supervisor PID is 3830229. The latest outer deadline is 19:07:11 on October 27;
+queueing, preflight, pricing, qualification and closeout share this allowance.
+A budget stop preserves partial evidence and does not relax qualification.
+
+The supervisor selected GPU0 when its measured load fell below the owner's
+50-percent launch threshold. Pricing and qualification recheck shared capacity;
+an active worker is not killed because its own load rises. The frozen copy
+records 1,063 source files and exact working-tree dependency bytes alongside
+the Git commit. Historical evidence is not reused. See
+[the launch status](artifacts/modern-hmc-implementation-2026-10-07/N5/rejection-consistency-20261027-01/launch-status-result.json).
+
+Next: inspect all-pair pricing, continue the unchanged replicated design,
+validate any export/reload, and settle the outer inclusive charge once. The
+master remains incomplete; this tranche provides no posterior, ranking, default
+or release claim. The separate SIR allocation is untouched.
+
 ## Active repair — 27 October 2026
 
 The completed diagnostic and settlement are committed as bf1986391. Execution

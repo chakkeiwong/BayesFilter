@@ -1,0 +1,98 @@
+{
+  "schema": "bayesfilter.modern_hmc_frozen_diagnostic_cohort.v1",
+  "epsilon_by_l": [
+    [
+      3,
+      [
+        0.4,
+        0.8
+      ]
+    ],
+    [
+      5,
+      [
+        0.4,
+        0.8
+      ]
+    ],
+    [
+      9,
+      [
+        0.4
+      ]
+    ],
+    [
+      13,
+      [
+        0.4
+      ]
+    ],
+    [
+      18,
+      [
+        0.4
+      ]
+    ],
+    [
+      25,
+      [
+        0.2,
+        0.4
+      ]
+    ]
+  ],
+  "policy_source": "docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/prospective-design.json",
+  "statistical_family_cap": 24,
+  "controller_candidate_cap": 9,
+  "refinement_rounds": 0,
+  "max_repairs_per_family": 0,
+  "evidence_rungs": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "qualification_seed": [
+    20261027,
+    6101
+  ],
+  "reload_seed": [
+    20261027,
+    2001
+  ],
+  "scope": "All nine discarded nominees only; broader adaptive search remains open",
+  "prior_price_vetoes": [
+    {
+      "L": 5,
+      "epsilon": 0.8,
+      "reason": "nonfinite target after finite-precision unit-root excursion",
+      "evidence": "docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/nominee-price-01/evidence/trial-05.json"
+    },
+    {
+      "L": 3,
+      "epsilon": 0.8,
+      "reason": "movement_gate_failed",
+      "evidence": "docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/nominee-price-01/evidence/trial-03.json"
+    },
+    {
+      "L": 3,
+      "epsilon": 0.8,
+      "reason": "movement_gate_failed",
+      "evidence": "docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/nominee-price-01/evidence/trial-04.json"
+    },
+    {
+      "L": 5,
+      "epsilon": 0.8,
+      "reason": "movement_gate_failed",
+      "evidence": "docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/nominee-price-01/evidence/trial-06.json"
+    }
+  ],
+  "prior_veto_rule": "Historical vetoes remain recorded; no posterior or default promotion",
+  "numeric_provenance": "Inherited 16/32/64/128 and alpha cap24 unchanged; nine is measured cohort size; seeds are purpose-separated reproducibility keys.",
+  "pricing_seed": [
+    20261027,
+    5100
+  ],
+  "prior_run": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/modern-hmc-implementation-2026-10-07/N5/diagnostic-extension-20261025-01/qualification-03",
+  "source_semantics": "fresh current rejection checks; old evidence not requalified"
+}
