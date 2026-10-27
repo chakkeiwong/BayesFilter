@@ -1,0 +1,199 @@
+{
+  "configuration_status": "PILOT_HYPOTHESES_NOT_CANONICALLY_TUNED",
+  "attempts": [
+    {
+      "attempt": "banana-d2-c4-cpu-01",
+      "status": "completed",
+      "wall_seconds": 9.033970906981267,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device cpu --target banana --output docs/benchmarks/artifacts/nuts-xla-20261027/banana-d2-c4-cpu-01",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.01388890400994569,
+      "median_warmup_seconds": 0.00873089098604396,
+      "rhat_max": 1.0373249053705131,
+      "min_bulk_ess": 90.9881621993015,
+      "min_tail_ess": 172.5571361090382,
+      "mean_leapfrogs": 4.555013020833333,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.0029296875,
+        0.0205078125,
+        0.01953125
+      ]
+    },
+    {
+      "attempt": "banana-d2-c4-gpu-01",
+      "status": "completed",
+      "wall_seconds": 28.288048932037782,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device gpu --gpu 0 --target banana --output docs/benchmarks/artifacts/nuts-xla-20261027/banana-d2-c4-gpu-01",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.19000850699376315,
+      "median_warmup_seconds": 0.09924509102711454,
+      "rhat_max": 1.0373208293671599,
+      "min_bulk_ess": 91.0028754702356,
+      "min_tail_ess": 172.5571361090382,
+      "mean_leapfrogs": 4.308268229166667,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.0029296875,
+        0.0205078125,
+        0.0302734375
+      ]
+    },
+    {
+      "attempt": "banana-d2-c4-hmc-cpu-01",
+      "status": "completed",
+      "wall_seconds": 5.952530568989459,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device cpu --target banana --method hmc --output docs/benchmarks/artifacts/nuts-xla-20261027/banana-d2-c4-hmc-cpu-01",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.0030221889610402286,
+      "median_warmup_seconds": 0.002173484012018889,
+      "rhat_max": 1.0103846977015165,
+      "min_bulk_ess": 182.03205220643972,
+      "min_tail_ess": 264.59618200192466,
+      "mean_leapfrogs": 8.0,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "attempt": "banana-d32-c32-cpu-01",
+      "status": "completed",
+      "wall_seconds": 12.357887237041723,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device cpu --target banana --dimension 32 --chains 32 --output docs/benchmarks/artifacts/nuts-xla-20261027/banana-d32-c32-cpu-01",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.2026645200094208,
+      "median_warmup_seconds": 0.11429842299548909,
+      "rhat_max": 1.0073450419078989,
+      "min_bulk_ess": 4018.0382791341463,
+      "min_tail_ess": 3467.5378481854514,
+      "mean_leapfrogs": 12.2626953125,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.000732421875,
+        0.000732421875,
+        0.000244140625
+      ]
+    },
+    {
+      "attempt": "banana-d32-c32-gpu-01",
+      "status": "completed",
+      "wall_seconds": 33.016673772013746,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device gpu --gpu 0 --target banana --dimension 32 --chains 32 --output docs/benchmarks/artifacts/nuts-xla-20261027/banana-d32-c32-gpu-01",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.7571039360482246,
+      "median_warmup_seconds": 0.35802072304068133,
+      "rhat_max": 1.0072909148525329,
+      "min_bulk_ess": 4050.8608103162214,
+      "min_tail_ess": 3467.5378481854514,
+      "mean_leapfrogs": 12.261067708333334,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.000732421875,
+        0.000732421875,
+        0.000244140625
+      ]
+    },
+    {
+      "attempt": "gaussian-d2-c4-cpu-01",
+      "status": "completed",
+      "wall_seconds": 8.686535549990367,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device cpu --target gaussian --output docs/benchmarks/artifacts/nuts-xla-20261027/gaussian-d2-c4-cpu-01",
+      "source_sha256": "e458004ced27815db0ce063227d037fd0c17048e0cf1a912a0082f47e5d11a04",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.007284866995178163,
+      "median_warmup_seconds": 0.00839712203014642,
+      "rhat_max": 1.019345697945571,
+      "min_bulk_ess": 989.2215737939526,
+      "min_tail_ess": 673.3429859319135,
+      "mean_leapfrogs": 2.6588541666666665,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "attempt": "gaussian-d2-c4-gpu-01",
+      "status": "failed",
+      "wall_seconds": 26.73056443402311,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device gpu --gpu 0 --target gaussian --output docs/benchmarks/artifacts/nuts-xla-20261027/gaussian-d2-c4-gpu-01",
+      "source_sha256": "e458004ced27815db0ce063227d037fd0c17048e0cf1a912a0082f47e5d11a04",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      }
+    },
+    {
+      "attempt": "gaussian-d2-c4-gpu-02",
+      "status": "completed",
+      "wall_seconds": 27.55952274001902,
+      "command": "timeout 180s /home/ubuntu/anaconda3/envs/tfgpu/bin/python docs/benchmarks/benchmark_nuts_xla.py --device gpu --gpu 0 --target gaussian --output docs/benchmarks/artifacts/nuts-xla-20261027/gaussian-d2-c4-gpu-02",
+      "source_sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+      "source_dependencies_match": {
+        "bayesfilter/runtime/gpu_memory_policy.py": true,
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": true,
+        "bayesfilter/inference/hmc_diagnostic_math.py": true,
+        "bayesfilter/inference/hmc_ess.py": true
+      },
+      "median_sample_seconds": 0.09052911394974217,
+      "median_warmup_seconds": 0.11124310799641535,
+      "rhat_max": 1.019345697945571,
+      "min_bulk_ess": 989.2215737939526,
+      "min_tail_ess": 673.3429859319135,
+      "mean_leapfrogs": 2.6588541666666665,
+      "tree_cap_fraction_max": 0.0,
+      "divergence_fraction": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "charged_worker_seconds": 151.62573414109647,
+  "launch_cap": 8,
+  "launches_remaining": 0,
+  "compute_cap_seconds": 1200,
+  "comparison_status": "descriptive only; nonrandomized device order; no statistical ranking",
+  "note": "failed GPU attempt counts; host serialization repaired without changing the numerical graph"
+}

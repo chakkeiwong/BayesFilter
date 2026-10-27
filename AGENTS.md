@@ -1,5 +1,17 @@
 # BayesFilter Agent Governance
 
+## NUTS Standalone Benchmark Exception
+
+Owner request, 2026-10-27: revisit NUTS speed using a simple benchmark and
+choose CPU or GPU from fully XLA-compiled measurements. The narrow exception
+is `docs/benchmarks/benchmark_nuts_xla.py` under
+`docs/plans/bayesfilter-nuts-xla-benchmark-2026-10-27.md`. It may execute stock
+TFP NUTS for this standalone study. The existing campaign, public tuners,
+retired entry points and defaults are not reopened by this exception.
+The October 27 follow-up permits `docs/benchmarks/compare_nuts_fixed_hmc.py`
+to orchestrate tuned fixed-L HMC versus NUTS through that same benchmark's
+compiled kernel, under `docs/plans/bayesfilter-nuts-fixed-hmc-comparison-2026-10-27.md`.
+
 ## Academic Research Governance Profile
 
 Owner directive, 2026-07-13: BayesFilter is a trusted local academic research

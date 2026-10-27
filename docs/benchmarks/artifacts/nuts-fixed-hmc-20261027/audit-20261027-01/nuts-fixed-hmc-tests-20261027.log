@@ -1,0 +1,45 @@
+......F.......                                                           [100%]
+=================================== FAILURES ===================================
+_______________ test_banana_density_gradient_and_compiled_chains _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-106/test_banana_density_gradient_a0')
+
+    def test_banana_density_gradient_and_compiled_chains(tmp_path):
+        module = benchmark()
+        args = module.parser().parse_args(['--output', str(tmp_path / 'new'),
+            '--device', 'cpu', '--warmup', '16', '--draws', '16'])
+>       tf, tfp, _ = module.setup(args)
+                     ^^^^^^^^^^^^^^^^^^
+
+tests/test_nuts_xla_benchmark.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+docs/benchmarks/benchmark_nuts_xla.py:70: in setup
+    tf.config.threading.set_intra_op_parallelism_threads(args.threads)
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/config.py:129: in set_intra_op_parallelism_threads
+    context.context().intra_op_parallelism_threads = num_threads
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tensorflow.python.eager.context.Context object at 0x75ab120bc440>
+num_threads = 4
+
+    @intra_op_parallelism_threads.setter
+    def intra_op_parallelism_threads(self, num_threads):
+      if self._intra_op_parallelism_threads == num_threads:
+        return
+    
+      if self._context_handle is not None:
+>       raise RuntimeError(
+            "Intra op parallelism cannot be modified after initialization."
+        )
+E       RuntimeError: Intra op parallelism cannot be modified after initialization.
+
+../../anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/eager/context.py:2233: RuntimeError
+=============================== warnings summary ===============================
+tests/test_modern_hmc_nuts_comparison.py::test_repository_limits_executable_nuts_to_owner_benchmark
+  <unknown>:563: SyntaxWarning: invalid escape sequence '\('
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_nuts_xla_benchmark.py::test_banana_density_gradient_and_compiled_chains
+1 failed, 13 passed, 1 warning in 15.66s

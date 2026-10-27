@@ -1,0 +1,20 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1793045284.496369 3788369 gpu_device.cc:2020] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 30421 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:01:00.0, compute capability: 8.9
+I0000 00:00:1793045289.909300 3788369 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_nuts_xla.py", line 350, in <module>
+    run(parser().parse_args())
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/python/BayesFilter/docs/benchmarks/benchmark_nuts_xla.py", line 321, in run
+    tf.io.serialize_tensor(tensor))
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/ops/io_ops.py", line 214, in serialize_tensor
+    return gen_parsing_ops.serialize_tensor(tensor, name)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/ops/gen_parsing_ops.py", line 2244, in serialize_tensor
+    _ops.raise_from_not_ok_status(e, name)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/ops.py", line 6027, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Could not satisfy device specification '/job:localhost/replica:0/task:0/device:GPU:0'. enable_soft_placement=0. Supported device types [CPU]. All available devices [/job:localhost/replica:0/task:0/device:GPU:0, /job:localhost/replica:0/task:0/device:CPU:0]. [Op:SerializeTensor] name: 

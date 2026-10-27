@@ -1,0 +1,474 @@
+{
+  "schema": "bayesfilter.nuts_fixed_hmc_preservation_audit.v1",
+  "created_at_utc": "2026-10-27T06:46:34.784945+00:00",
+  "scope": "Post-run artifact verification only; no new sampling or tuning.",
+  "checks_passed": true,
+  "attempts": {
+    "attempt-01": {
+      "status": "failed",
+      "git_commit": "e2c183d5a9a4e9d8a054025e097fd212aa7f8a37",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/compare_nuts_fixed_hmc.py",
+        "--output",
+        "docs/benchmarks/artifacts/nuts-fixed-hmc-20261027/attempt-01"
+      ],
+      "wall_seconds": 91.83123599895043,
+      "device": "/CPU:0",
+      "gpu_intentionally_hidden": true,
+      "dtype": "float64",
+      "jit_compile": true,
+      "sources": {
+        "docs/benchmarks/compare_nuts_fixed_hmc.py": {
+          "sha256": "c10539167198d4564cf859fd581d90829c37338562a91be54e2dd16cdcd846f4",
+          "snapshot": "attempt-01/source/docs_benchmarks_compare_nuts_fixed_hmc.py.txt",
+          "current_file_matches": false
+        },
+        "docs/benchmarks/benchmark_nuts_xla.py": {
+          "sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+          "snapshot": "attempt-01/source/docs_benchmarks_benchmark_nuts_xla.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/runtime/gpu_memory_policy.py": {
+          "sha256": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+          "snapshot": "attempt-01/source/bayesfilter_runtime_gpu_memory_policy.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": {
+          "sha256": "2ee511aa5708745778bce81c053e41b65384a41260294507a6f4a6d4d169b839",
+          "snapshot": "attempt-01/source/bayesfilter_inference_hmc_posterior_diagnostics.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_diagnostic_math.py": {
+          "sha256": "bc8c7dc647cc31018e1a8027207c9728c66f344ce225e550242bf3c17a8df001",
+          "snapshot": "attempt-01/source/bayesfilter_inference_hmc_diagnostic_math.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_ess.py": {
+          "sha256": "dd191e9c298c35f96a27d2e27c6772ff1ca5af12927b924bd3fa274a0317a5ff",
+          "snapshot": "attempt-01/source/bayesfilter_inference_hmc_ess.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/nuts.py": {
+          "sha256": "2616e4b133c10acfcae294cdd2b44266a94a68f5b2c62c828a61117f516a1761",
+          "snapshot": "attempt-01/source/nuts.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/hmc.py": {
+          "sha256": "14815d9f04a5f8249b5a804dfb088ac0838c9b4e123dda45f5b12876fc50bb70",
+          "snapshot": "attempt-01/source/hmc.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/dual_averaging_step_size_adaptation.py": {
+          "sha256": "2d6b4341bcaf3b12311012e64eefd894f1f97b6a0abee14cf033d8caa3e1bda0",
+          "snapshot": "attempt-01/source/dual_averaging.py.txt",
+          "current_file_matches": true
+        }
+      },
+      "compiled_functions": {
+        "tuning-hmc-L1-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L1-sample.optimized_hlo.txt",
+          "sha256": "6df096fc1d2e7486bed4cd08e5711bfa7870cf69e74a22ee0bad360cf455de83",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L1-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L1-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "c0fbaceffedcfb5e97033c7a1e86afd122b6d19af5b1a44cd49c080a305acd0a",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L1-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L1-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "e9f105fee98dbd83d40bedf359f43a760580947306737084b11df3f3b0b2b623",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L1-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L1-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "3bcbd52d9a38d116f0691dc5848530a5b944c7e2dfc9a16163934134daba30f8",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L3-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L3-sample.optimized_hlo.txt",
+          "sha256": "91638331cca2eac76f7840ea1c1eced9eccef03ae3b9ff48bb2cb9646cc50426",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L3-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L3-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "84e042ba334d00c5f138155a0802f0da875c3a4698439c18b9d9ab09ba023026",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L3-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L3-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "cb5bbfa73bf85da9cd325dfcc3cf2be7f994a5381555a4fe7fde379b2e9669a0",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L3-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L3-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "f9dca45c62e1f55e7763b7f4309e9cc513fd1f3d55e98b8e4199ba3e42379794",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L5-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L5-sample.optimized_hlo.txt",
+          "sha256": "7fee96d8c532ae6f3859f9413dd69e003e57ab3ed54bcf2612068f9117cbcaa7",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L5-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L5-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "8159fe398ebde1a46d330f6513cde0276dbc1d36f9b20039ed7e85f9bdf43070",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L5-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L5-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "9171ebf259e21843ee84b251d58450602b13a7710cb40d7851fe3d38633affb9",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L5-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L5-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "cfe433a3cd8029f36055b2c7f7149704ae046dcde8bcbe12764dff41d9d624e0",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L8-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L8-sample.optimized_hlo.txt",
+          "sha256": "d752040fb58c927df9e83e6d8159d5b7f6e7ad67be90b6ec457d42c859ef3521",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L8-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L8-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "ae27e842695bdd6a89468a642604fe0904d5e04fe574ee261e665ed665fe449e",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L8-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L8-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "28273b2d757a1c71b1a1a069ff377cb93b198e688ae6f6452ef93931f21c2055",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L8-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L8-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "ee7a13ba07757904d1a2b6b629d357daab15614c7b176203233b3c08e14d6dcf",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L9-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L9-sample.optimized_hlo.txt",
+          "sha256": "73ccb4eefcfb36d78494c3539398c7490dbd8600b88ecbf897dfa9c8b2a1c1c2",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L9-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L9-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "18c948e33d57570a42afc09d2120be025033d4adc0e23ffcaa11beface66ecce",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L9-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L9-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "5913f446bb2296e29ab8e6975997e35d4725ef27562b536915b4165e4fc8f919",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L9-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L9-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "5b8f54bd3f6d554dfabfe04422876762240e4d4e023d75f2d02976e564dc816f",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L13-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L13-sample.optimized_hlo.txt",
+          "sha256": "2aa397ef64519eaa6798924e5806db906bb93cb257af61e074fc8c6d5d4d6619",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L13-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L13-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "0edf8ce63f7995eda08fae09916e00f5055bc1df72672c9b0566bd50b2ea9f8b",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L13-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L13-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "b69de16f19af5d38bb7b926eb363977dfe3f45839d59b77ba80879412542dfe4",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L13-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L13-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "fed5c7019ecfabfe0cde49ca99cd2db2c844d2ae70a027849a7332907fe3e24b",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L18-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L18-sample.optimized_hlo.txt",
+          "sha256": "2e5bf3dedba19dc864e54b0404bbb05828ef3085326daee9d6ce9e2c1084ecff",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L18-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L18-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "e88cf7803589c06f82fd5b6983ce770bbef6669a462c9992ab297e6490997b7f",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L18-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L18-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "bbb1c4141265b2f01e5355fd12d74c3ef7e7bddddcfbc70680bafc30bc846715",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L18-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L18-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "4e26e71431653d6f22cc52a94a8dd35637c2c7796850dfe51cb1a756aa0dfc3b",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-hmc-L25-sample": {
+          "path": "attempt-01/compiled/tuning-hmc-L25-sample.optimized_hlo.txt",
+          "sha256": "d29222aebd218a41347dcc852f0608a01b0ce730119f4176d4fbc8204c442275",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L25-a0.65-warmup": {
+          "path": "attempt-01/compiled/hmc-L25-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "f1c04f52c5c244779bc497498f86f782799affacbedb449a64109a36dbfccb95",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L25-a0.8-warmup": {
+          "path": "attempt-01/compiled/hmc-L25-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "92dfcdb2b4d067694e3707b7d75791e01232e24ace80efeefcbb5b5783abb2c7",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "hmc-L25-a0.9-warmup": {
+          "path": "attempt-01/compiled/hmc-L25-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "d36e727199040671d01dbaa9d7668e4a5c302f338841353376857fc9937ecd83",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "tuning-nuts-L0-sample": {
+          "path": "attempt-01/compiled/tuning-nuts-L0-sample.optimized_hlo.txt",
+          "sha256": "8f31cc033dd58418afcefa1e0e0d1dc91aec9cb9802879b777ac921d8536b1b5",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "nuts-L0-a0.65-warmup": {
+          "path": "attempt-01/compiled/nuts-L0-a0.65-warmup.optimized_hlo.txt",
+          "sha256": "cce5663f35083b85957925908315da139c3f8106e474b8b20a22a3849c1e703c",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "nuts-L0-a0.8-warmup": {
+          "path": "attempt-01/compiled/nuts-L0-a0.8-warmup.optimized_hlo.txt",
+          "sha256": "cde0b76e7c86432baa5a6ba857661685b55428e7ea68cf673c773322c58fe831",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "nuts-L0-a0.9-warmup": {
+          "path": "attempt-01/compiled/nuts-L0-a0.9-warmup.optimized_hlo.txt",
+          "sha256": "36fe50b320afe54c2dcb461a110fd64181b64213fd7b5b7d07ec17863e0b0b9e",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-hmc-warmup": {
+          "path": "attempt-01/compiled/heldout-hmc-warmup.optimized_hlo.txt",
+          "sha256": "37537e846ba086acc543f7f6a5b84786b11025d7b0b88773962a2ea4f31f07b2",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-hmc-sample": {
+          "path": "attempt-01/compiled/heldout-hmc-sample.optimized_hlo.txt",
+          "sha256": "65d2c0298955f0bb44170553e100a5714de4691f8cd7eb2ad45e048d0dd464c6",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-nuts-warmup": {
+          "path": "attempt-01/compiled/heldout-nuts-warmup.optimized_hlo.txt",
+          "sha256": "d2b41ab522f06125498fdf8e368f212d1751b6821101ec82facb70e840f0cdd6",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-nuts-sample": {
+          "path": "attempt-01/compiled/heldout-nuts-sample.optimized_hlo.txt",
+          "sha256": "e4fc29eea4c2c813fd4373027b3c08415a5e3a68e3a511c9de3acedc1ceea4cd",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        }
+      },
+      "tensor_shards": 404,
+      "heldout_pairs_recorded": 9
+    },
+    "attempt-02": {
+      "status": "completed",
+      "git_commit": "e2c183d5a9a4e9d8a054025e097fd212aa7f8a37",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "docs/benchmarks/compare_nuts_fixed_hmc.py",
+        "--output",
+        "docs/benchmarks/artifacts/nuts-fixed-hmc-20261027/attempt-02",
+        "--resume-selection-from",
+        "docs/benchmarks/artifacts/nuts-fixed-hmc-20261027/attempt-01"
+      ],
+      "wall_seconds": 19.36154394602636,
+      "device": "/CPU:0",
+      "gpu_intentionally_hidden": true,
+      "dtype": "float64",
+      "jit_compile": true,
+      "sources": {
+        "docs/benchmarks/compare_nuts_fixed_hmc.py": {
+          "sha256": "86238b29609395a98b9030034ed760b909c26df4aeccee169575971569657b1f",
+          "snapshot": "attempt-02/source/docs_benchmarks_compare_nuts_fixed_hmc.py.txt",
+          "current_file_matches": true
+        },
+        "docs/benchmarks/benchmark_nuts_xla.py": {
+          "sha256": "3dafebc7e979e57b45cbda833397a89f220b3b64e3a314d7620fb196c6a5f97f",
+          "snapshot": "attempt-02/source/docs_benchmarks_benchmark_nuts_xla.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/runtime/gpu_memory_policy.py": {
+          "sha256": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+          "snapshot": "attempt-02/source/bayesfilter_runtime_gpu_memory_policy.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_posterior_diagnostics.py": {
+          "sha256": "2ee511aa5708745778bce81c053e41b65384a41260294507a6f4a6d4d169b839",
+          "snapshot": "attempt-02/source/bayesfilter_inference_hmc_posterior_diagnostics.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_diagnostic_math.py": {
+          "sha256": "bc8c7dc647cc31018e1a8027207c9728c66f344ce225e550242bf3c17a8df001",
+          "snapshot": "attempt-02/source/bayesfilter_inference_hmc_diagnostic_math.py.txt",
+          "current_file_matches": true
+        },
+        "bayesfilter/inference/hmc_ess.py": {
+          "sha256": "dd191e9c298c35f96a27d2e27c6772ff1ca5af12927b924bd3fa274a0317a5ff",
+          "snapshot": "attempt-02/source/bayesfilter_inference_hmc_ess.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/nuts.py": {
+          "sha256": "2616e4b133c10acfcae294cdd2b44266a94a68f5b2c62c828a61117f516a1761",
+          "snapshot": "attempt-02/source/nuts.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/hmc.py": {
+          "sha256": "14815d9f04a5f8249b5a804dfb088ac0838c9b4e123dda45f5b12876fc50bb70",
+          "snapshot": "attempt-02/source/hmc.py.txt",
+          "current_file_matches": true
+        },
+        "/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow_probability/python/mcmc/dual_averaging_step_size_adaptation.py": {
+          "sha256": "2d6b4341bcaf3b12311012e64eefd894f1f97b6a0abee14cf033d8caa3e1bda0",
+          "snapshot": "attempt-02/source/dual_averaging.py.txt",
+          "current_file_matches": true
+        }
+      },
+      "compiled_functions": {
+        "heldout-hmc-warmup": {
+          "path": "attempt-02/compiled/heldout-hmc-warmup.optimized_hlo.txt",
+          "sha256": "cc131e823d66304d2cff53d8d0a90731eba3d83b28500778724e99d69fb0b5b1",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-hmc-sample": {
+          "path": "attempt-02/compiled/heldout-hmc-sample.optimized_hlo.txt",
+          "sha256": "a1a3c439fe116aa7978b605fe59fcc793c382b40cd562c9584a5a9e45462fc8e",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-nuts-warmup": {
+          "path": "attempt-02/compiled/heldout-nuts-warmup.optimized_hlo.txt",
+          "sha256": "866d9de796b0706074c5bb4e487e7ae4c5e8898f5653396735392416d171f3a2",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        },
+        "heldout-nuts-sample": {
+          "path": "attempt-02/compiled/heldout-nuts-sample.optimized_hlo.txt",
+          "sha256": "4b9b20a0f8958a087ecc9cef771405de5bb161305d5279a721a5ec077025f67d",
+          "tracing_count": 1,
+          "forbidden_ops": []
+        }
+      },
+      "tensor_shards": 96,
+      "heldout_pairs_recorded": 12
+    }
+  },
+  "frozen_selection_byte_identical": true,
+  "sampling_kernel_snapshot_identical": true,
+  "tuning_cells": 27,
+  "validation_pairs": 12,
+  "independent_additional_replicas_from_retry": false,
+  "worker_seconds_total": 111.19277994497679,
+  "selection_seconds_original": 75.97845374897588,
+  "measurements": {
+    "hmc": {
+      "median_sample_seconds": 0.027304438990540802,
+      "median_total_seconds": 0.034922295017167926,
+      "median_primary_ess_per_second": 106891.98577350695,
+      "max_rhat": 1.0013594742170036,
+      "zero_movement_chains": {}
+    },
+    "nuts": {
+      "median_sample_seconds": 0.14050214350572787,
+      "median_total_seconds": 0.19520288199419156,
+      "median_primary_ess_per_second": 10234.911559005917,
+      "max_rhat": 1.5267059587926513,
+      "zero_movement_chains": {
+        "1009": [
+          1
+        ]
+      }
+    }
+  },
+  "supported_posterior_efficiency_ranking": false,
+  "logs": [
+    {
+      "source": "/tmp/nuts-fixed-hmc-attempt-01.log",
+      "preserved_path": "audit-20261027-01/nuts-fixed-hmc-attempt-01.log",
+      "sha256": "bd31b51e3d0b2ea0b3daf338809d5b8cff1301b64514fee142be9127bd637ff2",
+      "bytes": 7454
+    },
+    {
+      "source": "/tmp/nuts-fixed-hmc-attempt-02.log",
+      "preserved_path": "audit-20261027-01/nuts-fixed-hmc-attempt-02.log",
+      "sha256": "a3d7fa1eb505decca924613f02f68260bc799d687312b6719b9232cbfc8f93d7",
+      "bytes": 2413
+    },
+    {
+      "source": "/tmp/nuts-fixed-hmc-tests-20261027.log",
+      "preserved_path": "audit-20261027-01/nuts-fixed-hmc-tests-20261027.log",
+      "sha256": "bc46e800569bd5962010d9b7e11f5bf2a30123240ede810f8820d4d5a71363c6",
+      "bytes": 2378
+    },
+    {
+      "source": "/tmp/nuts-fixed-hmc-tests-final-20261027.log",
+      "preserved_path": "audit-20261027-01/nuts-fixed-hmc-tests-final-20261027.log",
+      "sha256": "ef3bbbd03b63d5f4ca52d2b888740a9deb5ee7f1320e540803e61dc8e6b5413f",
+      "bytes": 1146
+    },
+    {
+      "source": "/tmp/nuts-fixed-hmc-repair-tests.log",
+      "preserved_path": "audit-20261027-01/nuts-fixed-hmc-repair-tests.log",
+      "sha256": "f70222d71166d803e0667fcf7c3be85935dd15e46e5bb78cc75b27def79014a2",
+      "bytes": 982
+    }
+  ],
+  "tests": {
+    "initial": "1 failed, 13 passed in 15.66s; framework initialization order repaired",
+    "prelaunch_combined": "14 passed in 22.82s",
+    "post_reporting_repair_focused": "6 passed in 2.62s",
+    "post_repair_full_combined_suite_rerun": false,
+    "historical_test_command_capture": "Exact test commands were not captured in these logs; pass counts and durations are preserved."
+  },
+  "documentation_correction": "Both launch manifests record git commit e2c183d5a9a4e9d8a054025e097fd212aa7f8a37; the result note previously copied a different commit from the session summary and is corrected to match the manifests."
+}
