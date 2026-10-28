@@ -55,3 +55,14 @@ each target.
 
 \section{Why the failures matter for this inference problem}
 \input{chapters/observation_parent_failures_body}
+
+\section{Scope of the parent-selection default}
+The comparison above concerns the Gaussian conditional-proposal route used in
+the reported model experiments. Deterministic structural-completion models
+use a separate innovation-space proposal, whose implementation currently
+selects parents uniformly. The observation-weighted rule is not implemented
+for that route: its parent probabilities would need to be computed from the
+innovation-space predictive observation law, with the resulting marginal
+proposal density retained in the importance correction. The code therefore
+rejects the weighted-parent setting for structural completion rather than
+silently running the uniform rule under a weighted-policy label.

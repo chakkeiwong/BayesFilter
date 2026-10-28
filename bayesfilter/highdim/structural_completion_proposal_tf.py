@@ -47,6 +47,11 @@ def structural_proposal(model, x, observation, controls, beta, uniforms,
     for all three innovation densities in the defensive mixture. Summing over
     other parents would be wrong when their completion curves differ.
     """
+    if controls.proposal_policy == "conditional_observation_weighted":
+        raise ValueError(
+            "structural completion currently uses uniform parents; set "
+            "proposal_policy='conditional_uniform'"
+        )
     batch, n, _ = x.v.shape
     r = normals.shape[-1]
     b, j = fixed_design_indices(beta, uniforms, n) if indices is None else indices

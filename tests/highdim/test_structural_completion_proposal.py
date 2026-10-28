@@ -83,7 +83,8 @@ def test_conditional_prior_proposal_has_exact_structural_support(name):
     beta = tf.constant([1., 0., 0.], D)
     indices = (tf.zeros([16], tf.int32), tf.range(16, dtype=tf.int32))
     child, densities, valid, maps = structural_proposal(
-        law, x, tf.constant([.1], D), ProposalControls(flow_steps=8, reset_steps=5),
+        law, x, tf.constant([.1], D), ProposalControls(flow_steps=8, reset_steps=5,
+            proposal_policy="conditional_uniform"),
         beta, design["uniforms"][0], design["innovations"][0], indices=indices)
     expected = law.complete(x, law.q.constant(design["innovations"][0][None]))
     np.testing.assert_allclose(child.v, expected.v, atol=1e-12)
@@ -98,7 +99,8 @@ def test_complete_filter_total_score_and_batch_parity(name):
     n, horizon = 16, 2
     design = make_structural_design(n, horizon, 820, D)
     data = make_structural_data(spec, horizon, 821, D)
-    controls = ProposalControls(flow_steps=8, reset_steps=5, correction_steps=1)
+    controls = ProposalControls(flow_steps=8, reset_steps=5, correction_steps=1,
+                                proposal_policy="conditional_uniform")
     kwargs = dict(spec=spec, n=n, horizon=horizon, controls=controls, dtype=D,
                   jit_compile=False, fixed_draw_design=(design["beta"], design["uniforms"]))
     batch = make_batched_score_filter(batch_size=2, **kwargs)
@@ -118,3 +120,12 @@ def test_complete_filter_total_score_and_batch_parity(name):
         dq = tf.one_hot(k, spec.parameter_count, dtype=D)[None]*2e-5
         fd = (batch(q+dq, *args)["value"]-batch(q-dq, *args)["value"])/4e-5
         np.testing.assert_allclose(result["score"][:, k], fd, atol=3e-6, rtol=3e-5)
+
+
+def test_structural_filter_rejects_unimplemented_weighted_parent_default():
+    spec = StructuralModelSpec("model_a")
+    design = make_structural_design(16, 1, 820, D)
+    with pytest.raises(ValueError, match="structural completion currently uses uniform parents"):
+        make_batched_score_filter(
+            spec, 16, 1, ProposalControls(flow_steps=2, reset_steps=5),
+            D, False, 1, fixed_draw_design=(design["beta"], design["uniforms"]))

@@ -10,8 +10,30 @@ uncertainty conditional on one ancestor, uncertainty across the predictive
 mixture, and uncertainty represented by the importance-weighted posterior.
 Each covariance has a different role in the algorithm.
 
-The construction below is the implemented covariance-guided proposal route used by the five-model surrogate-HMC campaign. It combines a common UKF guide, conditional local flows, one marginal importance correction, a Cholesky moment reset that preserves the first two weighted moments under the stated assumptions, and a bounded optional higher-moment correction. The original three-branch proposal is the baseline for the observation-conditioned extension described at the end of this chapter. That extension uses observation-weighted parents by default, while uniform parent selection remains a competitive alternative. Cross-model likelihood, score and ESS comparisons, including adverse results, are presented in Chapter~\ref{ch:bf-dpf-observation-parent-failures}; the evidence supports the default as a weight-balance choice, not as a guarantee of score accuracy or HMC suitability. The shared consumer is \path{make_batched_score_filter}, in \path{bayesfilter/highdim/covariance_proposal_score_batch_tf.py}. Every model adapter reaches that recurrence. The derivations establish the finite value and analytical total score that the code evaluates, while the case study in Chapter~\ref{ch:bf-surrogate-hmc-five-models} reports the separate endpoint, Metropolis correction and posterior diagnostics. Particle matrices in this chapter have particles as columns, \(X\in\R^{d\times N}\); this transposes the row-particle storage convention in the preceding chapter without changing the covariance or derivative identities.the row-particle storage convention in the preceding chapter without changing
-the covariance or derivative identities.
+The construction below is the covariance-guided proposal route evaluated in the
+five-model surrogate-HMC campaign. It combines a common UKF guide, conditional
+local flows, a marginal importance correction, a Cholesky reset that preserves
+the first two weighted moments under its stated assumptions, and an optional
+higher-moment correction. The original three-branch proposal is the baseline
+for the observation-conditioned extension developed here. In that extension,
+observation-weighted parents are the default, while uniform parents remain a
+competitive alternative. Chapter~\ref{ch:bf-dpf-observation-parent-failures}
+compares likelihood, score, and ESS across models, including cases where the
+weighted-parent score is less accurate. Those results support the default as a
+weight-balance choice; they do not establish uniformly better score accuracy
+or HMC suitability.
+
+The shared filtering recurrence is implemented in
+\path{make_batched_score_filter} in
+\path{bayesfilter/highdim/covariance_proposal_score_batch_tf.py}. The value and
+analytical total score differentiate the same finite filtering computation.
+Chapter~\ref{ch:bf-surrogate-hmc-five-models} separately reports the endpoint,
+Metropolis correction, and posterior diagnostics. The deterministic
+structural-completion route uses an innovation-space proposal and currently
+selects parents uniformly; the weighted-parent comparison does not cover that
+route. Particle matrices in this chapter have particles as columns,
+\(X\in\R^{d\times N}\), transposing the row-particle convention in the
+preceding chapter without changing the covariance or derivative identities.
 
 \begingroup
 \lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,

@@ -264,7 +264,10 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
     if batch<1 or n<=d or horizon<1: raise ValueError("require B>=1, N>d, T>=1")
     if diagnostic_proposal_hook is not None and fixed_draw_design is not None:
         raise ValueError("observation-dependent diagnostic selection cannot use fixed indices")
-    if diagnostic_proposal_hook is None and controls.proposal_policy != "original_three_branch":
+    structural_factory = getattr(spec, "structural_model", None)
+    if (diagnostic_proposal_hook is None
+            and controls.proposal_policy != "original_three_branch"
+            and structural_factory is None):
         from bayesfilter.highdim.observation_parent_proposal_tf import make_conditional_proposal
         diagnostic_proposal_hook = make_conditional_proposal(
             spec, controls, batch, precision_policy=precision_policy)
@@ -278,8 +281,14 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
                 raise ValueError("fixed draw design requires beta [3] and uniforms [T,N,2]")
             prepared_indices = tuple(tf.reshape(value,[horizon,n]) for value in
                 fixed_design_indices(fixed_beta,tf.reshape(fixed_uniforms,[horizon*n,2]),n))
-    structural_factory = getattr(spec, "structural_model", None)
     innovation_d = getattr(spec, "innovation_dimension", d)
+    if structural_factory is not None and controls.proposal_policy == "conditional_observation_weighted":
+        raise ValueError(
+            "structural completion currently uses uniform parents; set "
+            "proposal_policy='conditional_uniform'"
+        )
+    if structural_factory is not None and diagnostic_proposal_hook is not None:
+        raise ValueError("diagnostic proposal hooks are not supported by structural completion")
     if structural_factory is not None and precision_policy != "uniform":
         raise ValueError("structural completion currently requires uniform precision")
     sig=[tf.TensorSpec([batch,p],dtype),tf.TensorSpec([horizon,o],dtype),tf.TensorSpec([n,d],dtype),tf.TensorSpec([horizon,n,innovation_d],dtype),tf.TensorSpec([horizon,n,2],dtype),tf.TensorSpec([3],dtype)]

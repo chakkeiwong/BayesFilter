@@ -34,7 +34,11 @@ class StructuralTarget:
         self.p = self.spec.parameter_count
         self.horizon = len(dataset['observations'])
         self.batch_size, self.dtype = batch_size, dtype
-        self.controls = ProposalControls(**controls)
+        control_values = dict(controls)
+        # This route uses an innovation-space proposal with uniform parents;
+        # old scope payloads predate the explicit parent-policy field.
+        control_values.setdefault('proposal_policy', 'conditional_uniform')
+        self.controls = ProposalControls(**control_values)
         self.observations = tf.constant(dataset['observations'], dtype)
         self.design = {k:tf.constant(design[k],dtype) for k in ('initial','innovations','uniforms','beta')}
         self.n = len(design['initial'])
