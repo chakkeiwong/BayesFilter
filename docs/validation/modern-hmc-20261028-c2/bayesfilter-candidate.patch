@@ -1,0 +1,1017 @@
+diff --git a/bayesfilter/inference/batched_value_score.py b/bayesfilter/inference/batched_value_score.py
+index 2ddf03f9e..b4eb5c943 100644
+--- a/bayesfilter/inference/batched_value_score.py
++++ b/bayesfilter/inference/batched_value_score.py
+@@ -19,6 +19,7 @@ import tensorflow as tf
+ 
+ from bayesfilter.inference.posterior_adapter import (
+     ValueScoreCapability,
++    require_exact_score_adapter,
+     value_score_capability,
+ )
+ 
+@@ -286,6 +287,8 @@ def reviewed_value_score_target_fn(
+     if not hasattr(adapter, "log_prob_and_grad"):
+         raise TypeError("adapter must expose log_prob_and_grad")
+ 
++    require_exact_score_adapter(adapter)
++
+     def target_value(theta: Any) -> tf.Tensor:
+         values = tf.convert_to_tensor(theta, dtype=dtype)
+         if require_batched and values.shape.rank != 2:
+@@ -411,6 +414,7 @@ class LatentAffineBatchValueScoreAdapter:
+     ) -> None:
+         if not hasattr(base_adapter, "log_prob_and_grad"):
+             raise TypeError("base_adapter must expose log_prob_and_grad")
++        require_exact_score_adapter(base_adapter)
+         self.base_adapter = base_adapter
+         self.transform = transform
+         self.parameter_dim = int(transform.dimension)
+@@ -595,6 +599,7 @@ class FixedTransportValueScoreAdapter:
+     ) -> None:
+         if not hasattr(base_adapter, "log_prob_and_grad"):
+             raise TypeError("base_adapter must expose log_prob_and_grad")
++        require_exact_score_adapter(base_adapter)
+         self.base_adapter = base_adapter
+         self.proposal_rejection_policy = getattr(base_adapter, 'proposal_rejection_policy', None)
+         self.transport = transport
+diff --git a/bayesfilter/inference/hmc.py b/bayesfilter/inference/hmc.py
+index 56a9ee508..fbd151d57 100644
+--- a/bayesfilter/inference/hmc.py
++++ b/bayesfilter/inference/hmc.py
+@@ -44,8 +44,10 @@ from bayesfilter.inference.hmc_verification import (
+     summarize_hmc_tuning_telemetry,
+ )
+ from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
+-from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
+-from bayesfilter.inference.posterior_adapter import value_score_capability
++from bayesfilter.inference.hmc_status import (
++    cache_hmc_target_status, cached_target_status, cached_previous_target_log_prob,
++)
++from bayesfilter.inference.posterior_adapter import require_exact_score_adapter, value_score_capability
+ from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
+ 
+ 
+@@ -5660,6 +5662,7 @@ def _validate_full_chain_hmc_authority(
+ ) -> Any:
+     """Return adapter value/score authority after full-chain HMC checks."""
+ 
++    require_exact_score_adapter(adapter)
+     capability = value_score_capability(adapter)
+     if config.use_xla and not capability.is_accepted_full_chain_xla_diagnostic_authority:
+         raise ValueError(
+@@ -6647,6 +6650,15 @@ def _trace_fn_for_config(
+                 results = results.inner_results
+             proposed = results.proposed_results
+             accepted = results.accepted_results
++            previous_value = cached_previous_target_log_prob(results)
++            if previous_value is not None:
++                trace['previous_target_log_prob'] = previous_value
++            # Keep accepted-cache validity distinct from the rejected proposal.
++            # A failed proposed score must not conceal a valid retained score.
++            trace['accepted_target_score_finite'] = tf.reduce_all(tf.stack([
++                tf.reduce_all(tf.math.is_finite(score), axis=-1)
++                for score in tf.nest.flatten(accepted.grads_target_log_prob)
++            ]), axis=0)
+             if hasattr(proposed, 'failure_code'):
+                 trace['proposal_failure_code'] = proposed.failure_code
+                 trace['proposal_failure_step'] = proposed.failure_step
+diff --git a/bayesfilter/inference/hmc_candidate_set_execution.py b/bayesfilter/inference/hmc_candidate_set_execution.py
+index acf82409e..3be6c0652 100644
+--- a/bayesfilter/inference/hmc_candidate_set_execution.py
++++ b/bayesfilter/inference/hmc_candidate_set_execution.py
+@@ -591,7 +591,36 @@ class HMCCandidateExecutionBinding:
+                       "sample_chain_call_s_scope": "equal_share_of_enclosing_batch_call"})
+             for index in range(batch)]
+ 
+-    def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
++    def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any],
++                        *, chunk_counts: Sequence[int] | None = None) -> tuple[str, ...]:
++        if chunk_counts is not None:
++            import tensorflow as tf
++            if (samples.dtype != tf.float64 or samples.shape.rank != 3
++                    or tuple(samples.shape[1:]) != tuple(self.initial_active_state.shape)):
++                raise ValueError("candidate sample shape/dtype mismatch")
++            # Check the complete trace before slicing; otherwise extra trailing
++            # rows would disappear and malformed telemetry could look valid.
++            for value in tf.nest.flatten(trace):
++                if value.shape.rank is None or value.shape.rank < 2 or value.shape[:2] != samples.shape[:2]:
++                    raise ValueError("misaligned health trace before chunk partition")
++            counts = tuple(chunk_counts)
++            total = int(samples.shape[0])
++            limit = self.config.chunk_max_results
++            expected = tuple(min(limit, total-start) for start in range(0, total, limit))
++            if not counts or any(type(count) is not int for count in counts) or counts != expected:
++                raise ValueError("numerical health chunk partition disagrees with execution config")
++            failures = []
++            start = 0
++            for count in counts:
++                stop = start + count
++                # Each native invocation bootstraps its own target/score cache.
++                # Validate exact cache preservation within that lifetime, using
++                # the previous retained position at invocation boundaries.
++                prior = initial if start == 0 else samples[start-1]
++                part = tf.nest.map_structure(lambda value: value[start:stop], trace)
++                failures.extend(self.health_failures(prior, samples[start:stop], part))
++                start = stop
++            return tuple(dict.fromkeys(failures))
+         if 'proposal_failure_code' in trace:
+             from .hmc_proposal_rejection import guarded_health_failures
+             return guarded_health_failures(initial, samples, trace)
+@@ -686,11 +715,28 @@ class HMCCandidateExecutionBinding:
+                 "metropolis_value_mismatch", "metropolis_score_mismatch",
+                 "nonfinite_current_score", "proposal_health_classification_mismatch")
+             failures.extend(name for name, okay in zip(names, selection) if not okay)
++        elif "accepted_target_score_finite" in trace:
++            cached_values_ok = tf.reduce_all(trace["is_accepted"][1:]
++                | tf.equal(trace["target_log_prob"][1:], trace["target_log_prob"][:-1]))
++            previous_value = trace.get("previous_target_log_prob")
++            if previous_value is not None:
++                if previous_value.shape != samples.shape[:2] or previous_value.dtype != tf.float64:
++                    raise ValueError("invalid previous target-value trace")
++                cached_values_ok &= tf.reduce_all(tf.math.is_finite(previous_value))
++                cached_values_ok &= tf.reduce_all(trace["is_accepted"]
++                    | tf.equal(trace["target_log_prob"], previous_value))
++                cached_values_ok &= tf.reduce_all(tf.equal(
++                    previous_value[1:], trace["target_log_prob"][:-1]))
++            # Old traces lack the pre-choice cache. Do not re-evaluate it in a
++            # different graph/backend and demand bitwise equality. New q20
++            # traces carry it directly; legacy rows retain adjacent checks.
++            if not bool(cached_values_ok):
++                failures.append("rejected_value_cache_changed")
+         if "divergence" in trace:
+             if tuple(trace["divergence"].shape) != shape or trace["divergence"].dtype != tf.bool:
+                 raise ValueError("invalid native divergence trace")
+-            if bool(tf.reduce_any(trace["divergence"])):
+-                failures.append("native_divergence_positive")
++            # Native energy/divergence telemetry is not an execution veto.
++            # Its count is preserved separately in acceptance evidence.
+         if self.config.target_status_trace_policy == "per_chain_step":
+             for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
+                 telemetry = trace.get(key, {})
+@@ -710,14 +756,28 @@ class HMCCandidateExecutionBinding:
+                     status_shape = (int(tf.reduce_sum(tf.cast(~status_rejection, tf.int32))),)
+                     status_failed = target_status_telemetry_has_failure(telemetry, expected_shape=status_shape)
+                 if status_failed:
+-                    failures.append(key + "_failed")
++                    reason = key + "_failed"
++                    if key == "proposed_target_status_telemetry":
++                        # Preserve the veto. Classify only failures confined to
++                        # nonfinite proposed positions/values as numerical
++                        # exploration boundaries. A finite failed proposal or
++                        # missing/malformed telemetry never gets this label.
++                        finite = (tf.reduce_all(tf.math.is_finite(trace["proposed_state"]), axis=-1)
++                                  & tf.math.is_finite(trace["proposed_target_log_prob"]))
++                        finite_status = {name: tf.boolean_mask(value, finite)
++                                         for name, value in trace[key].items()}
++                        if not target_status_telemetry_has_failure(finite_status,
++                                expected_shape=(int(tf.reduce_sum(tf.cast(finite, tf.int32))),)):
++                            reason = "nonfinite_proposal_target_status"
++                    failures.append(reason)
+         return tuple(failures)
+ 
+-    def analyze(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> Mapping[str, Any]:
++    def analyze(self, initial: Any, samples: Any, trace: Mapping[str, Any],
++                *, chunk_counts: Sequence[int] | None = None) -> Mapping[str, Any]:
+         import tensorflow as tf
+         from bayesfilter.inference.hmc_verification import evaluate_hmc_acceptance_evidence
+ 
+-        failures = self.health_failures(initial, samples, trace)
++        failures = self.health_failures(initial, samples, trace, chunk_counts=chunk_counts)
+         warmup = self.config.num_warmup_steps
+         divergence = trace.get("divergence")
+         evidence = evaluate_hmc_acceptance_evidence(
+@@ -729,6 +789,9 @@ class HMCCandidateExecutionBinding:
+         decision = HMCCandidateDecision.from_evidence(evidence,
+             hard_vetoes=tuple(reason for reason in failures if reason != "native_divergence_positive"),
+             shared_invalidity="metropolis_state_mismatch" in failures)
++        if decision.hard_vetoes and decision.evidence_validity == "valid":
++            decision = HMCCandidateDecision("unavailable", "candidate_data_invalid",
++                hard_vetoes=decision.hard_vetoes, promotion_vetoes=decision.promotion_vetoes)
+         return {**decision.payload(), "acceptance": evidence.pooled_mean,
+                 "acceptance_evidence": evidence.payload(),
+                 "engineering_invalidity_reasons": evidence.engineering_invalidity_reasons,
+@@ -778,8 +841,8 @@ class HMCCandidateExecutionBinding:
+         digest = _json_native_sha256(numerical)
+         if digest in self._analysis_cache:
+             return _json_copy(self._analysis_cache[digest])
+-        from .hmc_acceptance_trials import NUMERICAL_SCHEMA, evidence_analysis
+-        if numerical.get("schema") == NUMERICAL_SCHEMA:
++        from .hmc_acceptance_trials import NUMERICAL_SCHEMAS, evidence_analysis
++        if numerical.get("schema") in NUMERICAL_SCHEMAS:
+             replay_scope = _REPLAY_ANALYSES.get()
+             shared = (replay_scope[1] if replay_scope is not None
+                       and self._replay_scope_token is replay_scope[0] else None)
+@@ -822,7 +885,8 @@ class HMCCandidateExecutionBinding:
+         else:
+             analysis = self.analyze(_tensor_from_payload(numerical["initial_state"]),
+                                    _tensor_from_payload(numerical["samples"]),
+-                                   _trace_from_payload(numerical["trace"]))
++                                   _trace_from_payload(numerical["trace"]),
++                                   chunk_counts=tuple(chunk["count"] for chunk in numerical["chunks"]))
+         self._analysis_cache[digest] = _json_copy(analysis)
+         return analysis
+ 
+@@ -921,7 +985,8 @@ class HMCCandidateExecutionBinding:
+         samples = tf.concat([_tensor_from_payload(chunk["samples"]) for chunk in chunks], axis=0)
+         traces = [_trace_from_payload(chunk["trace"]) for chunk in chunks]
+         trace = tf.nest.map_structure(lambda *parts: tf.concat(parts, axis=0), *traces)
+-        analysis = self.analyze(self.initial_active_state, samples, trace)
++        analysis = self.analyze(self.initial_active_state, samples, trace,
++                                chunk_counts=tuple(chunk["count"] for chunk in chunks))
+         numerical = {
+             "schema": "bayesfilter.hmc_candidate_numerical_evidence.v1",
+             "binding_hash": self.binding_hash, "candidate": candidate.payload(), "work": work.payload(),
+diff --git a/bayesfilter/inference/hmc_candidate_set_tuning.py b/bayesfilter/inference/hmc_candidate_set_tuning.py
+index 680935226..50be63c3b 100644
+--- a/bayesfilter/inference/hmc_candidate_set_tuning.py
++++ b/bayesfilter/inference/hmc_candidate_set_tuning.py
+@@ -1322,7 +1322,7 @@ class HMCTuningCandidateSetController:
+             "nonfinite_log_accept_ratio", "nonfinite_proposal",
+             "nonfinite_proposal_displacement", "nonfinite_proposed_target_log_prob",
+             "nonfinite_final_momentum", "nonfinite_log_acceptance_correction",
+-            "nonfinite_target_score",
++            "nonfinite_target_score", "nonfinite_proposal_target_status",
+         }
+         latest = {receipt.candidate_id: receipt for receipt in self._receipts}
+         boundaries = [RejectedEpsilonBoundary(c.epsilon, c.candidate_id, c.parent_candidate_id)
+diff --git a/bayesfilter/inference/hmc_status.py b/bayesfilter/inference/hmc_status.py
+index 7c8c7174b..4f6abf9e9 100644
+--- a/bayesfilter/inference/hmc_status.py
++++ b/bayesfilter/inference/hmc_status.py
+@@ -20,6 +20,14 @@ def cached_target_status(results: Any, *, proposed: bool = False) -> Mapping | N
+     return extra[_EXTRA_KEY]["proposed" if proposed else "accepted"]
+ 
+ 
++def cached_previous_target_log_prob(results: Any) -> Any | None:
++    """Value actually cached before the MH choice, with no reevaluation."""
++    extra = getattr(results, "extra", None)
++    if not isinstance(extra, Mapping) or _EXTRA_KEY not in extra:
++        return None
++    return extra[_EXTRA_KEY].get("previous_target_log_prob")
++
++
+ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averaging=False):
+     """Evaluate proposal status once; select accepted status with TFP's MH mask.
+ 
+@@ -48,12 +56,13 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
+             raise ValueError("cached HMC target status must match the chain shape")
+         return status
+ 
+-    def attach(results, accepted, proposed):
++    def attach(results, accepted, proposed, previous_value):
+         base = endpoint(results)
+         if not isinstance(base.extra, (list, tuple)) or base.extra:
+             raise ValueError("cached HMC status requires an unused TFP extra field")
+         return replace_endpoint(results, base._replace(extra={
+-            _EXTRA_KEY: {"accepted": accepted, "proposed": proposed}}))
++            _EXTRA_KEY: {"accepted": accepted, "proposed": proposed,
++                         "previous_target_log_prob": previous_value}}))
+ 
+     class CachedTargetStatus(tfp.mcmc.TransitionKernel):
+         @property
+@@ -73,7 +82,7 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
+             status = getattr(endpoint(results).accepted_results, 'status', None)
+             if status is None:
+                 status = read_status(init_state, endpoint(results).is_accepted.shape)
+-            return attach(results, status, status)
++            return attach(results, status, status, endpoint(results).accepted_results.target_log_prob)
+ 
+         def one_step(self, current_state, previous_kernel_results, seed=None):
+             previous = endpoint(previous_kernel_results)
+@@ -92,6 +101,6 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
+                 raise ValueError("cached HMC target-status fields changed within a chain")
+             selected = {key: tf.where(base.is_accepted, proposed[key], accepted[key])
+                         for key in proposed}
+-            return next_state, attach(results, selected, proposed)
++            return next_state, attach(results, selected, proposed, previous.accepted_results.target_log_prob)
+ 
+     return CachedTargetStatus()
+diff --git a/bayesfilter/inference/hmc_verification.py b/bayesfilter/inference/hmc_verification.py
+index 3d5a99e79..ab7a8fe7f 100644
+--- a/bayesfilter/inference/hmc_verification.py
++++ b/bayesfilter/inference/hmc_verification.py
+@@ -535,8 +535,11 @@ class HMCAcceptancePolicy:
+     max_abs_log_accept_energy_proxy: float = 1000.0
+     allowed_cost_stop_reasons: tuple[str, ...] = ()
+     temporal_conflict_method: str = "raw_block_crossing_v1"
++    native_divergence_role: str = "explanatory_alert_only"
+ 
+     def __post_init__(self) -> None:
++        if self.native_divergence_role not in ("explanatory_alert_only", "promotion_veto"):
++            raise ValueError("unsupported native divergence role")
+         if self.temporal_conflict_method not in (
+             "raw_block_crossing_v1", "paired_chain_block_contrasts_v1"
+         ):
+@@ -649,7 +652,7 @@ class HMCAcceptancePolicy:
+                 "bounded_short_cycle_path_return": (
+                     "promotion_veto_and_resonance_repair_trigger"
+                 ),
+-                "native_divergence": "promotion_veto",
++                "native_divergence": self.native_divergence_role,
+                 "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
+                 "signed_log_accept_ratio_tails": "explanatory_alert_only",
+             },
+@@ -661,6 +664,8 @@ class HMCAcceptancePolicy:
+                 temporal_contrast_familywise_level=0.01,
+                 temporal_contrast_role="working_heterogeneity_screen_not_stationarity_proof",
+             )
++        if self.native_divergence_role != "promotion_veto":
++            result["native_divergence_role"] = self.native_divergence_role
+         return result
+ 
+ 
+@@ -1387,7 +1392,8 @@ def _evaluate_hmc_health_context(
+     )
+     promotion_vetoes = (
+         ("native_divergence_positive",)
+-        if status == "available" and divergence_count is not None and divergence_count > 0
++        if (policy.native_divergence_role == "promotion_veto"
++            and status == "available" and divergence_count is not None and divergence_count > 0)
+         else ()
+     )
+     movement_failed, path_return_failed = _trajectory_pathology_flags(
+@@ -1405,7 +1411,8 @@ def _evaluate_hmc_health_context(
+         promotion_vetoes = tuple(
+             dict.fromkeys((*promotion_vetoes, "path_return_resonance_detected"))
+         )
+-    if "native_divergence_positive" in legacy_failures and not promotion_vetoes:
++    if ("native_divergence_positive" in legacy_failures
++            and not (status == "available" and divergence_count is not None and divergence_count > 0)):
+         return _empty_acceptance_evidence(
+             evidence_validity="candidate_data_invalid",
+             native_divergence_status=status,
+@@ -2015,7 +2022,8 @@ def _validate_valid_acceptance_summary(
+ def _validate_v5_roles(evidence: HMCAcceptanceEvidence) -> None:
+     expected_vetoes = []
+     if (
+-        evidence.native_divergence_status == "available"
++        evidence.policy.native_divergence_role == "promotion_veto"
++        and evidence.native_divergence_status == "available"
+         and evidence.native_divergence_count is not None
+         and evidence.native_divergence_count > 0
+     ):
+@@ -2414,7 +2422,9 @@ def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
+     ):
+         raise ValueError("acceptance policy schema mismatch")
+     method = payload.get("temporal_conflict_method", "raw_block_crossing_v1")
+-    expected_keys = set(HMCAcceptancePolicy(temporal_conflict_method=method).payload())
++    role = payload.get("native_divergence_role", "promotion_veto")
++    expected_keys = set(HMCAcceptancePolicy(temporal_conflict_method=method,
++        native_divergence_role=role).payload())
+     if set(payload) != expected_keys:
+         raise ValueError("acceptance policy field set is inconsistent")
+     policy = HMCAcceptancePolicy(
+@@ -2437,6 +2447,7 @@ def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
+             payload.get("allowed_cost_stop_reasons", ())
+         ),
+         temporal_conflict_method=method,
++        native_divergence_role=role,
+     )
+     expected = policy.payload()
+     for name in expected:
+diff --git a/bayesfilter/inference/posterior_adapter.py b/bayesfilter/inference/posterior_adapter.py
+index ace80f79f..259f9929d 100644
+--- a/bayesfilter/inference/posterior_adapter.py
++++ b/bayesfilter/inference/posterior_adapter.py
+@@ -503,6 +503,28 @@ class NonlinearSSMAdapterContract:
+         }
+ 
+ 
++def require_exact_score_adapter(adapter: Any) -> None:
++    """Refuse an explicit proposal-field contract at an exact-score boundary.
++
++    Capability metadata describes backend authority, not whether a declared
++    proposal field is a target gradient. Preserve the legacy contract for
++    adapters without this declaration; its absence does not verify a score.
++    Keep this check out of generic capability lookup so the separate frozen
++    position-field route can inspect the same adapter legitimately.
++    """
++
++    absent = object()
++    declaration = getattr(adapter, "proposal_field_semantics", absent)
++    if declaration is absent:
++        return
++    semantics = declaration() if callable(declaration) else declaration
++    raise ValueError(
++        "exact target score required; adapter declares proposal-field semantics "
++        f"{semantics!r}. Use the supported typed position-field binding with an "
++        "exact endpoint target instead of an exact-score route."
++    )
++
++
+ def value_score_capability(adapter: Any) -> ValueScoreCapability:
+     """Return conservative value/score capability metadata for an adapter.
+ 
+diff --git a/bayesfilter/linear/kalman_qr_derivatives_tf.py b/bayesfilter/linear/kalman_qr_derivatives_tf.py
+index 6ca993352..850e1835c 100644
+--- a/bayesfilter/linear/kalman_qr_derivatives_tf.py
++++ b/bayesfilter/linear/kalman_qr_derivatives_tf.py
+@@ -1098,7 +1098,8 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+     d_observation_noise_factor: tf.Tensor,
+     jitter: tf.Tensor | float = 0.0,
+     jitter_updates_filtered_covariance: bool = True,
+-) -> tuple[tf.Tensor, tf.Tensor]:
++    return_health: bool = False,
++) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+     """Evaluate a batched analytic QR score from native covariance factors.
+ 
+     The leading dimension is an independent batch/proposal axis ``B``.  The
+@@ -1233,6 +1234,43 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+     log_likelihood0 = tf.zeros((batch_size,), dtype=dtype)
+     t0 = tf.constant(0, dtype=tf.int32)
+ 
++    # Observe this exact recurrence; ordinary calls carry no extra loop state.
++    def rows_finite(*values):
++        masks = [tf.reduce_all(tf.math.is_finite(tf.reshape(value, [batch_size, -1])), axis=1)
++                 for value in values]
++        return tf.reduce_all(tf.stack(masks, axis=0), axis=0)
++
++    health0 = ()
++    loop_observations = y
++    if return_health:
++        # Also support shape-relaxed traces: an unreachable body must still
++        # have a legal slice when the runtime observation history is empty.
++        loop_observations = tf.concat([y, tf.zeros([1, tf.shape(y)[1]], dtype)], axis=0)
++        input_finite = rows_finite(
++            transition_offset, transition_matrix, transition_noise_factor,
++            observation_offset, observation_matrix, observation_noise_factor,
++            mean0, initial_state_factor, dmean0, d_initial_state_factor,
++            d_transition_offset, d_transition_matrix, d_transition_noise_factor,
++            d_observation_offset, d_observation_matrix, d_observation_noise_factor)
++        input_finite &= tf.reduce_all(tf.math.is_finite(y))
++        input_finite &= tf.math.is_finite(jitter_tensor) & (jitter_tensor >= 0)
++        health0 = (input_finite, tf.zeros([batch_size], tf.int32),
++                   tf.zeros([batch_size], tf.int32),
++                   tf.fill([batch_size], tf.constant(float('inf'), dtype)))
++
++        # XLA traces even a zero-iteration body; indexing a statically empty
++        # history then fails at compilation. No observations means no assessment.
++        if y.shape[0] == 0:
++            return log_likelihood0, score0, {
++                'status_code': tf.fill([batch_size], 3),
++                'valid_pre_regularized_score': tf.zeros([batch_size], tf.bool),
++                'floor_count_value': tf.zeros([batch_size], tf.int32),
++                'nonfinite_step_count': tf.zeros([batch_size], tf.int32),
++                'invalid_factor_step_count': tf.zeros([batch_size], tf.int32),
++                'min_innovation_factor_diagonal': tf.zeros([batch_size], dtype),
++                'jitter_value': tf.fill([batch_size], jitter_tensor),
++            }
++
+     def cond(t, *_state):
+         return t < n_timesteps
+ 
+@@ -1244,6 +1282,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+         dcovariance_factor,
+         log_likelihood,
+         score,
++        *health,
+     ):
+         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
+         dpredicted_mean = (
+@@ -1278,7 +1317,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+             )
+         )
+ 
+-        innovation = y[t][tf.newaxis, :] - (
++        innovation = loop_observations[t][tf.newaxis, :] - (
+             observation_offset + _matvec(observation_matrix, predicted_mean)
+         )
+         dinnovation = (
+@@ -1412,6 +1451,24 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+             + mahalanobis
+         )
+         log_likelihood = log_likelihood + contribution
++        health_next = ()
++        if return_health:
++            all_finite, nonfinite_steps, invalid_factor_steps, min_innovation_diag = health
++            step_finite = rows_finite(
++                predicted_mean, dpredicted_mean, predicted_factor, dpredicted_factor,
++                predicted_covariance, dpredicted_covariance, innovation, dinnovation,
++                innovation_factor, dinnovation_factor, innovation_solve,
++                innovation_precision, score, kalman_gain, dK, mean, dmean,
++                covariance_factor, dcovariance_factor, log_likelihood)
++            factor_ok = tf.reduce_all(tf.stack([
++                tf.reduce_all(tf.linalg.diag_part(factor) > 0, axis=-1)
++                for factor in (predicted_factor, innovation_factor, covariance_factor)
++            ], axis=0), axis=0)
++            diag_min = tf.reduce_min(tf.linalg.diag_part(innovation_factor), axis=-1)
++            health_next = (all_finite & step_finite,
++                           nonfinite_steps + tf.cast(~step_finite, tf.int32),
++                           invalid_factor_steps + tf.cast(~factor_ok, tf.int32),
++                           tf.minimum(min_innovation_diag, diag_min))
+         return (
+             t + 1,
+             mean,
+@@ -1420,6 +1477,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+             dcovariance_factor,
+             log_likelihood,
+             score,
++            *health_next,
+         )
+ 
+     (
+@@ -1430,6 +1488,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+         _dcovariance_factor,
+         log_likelihood,
+         score,
++        *health_final,
+     ) = tf.while_loop(
+         cond,
+         body,
+@@ -1441,10 +1500,30 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
+             dcovariance_factor0,
+             log_likelihood0,
+             score0,
++            *health0,
+         ),
+         maximum_iterations=n_timesteps,
+         parallel_iterations=1,
+     )
++    if return_health:
++        finite, nonfinite_steps, invalid_factor_steps, min_diag = health_final
++        finite &= rows_finite(log_likelihood, score)
++        numerical_valid = finite & (invalid_factor_steps == 0) & (n_timesteps > 0)
++        unregularized = tf.equal(jitter_tensor, tf.constant(0.0, dtype))
++        valid = numerical_valid & unregularized
++        # 0: measured valid; 1: numerical failure; 2: regularized;
++        # 3: empty history, not assessed. No factor flooring occurs.
++        status = tf.where(numerical_valid, tf.where(unregularized, 0, 2), 1)
++        status = tf.where(n_timesteps > 0, status, 3)
++        return log_likelihood, score, {
++            'status_code': status,
++            'valid_pre_regularized_score': valid,
++            'floor_count_value': tf.zeros([batch_size], tf.int32),
++            'nonfinite_step_count': nonfinite_steps,
++            'invalid_factor_step_count': invalid_factor_steps,
++            'min_innovation_factor_diagonal': tf.where(n_timesteps > 0, min_diag, tf.zeros_like(min_diag)),
++            'jitter_value': tf.fill([batch_size], jitter_tensor),
++        }
+     return log_likelihood, score
+ 
+ 
+@@ -1567,12 +1646,16 @@ def tf_qr_sqrt_kalman_score_factors_batched_static(
+     d_observation_noise_factor: tf.Tensor,
+     jitter: tf.Tensor | float = 0.0,
+     jitter_updates_filtered_covariance: bool = True,
+-) -> tuple[tf.Tensor, tf.Tensor]:
++    return_health: bool = False,
++) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
+     """XLA factor-native batched QR log likelihood and analytic score.
+ 
+     ``transition_noise_factor``, ``initial_state_factor``, and
+     ``observation_noise_factor`` are consumed directly.  The function does
+     not Cholesky-factorize or otherwise reconstruct any input covariance.
++    Optional return_health adds measured per-row diagnostics as a third result.
++    Nonzero jitter cannot establish pre-regularized validity. Factor minima
++    are not eigenvalues; no arbitrary condition cutoff is introduced.
+     The numerical recurrence is compiled; complete consumer targets must also
+     compile their model construction and callbacks inside a stable boundary.
+     """
+@@ -1597,6 +1680,7 @@ def tf_qr_sqrt_kalman_score_factors_batched_static(
+         d_observation_noise_factor=d_observation_noise_factor,
+         jitter=jitter,
+         jitter_updates_filtered_covariance=jitter_updates_filtered_covariance,
++        return_health=return_health,
+     )
+ 
+ 
+diff --git a/bayesfilter/linear/stack_qr_tf.py b/bayesfilter/linear/stack_qr_tf.py
+index 23f86b577..ec91c5cc2 100644
+--- a/bayesfilter/linear/stack_qr_tf.py
++++ b/bayesfilter/linear/stack_qr_tf.py
+@@ -67,24 +67,26 @@ def _batched_transpose(value: tf.Tensor) -> tf.Tensor:
+     return tf.linalg.matrix_transpose(value)
+ 
+ 
+-def _positive_qr(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
++def _positive_qr(matrix: tf.Tensor, *, validate_numerics: bool = True) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+     """Return thin QR factors with a deterministic positive diagonal."""
+ 
+     matrix = _as_float(matrix, "matrix")
+     tf.debugging.assert_rank(matrix, 3, message="QR matrix must have rank three")
+-    tf.debugging.assert_all_finite(matrix, "QR matrix contains NaN or Inf")
++    if validate_numerics:
++        tf.debugging.assert_all_finite(matrix, "QR matrix contains NaN or Inf")
+     rows = matrix.shape[-2]
+     cols = matrix.shape[-1]
+     if rows is None or cols is None or int(rows) < int(cols):
+         raise ValueError("QR stack must have at least as many rows as columns")
+     q, r = tf.linalg.qr(matrix, full_matrices=False)
+     diagonal = tf.linalg.diag_part(r)
+-    tf.debugging.assert_all_finite(diagonal, "QR diagonal contains NaN or Inf")
+-    tf.debugging.assert_greater(
+-        tf.abs(diagonal),
+-        tf.zeros_like(diagonal),
+-        message="qr_pivot_nonpositive",
+-    )
++    if validate_numerics:
++        tf.debugging.assert_all_finite(diagonal, "QR diagonal contains NaN or Inf")
++        tf.debugging.assert_greater(
++            tf.abs(diagonal),
++            tf.zeros_like(diagonal),
++            message="qr_pivot_nonpositive",
++        )
+     signs = tf.where(diagonal >= 0.0, tf.ones_like(diagonal), -tf.ones_like(diagonal))
+     q = q * signs[:, tf.newaxis, :]
+     r = signs[:, :, tf.newaxis] * r
+@@ -103,6 +105,7 @@ def batched_stack_qr_lower(
+     *,
+     compute_covariance_diagnostics: bool = True,
+     relative_pivot_tolerance: float = DEFAULT_RELATIVE_PIVOT_TOLERANCE,
++    validate_numerics: bool = True,
+ ) -> tuple[tf.Tensor, tf.Tensor | None, dict[str, tf.Tensor]]:
+     """Factor a batched horizontal stack and optionally its first derivatives.
+ 
+@@ -124,15 +127,18 @@ def batched_stack_qr_lower(
+         raise ValueError("stack must have at least as many columns as rows")
+     if relative_pivot_tolerance < 0.0:
+         raise ValueError("relative_pivot_tolerance must be nonnegative")
+-    q, r, pivots = _positive_qr(_batched_transpose(stack))
++    # Row-isolating callers may explicitly replace batch-global assertions
++    # with their own per-row finite/pivot checks. The default stays strict.
++    q, r, pivots = _positive_qr(_batched_transpose(stack), validate_numerics=validate_numerics)
+     factor = _batched_transpose(r)
+     scale = tf.maximum(tf.linalg.norm(stack, axis=[-2, -1]), tf.constant(1.0e-300, tf.float64))
+     relative_min_pivot = tf.reduce_min(pivots, axis=-1) / scale
+-    tf.debugging.assert_greater_equal(
+-        relative_min_pivot,
+-        tf.cast(relative_pivot_tolerance, tf.float64),
+-        message="qr_relative_pivot_below_tolerance",
+-    )
++    if validate_numerics:
++        tf.debugging.assert_greater_equal(
++            relative_min_pivot,
++            tf.cast(relative_pivot_tolerance, tf.float64),
++            message="qr_relative_pivot_below_tolerance",
++        )
+     d_factor = None
+ 
+     if d_stack is not None:
+@@ -143,7 +149,8 @@ def batched_stack_qr_lower(
+             raise ValueError("d_stack batch and dimension do not match stack")
+         if d_stack.shape[2] != dimension or d_stack.shape[3] != columns:
+             raise ValueError("d_stack spatial dimensions do not match stack")
+-        tf.debugging.assert_all_finite(d_stack, "d_stack contains NaN or Inf")
++        if validate_numerics:
++            tf.debugging.assert_all_finite(d_stack, "d_stack contains NaN or Inf")
+         d_matrix = tf.linalg.matrix_transpose(d_stack)
+         # Independent derivative directions are a batch axis, not traced copies
+         # of the solve (ch12_factor_derivatives, eq:bf-factor-qr-r-first).
+@@ -157,7 +164,8 @@ def batched_stack_qr_lower(
+         omega = lower - tf.linalg.matrix_transpose(lower)
+         d_r = tf.einsum("bpij,bjk->bpik", e - omega, r)
+         d_factor = tf.linalg.matrix_transpose(d_r)
+-        tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
++        if validate_numerics:
++            tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
+ 
+     # This residual is valid without constructing a covariance and is the
+     # runtime diagnostic used by the admitted SR-UKF route.
+diff --git a/bayesfilter/linear/stationary_lgssm_derivatives_tf.py b/bayesfilter/linear/stationary_lgssm_derivatives_tf.py
+index eee528b4b..148f58a99 100644
+--- a/bayesfilter/linear/stationary_lgssm_derivatives_tf.py
++++ b/bayesfilter/linear/stationary_lgssm_derivatives_tf.py
+@@ -155,7 +155,7 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
+     use the explicit convergence diagnostics to distinguish a converged
+     stationary factor from a bounded-iteration failure.
+ 
+-    This is deliberately a non-XLA bounded TensorFlow loop.  The factor path
++    This is a bounded TensorFlow loop with row-local stopping. The factor path
+     is intended for numerically sensitive target evaluation; no jitter,
+     covariance floor, clipping, or support relaxation is applied.
+     """
+@@ -189,30 +189,24 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
+     if d_transition.shape[1] != d_process_factor.shape[1]:
+         raise ValueError("derivative parameter dimensions must match")
+ 
+-    finite_checks = [
+-        tf.debugging.assert_all_finite(transition, "transition contains NaN or Inf"),
+-        tf.debugging.assert_all_finite(d_transition, "d_transition contains NaN or Inf"),
+-        tf.debugging.assert_all_finite(process_factor, "process_factor contains NaN or Inf"),
+-        tf.debugging.assert_all_finite(
+-            d_process_factor,
+-            "d_process_factor contains NaN or Inf",
+-        ),
+-        tf.debugging.assert_greater(
+-            tf.linalg.diag_part(process_factor),
+-            tf.zeros_like(tf.linalg.diag_part(process_factor)),
+-            message="process_factor must have positive diagonal",
+-        ),
+-    ]
+-    with tf.control_dependencies(finite_checks):
+-        transition = tf.identity(transition)
+-        d_transition = tf.identity(d_transition)
+-        process_factor = tf.identity(process_factor)
+-        d_process_factor = tf.identity(d_process_factor)
+-
+-    stationary_factor = process_factor
+-    d_stationary_factor = d_process_factor
+-    transition_power = transition
+-    d_transition_power = d_transition
++    # Rows are independent targets. Whole-batch assertions poison healthy
++    # rows and disappear under XLA. Use explicit row validity and inert inputs
++    # internally, then expose invalid rows as NaNs, never as target solutions.
++    def finite_rows(value):
++        return tf.reduce_all(tf.math.is_finite(value), axis=tuple(range(1, value.shape.rank)))
++
++    def select_rows(mask, yes, no):
++        return tf.where(tf.reshape(mask, [-1] + [1] * (yes.shape.rank - 1)), yes, no)
++
++    valid = (finite_rows(transition) & finite_rows(d_transition)
++             & finite_rows(process_factor) & finite_rows(d_process_factor)
++             & tf.reduce_all(tf.linalg.diag_part(process_factor) > 0., axis=-1))
++    input_valid = valid
++    identity = tf.eye(transition.shape[-1], batch_shape=tf.shape(transition)[:1], dtype=tf.float64)
++    stationary_factor = select_rows(valid, process_factor, identity)
++    d_stationary_factor = select_rows(valid, d_process_factor, tf.zeros_like(d_process_factor))
++    transition_power = select_rows(valid, transition, tf.zeros_like(transition))
++    d_transition_power = select_rows(valid, d_transition, tf.zeros_like(d_transition))
+ 
+     def tail_for(
+         factor: tf.Tensor,
+@@ -243,101 +237,65 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
+         transition_power,
+         d_transition_power,
+     )
+-    converged = tf.reduce_all(tail_metric <= tf.cast(tolerance, tf.float64))
++    valid &= tf.math.is_finite(tail_metric)
+     step = tf.constant(0, tf.int32)
+-    max_steps = tf.constant(int(max_doublings), tf.int32)
+-
+-    def cond(
+-        step_value: tf.Tensor,
+-        _factor: tf.Tensor,
+-        _d_factor: tf.Tensor,
+-        _power: tf.Tensor,
+-        _d_power: tf.Tensor,
+-        _tail: tf.Tensor,
+-        _d_tail: tf.Tensor,
+-        _metric: tf.Tensor,
+-        converged_value: tf.Tensor,
+-    ) -> tf.Tensor:
+-        return tf.logical_and(
+-            step_value < max_steps,
+-            tf.logical_not(converged_value),
+-        )
+-
+-    def body(
+-        step_value: tf.Tensor,
+-        factor: tf.Tensor,
+-        d_factor: tf.Tensor,
+-        power: tf.Tensor,
+-        d_power: tf.Tensor,
+-        _tail: tf.Tensor,
+-        _d_tail: tf.Tensor,
+-        _metric: tf.Tensor,
+-        _converged: tf.Tensor,
+-    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+-        propagated = power @ factor
+-        d_propagated = (
+-            tf.einsum("bij,bpjk->bpik", power, d_factor)
+-            + tf.einsum("bpij,bjk->bpik", d_power, factor)
+-        )
+-        stack = tf.concat((factor, propagated), axis=2)
+-        d_stack = tf.concat((d_factor, d_propagated), axis=3)
+-        factor2, d_factor2, _diagnostics = batched_stack_qr_lower(
+-            stack,
+-            d_stack,
+-            compute_covariance_diagnostics=False,
+-            relative_pivot_tolerance=0.0,
+-        )
+-        power2 = power @ power
+-        d_power2 = (
+-            tf.einsum("bpij,bjk->bpik", d_power, power)
+-            + tf.einsum("bij,bpjk->bpik", power, d_power)
+-        )
+-        tail2, d_tail2, metric2 = tail_for(
+-            factor2,
+-            d_factor2,
+-            power2,
+-            d_power2,
+-        )
+-        converged2 = tf.reduce_all(metric2 <= tf.cast(tolerance, tf.float64))
+-        return (
+-            step_value + 1,
+-            factor2,
+-            d_factor2,
+-            power2,
+-            d_power2,
+-            tail2,
+-            d_tail2,
+-            metric2,
+-            converged2,
+-        )
+-
+-    (
+-        step,
+-        stationary_factor,
+-        d_stationary_factor,
+-        transition_power,
+-        d_transition_power,
+-        tail_factor,
+-        d_tail_factor,
+-        tail_metric,
+-        converged,
+-    ) = tf.while_loop(
+-        cond,
+-        body,
+-        (
+-            step,
+-            stationary_factor,
+-            d_stationary_factor,
+-            transition_power,
+-            d_transition_power,
+-            tail_factor,
+-            d_tail_factor,
+-            tail_metric,
+-            converged,
+-        ),
+-        maximum_iterations=int(max_doublings),
+-        parallel_iterations=1,
+-    )
++    row_steps = tf.zeros(tf.shape(transition)[:1], tf.int32)
++    tol = tf.cast(tolerance, tf.float64)
++
++    def cond(step, factor, d_factor, power, d_power, tail, d_tail, metric, valid, row_steps):
++        return (step < max_doublings) & tf.reduce_any(valid & (metric > tol))
++
++    def body(step, factor, d_factor, power, d_power, tail, d_tail, metric, valid, row_steps):
++        active = valid & (metric > tol)
++        # Freeze completed factors, derivatives and tails at their own stopping
++        # level: a slow companion must not change this finite value/score map.
++        f = select_rows(active, factor, identity)
++        df = select_rows(active, d_factor, tf.zeros_like(d_factor))
++        a = select_rows(active, power, tf.zeros_like(power))
++        da = select_rows(active, d_power, tf.zeros_like(d_power))
++        propagated = a @ f
++        d_propagated = (tf.einsum("bij,bpjk->bpik", a, df)
++                        + tf.einsum("bpij,bjk->bpik", da, f))
++        stack = tf.concat((f, propagated), axis=2)
++        d_stack = tf.concat((df, d_propagated), axis=3)
++        power2 = a @ a
++        d_power2 = (tf.einsum("bpij,bjk->bpik", da, a)
++                    + tf.einsum("bij,bpjk->bpik", a, da))
++        safe = (finite_rows(stack) & finite_rows(d_stack)
++                & finite_rows(power2) & finite_rows(d_power2))
++        safe_stack = tf.concat((identity, tf.zeros_like(identity)), axis=2)
++        factor2, d_factor2, _ = batched_stack_qr_lower(
++            select_rows(safe, stack, safe_stack),
++            select_rows(safe, d_stack, tf.zeros_like(d_stack)),
++            compute_covariance_diagnostics=False, relative_pivot_tolerance=0.0,
++            validate_numerics=False)
++        tail2, d_tail2, metric2 = tail_for(factor2, d_factor2, power2, d_power2)
++        next_valid = (safe & finite_rows(factor2) & finite_rows(d_factor2)
++                      & tf.math.is_finite(metric2)
++                      & tf.reduce_all(tf.linalg.diag_part(factor2) > 0., axis=-1))
++        return (step + 1,
++                select_rows(active, factor2, factor),
++                select_rows(active, d_factor2, d_factor),
++                select_rows(active, power2, power),
++                select_rows(active, d_power2, d_power),
++                select_rows(active, tail2, tail),
++                select_rows(active, d_tail2, d_tail),
++                tf.where(active, metric2, metric),
++                valid & (~active | next_valid), row_steps + tf.cast(active, tf.int32))
++
++    (step, stationary_factor, d_stationary_factor, transition_power,
++     d_transition_power, tail_factor, d_tail_factor, tail_metric, valid, row_steps) = tf.while_loop(
++        cond, body, (step, stationary_factor, d_stationary_factor, transition_power,
++                     d_transition_power, tail_factor, d_tail_factor, tail_metric, valid, row_steps),
++        maximum_iterations=int(max_doublings), parallel_iterations=1)
++    row_converged = valid & (tail_metric <= tol)
++    # Invalid rows cannot accidentally appear as finite target solutions.
++    def invalidate(value):
++        return select_rows(valid, value, tf.fill(tf.shape(value), tf.constant(float("nan"), tf.float64)))
++    stationary_factor, d_stationary_factor, transition_power, d_transition_power, tail_factor, d_tail_factor = (
++        invalidate(value) for value in (stationary_factor, d_stationary_factor, transition_power,
++                                       d_transition_power, tail_factor, d_tail_factor))
++    tail_metric = tf.where(valid, tail_metric, tf.constant(float("inf"), tf.float64))
+     derivative_tail_metric = tf.reduce_max(
+         tf.linalg.norm(d_tail_factor, axis=[-2, -1])
+         / tf.maximum(
+@@ -347,8 +305,11 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
+         axis=1,
+     )
+     diagnostics = {
+-        "lyapunov_converged": converged,
+-        "lyapunov_row_converged": tail_metric <= tf.cast(tolerance, tf.float64),
++        "lyapunov_converged": tf.reduce_all(row_converged),
++        "lyapunov_row_converged": row_converged,
++        "lyapunov_row_input_valid": input_valid,
++        "lyapunov_row_numerically_valid": valid,
++        "lyapunov_row_doubling_steps": row_steps,
+         "lyapunov_doubling_steps": step,
+         "lyapunov_tail_relative_norm": tail_metric,
+         "lyapunov_derivative_tail_relative_norm": derivative_tail_metric,
+diff --git a/bayesfilter/ssm/target_builder.py b/bayesfilter/ssm/target_builder.py
+index 6e7316bed..23036955c 100644
+--- a/bayesfilter/ssm/target_builder.py
++++ b/bayesfilter/ssm/target_builder.py
+@@ -94,6 +94,8 @@ class GenericSSMPosteriorAdapter:
+         contract: SSMTargetContract,
+         prior_log_prob_and_grad: BatchValueScoreFn,
+         filter_log_likelihood_and_grad: BatchValueScoreFn,
++        target_status_telemetry: Callable[[tf.Tensor], Mapping[str, Any]] | None = None,
++        target_status_manifest: Mapping[str, Any] | None = None,
+         dtype: Any = tf.float64,
+         batch_rank_policy: BatchRankPolicy = "rank2_required",
+         target_scope: str | None = None,
+@@ -153,6 +155,18 @@ class GenericSSMPosteriorAdapter:
+         self.non_batch_static_shape = dict(
+             validated.problem.static_shape.manifest_payload()
+         )
++        self._target_status_manifest = None
++        if (target_status_telemetry is None) != (target_status_manifest is None):
++            raise InvalidSSMTargetBuilderContract(
++                "target status callback and nonempty provenance manifest must be supplied together")
++        if target_status_telemetry is not None:
++            if not callable(target_status_telemetry) or not target_status_manifest:
++                raise InvalidSSMTargetBuilderContract(
++                    "target status requires a callable and nonempty provenance manifest")
++            self._target_status_manifest = json.loads(json.dumps(
++                _json_safe(target_status_manifest), sort_keys=True, allow_nan=False))
++            self._target_status_callback = target_status_telemetry
++            self.target_status_telemetry = self._evaluate_target_status
+         self._adapter_signature = _stable_json_hash(self._signature_payload())
+ 
+     def manifest_payload(self) -> Mapping[str, Any]:
+@@ -236,6 +250,8 @@ class GenericSSMPosteriorAdapter:
+ 
+     def _signature_payload(self) -> Mapping[str, Any]:
+         return {
++            **({"target_status_manifest": json.loads(json.dumps(self._target_status_manifest))}
++               if self._target_status_manifest is not None else {}),
+             "schema": "bayesfilter.ssm.generic_posterior_adapter.v1",
+             "target_signature": self.target_signature,
+             "dtype": self.dtype.name,
+@@ -248,6 +264,51 @@ class GenericSSMPosteriorAdapter:
+             "target_scope": self.target_scope,
+         }
+ 
++    def _evaluate_target_status(self, theta: Any) -> Mapping[str, tf.Tensor]:
++        """Carry measured filter/chart status and include prior/input finiteness.
++
++        Legacy instances have no public status callback. No healthy fallback
++        is supplied. The provider remains responsible for filter/chart health.
++        """
++        theta = self._validate_theta(theta)
++        payload = self._target_status_callback(theta)
++        if not isinstance(payload, Mapping):
++            raise TypeError("target status callback must return a tensor mapping")
++        required = ('status_code', 'valid_pre_regularized_score', 'floor_count_value')
++        if any(name not in payload for name in required):
++            raise ValueError("target status callback is missing required core fields")
++        conditioning = ('min_innovation_eigenvalue', 'innovation_condition_estimate')
++        if sum(name in payload for name in conditioning) == 1:
++            raise ValueError("target status conditioning fields must be both present or both absent")
++        tensors = {}
++        for name, value in payload.items():
++            tensor = tf.convert_to_tensor(value)
++            if tensor.shape.rank != 1:
++                raise ValueError("target status fields must have rank 1 [batch]")
++            if not (tensor.dtype.is_integer or tensor.dtype.is_floating or tensor.dtype.is_bool):
++                raise TypeError("target status fields must be real numeric or boolean tensors")
++            tensor = tf.ensure_shape(tensor, theta.shape[:1])
++            tensors[name] = tf.reshape(tensor, [tf.shape(theta)[0]])
++        for name in ('status_code', 'floor_count_value'):
++            if not tensors[name].dtype.is_integer:
++                raise TypeError(f"target status {name} must be integer")
++        if tensors['valid_pre_regularized_score'].dtype != tf.bool:
++            raise TypeError("target status valid_pre_regularized_score must be boolean")
++        prior_value, prior_score = self._call_value_score(self.prior_log_prob_and_grad, theta, 'prior')
++        prior_finite = (tf.math.is_finite(prior_value)
++                        & tf.reduce_all(tf.math.is_finite(prior_score), axis=-1)
++                        & tf.reduce_all(tf.math.is_finite(theta), axis=-1))
++        health_valid = prior_finite & (tensors['floor_count_value'] >= 0)
++        for name in conditioning:
++            if name in tensors:
++                if not tensors[name].dtype.is_floating:
++                    raise TypeError("target status conditioning fields must be floating point")
++                health_valid &= tf.math.is_finite(tensors[name]) & (tensors[name] > 0)
++        tensors['valid_pre_regularized_score'] &= health_valid
++        status = tensors['status_code']
++        tensors['status_code'] = tf.where((status == 0) & ~health_valid, tf.ones_like(status), status)
++        return tensors
++
+     def _validate_theta(self, theta: Any) -> tf.Tensor:
+         tensor = tf.convert_to_tensor(theta, dtype=self.dtype)
+         if tensor.shape.rank != 2:
+@@ -310,6 +371,8 @@ def build_ssm_posterior_adapter(
+     contract: SSMTargetContract,
+     prior_log_prob_and_grad: BatchValueScoreFn,
+     filter_log_likelihood_and_grad: BatchValueScoreFn,
++    target_status_telemetry: Callable[[tf.Tensor], Mapping[str, Any]] | None = None,
++    target_status_manifest: Mapping[str, Any] | None = None,
+     dtype: Any = tf.float64,
+     batch_rank_policy: BatchRankPolicy = "rank2_required",
+     target_scope: str | None = None,
+@@ -325,6 +388,8 @@ def build_ssm_posterior_adapter(
+         contract=contract,
+         prior_log_prob_and_grad=prior_log_prob_and_grad,
+         filter_log_likelihood_and_grad=filter_log_likelihood_and_grad,
++        target_status_telemetry=target_status_telemetry,
++        target_status_manifest=target_status_manifest,
+         dtype=dtype,
+         batch_rank_policy=batch_rank_policy,
+         target_scope=target_scope,

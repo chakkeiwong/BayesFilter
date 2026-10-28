@@ -4,7 +4,22 @@
 
 ## Additional 72-hour allocation — 27 October 2026
 
-Continuation status: **completed**. The resumed qualification produced seven verified candidates from the nine-candidate cohort; two failed candidate-local movement checks. A focused follow-up regression run passed 50 tests. After charging that 84.5-second CPU test run, the combined balance is approximately 236027.8 seconds (65.56 hours); separate SIR funding is unchanged. C2 is next, but public admission still pins MacroFinance to BayesFilter commit `43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`, while this checkout is at `d0705f7956a6e224b46cb478667ddd82b0953d32` and has unrelated dirty work. The public consumer refuses before TensorFlow or numerical evaluation. Do not bypass or silently rewrite that external source lock; refresh C2 around an owner-reviewed exact-source binding. See the [active continuation plan](bayesfilter-modern-hmc-resume-budget-repair-2026-10-27.md) and [terminal result](artifacts/modern-hmc-implementation-2026-10-07/N5/budget-resume-repair-20261027-01). No posterior, ranking, default or release readiness is established.
+Continuation status: **C1 complete; C2 compatibility verified, admission open**.
+The resumed nine-candidate qualification records 1,312 returned trials, seven
+verified/exported/reloaded candidates and two movement failures. The resume
+repair is committed as b0cafccc5. The clean exact-source candidate f9291ee443
+passes 33 installed-consumer integration checks and 36 core regressions after
+repairing a diagnostic oracle's compilation boundary and a stale wrapper test.
+The failed attempts remain recorded. See the [C2 result](bayesfilter-modern-hmc-c2-source-preview-result-2026-10-28.md).
+
+Official consumer admission still requires consistent clean-root, commit and
+factor-native provenance binding; its global pin and pending admission fields
+remain unchanged. Its own master also reports a missing historical P19 result.
+Do not change the shared checkout beneath other work or invent that evidence.
+Independent C4 saved-evidence diagnosis can proceed while C2 deployment is open.
+New measured diagnostic work cost 277.012 seconds; the remaining allocation is
+at most 235750.796 seconds before unmetered preparatory overhead. Separate SIR
+funding is unchanged. No posterior, ranking, default or release claim follows.
 
 <!-- END MODERN-HMC-72H-20261027 -->
 
@@ -192,7 +207,7 @@ consumer qualification, power and affordability are still unproved.
 | C1a | Closed: operational recovery and prior evidence preserved | Preserve original 384 trials/385 charges and old outcomes |
 | C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
 | C1b | Closed for the frozen nine-candidate MacroFinance diagnostic: all 1,312 trials returned, seven candidates verified/exported/reloaded, and two candidates failed movement checks | Preserve the two failures as candidate-local outcomes; no ranking, posterior or consumer admission follows |
-| C2 | Open and currently held before numerical evaluation | The actual Phase 9 consumer pins BayesFilter commit `43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`; this checkout is at `d0705f7956a6e224b46cb478667ddd82b0953d32` and dirty. Reconcile the exact tested source with the consumer owner, then rerun its public entry without bypassing its clean-source gate |
+| C2 | Compatibility passed; official consumer admission open | Clean candidate f9291ee443: 33 installed-consumer checks and 36 core regressions pass. Resolve clean-root/commit/factor-native provenance together; preserve global pin and shared work. External master missing historical P19 evidence is a separate boundary |
 | C3 | Open: posterior/reference/precision | Declare estimands and precision; use independent retained evidence and reference |
 | C4 | Open: estimator, antithetic and tail reliability | Discriminating stopped-MCSE/tail and independent-chain checks; lugsail already exists |
 | C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
@@ -226,7 +241,7 @@ costed action. GPU sharing remains below 50% load with sufficient memory at
 launch, 60-second queue checks and 1800-second active reassessment; no migration
 or kill based on the worker's own load. R-hat is reporting-only during tuning.
 NUTS is excluded. Posterior validity, public admission and release remain
-unproved. No commit or push was made for this repair.
+unproved. Resume repair committed as b0cafccc5; no push was requested in this continuation.
 
 ## Current status — GPU recovery and reload complete, reviewed 25 October 2026
 

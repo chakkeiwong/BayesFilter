@@ -200,16 +200,23 @@ estimate.
 The next phase is C2 exact-source public admission. Inspection confirmed the
 MacroFinance Phase 9 loader requires both a hard-coded BayesFilter commit and
 a clean BayesFilter worktree. It expects
-`43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`; this checkout is at
-`d0705f7956a6e224b46cb478667ddd82b0953d32` and has extensive unrelated dirty
-changes. The loader therefore rejects before importing TensorFlow or executing
-the numerical target. This is a source-authority mismatch, not evidence of a
-new target, score or sampler failure. Do not bypass the gate or mutate the
-MacroFinance source pin without review. C2 must first establish an exact clean
-commit containing the intended tested BayesFilter bytes, then obtain the
-consumer's source-pin update and rerun its public entry point. Its Phase 9
-launch contract is CPU-only; this integration check makes no GPU or posterior
-claim.
+`43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`; the repair-plumbing commit is
+`b0cafccc5`, based on `d0705f7956a6e224b46cb478667ddd82b0953d32`, and its
+worktree contains extensive unrelated dirty changes. A read-only C2 probe
+reproduced rejection before TensorFlow import or numerical evaluation. The
+full frozen-copy comparison found 400/1,059 source files identical to the pin,
+103 different and 556 absent; versus current HEAD, 736 are identical, 51
+different and 272 absent. Of 70 loaded BayesFilter modules, 58 match HEAD and
+12 do not. Thus the cause is not merely a stale hash: neither current pinned
+source nor current HEAD is the exact numerical source used for C1. This does
+not indicate a new target, score or sampler failure. Do not bypass the gate,
+stage the shared dirty tree, or change MacroFinance's source pin without
+review. C2 must first reconstruct a clean source candidate from the immutable
+C1 snapshot and validate its complete dependency closure, then obtain the
+consumer owner's source-pin update and rerun the public entry point. The probe
+and comparison records are under
+`N5/c2-source-admission-20261028-01/`. Phase 9's launch contract is CPU-only;
+this integration check makes no GPU or posterior claim.
 
 | Decision | Primary criterion | Veto status | Main uncertainty | Next action | Not concluded |
 |---|---|---|---|---|---|
@@ -230,3 +237,16 @@ for the C2 block is solely a stale source lock; until the source diff and public
 route are inspected under one admitted clean commit, that remains a diagnosis,
 not a repaired integration. A changed intended dependency or public-path
 score mismatch would require a new C2 repair before posterior work.
+
+
+## Follow-up C2 checkpoint — 28 October 2026
+
+The earlier source comparison's absence counts are provisional because failed
+Git object reads were not separately classified from missing paths. Positive
+hash matches and exact executed-module comparisons are verified. The clean
+candidate f9291ee4437aa8c00dabbe331bffc6871b574c5c passes 33 installed-consumer
+integration tests and 36 core regressions. The diagnostic reference repair is
+installed without changing active target functions, root or pin. Official
+admission remains open for clean-source/provenance binding; the consumer master
+also reports a missing historical P19 record. See the C2 result for failures,
+repairs, source checks and accounting limitations. C1 evidence is unchanged.

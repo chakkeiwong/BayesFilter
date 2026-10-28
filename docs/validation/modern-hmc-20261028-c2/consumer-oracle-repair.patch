@@ -1,0 +1,127 @@
+--- a/one_country_affine_macro_phase9_hmc.py
++++ b/one_country_affine_macro_phase9_hmc.py
+@@ -31,6 +31,7 @@
+ import sys
+ from collections.abc import Mapping
+ from dataclasses import dataclass
++from functools import lru_cache
+ from pathlib import Path
+ from typing import Any
+ 
+@@ -368,20 +369,14 @@
+     rows = np.asarray(observations, dtype=np.float64)
+     if rows.ndim != 2 or rows.shape[1] != 2 or not np.all(np.isfinite(rows)):
+         raise Phase9TargetError("observations must be finite with shape [time,2]")
+-    row = tf.Variable(_finite_vector(parameters, "parameters"), dtype=tf.float64)
++    row = tf.convert_to_tensor(_finite_vector(parameters, "parameters"), dtype=tf.float64)
+     observations_tensor = tf.convert_to_tensor(rows, tf.float64)
+-    with tf.GradientTape() as tape:
+-        tape.watch(row)
+-        value = _tf_likelihood_single(
+-            row,
+-            observations_tensor,
+-            tf,
+-            kalman,
+-            include_eigen_check=include_support_checks,
+-        )
+-    score = tape.gradient(value, row)
+-    if score is None:
+-        raise Phase9TargetError("reverse-mode oracle score is absent")
++    if include_support_checks:
++        # Keep strict support assertions outside XLA, which may elide them.
++        _tf_chart_single(row, tf, include_eigen_check=True)
++    from bayesfilter.linear.kalman_tf import tf_kalman_filter
++    evaluator = _compiled_reverse_mode_oracle(rows.shape[0], tf, tf_kalman_filter)
++    value, score = evaluator(row, observations_tensor)
+     value_np = float(value.numpy())
+     score_np = np.asarray(score.numpy(), dtype=float)
+     if not np.isfinite(value_np) or not np.all(np.isfinite(score_np)):
+@@ -391,7 +386,47 @@
+         "support_checks": include_support_checks,
+         "score_authority": "validation_oracle_reverse_mode",
+         "active_hmc_authority": False,
++        "jit_compile": False,
++        "reference_execution": "fixed_signature_non_xla_covariance_oracle",
++        "non_xla_reason": "matrix_exponential_reverse_pass_requires_unbounded_TensorList",
+     }
++
++
++@lru_cache(maxsize=8)
++def _compiled_reverse_mode_oracle(time_steps: int, tf: Any, kalman_filter: Any) -> Any:
++    """Cache fixed-shape independent reference graphs; explicitly non-XLA.
++
++    Eager differentiation across the compiled Kalman value exports unsupported
++    TensorLists. Compiling the whole oracle also fails because TensorFlow's
++    matrix-exponential reverse pass has an unbounded TensorList. This diagnostic
++    therefore traces the existing covariance filter body without its XLA
++    decorator; it neither copies the recursion nor changes the active HMC score.
++    Eight cached shapes are a convenience memory bound, not a numerical setting.
++    """
++
++    def reference_kalman(**kwargs: Any) -> Any:
++        return kalman_filter.python_function(**kwargs, return_filtered=False)[0]
++
++    @tf.function(
++        input_signature=[
++            tf.TensorSpec([PARAMETER_DIM], tf.float64),
++            tf.TensorSpec([time_steps, 2], tf.float64),
++        ],
++        autograph=False,
++        jit_compile=False,
++    )
++    def evaluate(row: Any, observations: Any) -> tuple[Any, Any]:
++        with tf.GradientTape() as tape:
++            tape.watch(row)
++            value = _tf_likelihood_single(
++                row, observations, tf, reference_kalman, include_eigen_check=False
++            )
++        score = tape.gradient(value, row)
++        if score is None:
++            raise Phase9TargetError("reverse-mode oracle score is absent")
++        return value, score
++
++    return evaluate
+ 
+ 
+ def chart_manifest() -> dict[str, Any]:
+--- a/tests/test_one_country_affine_macro_phase9_hmc.py
++++ b/tests/test_one_country_affine_macro_phase9_hmc.py
+@@ -223,7 +223,9 @@
+ 
+ 
+ def test_active_adapter_callback_contains_no_reverse_mode_or_scalar_row_loop() -> None:
+-    source = inspect.getsource(phase9.build_generic_target)
++    wrapper = inspect.getsource(phase9.build_generic_target)
++    assert "_build_generic_target_with_runtime" in wrapper
++    source = wrapper + inspect.getsource(phase9._build_generic_target_with_runtime)
+     assert "GradientTape" not in source
+     assert "tf.unstack(theta" not in source
+     assert "for row in" not in source
+@@ -274,3 +276,27 @@
+     assert not np.array_equal(arm_one, arm_two)
+     np.testing.assert_array_equal(arm_one, _truth_for_arm(1))
+     np.testing.assert_array_equal(arm_two, _truth_for_arm(2))
++
++
++def test_reverse_mode_oracle_uses_cached_reference_graph() -> None:
++    tf = pytest.importorskip("tensorflow")
++    fixture = phase9.generate_synthetic_observations(seed=20260826, time_steps=8)
++    value, score, metadata = phase9.reverse_mode_likelihood_value_score_oracle(
++        fixture["chart_parameters"], fixture["observations"]
++    )
++    assert metadata["jit_compile"] is False
++    assert metadata["reference_execution"] == "fixed_signature_non_xla_covariance_oracle"
++    assert metadata["active_hmc_authority"] is False
++    assert np.isfinite(value) and np.all(np.isfinite(score))
++    from bayesfilter.linear.kalman_tf import tf_kalman_filter
++    graph = phase9._compiled_reverse_mode_oracle(8, tf, tf_kalman_filter)
++    assert graph is phase9._compiled_reverse_mode_oracle(8, tf, tf_kalman_filter)
++    assert graph.experimental_get_tracing_count() == 1
++
++
++def test_reverse_mode_oracle_keeps_strict_support_before_graph() -> None:
++    tf = pytest.importorskip("tensorflow")
++    point = phase9.default_truth_parameters().copy()
++    point[0] = 400.0
++    with pytest.raises(tf.errors.InvalidArgumentError, match="Phase 9 K must be positive stable"):
++        phase9.reverse_mode_likelihood_value_score_oracle(point, np.zeros((8, 2)))
