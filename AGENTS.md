@@ -24,6 +24,18 @@ Stan Euclidean NUTS port and standalone validation/comparison under
 docs/plans/bayesfilter-full-stan-nuts-port-execution-2026-10-27.md, including
 its docs/benchmarks implementation and native oracles. This remains a
 standalone exception and does not reopen retired public APIs.
+The further October 27 request permits a TFP `TransitionKernel` interface to
+that shared direct port, under
+`docs/plans/bayesfilter-stan-tfp-interface-2026-10-27.md`. This remains in the
+standalone benchmark scope; interface compatibility is not a speed promotion.
+Owner request, 2026-10-28, replaces that standalone interface with native TFP
+NUTS and permits its Stan comparison under
+`docs/plans/bayesfilter-stan-tfp-native-2026-10-28.md`. It does not reopen
+retired public routes or make the native TFP transition source-identical to Stan.
+The subsequent October 28 request authorizes the standalone native Stan and
+Walnutpie CPU/GPU XLA custom-call bridge, including native C++ sampling, under
+`docs/plans/bayesfilter-native-stan-walnutpie-master-2026-10-28.md`. GPU calls
+stage CPU sampler execution; this exception does not change public defaults.
 
 ## Academic Research Governance Profile
 

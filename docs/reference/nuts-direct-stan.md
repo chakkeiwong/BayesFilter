@@ -14,6 +14,10 @@ The [source coverage matrix](nuts-stan-coverage.md) distinguishes native-oracle
 checks, inspected source, local invariants and deliberate API differences.
 The older [adaptation guide](nuts-tuning.md) describes the TFP comparator and
 the shared dual-averaging arithmetic.
+The [TFP implementation](nuts-stan-tfp.md) now uses stock TFP NUTS with
+Stan-style warm-up. It replaced the earlier interface to this direct tree on
+October 28. Use this direct module for audited Stan tree behavior; the native
+TFP implementation has its own transition and separate performance evidence.
 
 ## A generic target
 
