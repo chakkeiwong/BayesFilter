@@ -1,7 +1,6 @@
 """CPU-only independent density and finite-program derivative diagnostics."""
 import os
 os.environ.setdefault('CUDA_VISIBLE_DEVICES', '-1')
-import json
 import math
 from pathlib import Path
 import sys
@@ -13,22 +12,33 @@ from bayesfilter.highdim.covariance_proposal_score_batch_tf import gaussian_mixt
 from bayesfilter.highdim.covariance_proposal_tf import ProposalControls
 from bayesfilter.highdim.observation_parent_proposal_tf import conditional_geometry, gaussian_log_density
 from bayesfilter.highdim.sqmc_ksc_tf import KSCSpec
+D=tf.float64
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'scripts'))
-D=tf.float64
 
 def setup_model(kind, n=16):
-    from run_observation_parent_four_model_check import designs, OLD, RB
     if kind=='ksc':
-        spec=KSCSpec(); fixture=None
-        saved=json.loads((OLD/'004-filter-ksc-d26100831/manifest.json').read_text())
-        theta=saved['theta']; data=saved['data']
+        spec=KSCSpec(); binding=spec; theta=spec.default_theta(D)
+        initial=tf.random.stateless_normal([n,spec.dimension],[281301,11],dtype=D)
+        noise=tf.random.stateless_normal([2,n,spec.dimension],[281301,12],dtype=D)
+        uniform=tf.random.stateless_uniform([2,n,2],[281301,13],dtype=D)
     else:
         from run_range_bearing_covariance_comparison import specs
-        fixture,spec=specs(tf,D,20)
-        theta=[0.,0.];data=json.loads((RB/'data/1704-t20.json').read_text())
-    initial,noise,uniform=designs(tf,spec,fixture,n,2,281301)
-    return spec,tf.constant(theta,D),tf.constant(data['observations'][:2],D),initial,noise,uniform
+        _,binding=specs(tf,D,20)
+        spec=binding
+        theta=tf.constant([0.,0.],D)
+        from run_range_bearing_covariance_comparison import inputs
+        initial,noise,uniform,_=inputs(tf,binding.spec,n,281301,D)
+        noise,uniform=noise[:2],uniform[:2]
+    # Make the diagnostic self-contained: observations are deterministic
+    # predictions from the same model/cloud, rather than external run data.
+    model=NativeModels(spec,theta[None])
+    state=model.initial_cloud(initial)
+    observed=[]
+    for _ in range(2):
+        state=model.transition(state)
+        observed.append(tf.reduce_mean(model.observation(state).v,axis=1)[0])
+    return spec,theta,tf.stack(observed),initial,noise,uniform
 
 @pytest.mark.parametrize('kind',['ksc','range_bearing'])
 def test_exact_density_and_all_tangents(kind):
