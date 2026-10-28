@@ -1098,7 +1098,8 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
     d_observation_noise_factor: tf.Tensor,
     jitter: tf.Tensor | float = 0.0,
     jitter_updates_filtered_covariance: bool = True,
-) -> tuple[tf.Tensor, tf.Tensor]:
+    return_health: bool = False,
+) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
     """Evaluate a batched analytic QR score from native covariance factors.
 
     The leading dimension is an independent batch/proposal axis ``B``.  The
@@ -1233,6 +1234,43 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
     log_likelihood0 = tf.zeros((batch_size,), dtype=dtype)
     t0 = tf.constant(0, dtype=tf.int32)
 
+    # Observe this exact recurrence; ordinary calls carry no extra loop state.
+    def rows_finite(*values):
+        masks = [tf.reduce_all(tf.math.is_finite(tf.reshape(value, [batch_size, -1])), axis=1)
+                 for value in values]
+        return tf.reduce_all(tf.stack(masks, axis=0), axis=0)
+
+    health0 = ()
+    loop_observations = y
+    if return_health:
+        # Also support shape-relaxed traces: an unreachable body must still
+        # have a legal slice when the runtime observation history is empty.
+        loop_observations = tf.concat([y, tf.zeros([1, tf.shape(y)[1]], dtype)], axis=0)
+        input_finite = rows_finite(
+            transition_offset, transition_matrix, transition_noise_factor,
+            observation_offset, observation_matrix, observation_noise_factor,
+            mean0, initial_state_factor, dmean0, d_initial_state_factor,
+            d_transition_offset, d_transition_matrix, d_transition_noise_factor,
+            d_observation_offset, d_observation_matrix, d_observation_noise_factor)
+        input_finite &= tf.reduce_all(tf.math.is_finite(y))
+        input_finite &= tf.math.is_finite(jitter_tensor) & (jitter_tensor >= 0)
+        health0 = (input_finite, tf.zeros([batch_size], tf.int32),
+                   tf.zeros([batch_size], tf.int32),
+                   tf.fill([batch_size], tf.constant(float('inf'), dtype)))
+
+        # XLA traces even a zero-iteration body; indexing a statically empty
+        # history then fails at compilation. No observations means no assessment.
+        if y.shape[0] == 0:
+            return log_likelihood0, score0, {
+                'status_code': tf.fill([batch_size], 3),
+                'valid_pre_regularized_score': tf.zeros([batch_size], tf.bool),
+                'floor_count_value': tf.zeros([batch_size], tf.int32),
+                'nonfinite_step_count': tf.zeros([batch_size], tf.int32),
+                'invalid_factor_step_count': tf.zeros([batch_size], tf.int32),
+                'min_innovation_factor_diagonal': tf.zeros([batch_size], dtype),
+                'jitter_value': tf.fill([batch_size], jitter_tensor),
+            }
+
     def cond(t, *_state):
         return t < n_timesteps
 
@@ -1244,6 +1282,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
         dcovariance_factor,
         log_likelihood,
         score,
+        *health,
     ):
         predicted_mean = transition_offset + _matvec(transition_matrix, mean)
         dpredicted_mean = (
@@ -1278,7 +1317,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
             )
         )
 
-        innovation = y[t][tf.newaxis, :] - (
+        innovation = loop_observations[t][tf.newaxis, :] - (
             observation_offset + _matvec(observation_matrix, predicted_mean)
         )
         dinnovation = (
@@ -1412,6 +1451,24 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
             + mahalanobis
         )
         log_likelihood = log_likelihood + contribution
+        health_next = ()
+        if return_health:
+            all_finite, nonfinite_steps, invalid_factor_steps, min_innovation_diag = health
+            step_finite = rows_finite(
+                predicted_mean, dpredicted_mean, predicted_factor, dpredicted_factor,
+                predicted_covariance, dpredicted_covariance, innovation, dinnovation,
+                innovation_factor, dinnovation_factor, innovation_solve,
+                innovation_precision, score, kalman_gain, dK, mean, dmean,
+                covariance_factor, dcovariance_factor, log_likelihood)
+            factor_ok = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.linalg.diag_part(factor) > 0, axis=-1)
+                for factor in (predicted_factor, innovation_factor, covariance_factor)
+            ], axis=0), axis=0)
+            diag_min = tf.reduce_min(tf.linalg.diag_part(innovation_factor), axis=-1)
+            health_next = (all_finite & step_finite,
+                           nonfinite_steps + tf.cast(~step_finite, tf.int32),
+                           invalid_factor_steps + tf.cast(~factor_ok, tf.int32),
+                           tf.minimum(min_innovation_diag, diag_min))
         return (
             t + 1,
             mean,
@@ -1420,6 +1477,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
             dcovariance_factor,
             log_likelihood,
             score,
+            *health_next,
         )
 
     (
@@ -1430,6 +1488,7 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
         _dcovariance_factor,
         log_likelihood,
         score,
+        *health_final,
     ) = tf.while_loop(
         cond,
         body,
@@ -1441,10 +1500,30 @@ def _tf_qr_sqrt_kalman_score_batched_static_from_factors(
             dcovariance_factor0,
             log_likelihood0,
             score0,
+            *health0,
         ),
         maximum_iterations=n_timesteps,
         parallel_iterations=1,
     )
+    if return_health:
+        finite, nonfinite_steps, invalid_factor_steps, min_diag = health_final
+        finite &= rows_finite(log_likelihood, score)
+        numerical_valid = finite & (invalid_factor_steps == 0) & (n_timesteps > 0)
+        unregularized = tf.equal(jitter_tensor, tf.constant(0.0, dtype))
+        valid = numerical_valid & unregularized
+        # 0: measured valid; 1: numerical failure; 2: regularized;
+        # 3: empty history, not assessed. No factor flooring occurs.
+        status = tf.where(numerical_valid, tf.where(unregularized, 0, 2), 1)
+        status = tf.where(n_timesteps > 0, status, 3)
+        return log_likelihood, score, {
+            'status_code': status,
+            'valid_pre_regularized_score': valid,
+            'floor_count_value': tf.zeros([batch_size], tf.int32),
+            'nonfinite_step_count': nonfinite_steps,
+            'invalid_factor_step_count': invalid_factor_steps,
+            'min_innovation_factor_diagonal': tf.where(n_timesteps > 0, min_diag, tf.zeros_like(min_diag)),
+            'jitter_value': tf.fill([batch_size], jitter_tensor),
+        }
     return log_likelihood, score
 
 
@@ -1567,12 +1646,16 @@ def tf_qr_sqrt_kalman_score_factors_batched_static(
     d_observation_noise_factor: tf.Tensor,
     jitter: tf.Tensor | float = 0.0,
     jitter_updates_filtered_covariance: bool = True,
-) -> tuple[tf.Tensor, tf.Tensor]:
+    return_health: bool = False,
+) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, dict[str, tf.Tensor]]:
     """XLA factor-native batched QR log likelihood and analytic score.
 
     ``transition_noise_factor``, ``initial_state_factor``, and
     ``observation_noise_factor`` are consumed directly.  The function does
     not Cholesky-factorize or otherwise reconstruct any input covariance.
+    Optional return_health adds measured per-row diagnostics as a third result.
+    Nonzero jitter cannot establish pre-regularized validity. Factor minima
+    are not eigenvalues; no arbitrary condition cutoff is introduced.
     The numerical recurrence is compiled; complete consumer targets must also
     compile their model construction and callbacks inside a stable boundary.
     """
@@ -1597,6 +1680,7 @@ def tf_qr_sqrt_kalman_score_factors_batched_static(
         d_observation_noise_factor=d_observation_noise_factor,
         jitter=jitter,
         jitter_updates_filtered_covariance=jitter_updates_filtered_covariance,
+        return_health=return_health,
     )
 
 

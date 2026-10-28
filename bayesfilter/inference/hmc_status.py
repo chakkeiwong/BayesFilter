@@ -20,6 +20,14 @@ def cached_target_status(results: Any, *, proposed: bool = False) -> Mapping | N
     return extra[_EXTRA_KEY]["proposed" if proposed else "accepted"]
 
 
+def cached_previous_target_log_prob(results: Any) -> Any | None:
+    """Value actually cached before the MH choice, with no reevaluation."""
+    extra = getattr(results, "extra", None)
+    if not isinstance(extra, Mapping) or _EXTRA_KEY not in extra:
+        return None
+    return extra[_EXTRA_KEY].get("previous_target_log_prob")
+
+
 def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averaging=False):
     """Evaluate proposal status once; select accepted status with TFP's MH mask.
 
@@ -48,12 +56,13 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
             raise ValueError("cached HMC target status must match the chain shape")
         return status
 
-    def attach(results, accepted, proposed):
+    def attach(results, accepted, proposed, previous_value):
         base = endpoint(results)
         if not isinstance(base.extra, (list, tuple)) or base.extra:
             raise ValueError("cached HMC status requires an unused TFP extra field")
         return replace_endpoint(results, base._replace(extra={
-            _EXTRA_KEY: {"accepted": accepted, "proposed": proposed}}))
+            _EXTRA_KEY: {"accepted": accepted, "proposed": proposed,
+                         "previous_target_log_prob": previous_value}}))
 
     class CachedTargetStatus(tfp.mcmc.TransitionKernel):
         @property
@@ -73,7 +82,7 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
             status = getattr(endpoint(results).accepted_results, 'status', None)
             if status is None:
                 status = read_status(init_state, endpoint(results).is_accepted.shape)
-            return attach(results, status, status)
+            return attach(results, status, status, endpoint(results).accepted_results.target_log_prob)
 
         def one_step(self, current_state, previous_kernel_results, seed=None):
             previous = endpoint(previous_kernel_results)
@@ -92,6 +101,6 @@ def cache_hmc_target_status(inner_kernel, target_status_fn, *, uses_dual_averagi
                 raise ValueError("cached HMC target-status fields changed within a chain")
             selected = {key: tf.where(base.is_accepted, proposed[key], accepted[key])
                         for key in proposed}
-            return next_state, attach(results, selected, proposed)
+            return next_state, attach(results, selected, proposed, previous.accepted_results.target_log_prob)
 
     return CachedTargetStatus()

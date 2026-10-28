@@ -535,8 +535,11 @@ class HMCAcceptancePolicy:
     max_abs_log_accept_energy_proxy: float = 1000.0
     allowed_cost_stop_reasons: tuple[str, ...] = ()
     temporal_conflict_method: str = "raw_block_crossing_v1"
+    native_divergence_role: str = "explanatory_alert_only"
 
     def __post_init__(self) -> None:
+        if self.native_divergence_role not in ("explanatory_alert_only", "promotion_veto"):
+            raise ValueError("unsupported native divergence role")
         if self.temporal_conflict_method not in (
             "raw_block_crossing_v1", "paired_chain_block_contrasts_v1"
         ):
@@ -649,7 +652,7 @@ class HMCAcceptancePolicy:
                 "bounded_short_cycle_path_return": (
                     "promotion_veto_and_resonance_repair_trigger"
                 ),
-                "native_divergence": "promotion_veto",
+                "native_divergence": self.native_divergence_role,
                 "max_abs_log_accept_energy_proxy": "explanatory_alert_only",
                 "signed_log_accept_ratio_tails": "explanatory_alert_only",
             },
@@ -661,6 +664,8 @@ class HMCAcceptancePolicy:
                 temporal_contrast_familywise_level=0.01,
                 temporal_contrast_role="working_heterogeneity_screen_not_stationarity_proof",
             )
+        if self.native_divergence_role != "promotion_veto":
+            result["native_divergence_role"] = self.native_divergence_role
         return result
 
 
@@ -1387,7 +1392,8 @@ def _evaluate_hmc_health_context(
     )
     promotion_vetoes = (
         ("native_divergence_positive",)
-        if status == "available" and divergence_count is not None and divergence_count > 0
+        if (policy.native_divergence_role == "promotion_veto"
+            and status == "available" and divergence_count is not None and divergence_count > 0)
         else ()
     )
     movement_failed, path_return_failed = _trajectory_pathology_flags(
@@ -1405,7 +1411,8 @@ def _evaluate_hmc_health_context(
         promotion_vetoes = tuple(
             dict.fromkeys((*promotion_vetoes, "path_return_resonance_detected"))
         )
-    if "native_divergence_positive" in legacy_failures and not promotion_vetoes:
+    if ("native_divergence_positive" in legacy_failures
+            and not (status == "available" and divergence_count is not None and divergence_count > 0)):
         return _empty_acceptance_evidence(
             evidence_validity="candidate_data_invalid",
             native_divergence_status=status,
@@ -2015,7 +2022,8 @@ def _validate_valid_acceptance_summary(
 def _validate_v5_roles(evidence: HMCAcceptanceEvidence) -> None:
     expected_vetoes = []
     if (
-        evidence.native_divergence_status == "available"
+        evidence.policy.native_divergence_role == "promotion_veto"
+        and evidence.native_divergence_status == "available"
         and evidence.native_divergence_count is not None
         and evidence.native_divergence_count > 0
     ):
@@ -2414,7 +2422,9 @@ def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
     ):
         raise ValueError("acceptance policy schema mismatch")
     method = payload.get("temporal_conflict_method", "raw_block_crossing_v1")
-    expected_keys = set(HMCAcceptancePolicy(temporal_conflict_method=method).payload())
+    role = payload.get("native_divergence_role", "promotion_veto")
+    expected_keys = set(HMCAcceptancePolicy(temporal_conflict_method=method,
+        native_divergence_role=role).payload())
     if set(payload) != expected_keys:
         raise ValueError("acceptance policy field set is inconsistent")
     policy = HMCAcceptancePolicy(
@@ -2437,6 +2447,7 @@ def _acceptance_policy_from_payload(payload: Any) -> HMCAcceptancePolicy:
             payload.get("allowed_cost_stop_reasons", ())
         ),
         temporal_conflict_method=method,
+        native_divergence_role=role,
     )
     expected = policy.payload()
     for name in expected:

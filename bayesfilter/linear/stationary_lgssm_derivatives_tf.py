@@ -155,7 +155,7 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
     use the explicit convergence diagnostics to distinguish a converged
     stationary factor from a bounded-iteration failure.
 
-    This is deliberately a non-XLA bounded TensorFlow loop.  The factor path
+    This is a bounded TensorFlow loop with row-local stopping. The factor path
     is intended for numerically sensitive target evaluation; no jitter,
     covariance floor, clipping, or support relaxation is applied.
     """
@@ -189,30 +189,24 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
     if d_transition.shape[1] != d_process_factor.shape[1]:
         raise ValueError("derivative parameter dimensions must match")
 
-    finite_checks = [
-        tf.debugging.assert_all_finite(transition, "transition contains NaN or Inf"),
-        tf.debugging.assert_all_finite(d_transition, "d_transition contains NaN or Inf"),
-        tf.debugging.assert_all_finite(process_factor, "process_factor contains NaN or Inf"),
-        tf.debugging.assert_all_finite(
-            d_process_factor,
-            "d_process_factor contains NaN or Inf",
-        ),
-        tf.debugging.assert_greater(
-            tf.linalg.diag_part(process_factor),
-            tf.zeros_like(tf.linalg.diag_part(process_factor)),
-            message="process_factor must have positive diagonal",
-        ),
-    ]
-    with tf.control_dependencies(finite_checks):
-        transition = tf.identity(transition)
-        d_transition = tf.identity(d_transition)
-        process_factor = tf.identity(process_factor)
-        d_process_factor = tf.identity(d_process_factor)
+    # Rows are independent targets. Whole-batch assertions poison healthy
+    # rows and disappear under XLA. Use explicit row validity and inert inputs
+    # internally, then expose invalid rows as NaNs, never as target solutions.
+    def finite_rows(value):
+        return tf.reduce_all(tf.math.is_finite(value), axis=tuple(range(1, value.shape.rank)))
 
-    stationary_factor = process_factor
-    d_stationary_factor = d_process_factor
-    transition_power = transition
-    d_transition_power = d_transition
+    def select_rows(mask, yes, no):
+        return tf.where(tf.reshape(mask, [-1] + [1] * (yes.shape.rank - 1)), yes, no)
+
+    valid = (finite_rows(transition) & finite_rows(d_transition)
+             & finite_rows(process_factor) & finite_rows(d_process_factor)
+             & tf.reduce_all(tf.linalg.diag_part(process_factor) > 0., axis=-1))
+    input_valid = valid
+    identity = tf.eye(transition.shape[-1], batch_shape=tf.shape(transition)[:1], dtype=tf.float64)
+    stationary_factor = select_rows(valid, process_factor, identity)
+    d_stationary_factor = select_rows(valid, d_process_factor, tf.zeros_like(d_process_factor))
+    transition_power = select_rows(valid, transition, tf.zeros_like(transition))
+    d_transition_power = select_rows(valid, d_transition, tf.zeros_like(d_transition))
 
     def tail_for(
         factor: tf.Tensor,
@@ -243,101 +237,65 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
         transition_power,
         d_transition_power,
     )
-    converged = tf.reduce_all(tail_metric <= tf.cast(tolerance, tf.float64))
+    valid &= tf.math.is_finite(tail_metric)
     step = tf.constant(0, tf.int32)
-    max_steps = tf.constant(int(max_doublings), tf.int32)
+    row_steps = tf.zeros(tf.shape(transition)[:1], tf.int32)
+    tol = tf.cast(tolerance, tf.float64)
 
-    def cond(
-        step_value: tf.Tensor,
-        _factor: tf.Tensor,
-        _d_factor: tf.Tensor,
-        _power: tf.Tensor,
-        _d_power: tf.Tensor,
-        _tail: tf.Tensor,
-        _d_tail: tf.Tensor,
-        _metric: tf.Tensor,
-        converged_value: tf.Tensor,
-    ) -> tf.Tensor:
-        return tf.logical_and(
-            step_value < max_steps,
-            tf.logical_not(converged_value),
-        )
+    def cond(step, factor, d_factor, power, d_power, tail, d_tail, metric, valid, row_steps):
+        return (step < max_doublings) & tf.reduce_any(valid & (metric > tol))
 
-    def body(
-        step_value: tf.Tensor,
-        factor: tf.Tensor,
-        d_factor: tf.Tensor,
-        power: tf.Tensor,
-        d_power: tf.Tensor,
-        _tail: tf.Tensor,
-        _d_tail: tf.Tensor,
-        _metric: tf.Tensor,
-        _converged: tf.Tensor,
-    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
-        propagated = power @ factor
-        d_propagated = (
-            tf.einsum("bij,bpjk->bpik", power, d_factor)
-            + tf.einsum("bpij,bjk->bpik", d_power, factor)
-        )
-        stack = tf.concat((factor, propagated), axis=2)
-        d_stack = tf.concat((d_factor, d_propagated), axis=3)
-        factor2, d_factor2, _diagnostics = batched_stack_qr_lower(
-            stack,
-            d_stack,
-            compute_covariance_diagnostics=False,
-            relative_pivot_tolerance=0.0,
-        )
-        power2 = power @ power
-        d_power2 = (
-            tf.einsum("bpij,bjk->bpik", d_power, power)
-            + tf.einsum("bij,bpjk->bpik", power, d_power)
-        )
-        tail2, d_tail2, metric2 = tail_for(
-            factor2,
-            d_factor2,
-            power2,
-            d_power2,
-        )
-        converged2 = tf.reduce_all(metric2 <= tf.cast(tolerance, tf.float64))
-        return (
-            step_value + 1,
-            factor2,
-            d_factor2,
-            power2,
-            d_power2,
-            tail2,
-            d_tail2,
-            metric2,
-            converged2,
-        )
+    def body(step, factor, d_factor, power, d_power, tail, d_tail, metric, valid, row_steps):
+        active = valid & (metric > tol)
+        # Freeze completed factors, derivatives and tails at their own stopping
+        # level: a slow companion must not change this finite value/score map.
+        f = select_rows(active, factor, identity)
+        df = select_rows(active, d_factor, tf.zeros_like(d_factor))
+        a = select_rows(active, power, tf.zeros_like(power))
+        da = select_rows(active, d_power, tf.zeros_like(d_power))
+        propagated = a @ f
+        d_propagated = (tf.einsum("bij,bpjk->bpik", a, df)
+                        + tf.einsum("bpij,bjk->bpik", da, f))
+        stack = tf.concat((f, propagated), axis=2)
+        d_stack = tf.concat((df, d_propagated), axis=3)
+        power2 = a @ a
+        d_power2 = (tf.einsum("bpij,bjk->bpik", da, a)
+                    + tf.einsum("bij,bpjk->bpik", a, da))
+        safe = (finite_rows(stack) & finite_rows(d_stack)
+                & finite_rows(power2) & finite_rows(d_power2))
+        safe_stack = tf.concat((identity, tf.zeros_like(identity)), axis=2)
+        factor2, d_factor2, _ = batched_stack_qr_lower(
+            select_rows(safe, stack, safe_stack),
+            select_rows(safe, d_stack, tf.zeros_like(d_stack)),
+            compute_covariance_diagnostics=False, relative_pivot_tolerance=0.0,
+            validate_numerics=False)
+        tail2, d_tail2, metric2 = tail_for(factor2, d_factor2, power2, d_power2)
+        next_valid = (safe & finite_rows(factor2) & finite_rows(d_factor2)
+                      & tf.math.is_finite(metric2)
+                      & tf.reduce_all(tf.linalg.diag_part(factor2) > 0., axis=-1))
+        return (step + 1,
+                select_rows(active, factor2, factor),
+                select_rows(active, d_factor2, d_factor),
+                select_rows(active, power2, power),
+                select_rows(active, d_power2, d_power),
+                select_rows(active, tail2, tail),
+                select_rows(active, d_tail2, d_tail),
+                tf.where(active, metric2, metric),
+                valid & (~active | next_valid), row_steps + tf.cast(active, tf.int32))
 
-    (
-        step,
-        stationary_factor,
-        d_stationary_factor,
-        transition_power,
-        d_transition_power,
-        tail_factor,
-        d_tail_factor,
-        tail_metric,
-        converged,
-    ) = tf.while_loop(
-        cond,
-        body,
-        (
-            step,
-            stationary_factor,
-            d_stationary_factor,
-            transition_power,
-            d_transition_power,
-            tail_factor,
-            d_tail_factor,
-            tail_metric,
-            converged,
-        ),
-        maximum_iterations=int(max_doublings),
-        parallel_iterations=1,
-    )
+    (step, stationary_factor, d_stationary_factor, transition_power,
+     d_transition_power, tail_factor, d_tail_factor, tail_metric, valid, row_steps) = tf.while_loop(
+        cond, body, (step, stationary_factor, d_stationary_factor, transition_power,
+                     d_transition_power, tail_factor, d_tail_factor, tail_metric, valid, row_steps),
+        maximum_iterations=int(max_doublings), parallel_iterations=1)
+    row_converged = valid & (tail_metric <= tol)
+    # Invalid rows cannot accidentally appear as finite target solutions.
+    def invalidate(value):
+        return select_rows(valid, value, tf.fill(tf.shape(value), tf.constant(float("nan"), tf.float64)))
+    stationary_factor, d_stationary_factor, transition_power, d_transition_power, tail_factor, d_tail_factor = (
+        invalidate(value) for value in (stationary_factor, d_stationary_factor, transition_power,
+                                       d_transition_power, tail_factor, d_tail_factor))
+    tail_metric = tf.where(valid, tail_metric, tf.constant(float("inf"), tf.float64))
     derivative_tail_metric = tf.reduce_max(
         tf.linalg.norm(d_tail_factor, axis=[-2, -1])
         / tf.maximum(
@@ -347,8 +305,11 @@ def stationary_discrete_lyapunov_factor_doubling_tf(
         axis=1,
     )
     diagnostics = {
-        "lyapunov_converged": converged,
-        "lyapunov_row_converged": tail_metric <= tf.cast(tolerance, tf.float64),
+        "lyapunov_converged": tf.reduce_all(row_converged),
+        "lyapunov_row_converged": row_converged,
+        "lyapunov_row_input_valid": input_valid,
+        "lyapunov_row_numerically_valid": valid,
+        "lyapunov_row_doubling_steps": row_steps,
         "lyapunov_doubling_steps": step,
         "lyapunov_tail_relative_norm": tail_metric,
         "lyapunov_derivative_tail_relative_norm": derivative_tail_metric,

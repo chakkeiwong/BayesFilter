@@ -19,6 +19,7 @@ import tensorflow as tf
 
 from bayesfilter.inference.posterior_adapter import (
     ValueScoreCapability,
+    require_exact_score_adapter,
     value_score_capability,
 )
 
@@ -286,6 +287,8 @@ def reviewed_value_score_target_fn(
     if not hasattr(adapter, "log_prob_and_grad"):
         raise TypeError("adapter must expose log_prob_and_grad")
 
+    require_exact_score_adapter(adapter)
+
     def target_value(theta: Any) -> tf.Tensor:
         values = tf.convert_to_tensor(theta, dtype=dtype)
         if require_batched and values.shape.rank != 2:
@@ -411,6 +414,7 @@ class LatentAffineBatchValueScoreAdapter:
     ) -> None:
         if not hasattr(base_adapter, "log_prob_and_grad"):
             raise TypeError("base_adapter must expose log_prob_and_grad")
+        require_exact_score_adapter(base_adapter)
         self.base_adapter = base_adapter
         self.transform = transform
         self.parameter_dim = int(transform.dimension)
@@ -595,6 +599,7 @@ class FixedTransportValueScoreAdapter:
     ) -> None:
         if not hasattr(base_adapter, "log_prob_and_grad"):
             raise TypeError("base_adapter must expose log_prob_and_grad")
+        require_exact_score_adapter(base_adapter)
         self.base_adapter = base_adapter
         self.proposal_rejection_policy = getattr(base_adapter, 'proposal_rejection_policy', None)
         self.transport = transport
