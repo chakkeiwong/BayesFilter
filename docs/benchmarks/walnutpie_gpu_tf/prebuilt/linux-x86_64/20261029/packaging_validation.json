@@ -1,0 +1,52 @@
+{
+  "status": "passed",
+  "date": "2026-10-29",
+  "scope": "CPU packaging/reference smoke; no performance or posterior inference",
+  "gpu": "intentionally hidden; no framework imported",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "LD_LIBRARY_PATH": "removed",
+    "LD_PRELOAD": "removed"
+  },
+  "binary_matches_qualified_original": true,
+  "binary_sha256": "ea5d4965854c950c3a8d91f9b4ff5452a6283422edfa0b2e3d51ec15a326f45b",
+  "source_archive_members_verified": 361,
+  "relocated_oracle_matches_original": true,
+  "rebuilt_oracle_matches_packaged": true,
+  "oracle_record_counts": {
+    "transition": 96,
+    "initialize": 96,
+    "lifecycle": 240,
+    "macro": 96
+  },
+  "closed_form_gaussian_value_gradient": {
+    "values": [
+      {
+        "lp": -0.15625,
+        "g": [
+          -0.25,
+          0.5
+        ]
+      }
+    ]
+  },
+  "rpath_and_runpath_absent": true,
+  "local_ldd": "\tlinux-vdso.so.1 (0x00007fff917f0000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x000075db6e400000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000075db6e6e1000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000075db6e6c1000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000075db6e000000)\n\t/lib64/ld-linux-x86-64.so.2 (0x000075db6e817000)\n",
+  "rebuild_command": [
+    "g++",
+    "-O3",
+    "-std=c++20",
+    "-pthread",
+    "-Ieigen",
+    "-Iwalnutpie/include",
+    "oracle.cc",
+    "-o",
+    "oracle"
+  ],
+  "rebuild_wall_seconds": 7.351658644969575,
+  "rebuild_stderr": "",
+  "rebuilt_binary_sha256": "4e96f6361c3f56ffa367d974d18407e6d51e8c75ef61602c5f5eb932064e2a4c",
+  "wall_seconds": 7.685239646001719,
+  "limitations": "One host only; ABI requirements inspected, not tested across OS/library versions. New rebuild timing is a smoke measurement, not a speed comparison."
+}

@@ -30,8 +30,12 @@ class Config:
     stabilization: float = 1e-4
     learning_decay: float = .5
     init_search_limit: int = 64
+    # Execution-only alternatives; mathematical and random primitives are shared.
+    execution_layout: str = 'fieldwise'
 
     def __post_init__(self):
+        if self.execution_layout not in ('fieldwise', 'packed', 'flat'):
+            raise ValueError('execution_layout must be fieldwise, packed or flat')
         for name in ('chains', 'dimension', 'max_depth', 'max_halvings',
                      'min_micro_steps', 'init_search_limit'):
             x = getattr(self, name)
@@ -245,8 +249,10 @@ class Kernel:
         return Span(b.bq,b.bp,b.bg,b.bj,f.fq,f.fp,f.fg,f.fj,chosen.q,chosen.g,chosen.lp,total), seed
 
     def subtree(self, old, depth, forward, inv, eps, minimum, seed, active, adam, adapt):
+        if self.cfg.execution_layout == 'flat':
+            return self.subtree_flat(old, depth, forward, inv, eps, minimum, seed, active, adam, adapt)
         tf, c = self.tf, self.cfg
-        stack = Span(*(tf.zeros([c.max_depth+1]+x.shape.as_list(), x.dtype) for x in old))
+        stack = self.stack_init(old)
         def cond(i, live, last, stack, seed, adam, ev, macros, failed, revfail):
             return (i < tf.bitwise.left_shift(1, depth)) & tf.reduce_any(live)
         def body(i, live, last, stack, seed, adam, ev, macros, failed, revfail):
@@ -261,17 +267,78 @@ class Kernel:
             def cc(level, span, live, seed):
                 return (level < depth) & (tf.math.floormod(i+1, tf.bitwise.left_shift(1, level+1)) == 0) & tf.reduce_any(live)
             def cb(level, span, live, seed):
-                prev = Span(*(x[level] for x in stack))
+                prev = self.stack_read(stack, level)
                 live &= ~self.uturn(prev, span, forward, inv)
                 combined, seed = self.combine(prev, span, forward, seed, live, False)
                 return level+1, combined, live, seed
             level, nxt, live, seed = tf.while_loop(cc, cb, (tf.constant(0), nxt, live, seed), parallel_iterations=1)
-            stack = Span(*(tf.tensor_scatter_nd_update(x, tf.reshape(level, [1,1]), y[None])
-                           for x,y in zip(stack,nxt)))
+            stack = self.stack_write(stack, level, nxt)
             return i+1, live, nxt, stack, seed, adam, ev+cost, macros, failed, revfail
         _, live, out, _, seed, adam, ev, macros, failed, revfail = tf.while_loop(cond, body,
             (tf.constant(0), active, old, stack, seed, adam, self.ints(), self.ints(),
              tf.zeros([self.c], tf.bool), tf.zeros([self.c], tf.bool)), parallel_iterations=1)
+        return out, live, seed, adam, ev, macros, failed, revfail
+
+    def pack_span(self, span):
+        return self.tf.concat([x[:, None] if x.shape.rank == 1 else x for x in span], -1)
+
+    def unpack_span(self, packed):
+        widths = [self.d,self.d,self.d,1,self.d,self.d,self.d,1,self.d,self.d,1,1]
+        parts = self.tf.split(packed, widths, axis=-1)
+        return Span(*(x[:, 0] if i in (3,7,10,11) else x for i,x in enumerate(parts)))
+
+    def stack_init(self, old):
+        tf = self.tf
+        if self.cfg.execution_layout == 'fieldwise':
+            return Span(*(tf.zeros([self.cfg.max_depth+1]+x.shape.as_list(), x.dtype) for x in old))
+        return tf.zeros([self.cfg.max_depth+1,self.c,8*self.d+4], self.dtype)
+
+    def stack_read(self, stack, level):
+        if self.cfg.execution_layout == 'fieldwise':
+            return Span(*(x[level] for x in stack))
+        return self.unpack_span(stack[level])
+
+    def stack_write(self, stack, level, span):
+        tf = self.tf
+        index = tf.reshape(level, [1,1])
+        if self.cfg.execution_layout == 'fieldwise':
+            return Span(*(tf.tensor_scatter_nd_update(x, index, y[None]) for x,y in zip(stack,span)))
+        return tf.tensor_scatter_nd_update(stack, index, self.pack_span(span)[None])
+
+    def subtree_flat(self, old, depth, forward, inv, eps, minimum, seed, active, adam, adapt):
+        """One scheduler for leaves and binary carries, preserving traversal order.
+
+        i counts completed leaves; pending means the current span must merge
+        with stack[level]. No extra random draw or numerical proposal is made.
+        Macro refinement and reverse checks retain their shared implementation.
+        """
+        tf = self.tf
+        stack = self.stack_init(old)
+        def carry_needed(i, level, live):
+            return ((level < depth) &
+                (tf.math.floormod(i, tf.bitwise.left_shift(1, level+1)) == 0) &
+                tf.reduce_any(live))
+        def cond(i, level, pending, live, last, stack, seed, adam, ev, macros, failed, revfail):
+            return ((i < tf.bitwise.left_shift(1, depth)) | pending) & tf.reduce_any(live)
+        def body(i, level, pending, live, last, stack, seed, adam, ev, macros, failed, revfail):
+            def leaf():
+                p, ok, bad, cost, a = self.macro(self.edge(last, forward), inv,
+                    tf.where(forward, eps, -eps), minimum, live, adam, adapt)
+                return (i+1, tf.constant(0), live & ok, self.span(p), seed, a, ev+cost,
+                    macros+tf.cast(live, tf.int32), failed | (live & ~ok), revfail | bad)
+            def carry():
+                prev = self.stack_read(stack, level)
+                ok = live & ~self.uturn(prev, last, forward, inv)
+                combined, rng = self.combine(prev, last, forward, seed, ok, False)
+                return i, level+1, ok, combined, rng, adam, ev, macros, failed, revfail
+            i, level, live, last, seed, adam, ev, macros, failed, revfail = tf.cond(pending, carry, leaf)
+            pending = carry_needed(i, level, live)
+            stack = tf.cond(pending, lambda:stack, lambda:self.stack_write(stack, level, last))
+            return i, level, pending, live, last, stack, seed, adam, ev, macros, failed, revfail
+        _, _, _, live, out, _, seed, adam, ev, macros, failed, revfail = tf.while_loop(cond, body,
+            (tf.constant(0),tf.constant(0),tf.constant(False),active,old,stack,seed,adam,
+             self.ints(),self.ints(),tf.zeros([self.c],tf.bool),tf.zeros([self.c],tf.bool)),
+            parallel_iterations=1)
         return out, live, seed, adam, ev, macros, failed, revfail
 
     def transition(self, q, lp, g, eps, inv, minimum, seed, adam, *, adapt=False):

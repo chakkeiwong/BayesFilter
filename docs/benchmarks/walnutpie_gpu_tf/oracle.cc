@@ -29,12 +29,19 @@ template<> class Random<Tape> {
 #include <walnutpie/adaptive_walnuts.hpp>
 using Vec=Eigen::VectorXd;
 struct Target {
- int kind,d; mutable long evaluations=0; Eigen::MatrixXd x; Vec y;
+ int kind,d; mutable long evaluations=0; Eigen::MatrixXd x; Vec y; double constant=0.;
  void operator()(const Vec& q,double& lp,Vec& g) const {
   ++evaluations;g.resize(d);
   if(kind==0){lp=-.5*q.squaredNorm();g=-q;}
   else if(kind==1){lp=0;g.setZero();for(int j=0;j<d;j+=2){double z=q[j+1]-.3*(q[j]*q[j]-1);lp-=.5*(q[j]*q[j]+z*z);g[j]=-q[j]+.6*q[j]*z;g[j+1]=-z;}}
   else if(kind==2){double s=std::exp(-q[0]),ss=q.tail(d-1).squaredNorm();lp=-q[0]*q[0]/18.-.5*(d-1)*q[0]-.5*s*ss;g[0]=-q[0]/9.-.5*(d-1)+.5*s*ss;g.tail(d-1)=-s*q.tail(d-1);}
+  else if(kind==4){
+   Vec z=x*q, residual(z.size());double loss=0;
+   for(int i=0;i<z.size();++i){double t=z[i];loss+=std::max(t,0.)+std::log1p(std::exp(-std::abs(t)))-y[i]*t;
+    double e=std::exp(-std::abs(t));double prob=t>=0?1./(1.+e):e/(1.+e);residual[i]=prob-y[i];}
+   lp=-.5*q.squaredNorm()-loss/x.rows();g=-q-x.transpose()*residual/x.rows();
+  }
+  else if(kind==5){Vec v=x*q;lp=-.5*q.squaredNorm()-.5*q.dot(v)+q.dot(y)-.5*constant;g=-q-v+y;}
   else {Vec r=x*q-y;lp=-.5*q.squaredNorm()-.5*r.squaredNorm()/x.rows();g=-q-x.transpose()*r/x.rows();}
  }
 };
@@ -83,8 +90,8 @@ void oracle(){
  }
 }
 struct Result {double seconds;long evaluations;std::vector<Vec> draws;double epsilon;Vec inv;};
-Result native_fit(Target f,const Vec& q,int chain,int warm,int draws,int depth){
- auto begin=std::chrono::steady_clock::now();std::mt19937_64 rng(20261028+chain);
+Result native_fit(Target f,const Vec& q,int chain,int warm,int draws,int depth,uint64_t seed=20261028){
+ auto begin=std::chrono::steady_clock::now();std::mt19937_64 rng(seed+chain);
  Vec g;double lp;f(q,lp,g);Vec mass=(.99999*g.array().abs()+.00001).matrix();
  double e=walnutpie::detail::adapt_step(rng,f,q,mass,.1,q.size());
  Handler h;auto w=walnutpie::WarmupConfigBuilder().build();auto s=walnutpie::SamplingConfigBuilder().max_trajectory_doublings(depth).build();
@@ -92,17 +99,23 @@ Result native_fit(Target f,const Vec& q,int chain,int warm,int draws,int depth){
  for(int i=0;i<warm;++i)a();auto sampler=a.sampler();for(int i=0;i<draws;++i)sampler();
  return {std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count(),f.evaluations,h.draws,a.step_size(),a.inv_mass()};
 }
-void benchmark(const char* file){
+void benchmark(const char* file,uint64_t seed=20261028,int repeats=7,bool evaluate=false){
  std::ifstream in(file);int kind,d,n,c,w,s,depth;in>>kind>>d>>n>>c>>w>>s>>depth;
  Target f{kind,d};std::vector<Vec> starts(c,Vec(d));for(auto& q:starts)for(int j=0;j<d;++j)in>>q[j];
  f.x.resize(n,d);f.y.resize(n);for(int i=0;i<n;++i)for(int j=0;j<d;++j)in>>f.x(i,j);for(int i=0;i<n;++i)in>>f.y[i];
  if(!in)throw std::runtime_error("bad fixture file");
+ auto prebegin=std::chrono::steady_clock::now();
+ if(kind==5){Eigen::MatrixXd gram=f.x.transpose()*f.x/n;Vec linear=f.x.transpose()*f.y/n;
+  f.constant=f.y.squaredNorm()/n;f.x=std::move(gram);f.y=std::move(linear);}
+ double preprocess=std::chrono::duration<double>(std::chrono::steady_clock::now()-prebegin).count();
+ if(evaluate){std::cout<<"{\"values\":[";for(int j=0;j<c;++j){Vec g;double lp;f(starts[j],lp,g);
+  if(j)std::cout<<',';std::cout<<"{\"lp\":"<<lp<<",\"g\":";vec(g);std::cout<<'}';}std::cout<<"]}\n";return;}
  std::vector<Result> result(c);std::vector<double> serial,parallel;
- for(int rep=0;rep<7;++rep)for(int arm=0;arm<2;++arm){bool threads=(rep+arm)%2;auto begin=std::chrono::steady_clock::now();
-  if(threads){std::vector<std::thread> pool;for(int j=0;j<c;++j)pool.emplace_back([&,j]{result[j]=native_fit(f,starts[j],j,w,s,depth);});for(auto& t:pool)t.join();}
-  else for(int j=0;j<c;++j)result[j]=native_fit(f,starts[j],j,w,s,depth);
+ for(int rep=0;rep<repeats;++rep)for(int arm=0;arm<2;++arm){bool threads=(rep+arm)%2;auto begin=std::chrono::steady_clock::now();
+  if(threads){std::vector<std::thread> pool;for(int j=0;j<c;++j)pool.emplace_back([&,j]{result[j]=native_fit(f,starts[j],j,w,s,depth,seed);});for(auto& t:pool)t.join();}
+  else for(int j=0;j<c;++j)result[j]=native_fit(f,starts[j],j,w,s,depth,seed);
   (threads?parallel:serial).push_back(std::chrono::duration<double>(std::chrono::steady_clock::now()-begin).count());}
- std::cout<<"{\"serial_seconds\":[";for(int i=0;i<7;++i){if(i)std::cout<<',';std::cout<<serial[i];}std::cout<<"],\"parallel_seconds\":[";for(int i=0;i<7;++i){if(i)std::cout<<',';std::cout<<parallel[i];}
+ std::cout<<"{\"preprocess_seconds\":"<<preprocess<<",\"serial_seconds\":[";for(int i=0;i<repeats;++i){if(i)std::cout<<',';std::cout<<serial[i];}std::cout<<"],\"parallel_seconds\":[";for(int i=0;i<repeats;++i){if(i)std::cout<<',';std::cout<<parallel[i];}
  std::cout<<"],\"chains\":[";for(int j=0;j<c;++j){if(j)std::cout<<',';std::cout<<"{\"evaluations\":"<<result[j].evaluations<<",\"epsilon\":"<<result[j].epsilon<<",\"draws\":[";for(int i=0;i<s;++i){if(i)std::cout<<',';vec(result[j].draws[i]);}std::cout<<"]}";}std::cout<<"]}\n";
 }
-int main(int argc,char**argv){std::cout<<std::setprecision(17);if(argc==2)benchmark(argv[1]);else oracle();}
+int main(int argc,char**argv){std::cout<<std::setprecision(17);if(argc==4)benchmark(argv[1],std::stoull(argv[2]),std::stoi(argv[3]));else if(argc==3 && std::string(argv[1])=="--evaluate")benchmark(argv[2],20261028,1,true);else if(argc==2)benchmark(argv[1]);else oracle();}

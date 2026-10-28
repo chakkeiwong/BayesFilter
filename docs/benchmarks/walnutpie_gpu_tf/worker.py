@@ -90,7 +90,7 @@ def validate(tf,args,report):
     def close(actual,expected):np.testing.assert_allclose(actual,expected,rtol=2e-11,atol=2e-11)
     for kind in range(4):
         rr=[r for r in rows if r['kind']==kind and r['type']=='transition']
-        c,d=len(rr),len(rr[0]['q']);cfg=Config(c,d)
+        c,d=len(rr),len(rr[0]['q']);cfg=Config(c,d,execution_layout=getattr(args,'execution_layout','fieldwise'))
         target=model_for(tf,kind)
         if kind==3:
             x=tf.constant([[.1*((i*7+j*3)%11-5) for j in range(d)] for i in range(8)],tf.float64)
@@ -136,7 +136,8 @@ def validate(tf,args,report):
             graph=graph_report(transition,(q,inv,eps,minimum,seeds),args.output/f'transition-{kind}.hlo.txt')))
     # Full upstream class adaptation against one-step compiled continuation.
     for kind,target_macro in [(kind,target) for kind in range(3) for target in (15.,1.)]:
-        cfg=Config(1,4,warmup=1,draws=1,target_macro_steps=target_macro);k=Kernel(tf,model_for(tf,kind),cfg,tape=True)
+        cfg=Config(1,4,warmup=1,draws=1,target_macro_steps=target_macro,
+            execution_layout=getattr(args,'execution_layout','fieldwise'));k=Kernel(tf,model_for(tf,kind),cfg,tape=True)
         @tf.function(input_signature=[tf.TensorSpec([1,4],tf.float64),tf.TensorSpec([1,2],tf.int32)],jit_compile=True,autograph=False)
         def init(q,seed):return initial_state(k,q,seed)
         @tf.function(input_signature=[state_spec(tf,cfg)],jit_compile=True,autograph=False)
@@ -161,7 +162,7 @@ def validate(tf,args,report):
         checks.append(dict(kind=kind,target_macro_steps=target_macro,lifecycle_transitions=40,
             controlled_state_replay=target_macro==1.,final_minimum=int(state.minimum.numpy()[0])))
     # Public runtime-data composition, frozen continuation, chain isolation.
-    cfg=Config(4,4,warmup=8,draws=6);model=lambda q,shift:-.5*tf.reduce_sum((q-shift)**2,-1)
+    cfg=Config(4,4,warmup=8,draws=6,execution_layout=getattr(args,'execution_layout','fieldwise'));model=lambda q,shift:-.5*tf.reduce_sum((q-shift)**2,-1)
     funcs=make_functions(tf,model,cfg,[tf.TensorSpec([4],tf.float64)])
     q=tf.constant([[.1*(j+1)+i*.03 for j in range(4)] for i in range(4)],tf.float64)
     seeds=tf.constant([[100+i,0] for i in range(4)],tf.int32);shift=tf.zeros([4],tf.float64)
@@ -240,7 +241,8 @@ def benchmark(tf,args,report):
         kind,d,n,q,model,data,specs=fixture(tf,name,args)
         warm=min(args.warmup,100) if kind==3 else args.warmup
         draws=min(args.draws,100) if kind==3 else args.draws
-        cfg=Config(4,d,warmup=warm,draws=draws)
+        cfg=Config(4,d,warmup=warm,draws=draws,
+            execution_layout=getattr(args,'execution_layout','fieldwise'))
         f=make_functions(tf,model,cfg,specs)
         seeds=tf.constant([[20261028+i,0] for i in range(4)],tf.int32)
         r,compile_time=timed(tf,f.fit,q,seeds,*data)
@@ -285,10 +287,12 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--device',choices=['cpu','gpu'],required=True);p.add_argument('--mode',choices=['validate','benchmark'],required=True)
     p.add_argument('--output',type=Path,required=True);p.add_argument('--oracle',type=Path,required=True)
+    p.add_argument('--execution-layout',choices=['fieldwise','packed','flat'],default='fieldwise')
     p.add_argument('--targets',default='gaussian,banana,funnel,regression');p.add_argument('--warmup',type=int,default=500);p.add_argument('--draws',type=int,default=500)
     p.add_argument('--regression-size',type=int,default=4096);p.add_argument('--regression-dimension',type=int,default=128)
     args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
     tf,report=setup(args.device);report['mode']=args.mode
+    report['execution_layout']=args.execution_layout
     begin=time.monotonic()
     with tf.device('/GPU:0' if args.device=='gpu' else '/CPU:0'):
         (validate if args.mode=='validate' else benchmark)(tf,args,report)

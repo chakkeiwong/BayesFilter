@@ -80,6 +80,14 @@ reported logical gradient evaluations exclude work on masked inactive lanes.
 
 ## Reproduce
 
+For compatible Linux x86-64 systems, a tracked 243.2 KiB C++ executable is
+available in [prebuilt/](prebuilt/README.md), with exact sources, checksums,
+licenses and platform requirements. Pass it with `--oracle` to a worker or to
+`master.py --phase validate` / `--phase benchmark` to skip the native build.
+The original master's `build`, `qualify` and `all` phases rebuild the supplied
+oracle path; do not point those phases at the tracked binary. This does not
+cache TensorFlow model XLA compilation.
+
 The master enforces 3600 cumulative worker seconds and 16 launches across sibling
 run directories, snapshots source/header hashes, records failed attempts, and
 uses fresh output directories. GPU commands require the repository's trusted
@@ -102,3 +110,27 @@ or convergence summaries into sampler-efficiency superiority claims.
 Master plan and result note are in docs/plans with the prefix
 bayesfilter-walnutpie-gpu-tf. The result note, not compile success, establishes
 which numerical checks passed and whether any measured speed benefit exists.
+
+
+## Execution-layout experiments
+
+The default remains fieldwise. Config(execution_layout="packed") stores the
+same twelve span fields in one contiguous stack. Config(execution_layout="flat")
+uses that stack and one leaf/carry scheduler instead of a nested carry loop.
+Both share the numerical macro, reverse, selection, RNG and adaptation code.
+They are optional execution layouts, not different tuning protocols. Packed
+passed native-oracle GPU qualification and reduced paired complete-fit time by
+about 3–7% on five measured workloads. Flat passed correctness checks but was
+slower on Gaussian and banana, so it is retained only as an experimental arm.
+The original default remains unchanged. See
+../../plans/bayesfilter-walnutpie-optimization-result-2026-10-29.md for the
+measured decision, uncertainty intervals and limitations.
+
+The optimization campaign uses optimization_master.py with a separate bounded
+budget and source snapshots. The layout worker compares equal-target, equal-seed
+complete fits with command buffers on for every arm; compilation is separate.
+It uses four balanced AB/BA repetitions in each of seven seed blocks and releases
+retained output objects between timed calls. Reuse Functions objects for fixed
+signatures and keep runtime model operands on the chosen device. Retaining many
+fit results can change allocation/command-buffer behavior; measure the intended
+consumer pattern explicitly when integrating an application.
