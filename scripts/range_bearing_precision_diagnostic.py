@@ -79,7 +79,7 @@ def worker(args):
         raise ValueError("Missing or wrong saved comparator tuning")
     spec64, _ = base.specs(tf, tf.float64)
     _, binding = base.specs(tf, dtype)
-    program = make_filter(binding, args.particles, 20, ProposalControls(**selected["controls"]), dtype)
+    program = make_filter(binding, args.particles, 20, ProposalControls(**{"proposal_policy": "original_three_branch", **selected["controls"]}), dtype)
 
     def common(value):
         with tf.device("/CPU:0"):

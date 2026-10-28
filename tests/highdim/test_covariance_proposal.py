@@ -95,7 +95,7 @@ def test_reset_moments_caps_and_total_derivative(correction):
 @pytest.mark.parametrize('correction',[0,2])
 def test_complete_recursive_score_all_parameters(name,correction):
     spec=LGSSMSpec('frozen_3d',3) if name=='lgssm' else KSCSpec() if name=='ksc' else NonlinearSQMCSpec(name)
-    theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(reset_epsilon=2.,correction_steps=correction)
+    theta=spec.default_theta(D);n=32;h=2;ctl=ProposalControls(proposal_policy="original_three_branch", reset_epsilon=2.,correction_steps=correction)
     base=fixed(n,spec.dimension,h);model,_=spec.model(theta,tf.zeros_like(theta))
     xx=spec.initial_cloud(theta,base[0])[0]
     obs=[]
@@ -167,7 +167,7 @@ def test_runtime_call_chain_and_fail_closed(monkeypatch):
             return _original(*a,**kw)
         monkeypatch.setattr(module,name,wrapper)
     spec=LGSSMSpec('diagonal_ar',1);theta=tf.constant([.8,.6,.8],D)
-    fn=core.make_filter(spec,32,2,ProposalControls(correction_steps=2),D,jit_compile=False)
+    fn=core.make_filter(spec,32,2,ProposalControls(proposal_policy="original_three_branch", correction_steps=2),D,jit_compile=False)
     base=fixed(32,1,2);obs=tf.constant([[.2],[.3]],D)
     result=fn(theta,tf.zeros_like(theta),obs,*base,tf.constant([.2,.3,.5],D))
     assert bool(result['valid']) and int(result['steps_completed'])==2

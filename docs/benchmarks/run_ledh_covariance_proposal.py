@@ -71,7 +71,8 @@ def design(tf,n,h,d,seed,dtype):
 
 def controls(args):
     from bayesfilter.highdim.covariance_proposal_tf import ProposalControls
-    return ProposalControls(flow_steps=args.flow_steps,reset_steps=args.reset_steps,
+    return ProposalControls(proposal_policy=getattr(args, "proposal_policy", "conditional_observation_weighted"),
+        flow_steps=args.flow_steps,reset_steps=args.reset_steps,
         reset_epsilon=args.reset_epsilon,correction_steps=args.correction_steps)
 
 def provenance(args,tf,memory):
@@ -292,6 +293,7 @@ def main():
     parser.add_argument('--seeds',type=int,default=2);parser.add_argument('--output')
     parser.add_argument('--flow-steps',type=int,default=16);parser.add_argument('--reset-steps',type=int,default=40)
     parser.add_argument('--reset-epsilon',type=float,default=1.);parser.add_argument('--correction-steps',type=int,default=0)
+    parser.add_argument('--proposal-policy', choices=['original_three_branch', 'conditional_uniform', 'conditional_observation_weighted'], default='conditional_observation_weighted')
     parser.add_argument('--floor',type=float,default=.1);parser.add_argument('--beta',default='0.3333333333333333,0.3333333333333333,0.3333333333333333')
     parser.add_argument('--tuning');parser.add_argument('--reference',action='store_true');parser.add_argument('--regressions',action='store_true')
     parser.add_argument('--timeout',type=int,default=1200)

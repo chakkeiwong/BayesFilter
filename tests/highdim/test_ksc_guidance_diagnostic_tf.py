@@ -82,7 +82,7 @@ def test_ksc_wrappers_use_shared_consumer_and_actual_pilot_density(monkeypatch, 
     clouds = make_clouds(12, 617000)
     parameters = future_guides(theta, observations)[family]
     beta = tf.constant([0.1, 0.9, 0.0], tf.float64)
-    controls = core.ProposalControls(reset_steps=5, correction_steps=2)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
     original = core.make_filter
     calls = []
 

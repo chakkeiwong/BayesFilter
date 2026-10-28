@@ -95,7 +95,7 @@ def main():
             tf.constant([[[[.8, .15], [.15, 1.1]], [[1.2, -.2], [-.2, .7]]]] * 3, dtype),
             tf.constant([True, True, False]),
         )
-        controls = ProposalControls(reset_epsilon=1., reset_steps=5, correction_steps=2)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_epsilon=1., reset_steps=5, correction_steps=2)
         compiled = make_filter(spec, 24, 3, controls, dtype, jit_compile=True, backward_guide=guide)
         reference = make_filter(spec, 24, 3, controls, dtype, jit_compile=False, backward_guide=guide)
         arguments = (observations, initial, innovations, uniforms, beta)

@@ -112,7 +112,7 @@ def load_case(tf, model):
     from bayesfilter.highdim.covariance_proposal_tf import ProposalControls
     case = five.load_case(model)
     selected = read(selection_path(model))["selected"]
-    return replace(case, controls=ProposalControls(**selected["controls"]),
+    return replace(case, controls=ProposalControls(**{"proposal_policy": "original_three_branch", **selected["controls"]}),
         beta=tf.constant(selected["beta"], tf.float32), precision_policy="uniform",
         prior_choice=priors.PRIOR_ID)
 

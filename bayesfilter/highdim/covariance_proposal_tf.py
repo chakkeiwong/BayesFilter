@@ -3,7 +3,8 @@
 One numerical authority for every supported model/dtype. Analytical directional
 recurrences differentiate the actual finite computation; no runtime autodiff.
 This is not the admitted historical Contract-E residual-injection route.
-Transitions must be additive Gaussian; observation densities may be non-Gaussian.
+Transitions must be additive Gaussian. The default conditional proposal requires
+affine Gaussian observations; explicit original_three_branch supports other laws.
 """
 from dataclasses import dataclass
 import math
@@ -64,7 +65,10 @@ class ProposalControls:
     correction_radius: float = 0.25
     global_guide_conditioning: str = "positive_information"
     shared_gaussian_contraction: str = "direct"
+    proposal_policy: str = "conditional_observation_weighted"
     def __post_init__(self):
+        if self.proposal_policy not in ("original_three_branch", "conditional_uniform", "conditional_observation_weighted"):
+            raise ValueError("unknown proposal policy")
         if self.global_guide_conditioning not in ("positive_information", "mixture_product_moments"):
             raise ValueError("unsupported global guide conditioning")
         if self.shared_gaussian_contraction not in ("direct", "matrix"):
@@ -323,6 +327,23 @@ def make_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,*,back
     Guide coefficients and beta stay fixed during parameter differentiation;
     moving-anchor dependence is propagated analytically through both maps.
     """
+    if controls.proposal_policy != "original_three_branch":
+        if backward_guide is not None:
+            raise ValueError("a backward guide requires explicit original_three_branch policy")
+        from bayesfilter.highdim.covariance_proposal_score_batch_tf import make_batched_score_filter
+        batch = make_batched_score_filter(spec,n,horizon,controls,dtype,jit_compile,
+                                         batch_size=1,record_history=True)
+        signature = [tf.TensorSpec([spec.parameter_count],tf.as_dtype(dtype))]*2 + list(batch.input_signature[1:])
+        @tf.function(input_signature=signature,jit_compile=jit_compile,autograph=False)
+        def directional(theta,direction,*args):
+            result={key:(value[0] if value.shape.rank else value)
+                    for key,value in batch(theta[None],*args).items()}
+            result['score']=tf.reduce_sum(result['score']*direction)
+            result['particle_tangent']=tf.einsum('p,pnd->nd',direction,result['particle_tangent'])
+            increments=tf.einsum('tp,p->t',result['score_trace'],direction)
+            result['trace']=tf.concat([result['trace'][:,:1],increments[:,None],result['trace'][:,2:]],1)
+            return result
+        return directional
     dtype=tf.as_dtype(dtype); d=spec.dimension; p=spec.parameter_count
     o=getattr(spec,'observation_dimension',d)
     if n<=d or horizon<1: raise ValueError("require N>d and T>=1")

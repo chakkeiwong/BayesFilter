@@ -170,7 +170,7 @@ def worker(args):
                 assert digest == data['observation_sha256'], 'Saved observation identity mismatch'
         beta = common(weights)
         with tf.device('/GPU:0'):
-            program = make_filter(spec, args.particles, horizon, ProposalControls(**controls), dtype,
+            program = make_filter(spec, args.particles, horizon, ProposalControls(**{"proposal_policy": "original_three_branch", **controls}), dtype,
                                   jit_compile=True)
 
         def tensors(ds, point, rep):

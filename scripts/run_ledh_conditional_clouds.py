@@ -87,7 +87,7 @@ def main():
         from bayesfilter.highdim.sqmc_lgssm_tf import LGSSMSpec
         from bayesfilter.score_study.backward_guide_pilot_tf import make_exact_future_information
         from bayesfilter.score_study.guided_mixture_diagnostic_tf import make_diagnostic_programs
-        controls = ProposalControls(reset_steps=5, correction_steps=2)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
         manifest["controls"] = dataclasses.asdict(controls)
         manifest["moment_validity_policy"] = MOMENT_VALIDITY_POLICY_ID
         paths = {Path(__file__).resolve()}

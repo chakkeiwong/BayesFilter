@@ -40,7 +40,7 @@ def repair_checks(args, tf, dtype):
     if dtype != tf.float64:
         raise ValueError("Repair checks require the explicit FP64 reference scope")
     result = {"valid": True, "checks": {}, "role": "engineering checks, not model-score accuracy"}
-    ctl = ProposalControls(reset_steps=5, reset_epsilon=.7)
+    ctl = ProposalControls(proposal_policy="original_three_branch", reset_steps=5, reset_epsilon=.7)
 
     def check_error(name, actual, expected, tolerance):
         error = float(tf.reduce_max(tf.abs(actual-expected)/(1+tf.abs(expected))))
@@ -126,7 +126,7 @@ def repair_checks(args, tf, dtype):
         raise ValueError("Baseline scope does not match FP64 ladder")
     spec, binding = m.specs(tf, dtype)
     selected = frozen["selected"]["new"]
-    program = make_filter(binding, 1008, 20, ProposalControls(**selected["controls"]), dtype)
+    program = make_filter(binding, 1008, 20, ProposalControls(**{"proposal_policy": "original_three_branch", **selected["controls"]}), dtype)
     saved = [json.loads(line) for line in (BASE/"compare.jsonl").read_text().splitlines()]
     replay = []
     for ds, seed in enumerate(m.HELDOUT):

@@ -89,7 +89,7 @@ def test_model_values_and_every_partial_match_scalar_callbacks(name):
 @pytest.mark.parametrize('correction',[0,2])
 def test_full_native_xla_recurrence_matches_independent_directional_filter(name,correction):
     spec,q,initial,noise,uniform=fixture(name)
-    ctl=ProposalControls(flow_steps=4,reset_steps=5,reset_epsilon=2.,correction_steps=correction)
+    ctl=ProposalControls(flow_steps=4,reset_steps=5,reset_epsilon=2.,correction_steps=correction,proposal_policy="original_three_branch")
     theta=tf.stack([q,q+.001]); beta=tf.constant([.2,.3,.5],D)
     model,_=spec.model(q,tf.zeros_like(q)); x=spec.initial_cloud(q,initial,tf.zeros_like(q))[0]
     obs=[]

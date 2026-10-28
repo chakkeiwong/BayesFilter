@@ -57,7 +57,7 @@ def prepare_inputs(tf, batch_size, reference_fp64=False):
         raise ValueError('frozen SIR horizon/observation shape changed')
     selected = json.loads(SELECTION.read_text())['selected']
     beta = tf.constant(selected['beta'], tf.float32)
-    controls = ProposalControls(**selected['controls'])
+    controls = ProposalControls(**{"proposal_policy": "original_three_branch", **selected['controls']})
     seed = 261008301
     design = random_inputs('iid_dual_cap', seed, PARTICLES, spec.dimension, 50,
                            tf.float64, jit_compile=True)

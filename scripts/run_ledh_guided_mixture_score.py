@@ -78,7 +78,7 @@ def main():
         from bayesfilter.score_study.guided_mixture_diagnostic_tf import make_diagnostic_programs
         from bayesfilter.score_study.guidance_factorial_design import make_factorial_arms
         spec = LGSSMSpec("diagonal_ar", 2)
-        controls = ProposalControls(reset_steps=5, correction_steps=2)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
         manifest["controls"] = dataclasses.asdict(controls)
         manifest["moment_validity_policy"] = MOMENT_VALIDITY_POLICY_ID
         manifest["moment_relative_tolerance"] = math.sqrt(2.220446049250313e-16)

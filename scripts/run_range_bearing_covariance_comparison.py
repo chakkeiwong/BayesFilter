@@ -206,7 +206,7 @@ def check(args, tf, dtype):
     obs = observations(args, tf, CALIBRATION[0], dtype, horizon)
     fixed = inputs(tf, spec, args.particles, 19001, dtype)
     theta, beta = tf.constant(POINTS[0], dtype), tf.constant([1/3]*3, dtype)
-    program = make_filter(binding, args.particles, horizon, ProposalControls(), dtype)
+    program = make_filter(binding, args.particles, horizon, ProposalControls(proposal_policy="original_three_branch"), dtype)
     row = new_result(tf, program, theta, obs, fixed, beta)
     row.update(kind="check", arm="new", horizon=horizon)
     # Executable call-chain check: the new consumer resolves the shared wrapped
@@ -332,11 +332,11 @@ def tune(args, tf, dtype):
         for index in range(count):
             if arm == "new":
                 ctl = [
-                    ProposalControls(),
-                    ProposalControls(flow_steps=8),
-                    ProposalControls(reset_epsilon=.5),
-                    ProposalControls(reset_steps=80),
-                    ProposalControls(reset_steps=120),
+                    ProposalControls(proposal_policy="original_three_branch"),
+                    ProposalControls(proposal_policy="original_three_branch", flow_steps=8),
+                    ProposalControls(proposal_policy="original_three_branch", reset_epsilon=.5),
+                    ProposalControls(proposal_policy="original_three_branch", reset_steps=80),
+                    ProposalControls(proposal_policy="original_three_branch", reset_steps=120),
                 ][index]
                 program = make_filter(binding, args.particles, 20, ctl, dtype)
                 fit = calibrate_beta(args, tf, dtype, spec, binding, ctl, program)
@@ -369,7 +369,7 @@ def compare(args, tf, dtype):
         raise ValueError("Held-out and tuning observations overlap")
     spec, binding = specs(tf, dtype)
     selected = ledger["selected"]
-    new = make_filter(binding, args.particles, 20, ProposalControls(**selected["new"]["controls"]), dtype)
+    new = make_filter(binding, args.particles, 20, ProposalControls(**{"proposal_policy": "original_three_branch", **selected["new"]["controls"]}), dtype)
     old = compile_filter(spec, args.particles, selected["old"]["controls"], "marginal_mixture", dtype)
     betas = dict(new=selected["new"]["beta"], prior=[1.,0.,0.], global_guide=[.1,.9,0.])
     for ds, seed in enumerate(HELDOUT):

@@ -200,7 +200,7 @@ def worker(model, output):
         obs_dim = getattr(spec, "observation_dimension", spec.dimension)
         if obs.shape != (t, obs_dim) or theta.shape != (spec.parameter_count,):
             raise RuntimeError("target tensor shape mismatch")
-        program = make_filter(spec, PARTICLES, t, ProposalControls(**controls), dtype, jit_compile=True)
+        program = make_filter(spec, PARTICLES, t, ProposalControls(**{"proposal_policy": "original_three_branch", **controls}), dtype, jit_compile=True)
         directions = tf.eye(spec.parameter_count, dtype=dtype)
         with tf.device("/GPU:0"):
             calls = [program(theta, directions[j], obs, *fixed, beta)

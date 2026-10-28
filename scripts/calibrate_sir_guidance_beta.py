@@ -69,7 +69,7 @@ def run(args):
         dtype = tensorflow.float64
         spec = spec_for("sir_d18")
         theta = spec.default_theta(dtype)
-        controls = ProposalControls(reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
         program = make_filter(spec, 256, 50, controls, dtype, jit_compile=True)
         solver = make_pairwise_beta_solver(50, 256, dtype, jit_compile=True, max_steps=20000)
         equal = tensorflow.constant([1 / 3] * 3, dtype)

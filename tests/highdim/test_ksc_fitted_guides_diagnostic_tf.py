@@ -210,7 +210,7 @@ def test_frozen_fits_use_shared_consumer_with_total_derivatives_and_physical_tar
     assert bool(fitted["guide_eligible"])
     clouds = make_clouds(12, 641703)
     beta = tf.constant([0.1, 0.9, 0.0], tf.float64)
-    controls = core.ProposalControls(reset_steps=5, correction_steps=2)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
     original = core.make_filter
     calls = []
 

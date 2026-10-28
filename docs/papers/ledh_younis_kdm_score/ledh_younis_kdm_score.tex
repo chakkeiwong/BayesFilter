@@ -6,6 +6,7 @@
 \usepackage{array}
 \usepackage{microtype}
 \usepackage{xurl}
+\usepackage{graphicx}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \setlength{\emergencystretch}{1em}
@@ -27,7 +28,7 @@
 \title{Younis Kernel Mixtures and Model-Score Estimation\\
 From the LEDH--OT--GenUT Filter to Corrected Mixtures}
 \author{BayesFilter research note}
-\date{23 October 2026}
+\date{28 October 2026}
 
 \begin{document}
 \maketitle
@@ -85,6 +86,18 @@ SIR-specific neural mixture trains locations and bandwidths through the
 corrected terminal-moment loss. Its 64-particle comparison is also disqualified;
 fresh experiments with at least 1008 particles are required to assess moment
 and model-score accuracy.
+
+
+The latest SIR comparison separates conditioning a child on the current
+observation from selecting its parent by predictive observation probability.
+The weighted conditional mixture is now the proposal default. It raises
+terminal ESS from $2.40$ to $392.51$ in the saved stress case. Across the new
+$T=10,20,50$ comparisons, it has much smaller observed score RMSE than the
+original mixture wherever both adapted Zhao--Cui references pass the overlap
+screen. Eight streams do not resolve the heavy-tailed MSE uncertainty, and
+parent weighting sometimes worsens scores relative to uniform conditional
+parents and simpler controls. The ESS improvement is established for the
+measured cases; broad score accuracy remains unresolved.
 \end{abstract}
 \clearpage
 \tableofcontents
@@ -3885,8 +3898,31 @@ The finite-program checks have the following distinct purposes:
 \input{ledh_backward_guidance}
 \input{ledh_supervised_guidance}
 
+\input{parent_conditioned_repair}
+\input{observation_weighted_parent_default}
+
 \section{Subsequent discriminating comparisons}
 \label{sec:next-study}
+
+Section~\ref{sec:observation-parent-accuracy} now supplies the likelihood and
+analytical-score comparison for the conditional, observation-weighted proposal.
+Its large observed score-error reductions relative to the original proposal
+remain descriptive under the declared paired MSE criterion, while comparison
+with uniform conditional parents is mixed. The next accuracy experiments
+therefore need fresh reference fits for the larger parameter changes and more
+paired streams where the existing references have adequate overlap. The earlier
+adapter and moment comparisons discussed below address separate questions.
+
+Section~\ref{sec:parent-conditioned-repair} separated its proposal
+question into two parts: whether each child is drawn from the conditional
+distribution of its physical parent, and whether the incoming parents already
+represent the filtering distribution adequately. Exact integration removes
+child-sampling variance for that finite mixture, but the recursive comparison
+does not establish an accuracy improvement over the existing conditional-only
+candidate. The lower observed UKF loss in every tested regime makes incoming
+representation a necessary subject of the next comparison. The TF32 baseline
+failures require a separate numerical explanation; they cannot be counted as
+accuracy evidence for either candidate.
 
 The restricted-adapter implementation trains continuous guide coefficients against
 simulated terminal moment labels through the shared LEDH calculation, as

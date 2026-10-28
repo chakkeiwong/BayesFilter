@@ -233,15 +233,21 @@ def reset_cloud(x,logw,controls,precision_policy="uniform",reset_precision_polic
     return result+(fallback_used,) if return_fallback else result
 
 
-def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,batch_size=2,record_history=False,precision_policy="uniform",fixed_draw_design=None,reset_precision_policy="uniform"):
+def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compile=True,batch_size=2,record_history=False,precision_policy="uniform",fixed_draw_design=None,reset_precision_policy="uniform",diagnostic_proposal_hook=None):
     """Build the shared recurrence, optionally binding a fixed draw design.
 
     fixed_draw_design=(beta, uniforms) snapshots the immutable mixture weights
-    and uniforms and prepares their exact integer indices once on CPU. That
+    and uniforms. Original-policy indices are prepared once on CPU; conditional
+    weighted-parent indices are recomputed from the current observation. That
     callable takes only (theta, observations, initial, innovations), so callers
     cannot supply mismatched weights/uniforms at execution. The default dynamic
     six-input callable is unchanged. Preparation uses the same FP64 index
     authority; the continuous FP32 recurrence needs no FP64 index arithmetic.
+
+    diagnostic_proposal_hook is an optional diagnostic-only draw/density
+    callback. Density slot zero must always retain the transition-mixture
+    numerator. A fifth returned item may supply a different proposal log
+    density, allowing pure controls without altering the target numerator.
     """
     dtype=tf.as_dtype(dtype); d=spec.dimension; p=spec.parameter_count; o=getattr(spec,"observation_dimension",d); batch=int(batch_size)
     if reset_precision_policy not in ("uniform","conditional_fp64"):
@@ -253,6 +259,12 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
     if precision_policy != "uniform" and dtype != tf.float64:
         raise ValueError("mixed pair arithmetic requires FP64 recurrence")
     if batch<1 or n<=d or horizon<1: raise ValueError("require B>=1, N>d, T>=1")
+    if diagnostic_proposal_hook is not None and fixed_draw_design is not None:
+        raise ValueError("observation-dependent diagnostic selection cannot use fixed indices")
+    if diagnostic_proposal_hook is None and controls.proposal_policy != "original_three_branch":
+        from bayesfilter.highdim.observation_parent_proposal_tf import make_conditional_proposal
+        diagnostic_proposal_hook = make_conditional_proposal(
+            spec, controls, batch, precision_policy=precision_policy)
     prepared_indices = None
     if fixed_draw_design is not None:
         from bayesfilter.highdim.covariance_proposal_tf import fixed_design_indices
@@ -282,7 +294,12 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
         ancestors=tf.TensorArray(dtype,horizon if record_history else 0,element_shape=[batch,n,d])
         if record_history:
             ancestors=ancestors.unstack(tf.fill([horizon,batch,n,d],tf.constant(float("nan"),dtype)))
-        def step(t,xv,xt,ell,score,valid,completed,trace,score_trace,ancestors,validity_trace,reset_fallback_trace):
+        # Retain discrete selections for conditional-policy derivative checks.
+        # Stopped rows stay unavailable while healthy rows continue.
+        selections=tf.TensorArray(tf.int32,horizon if diagnostic_proposal_hook is not None else 0,element_shape=[batch,n])
+        if diagnostic_proposal_hook is not None:
+            selections=selections.unstack(tf.fill([horizon,batch,n],-1))
+        def step(t,xv,xt,ell,score,valid,completed,trace,score_trace,ancestors,validity_trace,reset_fallback_trace,selections):
             if record_history:
                 # History after a row stops is unavailable, independently of
                 # whether other rows (or other shards) continue to execute.
@@ -292,15 +309,22 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
             indices = None if prepared_indices is None else tuple(value[t] for value in prepared_indices)
             if structural_factory is None:
                 maps=build_maps(models,x,observations[t],controls)
-                child=draw_from_maps(maps,beta,uniforms[t],innovations[t],indices=indices)
-                means,cov=maps[:2]
-                density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or models.constant_observation_jacobian,contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
-                densities=stack([part[0] for part in density_parts],-1)
-                vd=tf.reduce_all(tf.stack([part[1] for part in density_parts]),0)
+                if diagnostic_proposal_hook is None:
+                    child=draw_from_maps(maps,beta,uniforms[t],innovations[t],indices=indices)
+                    means,cov=maps[:2]
+                    density_parts=[precision_gaussian_mixture(child,means[:,b],cov[:,b],shared_covariance=b<2 or models.constant_observation_jacobian,contraction=controls.shared_gaussian_contraction,precision_policy=precision_policy) for b in range(3)]
+                    densities=stack([part[0] for part in density_parts],-1)
+                    vd=tf.reduce_all(tf.stack([part[1] for part in density_parts]),0)
+                else:
+                    diagnostic_draw=diagnostic_proposal_hook(models,maps,beta,uniforms[t],innovations[t],observations[t])
+                    child,densities,vd,selected=diagnostic_draw[:4]
+                    selections=selections.write(t,tf.where(valid[:,None],selected,-1))
             else:
                 from bayesfilter.highdim.structural_completion_proposal_tf import structural_proposal
                 child,densities,vd,maps=structural_proposal(models,x,observations[t],controls,beta,uniforms[t],innovations[t],indices=indices)
             lq=logsumexp(densities+tf.math.log(beta)[None,None],-1)
+            if diagnostic_proposal_hook is not None and structural_factory is None and len(diagnostic_draw)==5:
+                lq=diagnostic_draw[4]
             lg=models.observation_density(child,observations[t])
             lr=lg+densities[:,:,0]-lq
             normalizer=logsumexp(lr,1)
@@ -345,15 +369,17 @@ def make_batched_score_filter(spec,n,horizon,controls,dtype=tf.float64,jit_compi
                 ell+tf.where(accepted,inc.v,0),score+tf.where(accepted[None],inc.t,0),accepted,
                 completed+tf.cast(valid,tf.int32),trace.write(t,tf.where(valid[:,None],row,tf.constant(float("nan"),dtype))),
                 score_trace.write(t,tf.where(valid[:,None],tf.transpose(inc.t),tf.constant(float("nan"),dtype))),ancestors,validity_trace.write(t,valid[:,None] & checks),
-                reset_fallback_trace.write(t,valid & fallback_used))
+                reset_fallback_trace.write(t,valid & fallback_used),selections)
         initial_valid=tf.fill([batch],beta_valid)
-        _,xv,xt,ell,score,valid,completed,trace,st,ancestors,vt,rft=tf.while_loop(lambda t,xv,xt,ell,score,valid,*_:(t<horizon)&tf.reduce_any(valid),step,
-            (0,x.v,x.t,tf.zeros([batch],dtype),tf.zeros([p,batch],dtype),initial_valid,tf.zeros([batch],tf.int32),trace,score_trace,ancestors,validity_trace,reset_fallback_trace),parallel_iterations=1)
+        _,xv,xt,ell,score,valid,completed,trace,st,ancestors,vt,rft,selections=tf.while_loop(lambda t,xv,xt,ell,score,valid,*_:(t<horizon)&tf.reduce_any(valid),step,
+            (0,x.v,x.t,tf.zeros([batch],dtype),tf.zeros([p,batch],dtype),initial_valid,tf.zeros([batch],tf.int32),trace,score_trace,ancestors,validity_trace,reset_fallback_trace,selections),parallel_iterations=1)
         result=dict(value=ell,score=tf.transpose(score),valid=valid,steps_completed=completed,particles=xv,particle_tangent=tf.transpose(xt,[1,0,2,3]),trace=tf.transpose(trace.stack(),[1,0,2]),score_trace=tf.transpose(st.stack(),[1,0,2]),
             validity_trace=tf.transpose(vt.stack(),[1,0,2]),covariance_tolerance=covariance_tolerance,
             reset_precision_fallback=tf.transpose(rft.stack(),[1,0]))
         if record_history:
             result["ancestor_history"]=tf.transpose(ancestors.stack(),[1,0,2,3])
+        if diagnostic_proposal_hook is not None:
+            result["diagnostic_parent_indices"]=tf.transpose(selections.stack(),[1,0,2])
         return result
     if fixed_draw_design is None:
         return program

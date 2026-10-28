@@ -100,7 +100,7 @@ def run(args):
         dtype = tensorflow.float64
         spec = spec_for("sir_d18")
         theta = spec.default_theta(dtype)
-        controls = ProposalControls(reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
         manifest.update(memory_policy=memory, tensorflow=tensorflow.__version__, trace_fields=TRACE_FIELDS,
                         theta=theta, parameter_names=spec.parameter_names)
         observations, programs, smoke = {}, {}, []

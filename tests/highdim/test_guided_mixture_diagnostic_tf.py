@@ -16,7 +16,7 @@ from bayesfilter.score_study.guided_mixture_diagnostic_tf import make_diagnostic
 
 def test_wrappers_use_shared_guided_filter_and_density(monkeypatch):
     dtype = tf.float64
-    controls = core.ProposalControls(reset_steps=5, correction_steps=2)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
     theta = tf.constant([.2, .2, .3, .5], dtype)
     observations = tf.constant([[.1, -.2], [.3, .1]], dtype)
     initial = tf.random.stateless_normal([12, 2], [962, 1], dtype=dtype)
@@ -84,7 +84,7 @@ def test_consumer_distinguishes_roundoff_from_broken_reset(monkeypatch, error, s
     monkeypatch.setattr(core, "reset_cloud", perturbed_reset)
     dtype = tf.float64
     program = core.make_filter(LGSSMSpec("diagonal_ar", 2), 12, 1,
-                               core.ProposalControls(reset_steps=5), dtype, jit_compile=False)
+                               core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5), dtype, jit_compile=False)
     theta = tf.constant([.2, .2, .3, .5], dtype)
     result = program(theta, tf.one_hot(2, 4, dtype=dtype),
                      tf.constant([[.1, -.2]], dtype),

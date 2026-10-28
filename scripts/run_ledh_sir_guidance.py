@@ -220,7 +220,7 @@ def run(args):
             write(output / "manifest.json", manifest)
             print(json.dumps({"fitted": data_seed, **manifest["fits"][data_seed]}), flush=True)
 
-        controls = ProposalControls(reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
+        controls = ProposalControls(proposal_policy="original_three_branch", reset_epsilon=1., reset_steps=5, flow_steps=16, correction_steps=0)
         def evaluate(program, observed, fixed, beta):
             results = []
             for coordinate in range(3):

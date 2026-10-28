@@ -22,7 +22,7 @@ def test_pilot_matches_shared_map_and_density_calls():
     observations = model.observation_fn(tf.reduce_mean(ancestors, axis=1))
     noise = tf.random.stateless_normal([2, 32, 18], [991, 2], dtype=dtype)
     uniforms = tf.random.stateless_uniform([2, 32, 2], [991, 3], dtype=dtype)
-    controls = ProposalControls(reset_epsilon=1., reset_steps=5)
+    controls = ProposalControls(proposal_policy="original_three_branch", reset_epsilon=1., reset_steps=5)
     guide = FrozenQuadraticBackwardGuide(tf.stack([.001 * tf.eye(18, dtype=dtype), tf.zeros([18, 18], dtype)]),
                                          tf.zeros([2, 18], dtype))
     result = make_context_pilot(spec, 32, 2, controls, guide, dtype, jit_compile=False)(

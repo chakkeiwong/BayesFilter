@@ -236,7 +236,7 @@ def make_case(tf, tuning=None):
         "literature-prior-other-four-advance-01/sir_d18/filter-tuning/sir_d18/filter-selection.json")
     case = replace(five.load_case("sir_d18"), prior_choice=PRIOR_ID,
         precision_policy="uniform", tuning_seed_offset=1000,
-        controls=ProposalControls(**read(warm)["selected"]["controls"]))
+        controls=ProposalControls(**{"proposal_policy": "original_three_branch", **read(warm)["selected"]["controls"]}))
     if tuning:
         record = five.load_selection(case, Path(tuning)/"batch-2/filter-selection.json")
         b4 = read(Path(tuning)/"batch-4/filter-selection.json")

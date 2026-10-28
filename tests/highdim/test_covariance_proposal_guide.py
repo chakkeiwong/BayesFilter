@@ -48,7 +48,7 @@ def test_guided_maps_keep_prior_and_match_independent_density():
     model, _ = spec.model(theta, tf.zeros_like(theta))
     ancestors, noise, uniforms = fixed_design(dimension=1, horizon=1)
     observation = tf.constant([.5], DTYPE)
-    controls = core.ProposalControls(flow_steps=64, reset_steps=5)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", flow_steps=64, reset_steps=5)
     guide = FrozenQuadraticBackwardGuide(tf.constant([[[.7]]], DTYPE), tf.constant([[.4]], DTYPE))
     plain = core.build_maps(model, theta, ancestors, tf.zeros_like(ancestors), observation, controls)
     guided = core.build_maps(model, theta, ancestors, tf.zeros_like(ancestors), observation, controls,
@@ -87,7 +87,7 @@ def test_zero_future_guide_preserves_shared_consumer():
     arguments = (theta, tf.constant([.2, -.1, .3, .4], DTYPE),
                  tf.constant([[.5, -.2], [.2, .8], [-.4, .3]], DTYPE),
                  *fixed_design(), tf.constant([.2, .3, .5], DTYPE))
-    controls = core.ProposalControls(reset_steps=5, correction_steps=2)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=2)
     plain = core.make_filter(spec, 24, 3, controls, jit_compile=False)(*arguments)
     guided = core.make_filter(spec, 24, 3, controls, jit_compile=False, backward_guide=future_guide("zero"))(*arguments)
     assert bool(plain["valid"]) and bool(guided["valid"])
@@ -99,7 +99,7 @@ def test_zero_future_guide_preserves_shared_consumer():
 def test_complete_guided_mixture_total_derivatives(kind, correction):
     spec = LGSSMSpec("diagonal_ar", 2)
     theta = tf.constant([.8, -.3, .6, .8], DTYPE)
-    controls = core.ProposalControls(reset_steps=5, correction_steps=correction)
+    controls = core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5, correction_steps=correction)
     program = core.make_filter(spec, 24, 3, controls, jit_compile=False, backward_guide=future_guide(kind))
     arguments = (tf.constant([[.5, -.2], [.2, .8], [-.4, .3]], DTYPE),
                  *fixed_design(), tf.constant([.2, .3, .5], DTYPE))
@@ -123,7 +123,7 @@ def test_one_component_guide_agrees_with_quadratic_maps():
     covariance = tf.linalg.inv(guide.precision[:1])
     center = tf.linalg.matvec(covariance, guide.linear[:1])
     mixture = FrozenMixtureBackwardGuide(tf.zeros([1, 1], DTYPE), center[:, None], covariance[:, None], tf.constant([True]))
-    arguments = (model, theta, ancestors, .2 * ancestors, tf.constant([.5, -.2], DTYPE), core.ProposalControls(reset_steps=5))
+    arguments = (model, theta, ancestors, .2 * ancestors, tf.constant([.5, -.2], DTYPE), core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5))
     quadratic_maps = core.build_maps(*arguments, backward_guide=guide, time=0)
     mixture_maps = core.build_maps(*arguments, backward_guide=mixture, time=0)
     for actual, expected in zip(mixture_maps[:12], quadratic_maps[:12]):
@@ -141,11 +141,11 @@ def test_guide_call_chain_and_invalid_precision(monkeypatch):
     monkeypatch.setattr(core, "build_maps", recorded)
     spec = LGSSMSpec("diagonal_ar", 2)
     guide = FrozenQuadraticBackwardGuide(-tf.eye(2, batch_shape=[3], dtype=DTYPE), tf.zeros([3, 2], DTYPE))
-    program = core.make_filter(spec, 24, 3, core.ProposalControls(reset_steps=5), jit_compile=False, backward_guide=guide)
+    program = core.make_filter(spec, 24, 3, core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5), jit_compile=False, backward_guide=guide)
     theta = tf.constant([.8, -.3, .6, .8], DTYPE)
     result = program(theta, tf.ones_like(theta), tf.zeros([3, 2], DTYPE), *fixed_design(), tf.constant([.2, .3, .5], DTYPE))
     assert calls and all(item is guide for item in calls)
     assert not bool(result["valid"])
     assert int(result["steps_completed"]) == 1
     with pytest.raises(ValueError, match="shape"):
-        core.make_filter(spec, 24, 2, core.ProposalControls(reset_steps=5), backward_guide=guide)
+        core.make_filter(spec, 24, 2, core.ProposalControls(proposal_policy="original_three_branch", reset_steps=5), backward_guide=guide)
