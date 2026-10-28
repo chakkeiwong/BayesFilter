@@ -4,7 +4,7 @@
 
 ## Additional 72-hour allocation — 27 October 2026
 
-Continuation status: **C1 complete; C2 compatibility verified, admission open**.
+Continuation status: **C1 complete; C2 compatibility verified; C4 scalar audits complete**.
 The resumed nine-candidate qualification records 1,312 returned trials, seven
 verified/exported/reloaded candidates and two movement failures. The resume
 repair is committed as b0cafccc5. The clean exact-source candidate f9291ee443
@@ -16,10 +16,16 @@ Official consumer admission still requires consistent clean-root, commit and
 factor-native provenance binding; its global pin and pending admission fields
 remain unchanged. Its own master also reports a missing historical P19 result.
 Do not change the shared checkout beneath other work or invent that evidence.
-Independent C4 saved-evidence diagnosis can proceed while C2 deployment is open.
-New measured diagnostic work cost 277.012 seconds; the remaining allocation is
-at most 235750.796 seconds before unmetered preparatory overhead. Separate SIR
-funding is unchanged. No posterior, ranking, default or release claim follows.
+The [C4 saved-evidence result](bayesfilter-modern-hmc-c4-saved-evidence-result-2026-10-28.md)
+checks 1,152 precision records, all 288 generated validation endpoints, and
+1,792 tail records with 5,376 profiles. Arithmetic passes; original refusals
+and coverage failures remain. Twenty focused tests pass. No raw-tail replay
+or calibrated estimator repair is claimed. C2 scoped source/provenance binding
+is the next concrete engineering task; C3 posterior qualification, C4 reliability,
+C5 independent-fit SIR and C6/N8 reconciliation remain open.
+Measured C4 charges are 7.384 seconds; remaining allocation is at most
+235743.412 seconds before unmetered overhead. Separate SIR funding is unchanged.
+No worker is running, and no posterior, ranking, default or release claim follows.
 
 <!-- END MODERN-HMC-72H-20261027 -->
 

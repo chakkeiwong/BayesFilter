@@ -12,8 +12,13 @@ balances below are historical, not the current next action or allocation.
 Authoritative current status and remaining C2–C6 tasks are in the
 [master](bayesfilter-modern-hmc-implementation-plan-2026-10-07.md) and
 [C2 result](bayesfilter-modern-hmc-c2-source-preview-result-2026-10-28.md).
-Next independent work: C4 saved-evidence precision diagnosis with no resampling.
-Remaining allowance is an upper bound of 235750.796 seconds before unmetered
+C4 saved-scalar audits now pass: 1,152 precision identities, all 288 generated
+validation endpoints, 1,792 tail records and 5,376 profiles. Original failures
+remain valid; this closes arithmetic diagnosis, not estimator reliability.
+See the [C4 result](bayesfilter-modern-hmc-c4-saved-evidence-result-2026-10-28.md).
+Next: scoped C2 clean-root/commit/factor-native provenance binding and negative
+tests, without replacing the shared checkout or changing unrelated consumers.
+Remaining allowance is an upper bound of 235743.412 seconds before unmetered
 preparation; separate SIR remains 7363.064379415999 seconds. No posterior,
 ranking, default or release claim. R-hat reporting-only in tuning; NUTS excluded.
 
