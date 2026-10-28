@@ -57,7 +57,9 @@ probabilities $\beta_0,\beta_1,\beta_2$, the actual proposal and weight are
 Thus every branch retains the same target numerator and uses the density of
 the full mixture. The original three-branch proposal and the intermediate
 conditional proposal with uniform parents remain explicit comparison choices.
-The conditional default is implemented once for affine Gaussian observations;
+The shared implementation is exact for affine Gaussian observations and for
+the implemented seven-component KSC observation mixture. Range--bearing uses
+a declared local Gaussian approximation with a wrapped bearing residual;
 unsupported observation laws require an explicit alternative policy.
 
 \subsection{What the ESS improvement establishes}

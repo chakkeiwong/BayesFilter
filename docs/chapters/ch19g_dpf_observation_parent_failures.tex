@@ -35,6 +35,52 @@ proposal when its actual mixture density is used in the denominator.
 An observation-informed UKF guide or LEDH movement alone does not perform
 this reallocation of mass between ancestors.
 
+This gives the comparison its precise three-policy structure. The original
+ three-branch proposal first selects one of its defensive branches and draws
+ from the corresponding identity, global, or local-flow map; its parent index
+ is inherited from the fixed design used by that branch. The conditional arms retain
+those defensive branches, but replace the middle draw by the following two
+steps:
+
+\begin{enumerate}
+  \item draw an ancestor $J$ either uniformly, with
+        $\Pr(J=j)=1/N$, or with the observation weights
+        $\Pr(J=j)=\alpha_j(y)$;
+  \item draw the child from $q_J(\,\cdot\mid y)$.
+\end{enumerate}
+
+For the middle branch, the resulting proposal density is therefore
+
+\begin{equation}
+ q_{\mathrm{mid}}(x\mid y)=\sum_j\rho_j(y)q_j(x\mid y),
+ \qquad
+ \rho_j(y)=\begin{cases}
+  1/N,&\text{uniform parents},\\
+  \alpha_j(y),&\text{observation-weighted parents}.
+ \end{cases}
+ \label{eq:parent-proposal-policy-mixture}
+\end{equation}
+
+The three branch probabilities, denoted by $\beta=(\beta_0,\beta_1,\beta_2)$
+in the implementation, remain fixed across this comparison. Thus the
+comparison changes the ancestor law only inside the observation-conditioned
+middle branch; it does not retune the defensive-branch mixture. The complete
+proposal density is
+$q(x\mid y)=\sum_{b=0}^2\beta_b q_b(x\mid y)$, and the log importance
+correction uses this complete mixture. This distinction matters when reading
+the tables: a conditional arm is not a replacement for the entire proposal,
+and uniform parents does not mean an observation-blind proposal.
+
+The transition-observation numerator in an importance weight is still the
+target numerator $N^{-1}\sum_j f_\theta(x\mid a_j)g_\theta(y\mid x)$.
+For the reported conditional arms, the denominator is the complete
+three-branch mixture $q(x\mid y)$, including the two defensive branches.
+Only an isolated middle-branch ablation uses $q_{\mathrm{mid}}$ as its
+proposal density. Parent weighting changes the proposal denominator and the
+allocation of draws; it does not change the target model. This is why the
+weighted and uniform arms can have different ESS and score behaviour even
+when they use the same conditional child distributions.
+
 For a Gaussian transition $f(x\mid a_j)=\mathcal N(x;m_j,Q_j)$ and linear
 observation $y=Hx+\varepsilon$, $\varepsilon\sim\mathcal N(0,R)$,
 \begin{align}
