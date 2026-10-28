@@ -36,14 +36,16 @@ def _covariance_quadratic(x,means,precision,covariance_tangent):
     return self_x-2*cross+self_m
 
 
-def gaussian_mixture(x,means,cov,shared_covariance=False,contraction="direct"):
+def gaussian_mixture(x,means,cov,shared_covariance=False,contraction="direct",log_weights=None):
     if contraction not in ("direct", "matrix"):
         raise ValueError("unknown shared Gaussian contraction")
     if shared_covariance:
+        if log_weights is not None:
+            raise ValueError("weighted components require the nonshared density kernel")
         from bayesfilter.highdim.covariance_proposal_shared_gaussian_tf import shared_gaussian_mixture
         return shared_gaussian_mixture(x, means, cov, contraction)
     from bayesfilter.highdim.covariance_proposal_nonshared_gaussian_tf import nonshared_gaussian_mixture
-    return nonshared_gaussian_mixture(x, means, cov)
+    return nonshared_gaussian_mixture(x, means, cov, log_weights=log_weights)
 
 
 def transport(x,logw,controls):
@@ -168,16 +170,17 @@ def _cast_jet(x, dtype):
 
 
 def precision_gaussian_mixture(x, means, covariance, shared_covariance=False,
-                               contraction="direct", precision_policy="uniform"):
+                               contraction="direct", precision_policy="uniform", log_weights=None):
     """Same density kernel, with an optional centered FP32 arithmetic boundary."""
     if precision_policy == "uniform":
-        return gaussian_mixture(x, means, covariance, shared_covariance, contraction)
+        return gaussian_mixture(x, means, covariance, shared_covariance, contraction, log_weights)
     if precision_policy != "fp64_recursion_fp32_pairs" or x.v.dtype != tf.float64:
         raise ValueError("mixed pair arithmetic requires FP64 recurrence")
     origin = Jet(x.v[:, :1], x.t[:, :, :1])
     density, valid = gaussian_mixture(
         _cast_jet(x-origin, tf.float32), _cast_jet(means-origin, tf.float32),
-        _cast_jet(covariance, tf.float32), shared_covariance, contraction)
+        _cast_jet(covariance, tf.float32), shared_covariance, contraction,
+        None if log_weights is None else _cast_jet(log_weights, tf.float32))
     return _cast_jet(density, x.v.dtype), valid
 
 

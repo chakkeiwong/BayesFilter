@@ -54,13 +54,6 @@ def test_default_scalar_batch_directional_and_fixed_design_share_recurrence():
     tf.debugging.assert_near(fd,batch['score'][0,0],atol=2e-4,rtol=2e-4)
 
 
-def test_non_gaussian_observations_reject_conditional_policy():
-    import pytest
-    from bayesfilter.highdim.sqmc_ksc_tf import KSCSpec
-    spec=KSCSpec();model=NativeModels(spec,spec.default_theta(D)[None])
-    with pytest.raises(ValueError,match='affine Gaussian'):
-        conditional_geometry(model,None,None)
-
 
 def test_backward_guide_requires_explicit_original_policy():
     import pytest

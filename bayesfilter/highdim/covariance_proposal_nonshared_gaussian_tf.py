@@ -16,7 +16,8 @@ from bayesfilter.highdim import ledh_small_matrix_tf as sm
 from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
 
 
-def nonshared_gaussian_mixture(x, means, covariance):
+def nonshared_gaussian_mixture(x, means, covariance, log_weights=None):
+    """Optional differentiable log masses; caller owns normalization."""
     batch, n, d = x.v.shape
     p = x.t.shape[0]
     dtype = x.v.dtype
@@ -27,6 +28,10 @@ def nonshared_gaussian_mixture(x, means, covariance):
         tf.broadcast_to(tf.eye(d, dtype=dtype), tf.shape(factor)))
     normal = (-tf.constant(.5*d*math.log(2*math.pi)+math.log(n), dtype)
               -tf.reduce_sum(tf.math.log(tf.linalg.diag_part(factor)), -1))
+    if log_weights is not None:
+        if log_weights.v.shape != x.v.shape[:2]:
+            raise ValueError("component log masses must have shape [B,N]")
+        normal = normal + tf.constant(math.log(n), dtype) + log_weights.v
     # Fixed common origins cancel in every difference and its derivative.
     xc = x.v-x.v[:, :1]
     mc = means.v-x.v[:, :1]
@@ -50,6 +55,8 @@ def nonshared_gaussian_mixture(x, means, covariance):
         pack(pdm), pack(tf.reduce_sum(mc[None]*pdm, -1)),
         pack(h), pack(hm),
         pack(tf.reduce_sum(mc[None]*hm, -1)-trace)], -1)
+    if log_weights is not None:
+        features = tf.concat([features, pack(log_weights.t)], -1)
     out = tf.TensorArray(dtype, blocks, element_shape=[batch, k])
     dout = tf.TensorArray(dtype, blocks, element_shape=[p, batch, k])
 
@@ -97,6 +104,8 @@ def nonshared_gaussian_mixture(x, means, covariance):
                           +tf.reduce_sum(xv[None]*epdm, -1)-empdm
                           +.5*(tf.reduce_sum(xx[None]*eh, -1)
                                 -2*tf.reduce_sum(xv[None]*ehm, -1)+emhm_trace))
+            if log_weights is not None:
+                derivative = derivative + directions(1)[..., 0]
             joined = logsumexp(stack([Jet(total, dtotal), Jet(value, derivative)], -1), -1)
             return j+1, joined.v, joined.t
 
