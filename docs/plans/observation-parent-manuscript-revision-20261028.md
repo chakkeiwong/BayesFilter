@@ -1,0 +1,17 @@
+# Observation-parent manuscript revision
+
+Active question: explain the completed likelihood, score and ESS findings and their failures; retain observation-weighted parents as the owner-selected default, make uniform conditional parents a competitive explicit alternative, and integrate the work into main.
+
+Reader contract: graduate readers know Bayes filtering, Gaussian conditioning, importance sampling and derivatives. They should reconstruct the parent/child distinction, corrected mixture density, finite-score versus model-score distinction, and why higher ESS can coexist with worse score accuracy without looking through run manifests. The monograph should lead through mechanism, measured evidence, then failures and discriminating repairs.
+
+Protected baseline: artifact baseline-manifest.json and baseline/ save the six touched existing sources at 127309b45. Preserve every mathematical derivation, source anchor, empirical qualification and original algorithm specification; identify the original three-branch construction as the comparator, then present the revised default separately. No historical pre-2026-08-21 LEDH numerical evidence is revived.
+
+Evidence contract: reuse the completed 2026-10-28 SIR, four-model and nonlinear-extension results and their exact targets. No new experiment or scientific default promotion. The pass criterion is traceable, numerically consistent text, compilable standalone and book manuscripts, and preserved unrelated work. Errors in target identity, finite-score interpretation, reference quality or an unsupported universal ranking veto delivery until repaired. ESS is explanatory for accuracy and the owner's stated engineering reason for retaining the default; it cannot establish score correctness.
+
+Skeptical audit: the user's broad comparison with the original needs qualification. Both conditional choices have large observed SIR score gains, but KSC persistence and several predator-prey components favor the original. LGSSM is an exact oracle; other references carry their recorded approximation limits. Eight paired seeds and one dataset per model do not establish a general ranking. Categorical boundaries, reset approximation and inherited controls are possible explanations unless separately isolated. These constraints answer the question without inventing causal evidence.
+
+Assumptions: reuse fixed controls to describe the existing experiments, not to select scientific defaults. Match parameter coordinates and horizons within each model. Share the findings source across paper and book to prevent divergence. Preserve main's independent structural and surrogate-HMC updates. Human-reader voice acceptance remains pending; the requested revision proceeds provisionally.
+
+Execution: (1) extend findings with all model means/RMSEs, ESS, limits and default rationale; (2) rewrite the DPF book narrative and add a dedicated failure chapter; (3) build both PDFs, check changed pages and numerical/source consistency; (4) commit scoped changes, merge the committed branch into clean main, resolve substantive overlaps, rebuild and push main. No new experiment budget is consumed. Stop on invalid numerical evidence, unexplained substantive conflict, or unrelated dirty main changes.
+
+Stage: verification. Shared cross-model tables and explicit failure mechanisms are written. Both manuscripts compile with pdflatex; the remaining work is scoped commit and main synchronization.

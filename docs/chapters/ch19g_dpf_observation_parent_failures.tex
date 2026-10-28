@@ -1,0 +1,57 @@
+\chapter{What Failed in the Particle Proposals, and What Conditioning Repairs}
+\label{ch:bf-dpf-observation-parent-failures}
+\chaptermark{Particle Proposal Failures}
+
+An observation can improve a proposal in two places: it can move a child
+toward likely states, and it can change which parents receive children.
+Chapter~\ref{ch:bf-ukf-covariance-proposal} develops the proposal densities
+and their importance correction. We now ask what those changes accomplish
+for the likelihood and its parameter derivative. The experiments give a
+clear reason to retain weighted parents for weight balance, but they also
+show why high ESS and a correctly differentiated finite calculation are
+insufficient tests of model-score accuracy.
+
+\section{Conditioning the child and allocating the parents}
+Let the incoming equally weighted cloud be $a_1,\ldots,a_N$. Its predictive
+mixture is $\widehat p^-(x)=N^{-1}\sum_j f_\theta(x\mid a_j)$. Define each
+parent's predictive observation density and conditional child density by
+\begin{equation}
+ L_j(y)=\int f_\theta(x\mid a_j)g_\theta(y\mid x)\,\mathrm dx,
+ \qquad
+ q_j(x\mid y)=\frac{f_\theta(x\mid a_j)g_\theta(y\mid x)}{L_j(y)}.
+\end{equation}
+These expressions assume positive finite $L_j$ and evaluable densities.
+Multiplying the predictive mixture by the likelihood and normalizing gives
+\begin{equation}
+ \widehat p(x\mid y)=\sum_j\alpha_j(y)q_j(x\mid y),
+ \qquad \alpha_j(y)=\frac{L_j(y)}{\sum_k L_k(y)},
+ \qquad \widehat Z=\frac1N\sum_jL_j(y).
+\label{eq:parent-finite-mixture-conditioning}
+\end{equation}
+Thus the observation affects both the conditional state and the probability
+of its ancestor. Uniform parent selection uses the same conditional children
+but assigns mass $1/N$ to each component. It remains a valid importance
+proposal when its actual mixture density is used in the denominator.
+An observation-informed UKF guide or LEDH movement alone does not perform
+this reallocation of mass between ancestors.
+
+For a Gaussian transition $f(x\mid a_j)=\mathcal N(x;m_j,Q_j)$ and linear
+observation $y=Hx+\varepsilon$, $\varepsilon\sim\mathcal N(0,R)$,
+\begin{align}
+ S_j&=HQ_jH^\top+R,&L_j(y)&=\mathcal N(y;Hm_j,S_j),\\
+ K_j&=Q_jH^\top S_j^{-1},&
+ q_j&=\mathcal N\!\left(m_j+K_j(y-Hm_j),\,Q_j-K_jS_jK_j^\top\right).
+\end{align}
+The covariance is conditional on parent $j$. Between-parent uncertainty
+belongs to the mixture, rather than being inserted into every $Q_j$.
+These identities explain the SIR conditional calculation in its stated
+Gaussian observation setting. KSC additionally conditions the observation
+mixture component; range--bearing instead uses a local Gaussian approximation
+with wrapped bearing residuals. Exactness must be asserted separately for
+each target.
+
+\section{Likelihood, score and ESS in the completed comparisons}
+\input{chapters/observation_parent_cross_model_findings}
+
+\section{Why the failures matter for this inference problem}
+\input{chapters/observation_parent_failures_body}

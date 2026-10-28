@@ -13,6 +13,13 @@ question.  If one of those constructions is used inside Hamiltonian Monte Carlo
 for a nonlinear DSGE or MacroFinance model, what target is the Markov chain
 intended to leave invariant?
 
+The observation-parent experiments sharpen this question. A conditional
+proposal can produce much more even weights and a derivative that agrees
+with finite differences, while still giving a poor estimate of the model
+score. The weighted-parent default addresses weight balance; it does not
+settle which posterior an HMC chain would target. Chapter~\ref{ch:bf-dpf-observation-parent-failures}
+develops the measured counterexamples after the target distinctions below.
+
 The answer cannot be inferred from the label ``differentiable particle
 filter.''  HMC is a target-specific algorithm.  Its mathematical interpretation
 depends on the scalar log target used for accept/reject decisions, the gradient

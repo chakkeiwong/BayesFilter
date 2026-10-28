@@ -1,0 +1,184 @@
+The failures concern different mathematical quantities. A proposal can put
+particles in the wrong place, an importance correction can leave highly
+variable weights, and an accurately evaluated derivative can still estimate
+the model score poorly. Treating these as one problem obscures which repair
+an experiment has actually tested.
+
+\subsection{A correct flow applied to the wrong conditional distribution}
+
+A UKF describes predictive uncertainty using moments. An LEDH map then uses
+the observation to move particles. Neither fact guarantees that the map's
+reference covariance matches the distribution of the particles passed to it.
+The distinction is particularly consequential when the predictive spread
+comes mainly from differences between ancestors rather than process noise
+within one ancestor.
+
+A scalar Gaussian calculation shows the issue without numerical flow error.
+Suppose a map is constructed for prior $\mathcal N(m,P)$ and observation
+$y=x+\varepsilon$, $\varepsilon\sim\mathcal N(0,R)$. An exact affine
+Gaussian transport is
+\begin{equation}
+ F_{m,P}(x)=m+\frac{P}{P+R}(y-m)
+              +\sqrt{\frac{R}{P+R}}(x-m).
+\end{equation}
+If its input really has law $\mathcal N(m,P)$, the output has the correct
+posterior mean and variance. If the input is instead a particular parent's
+transition $X\sim\mathcal N(a,Q)$, direct substitution gives
+\begin{align}
+ \mathbb E[F_{m,P}(X)]&=m+\frac{P}{P+R}(y-m)
+                    +\sqrt{\frac{R}{P+R}}(a-m),\\
+ \operatorname{Var}[F_{m,P}(X)]&=\frac{RQ}{P+R}.
+\end{align}
+The desired conditional posterior has mean
+$a+Q(y-a)/(Q+R)$ and variance $QR/(Q+R)$. For $a=m=0$, $Q=1$,
+$P=100$, $R=100$ and $y=10$, the map yields mean $5$ and variance $0.5$,
+whereas conditioning the actual transition yields approximately $0.0990$
+and $0.9901$. The map is correct for its stated Gaussian input; using it as
+the exact conditional update for this different input is wrong.
+
+This example identifies a mechanism, rather than measuring how much of a
+particular nonlinear run's error it explains. A proposal with this mismatch
+can still have a valid importance correction if its actual density is
+evaluated. But valid weights cannot guarantee that a finite sample covers
+the important region well. Parent-conditioned proposals address the
+within-parent mismatch; predictive-observation weighting addresses the
+allocation of children between parents. These are distinct repairs.
+
+\subsection{An exact update of an inaccurate incoming mixture}
+
+Even exact conditioning only updates the incoming particle approximation.
+If the previous cloud omits a region of the filtering distribution, the
+finite-mixture normalizer $N^{-1}\sum_j L_j(y)$ can differ from the true
+predictive likelihood. Exact conditional sampling cannot reconstruct
+ancestors that are absent. Transport and moment restoration also retain only
+specified properties of the cloud; preserving its first two moments does
+not determine its tails, multimodality or parameter sensitivity.
+
+The familiar weight diagnostic
+\begin{equation}
+ \operatorname{ESS}=\frac{1}{\sum_i \bar w_i^2}
+\end{equation}
+measures concentration of normalized importance weights. With exact
+observation-weighted conditional sampling of the finite mixture, the
+incremental weights are constant and ESS is $N$. This does not make the
+incoming approximation exact, nor does it imply $N$ independent informative
+ancestors after earlier resets. Higher ESS has practical value because less
+of the represented mass is carried by a few particles. It remains a measure
+of weight balance, not of distance to the model posterior or its score.
+
+The SIR controls make this limitation observable. At nominal $T=50$, the
+conditional-only weighted proposal attains ESS $1008$, but its infection-score
+RMSE is $95.82$--$100.96$ across the two references. The conditional mixture
+with uniform parents gives $31.91$--$32.76$. At noise multiplier $1.25$,
+$T=50$, identity-only and conditional-only uniform proposals also have lower
+observed noise-score RMSE than the weighted conditional mixture. These
+controls prevent a claim of accuracy optimality. They do not remove the
+value of the measured reduction in weight concentration.
+
+\subsection{Differentiating the finite calculation is a different test}
+
+The model score is $s(\theta)=\nabla_\theta\log p_\theta(y_{1:T})$.
+The implemented analytical calculation differentiates the finite filter
+value $\widehat\ell_N(\theta;u)$ for fixed random design $u$, with sampled
+categorical labels held locally fixed. A finite-difference comparison away
+from selection boundaries checks that branchwise derivative. It does not
+test whether the derivative is close to $s(\theta)$, nor whether it equals
+the derivative after averaging over parameter-dependent selections.
+
+A two-parent example makes the distinction explicit. Let $U$ be uniform on
+$(0,1)$, choose parent 1 if $U<\alpha(\theta)$ and parent 2 otherwise, and
+return fixed values $a$ and $b$. For almost every fixed $U$, the selected
+value is locally constant in $\theta$, so its branchwise derivative is zero.
+Yet
+\begin{equation}
+ \mathbb E[h_\theta(U)]=\alpha(\theta)a+
+               [1-\alpha(\theta)]b,
+ \qquad
+ \frac{\mathrm d}{\mathrm d\theta}\mathbb E[h_\theta(U)]
+       =\alpha'(\theta)(a-b).
+\end{equation}
+The derivative of the expectation contains the change in selection
+probability. This example demonstrates why local derivative parity alone
+cannot settle a model-score claim. It does not prove that every observed
+error in the full filter is caused by a missing selection contribution:
+the full calculation also differentiates densities, normalizations, state
+locations and resets, and some terms can cancel under particular identities.
+That causal claim requires an isolated comparison.
+
+There is a second distinction even without categorical choices. If a positive
+likelihood estimator satisfies $\mathbb E[\widehat Z]=Z$, and differentiation
+may pass through the expectation, then
+$\mathbb E[\nabla\widehat Z]=\nabla Z$. It does not follow that
+\begin{equation}
+ \mathbb E\!\left[\frac{\nabla\widehat Z}{\widehat Z}\right]
+       =\frac{\nabla Z}{Z}.
+\end{equation}
+The random denominator is correlated with the numerator. Correctness of an
+unnormalized derivative identity therefore does not remove finite-particle
+score bias. Nor does a small error in a likelihood value bound its derivative
+error. These are reasons to compare likelihood and score separately.
+
+\subsection{What the earlier score repairs did and did not solve}
+
+The observation-sidecar and kernel-mixture investigation exposed a target
+distinction before parent conditioning was introduced. An expected
+conditional log likelihood is generally different from the log marginal
+likelihood. For a fixed mixing measure, Jensen's inequality gives
+$\mathbb E[\log g_\theta(y\mid X)]\leq
+\log\mathbb E[g_\theta(y\mid X)]$; their derivatives need not agree.
+An unbiased gradient identity for the former cannot establish an unbiased
+model score for the latter. The research note derives the precise
+importance-weighted gradient identity and its normalization requirements.
+
+The subsequent complete kernelized-observation recursion and
+all-components resampling reference corrected more of the finite
+calculation and passed their declared derivative checks. Nevertheless, the
+calibrated resampling construction had higher observed model-score MSE than
+the canonical comparator in both tested matrix-Gaussian scopes. That is a
+negative result for the tested construction, rather than evidence that the
+derivative check failed or that every kernel-mixture proposal must fail.
+The later simulation-supervised and neural-guide comparisons at $N=64$
+were withdrawn; they cannot support an accuracy ranking or rejection of
+guidance. The full derivations and scope-specific evidence are retained in
+the research note, rather than treating those discarded runs as support
+for the present default.
+
+\subsection{The model-specific failures still requiring explanation}
+
+KSC is a useful counterexample to an ESS-based score argument. Weighted
+parents raise mean ESS from about $883$ to $997$ and reduce log-likelihood
+RMSE, yet persistence-score RMSE increases from about $0.074$ to $0.407$.
+Because the conditional calculation is exact for the implemented
+seven-mixture observation target, a generic claim that all remaining error
+comes from an unconditioned child is inadequate. Recursive representation,
+selection sensitivity and inherited numerical controls remain possible
+causes; the completed experiment does not isolate their contributions.
+
+In range--bearing, conditioning is locally Gaussian and the bearing residual
+is wrapped. Its conditional proposal is therefore an approximation to a
+nonlinear observation update. Weighted parents reduce the observed
+process-scale score RMSE relative to the original, but increase the
+observation-scale score RMSE; uniform parents have lower RMSE in both
+components than weighted parents. Reference Monte Carlo error limits the
+precision of this comparison. The experiment does not establish whether
+local linearization, allocation, or recursive sensitivity explains the
+remaining discrepancy.
+
+Predator--prey is the clearest warning against a universal cross-model
+claim: all six weighted-parent score RMSEs exceed the original comparator's
+values. The adapted Zhao--Cui local fits are themselves approximate, so
+better reference and support checks are needed before assigning the full
+gap to the particle proposal. LGSSM supplies the exact-oracle control:
+the small, mixed differences show no broad accuracy advantage for either
+parent rule. SIR supplies the opposite extreme, where conditioning the
+children removes very large observed score errors but additional parent
+weighting often trades score accuracy for ESS and likelihood accuracy.
+
+The next discriminating experiment should hold the incoming cloud fixed,
+compare exact finite-mixture integration with conditional sampling, and
+separate local derivatives from derivatives of expectations over selection.
+Only after that distinction is resolved should independently calibrated
+recursive runs identify the effect of reset and allocation choices. The
+current evidence supports retaining weighted parents as the requested
+default and exposing uniform parents as a competitive option. It does not
+close model-score correctness, HMC readiness, or accuracy-optimality questions.

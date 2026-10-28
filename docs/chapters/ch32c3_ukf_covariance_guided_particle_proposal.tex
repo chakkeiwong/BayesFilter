@@ -10,20 +10,7 @@ uncertainty conditional on one ancestor, uncertainty across the predictive
 mixture, and uncertainty represented by the importance-weighted posterior.
 Each covariance has a different role in the algorithm.
 
-The construction below is now the implemented covariance-guided proposal
-route used by the five-model surrogate-HMC campaign. It combines a common UKF
-guide, conditional local flows, one marginal importance correction, a
-Cholesky moment reset, and a bounded optional higher-moment correction. The shared consumer is \path{make_batched_score_filter}. Its module, under
-\path{bayesfilter/highdim/}, is
-\begin{quote}\small
-\path{covariance_proposal_score_batch_tf.py}.
-\end{quote}
-Every model adapter reaches that recurrence. The derivations establish the finite value and
-analytical total score that the code evaluates, while the case study in
-Chapter~\ref{ch:bf-surrogate-hmc-five-models} reports the separate endpoint,
-Metropolis correction and posterior diagnostics. Particle matrices in this
-chapter have particles as columns, \(X\in\R^{d\times N}\); this transposes
-the row-particle storage convention in the preceding chapter without changing
+The construction below is the implemented covariance-guided proposal route used by the five-model surrogate-HMC campaign. It combines a common UKF guide, conditional local flows, one marginal importance correction, a Cholesky moment reset that preserves the first two weighted moments under the stated assumptions, and a bounded optional higher-moment correction. The original three-branch proposal is the baseline for the observation-conditioned extension described at the end of this chapter. That extension uses observation-weighted parents by default, while uniform parent selection remains a competitive alternative. Cross-model likelihood, score and ESS comparisons, including adverse results, are presented in Chapter~\ref{ch:bf-dpf-observation-parent-failures}; the evidence supports the default as a weight-balance choice, not as a guarantee of score accuracy or HMC suitability. The shared consumer is \path{make_batched_score_filter}, in \path{bayesfilter/highdim/covariance_proposal_score_batch_tf.py}. Every model adapter reaches that recurrence. The derivations establish the finite value and analytical total score that the code evaluates, while the case study in Chapter~\ref{ch:bf-surrogate-hmc-five-models} reports the separate endpoint, Metropolis correction and posterior diagnostics. Particle matrices in this chapter have particles as columns, \(X\in\R^{d\times N}\); this transposes the row-particle storage convention in the preceding chapter without changing the covariance or derivative identities.the row-particle storage convention in the preceding chapter without changing
 the covariance or derivative identities.
 
 \begingroup
