@@ -36,6 +36,10 @@ The subsequent October 28 request authorizes the standalone native Stan and
 Walnutpie CPU/GPU XLA custom-call bridge, including native C++ sampling, under
 `docs/plans/bayesfilter-native-stan-walnutpie-master-2026-10-28.md`. GPU calls
 stage CPU sampler execution; this exception does not change public defaults.
+The October 28 follow-up authorizes the standalone GPU/XLA Stan-algorithm
+implementation for TensorFlow models, its source review and bounded execution
+under `docs/plans/bayesfilter-stan-gpu-tf-master-2026-10-28.md`. This reuses the
+direct Stan tree/adaptation authority and does not reopen public defaults.
 
 ## Academic Research Governance Profile
 

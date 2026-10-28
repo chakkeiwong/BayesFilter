@@ -401,7 +401,7 @@ class Kernel:
             tf.cast(result.depth,self.dtype),result.energy,result.epsilon),-1)
 
 
-def make_functions(tf, log_prob, config):
+def make_functions(tf, log_prob, config, *, model_signature=(), kernel_type=None):
     """Return compiled initialize, warmup, sample functions.
 
     Seeds are [chains,2] int32 (distinct stream key, nonnegative counter) states.
@@ -410,16 +410,31 @@ def make_functions(tf, log_prob, config):
     state. Metrics are inverse masses: [chains,d] or [chains,d,d]. Both warmup
     and sampling retain zero-based iterations 0,thin,2*thin,...; warmup draws
     are separate and must not be included in posterior summaries.
+    Optional model_signature contains fully defined numeric/boolean TensorSpecs;
+    matching tensor arguments are appended to each function and passed to
+    log_prob(q, *model_inputs). kernel_type is an internal implementation hook
+    for controlled graph-layout comparisons, not an alternate adaptation.
     """
-    k = Kernel(tf,log_prob,config)
+    # Model inputs stay tensor operands in the enclosing compiled computation.
+    # A factory extension avoids duplicating the source-audited lifecycle.
+    model_signature = tuple(model_signature)
+    for spec in model_signature:
+        if not isinstance(spec, tf.TensorSpec) or not spec.shape.is_fully_defined():
+            raise ValueError('model_signature requires fully defined TensorSpecs')
+        if not (spec.dtype.is_floating or spec.dtype.is_integer or spec.dtype == tf.bool):
+            raise TypeError('model inputs must be numeric or boolean tensors')
+    kernel_type = Kernel if kernel_type is None else kernel_type
+    def bind(model_inputs):
+        return kernel_type(tf, lambda q: log_prob(q, *model_inputs), config)
     c,d = config.chains,config.dimension
     dt = tf.float64
     shape = [c,d,d] if config.metric == 'dense' else [c,d]
     qs,rs = tf.TensorSpec([c,d],dt),tf.TensorSpec([c,2],tf.int32)
     ms,es = tf.TensorSpec(shape,dt),tf.TensorSpec([c],dt)
 
-    @tf.function(input_signature=[qs,tf.TensorSpec([c,d],tf.bool),rs],autograph=False,jit_compile=True)
-    def initialize(supplied, present, seed):
+    @tf.function(input_signature=[qs,tf.TensorSpec([c,d],tf.bool),rs,*model_signature],autograph=False,jit_compile=True)
+    def initialize(supplied, present, seed, *model_inputs):
+        k = bind(model_inputs)
         full = tf.reduce_all(present,-1)
         attempts = tf.where(full | (config.init_radius == 0.),1,100)
         def body(i,q,seed,good,counts):
@@ -442,8 +457,9 @@ def make_functions(tf, log_prob, config):
 
     active,ends = schedule(config)
 
-    @tf.function(input_signature=[qs,es,ms,rs],autograph=False,jit_compile=True)
-    def warmup(q,e,metric,seed):
+    @tf.function(input_signature=[qs,es,ms,rs,*model_signature],autograph=False,jit_compile=True)
+    def warmup(q,e,metric,seed,*model_inputs):
+        k = bind(model_inputs)
         factor = k.factor(metric)
         good = k.health(k.phase(q,tf.zeros_like(q))) & k.valid_metric(metric,factor) & k.valid_seed(seed)
         good &= tf.math.is_finite(e) & (e > 0.)
@@ -509,8 +525,9 @@ def make_functions(tf, log_prob, config):
         token = tf.reduce_sum(q)+tf.reduce_sum(e)+tf.reduce_sum(metric)
         return WarmupResult(q,e,metric,seed,draws,telemetry,good,token)
 
-    @tf.function(input_signature=[qs,es,ms,rs],autograph=False,jit_compile=True)
-    def sample(q,e,metric,seed):
+    @tf.function(input_signature=[qs,es,ms,rs,*model_signature],autograph=False,jit_compile=True)
+    def sample(q,e,metric,seed,*model_inputs):
+        k = bind(model_inputs)
         factor = k.factor(metric)
         good = k.health(k.phase(q,tf.zeros_like(q))) & k.valid_metric(metric,factor) & k.valid_seed(seed)
         good &= tf.math.is_finite(e) & (e > 0.)
