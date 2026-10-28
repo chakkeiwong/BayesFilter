@@ -27,6 +27,7 @@ def test_shared_invalidity_is_preserved_before_audit_or_export(tmp_path, monkeyp
     monkeypatch.setenv('CUDA_VISIBLE_DEVICES', 'GPU-mocked-no-device-work')
     monkeypatch.setattr(study, 'INPUTS', inputs)
     monkeypatch.setattr(study, 'source_paths', lambda _: ([source], None))
+    monkeypatch.setattr(study.subprocess, 'check_output', lambda *a, **k: 'test-only-commit\n')
     monkeypatch.setattr(gpu_provenance, 'query_nvidia_smi_gpus', lambda: [])
     monkeypatch.setattr(gpu_provenance, 'selected_nvidia_gpu', lambda _: {'uuid': 'mock'})
     monkeypatch.setattr(target, 'build', lambda *a, **k: (object(), {}))

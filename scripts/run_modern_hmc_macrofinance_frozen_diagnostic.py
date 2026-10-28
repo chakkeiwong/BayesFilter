@@ -224,7 +224,8 @@ def worker(args):
         manifest.update(memory_policy=memory,tensorflow=tf.__version__,tensorflow_probability=tfp.__version__,dtype='float64',tf32_enabled=tf.config.experimental.tensor_float_32_execution_enabled(),use_xla=True)
         write(out/'manifest.json',manifest)
         from bayesfilter.runtime.execution_budget import execution_budget,execution_progress
-        with execution_budget(deadline=started+args.wall_seconds-900,
+        deadline = started+args.wall_seconds-900
+        with execution_budget(deadline=deadline, check=lambda: time.monotonic() < deadline,
                               replace_wall_time_limit=bool(args.source)),execution_progress(mark):
             if args.source:
                 from scripts.resume_modern_hmc_macrofinance_public import copy_parent,resume_checkpoint

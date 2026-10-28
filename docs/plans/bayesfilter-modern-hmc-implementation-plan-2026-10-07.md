@@ -1,6 +1,14 @@
 # Implementation and validation plan for modern HMC methods
 
-## Active execution — 27 October 2026, 14:26 Asia/Shanghai
+<!-- BEGIN MODERN-HMC-72H-20261027 -->
+
+## Additional 72-hour allocation — 27 October 2026
+
+Continuation status: **completed**. The resumed qualification produced seven verified candidates from the nine-candidate cohort; two failed candidate-local movement checks. A focused follow-up regression run passed 50 tests. After charging that 84.5-second CPU test run, the combined balance is approximately 236027.8 seconds (65.56 hours); separate SIR funding is unchanged. C2 is next, but public admission still pins MacroFinance to BayesFilter commit `43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`, while this checkout is at `d0705f7956a6e224b46cb478667ddd82b0953d32` and has unrelated dirty work. The public consumer refuses before TensorFlow or numerical evaluation. Do not bypass or silently rewrite that external source lock; refresh C2 around an owner-reviewed exact-source binding. See the [active continuation plan](bayesfilter-modern-hmc-resume-budget-repair-2026-10-27.md) and [terminal result](artifacts/modern-hmc-implementation-2026-10-07/N5/budget-resume-repair-20261027-01). No posterior, ranking, default or release readiness is established.
+
+<!-- END MODERN-HMC-72H-20261027 -->
+
+## Original tranche launch — 27 October 2026, 14:26 Asia/Shanghai
 
 Repair commit: `c41c38941`. The source-isolated continuation
 `N5/rejection-consistency-20261027-01` launched at 14:24 with 16,964.992437
@@ -183,8 +191,8 @@ consumer qualification, power and affordability are still unproved.
 |---|---|---|
 | C1a | Closed: operational recovery and prior evidence preserved | Preserve original 384 trials/385 charges and old outcomes |
 | C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
-| C1b | Qualification-03 source-invalid; closeout reporting repaired | Isolate execution sources, validate exact dependencies, and fund/reprice the whole cohort before fresh qualification; retain failed evidence |
-| C2 | Direct CPU/GPU diagnostics pass; public admission open | Three external tests stop at existing successor-source/clean-commit admission; reconcile exact-source admission and rerun public entry without bypass |
+| C1b | Closed for the frozen nine-candidate MacroFinance diagnostic: all 1,312 trials returned, seven candidates verified/exported/reloaded, and two candidates failed movement checks | Preserve the two failures as candidate-local outcomes; no ranking, posterior or consumer admission follows |
+| C2 | Open and currently held before numerical evaluation | The actual Phase 9 consumer pins BayesFilter commit `43a7f113ddbadf13c6421b7b6d7b2d26f5a4f1e9`; this checkout is at `d0705f7956a6e224b46cb478667ddd82b0953d32` and dirty. Reconcile the exact tested source with the consumer owner, then rerun its public entry without bypassing its clean-source gate |
 | C3 | Open: posterior/reference/precision | Declare estimands and precision; use independent retained evidence and reference |
 | C4 | Open: estimator, antithetic and tail reliability | Discriminating stopped-MCSE/tail and independent-chain checks; lugsail already exists |
 | C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
