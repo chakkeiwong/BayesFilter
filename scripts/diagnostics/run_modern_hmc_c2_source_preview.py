@@ -34,12 +34,15 @@ def main() -> int:
     parser.add_argument("--dependencies", type=Path, required=True)
     parser.add_argument("--row-tests", type=Path, required=True)
     parser.add_argument("--consumer-changes", type=Path)
+    parser.add_argument("--bound-tests", type=Path,
+                        help="Exercise the explicit public source-binding API without pin injection")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     started = time.monotonic()
     args.output.mkdir(parents=True, exist_ok=False)
     result = {"classification": "test_only_source_admission_preview",
               "official_consumer_admission": False, "status": "RUNNING",
+              "runner_sha256": digest(Path(__file__)),
               "command": [sys.executable, *sys.argv], "started_unix": time.time(),
               "python": sys.executable, "plan":
               "docs/plans/bayesfilter-modern-hmc-c2-exact-source-admission-plan-2026-10-28.md",
@@ -70,6 +73,10 @@ def main() -> int:
         frozen = manifest["source_sha256"]
         changes = json.loads(args.consumer_changes.read_text()) if args.consumer_changes else {}
         result["consumer_changes"] = changes
+        for relative, change in changes.items():
+            live = consumer_root / relative
+            assert digest(live) == change["candidate_sha256"], str(live)
+            inputs[str(live)] = change["candidate_sha256"]
         assert all(digest(Path(p)) == h for p, h in frozen.items()), "frozen source drift"
         checked = {}
         for name, item in dependencies.items():
@@ -95,19 +102,33 @@ def main() -> int:
         import one_country_affine_macro_governance as governance
         result["original_authority"] = {"root": str(phase9.BAYESFILTER_AUTHORITY),
                                          "commit": governance.LIVE_BAYESFILTER_COMMIT}
-        phase9.BAYESFILTER_AUTHORITY = candidate
-        governance.LIVE_BAYESFILTER_COMMIT = commit
+        if args.bound_tests:
+            from one_country_affine_macro_source_binding import Phase9SourceBinding
+            binding = Phase9SourceBinding(candidate, commit)
+            result["classification"] = "explicit_public_source_binding_integration"
+            result["plan"] = "docs/plans/bayesfilter-modern-hmc-c2-scoped-binding-2026-10-28.md"
+            result["sampler_transitions"] = 0
+            result["global_pin_injected"] = False
+            os.environ["C2_BINDING_ROOT"] = str(candidate)
+            os.environ["C2_BINDING_COMMIT"] = commit
+        else:
+            phase9.BAYESFILTER_AUTHORITY = candidate
+            governance.LIVE_BAYESFILTER_COMMIT = commit
+            result["global_pin_injected"] = True
         result["source_gate_before"] = governance.audit_bayesfilter_authority(
             candidate, expected_commit=commit)
         assert result["source_gate_before"]["status"] == "PASS"
-        tf, _kalman, _score, policy = phase9._load_runtime()
+        tf, _kalman, _score, policy = (
+            phase9._load_runtime(source_binding=binding) if args.bound_tests
+            else phase9._load_runtime())
         result["tensorflow_version"] = tf.__version__
         result["gpu_policy"] = policy
         result["logical_gpus"] = [str(x) for x in tf.config.list_logical_devices("GPU")]
         assert not result["logical_gpus"]
         test_dir = args.output / "test_inputs"
         test_dir.mkdir()
-        tests = [consumer_root / "tests/test_one_country_affine_macro_phase9_hmc.py", args.row_tests]
+        tests = ([args.bound_tests] if args.bound_tests else
+                 [consumer_root / "tests/test_one_country_affine_macro_phase9_hmc.py", args.row_tests])
         copied = []
         for source in tests:
             destination = test_dir / source.name
@@ -162,6 +183,10 @@ def main() -> int:
         result["source_gate_after"] = governance.audit_bayesfilter_authority(
             candidate, expected_commit=commit)
         assert result["source_gate_after"]["status"] == "PASS"
+        if args.bound_tests:
+            assert str(phase9.BAYESFILTER_AUTHORITY) == result["original_authority"]["root"]
+            assert governance.LIVE_BAYESFILTER_COMMIT == result["original_authority"]["commit"]
+            result["legacy_configuration_unchanged"] = True
         result["status"] = "PASS" if code == 0 else "TEST_FAILURE"
     except Exception:
         result["status"] = "ERROR"

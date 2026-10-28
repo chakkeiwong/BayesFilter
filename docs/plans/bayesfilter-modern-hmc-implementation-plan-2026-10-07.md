@@ -4,7 +4,7 @@
 
 ## Additional 72-hour allocation — 27 October 2026
 
-Continuation status: **C1 complete; C2 compatibility verified; C4 scalar audits complete**.
+Continuation status: **C1 complete; C2 explicit binding installed; C4 scalar audits complete**.
 The resumed nine-candidate qualification records 1,312 returned trials, seven
 verified/exported/reloaded candidates and two movement failures. The resume
 repair is committed as b0cafccc5. The clean exact-source candidate f9291ee443
@@ -12,19 +12,21 @@ passes 33 installed-consumer integration checks and 36 core regressions after
 repairing a diagnostic oracle's compilation boundary and a stale wrapper test.
 The failed attempts remain recorded. See the [C2 result](bayesfilter-modern-hmc-c2-source-preview-result-2026-10-28.md).
 
-Official consumer admission still requires consistent clean-root, commit and
-factor-native provenance binding; its global pin and pending admission fields
-remain unchanged. Its own master also reports a missing historical P19 result.
-Do not change the shared checkout beneath other work or invent that evidence.
+The [C2 binding repair](bayesfilter-modern-hmc-c2-scoped-binding-result-2026-10-28.md)
+is installed: 21 source tests, 33 numerical regressions and direct public-builder
+parity pass. Explicit calls bind the clean checkout and actual factor-native
+callable without global-pin injection or changed target identity. Legacy callers
+retain their pin and require explicit migration. The external master still lacks
+P19 evidence; do not invent it. Wider consumer admission remains separate.
 The [C4 saved-evidence result](bayesfilter-modern-hmc-c4-saved-evidence-result-2026-10-28.md)
 checks 1,152 precision records, all 288 generated validation endpoints, and
 1,792 tail records with 5,376 profiles. Arithmetic passes; original refusals
 and coverage failures remain. Twenty focused tests pass. No raw-tail replay
-or calibrated estimator repair is claimed. C2 scoped source/provenance binding
-is the next concrete engineering task; C3 posterior qualification, C4 reliability,
+or calibrated estimator repair is claimed. C3 metadata preflight confirms all seven members are diagnostic-only.
+Source-bound public GPU integration and an explicit posterior contract are next; C3 posterior qualification, C4 reliability,
 C5 independent-fit SIR and C6/N8 reconciliation remain open.
-Measured C4 charges are 7.384 seconds; remaining allocation is at most
-235743.412 seconds before unmetered overhead. Separate SIR funding is unchanged.
+Measured C2 binding work adds 236.518 seconds; remaining allocation is at most
+235497.742 seconds before unmetered overhead. Separate SIR funding is unchanged.
 No worker is running, and no posterior, ranking, default or release claim follows.
 
 <!-- END MODERN-HMC-72H-20261027 -->
@@ -213,9 +215,9 @@ consumer qualification, power and affordability are still unproved.
 | C1a | Closed: operational recovery and prior evidence preserved | Preserve original 384 trials/385 charges and old outcomes |
 | C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
 | C1b | Closed for the frozen nine-candidate MacroFinance diagnostic: all 1,312 trials returned, seven candidates verified/exported/reloaded, and two candidates failed movement checks | Preserve the two failures as candidate-local outcomes; no ranking, posterior or consumer admission follows |
-| C2 | Compatibility passed; official consumer admission open | Clean candidate f9291ee443: 33 installed-consumer checks and 36 core regressions pass. Resolve clean-root/commit/factor-native provenance together; preserve global pin and shared work. External master missing historical P19 evidence is a separate boundary |
-| C3 | Open: posterior/reference/precision | Declare estimands and precision; use independent retained evidence and reference |
-| C4 | Open: estimator, antithetic and tail reliability | Discriminating stopped-MCSE/tail and independent-chain checks; lugsail already exists |
+| C2 | Explicit binding installed and verified; wider admission open | 21 source tests, 33 numerical regressions and direct installed public-builder parity pass. Global pin unchanged; downstream consumers must opt in. External master still lacks P19 evidence |
+| C3 | Metadata preflight complete; posterior contract open | Seven diagnostic members intact, with numerical-handoff authority false. Bind the public GPU adapter and specify estimands, precision and independent reference before fresh qualification/retained execution |
+| C4 | Arithmetic diagnosis closed; estimator/tail reliability open | All 288 generated validation endpoints and 5,376 tail profiles audited; original refusals preserved. Specify fresh tail-aware validation before sampling; lugsail already exists |
 | C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
 | C6 / N8 | Guide repair complete; release reconciliation open | Reconcile examples, CI integration coverage, chapter/build and exclusions; no unsupported default promotion |
 

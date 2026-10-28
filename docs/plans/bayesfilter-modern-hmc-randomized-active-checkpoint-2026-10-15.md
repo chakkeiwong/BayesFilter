@@ -5,7 +5,9 @@
 C1 qualification is complete: 1,312 trials, seven verified/exported/reloaded
 candidates, two movement rejections. C2 clean-source compatibility passes 33
 installed-consumer integration tests and 36 core regressions. The diagnostic
-oracle repair is installed; official source/provenance admission remains open.
+oracle repair is installed. Explicit source binding now passes 21 source tests,
+33 numerical regressions and installed public-builder parity with unchanged
+global pins and target signature. Broader consumer admission remains open.
 No numerical worker is running at this checkpoint. The October 25 status and
 balances below are historical, not the current next action or allocation.
 
@@ -16,9 +18,10 @@ C4 saved-scalar audits now pass: 1,152 precision identities, all 288 generated
 validation endpoints, 1,792 tail records and 5,376 profiles. Original failures
 remain valid; this closes arithmetic diagnosis, not estimator reliability.
 See the [C4 result](bayesfilter-modern-hmc-c4-saved-evidence-result-2026-10-28.md).
-Next: scoped C2 clean-root/commit/factor-native provenance binding and negative
-tests, without replacing the shared checkout or changing unrelated consumers.
-Remaining allowance is an upper bound of 235743.412 seconds before unmetered
+C3 metadata preflight confirms all seven members intact and diagnostic-only.
+Next: source-bound public GPU integration and explicit posterior/reference
+contract before fresh qualification. Do not upgrade old diagnostic evidence.
+Remaining allowance is an upper bound of 235497.742 seconds before unmetered
 preparation; separate SIR remains 7363.064379415999 seconds. No posterior,
 ranking, default or release claim. R-hat reporting-only in tuning; NUTS excluded.
 
