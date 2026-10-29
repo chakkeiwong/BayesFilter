@@ -1,0 +1,29 @@
+2026-09-23 09:31:23.226213: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-23 09:31:23.235217: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790127083.245099 1244996 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790127083.248118 1244996 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790127083.256839 1244996 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790127083.256896 1244996 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790127083.256903 1244996 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790127083.256905 1244996 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-23 09:31:23.259501: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1790127084.948113 1244996 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790127084.952348 1244996 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 13153 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+2026-09-23 09:31:25.879476: I external/local_xla/xla/service/service.cc:152] XLA service 0x646baaba7f00 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-23 09:31:25.879555: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-23 09:31:25.879564: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (1): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+2026-09-23 09:31:25.885543: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+I0000 00:00:1790127085.907516 1244996 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790127086.051347 1244996 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+WARNING:tensorflow:5 out of the last 5 calls to <function primitive_checks.<locals>.evaluate at 0x7927d2390e00> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING:tensorflow:6 out of the last 6 calls to <function primitive_checks.<locals>.evaluate at 0x7927d23909a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+AR2_KERNEL_REPAIR /device:GPU:0 parity True calls eliminated True steady [0.11375375196803361, 0.12153638806194067, 0.09396958199795336]
+I0000 00:00:1790127115.790907 1244996 cuda_dnn.cc:529] Loaded cuDNN version 92000
+AR2_KERNEL_REPAIR /device:GPU:1 parity True calls eliminated True steady [0.08591219794470817, 0.08459263993427157, 0.08768725604750216]
+2026-09-23 09:32:17.557785: I external/local_xla/xla/service/service.cc:152] XLA service 0x646bea989bd0 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2026-09-23 09:32:17.557866: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): Host, Default Version
+AR2_KERNEL_REPAIR /CPU:0 parity True calls eliminated True steady [0.02357847394887358, 0.01897262898273766, 0.017142485943622887]
+{"stage": "ar2-kernel-repair", "status": "AR2_KERNEL_NONHARM_PASSED", "qualified": true}

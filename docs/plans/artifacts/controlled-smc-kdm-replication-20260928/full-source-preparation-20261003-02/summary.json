@@ -1,0 +1,100 @@
+{
+  "status": "PREPARED",
+  "scope": "AUTHOR_SOURCE_MATRIX",
+  "replication": "INCOMPLETE",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "author_algorithm_modified": false,
+  "driver_changes": "Observation-only reporting; source grid/repetitions unchanged",
+  "runtime_equivalence": "Author MATLAB source executed in Octave; MATLAB/Octave equivalence not yet certified",
+  "source_validity": "PREPARED_NOT_EXECUTED",
+  "source_lock": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt139_c0_source_lock",
+  "source_lock_sha256": "f8534fddd2163877a4d6d8c6e2aa542b0c4f8afe9d30f0019bcc276e0917ff45",
+  "drivers": [
+    {
+      "driver": "lorenz_csmc",
+      "lane": "Lorenz",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/full-source-preparation-20261003-02/reference-work/Lorenz');save_default_options('-mat7-binary');rand('state',202610131);randn('state',202610131);run('cSMC_VaryF_full.m');"
+      ],
+      "mode": "full",
+      "seed": 202610131,
+      "source_driver_sha256": "f57732be90c66bfa538af7a84f928fdec1e3b1dbb2157a83be60935675499968",
+      "instrumented_sha256": "0c5864dbef10b8e40919a2a5ca03c7056c2531ae81eed93d32e5254f67787781",
+      "source_algorithm_sha256": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+      "full_cases": 4000,
+      "timeout_seconds": 16200,
+      "status": "PREPARED_NOT_EXECUTED"
+    },
+    {
+      "driver": "lorenz_apf",
+      "lane": "Lorenz",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/full-source-preparation-20261003-02/reference-work/Lorenz');save_default_options('-mat7-binary');rand('state',202610132);randn('state',202610132);run('APF_VaryF_full.m');"
+      ],
+      "mode": "full",
+      "seed": 202610132,
+      "source_driver_sha256": "07cab9d30d77d6b9725bc7a62a910dddd3f7d4cdab9df45f1ad57f52c1e280f3",
+      "instrumented_sha256": "316c6d5e8ffbaf1f5b9b5ee3a2fefd21e29f0189f8c6337a5b555ec4a4af155d",
+      "source_algorithm_sha256": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+      "full_cases": 4000,
+      "timeout_seconds": 38700,
+      "status": "PREPARED_NOT_EXECUTED"
+    },
+    {
+      "driver": "neuroscience_csmc",
+      "lane": "NeuroScience",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/full-source-preparation-20261003-02/reference-work/NeuroScience');save_default_options('-mat7-binary');rand('state',202610133);randn('state',202610133);run('NormConst_cSMC_full.m');"
+      ],
+      "mode": "full",
+      "seed": 202610133,
+      "source_driver_sha256": "5576c1217d1b5a50842aecaac1aeaddedb666fecc7255b4a0c42d44a8cffb3e8",
+      "instrumented_sha256": "dd261d787ab230580a4d37ad0bf1e1a95ae2e29a58549bb65a808c6e9570b513",
+      "source_algorithm_sha256": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+      "full_cases": 2000,
+      "timeout_seconds": 29700,
+      "status": "PREPARED_NOT_EXECUTED"
+    },
+    {
+      "driver": "neuroscience_bpf",
+      "lane": "NeuroScience",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/full-source-preparation-20261003-02/reference-work/NeuroScience');save_default_options('-mat7-binary');rand('state',202610134);randn('state',202610134);run('NormConst_BPF_full.m');"
+      ],
+      "mode": "full",
+      "seed": 202610134,
+      "source_driver_sha256": "2346fc106a9a44f99fe3abfd1f4af3a056dce46bcfa0f491f803fc4dd3352003",
+      "instrumented_sha256": "7b4ab5e38b0b7c7a079f65d2a1f8ba70eeb3abee6a2509ecf928a962971f4c1d",
+      "source_algorithm_sha256": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+      "full_cases": 2000,
+      "timeout_seconds": 163800,
+      "status": "PREPARED_NOT_EXECUTED"
+    }
+  ],
+  "completed_driver_count": 0,
+  "resume_pilot": null,
+  "scientific_verdict": "No replication, statistical ranking, or port promotion from cost/executability alone",
+  "checks": [
+    {
+      "name": "all_four_driver_cases_accounted_for",
+      "passed": false
+    }
+  ]
+}

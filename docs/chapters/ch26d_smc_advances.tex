@@ -1,0 +1,555 @@
+\subsection{What continual training changes}
+\label{sec:bf-is-craft-detail}
+
+An accurate transport between two neighboring temperatures need not be an
+accurate transport from the prior to the final posterior. This observation
+motivates learning separate maps for the easier intermediate problems.
+For maps $T_{k,\phi_k}$, CRAFT's population objective is
+\begin{equation}
+ \mathcal H(\phi_1,\ldots,\phi_K)
+ =\sum_{k=1}^K D_{\rm KL}
+       ((T_{k,\phi_k})_\#\pi_{k-1}\Vert\pi_k).
+ \label{eq:bf-is-craft-objective}
+\end{equation}
+Here $T_\#\pi$ denotes the law of $T(X)$ when $X\sim\pi$.
+Each term vanishes when its map transports the preceding distribution
+exactly to the next one. This is a local reverse-KL objective, rather than
+forward KL against a fixed final-posterior dataset or FAB's second-moment
+objective \citep[Section 2.3, Equations 5--8]{matthews2022craft}.
+
+To reconstruct the correction, let $y=T_k(x)$ and write
+$q_k(y)=\pi_{k-1}(x)/|\det DT_k(x)|$. Then
+\begin{equation}
+ G_k(x)q_k(T_k(x))
+ =\frac{\gamma_k(T_k(x))}{Z_{k-1}}
+ =\frac{Z_k}{Z_{k-1}}\pi_k(T_k(x)).
+ \label{eq:bf-is-craft-correction}
+\end{equation}
+Thus the factor in \eqref{eq:bf-is-aft-weight} corrects imperfect transport;
+the unknown normalizers cancel from relative particle weights. An invariant
+MCMC kernel applied afterward preserves the resulting target. With an
+identity map the construction reduces to ordinary annealed SMC. With an
+exact map every incremental weight is $Z_k/Z_{k-1}$, although subsequent
+resampling can still create dependence among particles.
+
+AFT learns a map from the finite cloud available at a particular temperature.
+Repeated optimization against that cloud can fit its sampling errors.
+Practical AFT uses separate training, validation and test populations to
+limit overfitting, but a single pass still supplies limited new information
+at each stage. CRAFT instead makes repeated passes from the base distribution.
+During a pass it evaluates each map's loss and transports particles with
+the current map. The newly computed optimizer update affects later use of
+that map. The public implementation collects the stage gradients through
+the pass and then updates the parameters. This ordering avoids fitting a
+map to the very particles whose fixed-map importance identity is being
+invoked \citep[Algorithms 1--3 and Section 2.3]{matthews2022craft}.
+
+The distinction between a particle approximation and the ideal distribution
+also matters for the gradient. Set
+\begin{align}
+ D_k(x;\phi_k)&=\log\gamma_{k-1}(x)
+       -\log\gamma_k(T_{k,\phi_k}(x))
+       -\log|\det DT_{k,\phi_k}(x)|,\nonumber\\
+ \widehat g_k&=\sum_i W_{k-1,i}\nabla_{\phi_k}D_k(X_{k-1,i};\phi_k).
+ \label{eq:bf-is-craft-local-gradient}
+\end{align}
+For fixed upstream parameters, define
+$\widehat\pi_{k-1}^N=\E[\sum_i W_{k-1,i}\delta_{X_{k-1,i}}]$.
+Under the differentiation and integrability conditions of
+\citet[Proposition 2]{matthews2022craft}, $\widehat g_k$ is unbiased for
+the local gradient of
+$D_{\rm KL}((T_{k,\phi_k})_\#\widehat\pi_{k-1}^N\Vert\pi_k)$.
+At finite $N$, $\widehat\pi_{k-1}^N$ generally differs from $\pi_{k-1}$.
+The proposition therefore does not turn a self-normalized particle
+gradient into an exactly unbiased gradient of the ideal population objective.
+Nor should the local update be confused with differentiating every later
+particle distribution through every earlier optimizer update.
+
+The examples in \citet[Sections 4.1--4.3]{matthews2022craft} include a
+1024-dimensional log-Gaussian Cox process, a 30-dimensional variational
+autoencoder latent distribution, and a lattice-field application with a
+particle-MCMC correction. Their VAE experiment uses affine inverse
+autoregressive flows. These examples establish that the construction is
+not restricted to tiny target dimension; they do not establish coverage
+of a new posterior with different modes or recurrent-state dynamics.
+For BayesFilter, the attraction is the combination of refreshed training
+samples, short transport tasks and explicit importance correction. Its
+remaining empirical question is whether those mechanisms discover and
+retain the posterior regions that the current training misses.
+
+Both the correction and the local loss require a forward map and its log
+Jacobian, without evaluating an inverse-flow density at every transported
+point. This is computationally relevant for IAF, whose forward direction
+is parallel across coordinates while inversion is autoregressive. Target
+values and training gradients still have their own cost. Moreover, the
+complete sampler includes resampling and mutation: composing its stage
+maps alone does not reproduce its output distribution or supply that
+distribution's tractable density. A separate final IAF fitted to weighted
+sampler output is therefore a distinct learned approximation.
+
+\section{Adaptive mutation and waste-free SMC}
+\label{sec:bf-is-modern-smc-mutation}
+
+An annealing schedule controls changes in the target distribution. Mutation
+controls how far the particle population explores at each temperature.
+These are separate decisions: smaller temperature increments can preserve
+balanced weights while particles remain confined to their original basins.
+The posterior path $r(\theta)L(\theta)^\beta$ is already explicit in
+\citet[Section 4.2.2]{delmoral2006smc}; modern adaptive methods improve how
+effort is allocated along such a path.
+
+\subsection{Tune movement relative to its cost}
+
+For an HMC proposal $Y_h$ from $X$, let $h=(\epsilon,L)$ contain step size
+and leapfrog count, and let $\alpha_h$ be its Metropolis acceptance
+probability. With a declared positive-definite scaling matrix $A$, a useful
+local tuning quantity is
+\begin{equation}
+ U(h)=\frac{\E[\alpha_h(X,Y_h)
+                (Y_h-X)^\top A^{-1}(Y_h-X)]}{c(h)}.
+ \label{eq:bf-is-smc-movement-cost}
+\end{equation}
+\citet[Section 3.2, Equation 6]{buchholz2021hmcsmc} use acceptance-weighted
+squared jumping distance divided by $L$, treating leapfrog count as a proxy
+for computational cost. They also investigate a pretuning procedure at each
+temperature. The population supplies information about which step sizes and
+trajectory lengths produce useful movement.
+
+This criterion explains why acceptance alone is inadequate: arbitrarily small
+proposals can be accepted almost always while moving almost nowhere.
+It also explains why an expensive trajectory should not be rewarded solely
+for a larger displacement. In a library implementation $c(h)$ should reflect
+measured value/score work when the simple proportional-to-$L$ model is poor.
+The scaling matrix determines which movements are counted as large, so its
+choice and estimation are part of the method, not innocuous bookkeeping.
+
+Neither $U(h)$ nor high acceptance measures communication between separated
+modes. A chain can make large moves within one broad mode and still never
+reach another. Adaptive kernel choices also require their own SMC
+justification; the fixed-kernel identities above cannot be applied without
+qualification to arbitrary population-dependent tuning. A practical way to
+obtain interpretable evidence is to calibrate a ladder and kernels in pilot
+populations, freeze them, and assess independent subsequent populations.
+This is a study design, not a claim that all mathematically justified
+adaptive SMC algorithms must freeze their schedules.
+
+\subsection{Retain the intermediate mutation states}
+
+Ordinary resample--move SMC may run a chain for several steps and retain
+only its last state. Waste-free SMC resamples $M$ ancestors, runs a chain of
+length $P$ from each, and retains all $N=MP$ states
+\citep[Section 2.4, Algorithm 2]{dau2022wastefree}. In the paper's indexing,
+the chain at stage $k$ preserves the preceding target before the next
+potential is applied. With those conventions, its weighted estimate is
+\begin{equation}
+ \widehat\pi_k(f)=
+ \frac{\sum_{m=1}^M\sum_{p=1}^P
+                  G_k(X_k^{m,p})f(X_k^{m,p})}
+      {\sum_{m=1}^M\sum_{p=1}^P G_k(X_k^{m,p})}.
+ \label{eq:bf-is-wastefree-estimate}
+\end{equation}
+One cannot reproduce this algorithm merely by appending unweighted warm-up
+states to an ordinary SMC output: ancestor selection, invariant target,
+potential and ordering must match its Feynman--Kac construction.
+
+The $MP$ states are not $MP$ independent observations. To illustrate the
+effect of dependence, suppose temporarily that the $M$ chains are independent
+and stationary for one distribution and that $f$ has summable
+autocorrelations $\rho_f(\ell)$. For long chains,
+\begin{equation}
+ \Var\!\left[\frac{1}{MP}\sum_{m,p}f(X^{m,p})\right]
+ \simeq\frac{\Var_\pi(f)}{MP}
+       \left(1+2\sum_{\ell=1}^{\infty}\rho_f(\ell)\right).
+ \label{eq:bf-is-wastefree-autocorrelation}
+\end{equation}
+This calculation explains why retaining intermediate states can use
+computation more efficiently while leaving a substantial correlation
+penalty. It is not the variance formula for the entire interacting SMC
+history. That history needs the paper's asymptotic analysis or uncertainty
+estimated from independent full populations.
+
+The long-chain results in \citet[Section 3.1]{dau2022wastefree} assume
+bounded potentials and uniformly ergodic mutation kernels. Their
+identity-kernel example is instructive: all $P$ descendants of an ancestor
+are identical, so increasing $P$ cannot eliminate the error of a fixed
+$M$-point population. Their adaptive chain-length strategy estimates
+autocorrelation and increases effort where mixing deteriorates. It reduces
+wasted mutation effort; it does not turn a missing-mode problem into an
+ordinary ESS calculation.
+
+\section{Dimension, overlap and mixing}
+\label{sec:bf-is-modern-smc-dimension}
+
+Consider a product target $p_d(x)=\prod_{j=1}^d p_1(x_j)$.
+Let its proposal be $q_d(x)=\prod_{j=1}^d q_1(x_j)$, with $p_1\ll q_1$.
+Independence yields
+\begin{align}
+ 1+\chi^2(p_d\Vert q_d)
+ &=\int\frac{p_d(x)^2}{q_d(x)}\,dx
+   =\prod_{j=1}^d\int\frac{p_1(x_j)^2}{q_1(x_j)}\,dx_j \\
+ &=\{1+\chi^2(p_1\Vert q_1)\}^d.
+ \label{eq:bf-is-smc-product-chi}
+\end{align}
+This is exponential growth in the second moment of the importance ratio
+for any fixed nonzero coordinate-wise mismatch. By contrast, KL divergence
+is additive for product distributions. Statements about exponential weight
+variance should not be transferred to KL without a separate argument.
+
+Annealing distributes this discrepancy over intermediate steps.
+For a smooth path obtained by tempering the likelihood, let $\ell=\log L$ and define
+$A(\beta)=\log Z_\beta$. Wherever differentiation under the integral is
+valid, $A'(\beta)=\E_{p_\beta}\ell$ and
+$A''(\beta)=\Var_{p_\beta}(\ell)$. A direct ratio calculation gives
+\begin{align}
+ 1+\chi^2(p_{\beta+\delta}\Vert p_\beta)
+ &=\frac{Z_{\beta+2\delta}Z_\beta}{Z_{\beta+\delta}^2},\\
+ \log\{1+\chi^2(p_{\beta+\delta}\Vert p_\beta)\}
+ &=\delta^2\Var_{p_\beta}(\ell)+O(\delta^3).
+ \label{eq:bf-is-smc-local-chi}
+\end{align}
+The expansion requires the relevant nearby normalizers and moments,
+including at $\beta+2\delta$, to exist. It suggests smaller increments
+where the log likelihood varies more. If that variance grows proportionally
+to $d$, the local calculation suggests increments of order $d^{-1/2}$.
+It says nothing by itself about the cost of drawing an adequate sample
+from each intermediate distribution.
+
+\citet{beskos2014highdimsmc} prove stability results for product targets
+with coordinate-wise kernels and appropriately increasing numbers of
+intermediate distributions under drift and regularity assumptions. Their
+discussion distinguishes those proofs from conjectured extensions to
+full-dimensional proposal kernels. The more recent preprint of
+\citet[Sections 2--3]{lefay2026smccomplexity} gives finite-error complexity
+results for standard and waste-free SMC under controlled adjacent
+chi-square discrepancy and explicit mixing assumptions. Its bounds retain
+dependence on mixing times or spectral gaps; specialized results also
+require conditions such as log-concavity and smoothness.
+
+These results explain how SMC can avoid the direct importance-sampling
+collapse in favorable settings. They do not establish a dimension-free
+algorithm for arbitrary multimodal distributions. If an intermediate
+kernel's spectral gap becomes exponentially small, treating that gap as a
+constant would conceal the principal computational difficulty. Narrow
+connections between modes, abrupt changes in relative mode mass, and
+unrepresented basins therefore remain empirical questions even when
+incremental ESS stays high \citep[Sections 3.1--3.3]{dai2022smc}.
+
+The q20 example separates two dimensions that are easily confused. Its
+parameter posterior has four free coordinates. Its recurrent state has
+60 coordinates, of which 20 receive fresh process innovations, and each
+observation is scalar. Annealed SMC over the UKF parameter posterior faces
+the first geometry. An inner particle filter for the original state model
+faces the second, including dependence on its history. Neither the label
+``q20'' nor the total state dimension alone predicts their relative costs.
+
+\section{State and parameter inference with SMC\texorpdfstring{$^2$}{2}}
+\label{sec:bf-is-smc2}
+
+The likelihood used by the current parameter sampler is a deterministic
+UKF approximation. A different objective is Bayesian inference for the
+specified generative state model itself. Let $\theta$ have prior $r$,
+let $S_0$ have conditional distribution $\mu_\theta$, and let
+$F_\theta(ds_t\mid s_{t-1})$ be the transition kernel. Observations have
+conditional density $g_\theta(y_t\mid s_t)$. The joint posterior measure is
+\begin{equation}
+ p(d\theta,ds_{0:T}\mid y_{1:T})\propto
+ r(\theta)\,d\theta\,\mu_\theta(ds_0)
+ \prod_{t=1}^T F_\theta(ds_t\mid s_{t-1})
+                         g_\theta(y_t\mid s_t).
+ \label{eq:bf-is-smc2-joint}
+\end{equation}
+Writing the state transition as a measure accommodates deterministic state
+coordinates; a nonsingular density on every state coordinate is not assumed.
+Integrating the state path defines $L_T(\theta)=p(y_{1:T}\mid\theta)$.
+Replacing this integral by a UKF likelihood changes the posterior.
+Increasing a Monte Carlo particle count in an eligible particle filter
+instead controls sampling error for the original integral.
+
+\subsection{The inner filter and its likelihood estimate}
+
+For clarity, consider a bootstrap particle filter with $N_x$ state particles
+and resampling at every observation. At date $t$, draw predictive particles
+from the transition after resampling the preceding filtered population;
+weight them by $g_\theta(y_t\mid S_t^n)$. The likelihood estimate is
+\begin{equation}
+ \widehat L_t(\theta,U)
+ =\prod_{s=1}^t\left\{\frac{1}{N_x}
+                     \sum_{n=1}^{N_x}g_\theta(y_s\mid S_s^n)\right\},
+ \qquad \E_{m_{\theta,N_x}}\widehat L_t(\theta,U)=L_t(\theta).
+ \label{eq:bf-is-smc2-likelihood-estimate}
+\end{equation}
+Here $U$ contains the particle and ancestry variables and
+$m_{\theta,N_x}$ is their simulation law. Unbiasedness follows from the
+unnormalized particle-measure recursion and conditionally unbiased
+resampling, not from independence of the factors in the product.
+For example, let $\widehat\gamma_{s-1}(f)
+=\widehat L_{s-1}\sum_n W_{s-1}^n f(S_{s-1}^n)$ and define
+$Q_s f(x)=\int F_\theta(ds\mid x)g_\theta(y_s\mid s)f(s)$.
+Conditional on the preceding particle history $\mathcal F_{s-1}$,
+unbiased resampling and propagation give
+\begin{equation}
+ \E[\widehat\gamma_s(f)\mid\mathcal F_{s-1}]
+ =\widehat L_{s-1}\sum_n W_{s-1}^n Q_sf(S_{s-1}^n)
+ =\widehat\gamma_{s-1}(Q_sf).
+ \label{eq:bf-is-smc2-unbiased-recursion}
+\end{equation}
+Starting from unbiased initial particles and iterating expectations yields
+$\E\widehat\gamma_s(f)=\gamma_s(f)$. Taking $f=1$ proves likelihood
+unbiasedness even though successive normalizer estimates are dependent.
+Other proposals and adaptive resampling need their corresponding importance
+factors and normalizer updates; the simple arithmetic averages above do
+not apply unchanged. The logarithm of $\widehat L_t$ is generally biased
+for $\log L_t$.
+
+SMC$^2$ represents the parameter posterior with $N_\theta$ outer particles,
+each carrying its own inner particle filter. As each observation arrives,
+the inner filter advances and its likelihood increment updates the outer
+weight. Resampling alone would repeatedly duplicate static parameter
+values. Particle-MCMC mutation supplies new parameter values while
+preserving an appropriate extended target
+\citep[Sections 3.1--3.2]{chopin2013smc2}.
+
+For a fixed inner particle count, that target is
+\begin{equation}
+ \widetilde\pi_{t,N_x}(\theta,u)
+ =\frac{r(\theta)m_{\theta,N_x}(u)
+                    \widehat L_t(\theta,u)}{p(y_{1:t})}.
+ \label{eq:bf-is-smc2-extended}
+\end{equation}
+Integrating $u$ and using \eqref{eq:bf-is-smc2-likelihood-estimate}
+gives $p(\theta\mid y_{1:t})$. This is the central identity in
+\citet[Equation 7 and Proposition 1]{chopin2013smc2}. It is an identity
+for the target measure at any eligible $N_x$, not a statement that a
+finite outer particle population equals the posterior exactly.
+
+For particle marginal Metropolis--Hastings (PMMH), propose
+$\theta'\sim a(\cdot\mid\theta)$ and independently generate an inner
+filter $u'\sim m_{\theta',N_x}$. The simulation laws cancel in the
+Metropolis ratio, leaving
+\begin{equation}
+ \alpha((\theta,u),(\theta',u'))=1\wedge
+ \frac{r(\theta')\widehat L_t(\theta',u')a(\theta\mid\theta')}
+      {r(\theta)\widehat L_t(\theta,u)a(\theta'\mid\theta)}.
+ \label{eq:bf-is-smc2-pmmh}
+\end{equation}
+On rejection, both the current parameter and its current likelihood estimate
+are retained. Recomputing the denominator from an independent filter on every
+attempt is a different algorithm. No unbiased log likelihood or target
+derivative is needed for this PMMH construction.
+
+\subsection{Adapt the inner accuracy to the mutation problem}
+
+Inner particle count controls a tradeoff. A noisy likelihood estimate can
+give an accepted state an unusually high estimated likelihood, making it
+difficult to leave. Increasing $N_x$ reduces that noise in favorable
+regimes, but multiplies the cost of each outer proposal. A parameter move
+at date $t$ normally reruns a state filter through the complete prefix,
+costing order $tN_x$ particle operations per proposal. Parallel execution
+across parameters reduces elapsed time without removing this total work.
+
+The original SMC$^2$ paper permits increases of $N_x$ and studies complexity
+under restrictive mixing and posterior-concentration assumptions
+\citep[Sections 3.6--3.7 and Appendix B]{chopin2013smc2}.
+\citet[Sections 3--4]{botha2023adaptivesmc2} separate adaptation into three
+decisions: when to change the inner population, how many particles to use,
+and how to replace the stored particle system. Their movement-based
+trigger avoids interpreting high acceptance from tiny proposals as
+successful rejuvenation. They jointly adapt the number of PMMH iterations
+and $N_x$, and compare likelihood-variance rules with a cost criterion
+based on expected squared jumping distance (ESJD).
+
+If a pilot supports the approximation
+$\Var(\log\widehat L_t)\simeq v_t/N_x$, a measured variance $s^2$ at
+count $N_x$ suggests
+\begin{equation}
+ N_x'\simeq N_x\frac{s^2}{v_{\rm target}}.
+ \label{eq:bf-is-smc2-variance-allocation}
+\end{equation}
+This is a pilot allocation model, not an identity. It can fail when small
+counts give highly skewed estimates or variance changes sharply across
+parameter regions. The paper examines moderated updates and candidate
+counts because direct rescaling can overshoot. Its movement-based method
+estimates the number $R(N_x)$ of mutations needed to reach a declared
+movement target and compares costs proportional to $N_xR(N_x)$
+\citep[Section 4.2 and Algorithm 5]{botha2023adaptivesmc2}.
+Neither a universal log-variance target nor the current population mean
+is automatically adequate for a multimodal application: the mean may lie
+between modes, and the likelihood noise may differ substantially among them.
+
+\subsection{Changing the inner particle system}
+\label{sec:bf-is-smc2-refresh}
+
+Changing $N_x$ changes the auxiliary particle-system space. It must preserve
+the intended parameter marginal and the correct new extended distribution.
+At fixed $\theta$, write the old and new PF laws as $m_N(u\mid\theta)$
+and $m_M(v\mid\theta)$. Proposing a fresh $v\sim m_M$ and using the
+reverse simulation law $m_N$ gives the exchange importance factor
+\begin{equation}
+ \frac{r(\theta)m_M(v\mid\theta)\widehat L_M(\theta,v)
+                         m_N(u\mid\theta)}
+      {r(\theta)m_N(u\mid\theta)\widehat L_N(\theta,u)
+                         m_M(v\mid\theta)}
+ =\frac{\widehat L_M(\theta,v)}{\widehat L_N(\theta,u)}.
+ \label{eq:bf-is-smc2-exchange}
+\end{equation}
+This correction can increase weight variability, but that cost does not
+make it optional. A correctly constructed conditional particle-filter
+update provides another route, retaining a selected trajectory and
+changing the remaining auxiliary variables under the appropriate law
+\citep[Section 3.6]{chopin2013smc2}.
+
+The \texttt{replace} option in
+\citet[Section 4.3]{botha2023adaptivesmc2} uses a different approximation.
+The optimal backward kernel would involve the exact likelihood in its
+normalizer. Replacing that likelihood by the new PF estimate makes the
+formal incremental weight cancel to one. The authors explicitly describe
+this as an approximation to the backward kernel. Its consequence can be
+checked directly in the present notation: the proposed expression
+\begin{equation}
+ B(v,u)=\frac{m_N(u\mid\theta)\widehat L_N(\theta,u)}
+                    {\widehat L_M(\theta,v)}
+ \quad\hbox{satisfies}\quad
+ \int B(v,u)\,du=\frac{L(\theta)}{\widehat L_M(\theta,v)},
+ \label{eq:bf-is-smc2-replace-normalization}
+\end{equation}
+which is generally not one. It is therefore not an exactly normalized
+backward Markov kernel at finite $M$.
+
+The same issue appears without backward-kernel notation. Under the new
+extended target, conditional on $\theta$, the auxiliary law must be
+$m_M(v\mid\theta)\widehat L_M(\theta,v)/L(\theta)$.
+An independent unweighted refresh draws $m_M(v\mid\theta)$ instead.
+For an elementary example, let $L=1$ and let the simulation law give
+$\widehat L=1/2$ or $3/2$ with equal probabilities. The extended law gives
+those outcomes probabilities $1/4$ and $3/4$, while an unweighted refresh
+returns $1/2$ and $1/2$. Subsequent invariant PMMH can reduce the discrepancy
+through mixing, but does not prove exactness after an arbitrary finite
+number of steps.
+
+This is a limitation of the replacement operation, not a refutation of
+adaptive particle allocation. The ESJD and variance ideas can be studied
+with exact exchange or an appropriate conditional-filter update. Such a
+combination must be described as an explicit variant; faithfully copying
+an approximate operation does not make it exact.
+
+\subsection{Switching parameter-update kernels}
+
+PMMH proposes parameters while integrating state uncertainty through a
+particle likelihood estimate. Particle Gibbs instead uses a selected
+state trajectory as part of its conditioning structure and refreshes it
+with conditional SMC. One can outperform the other in some stages and
+lose that advantage later: PMMH can suffer from noisy likelihood ratios,
+while Gibbs updates can mix slowly when parameters and trajectories are
+strongly dependent.
+
+\citet[Sections 3--4]{botha2023switchingsmc2} investigate switching between
+these kernels, allowing different inner particle counts. Their criterion
+uses movement in the least-moving parameter coordinate relative to
+inner-particle cost, then allocates the remaining mutation effort to the
+selected kernel. This addresses a weakness of fixing one rejuvenation
+method for the whole sequence. The preprint's Appendix A, however,
+substitutes particle likelihood estimates into some backward-kernel
+normalizers when switching to PMMH. Those operations need the same
+exactness distinction as Section~\ref{sec:bf-is-smc2-refresh}; the existence
+of a valid PMMH kernel after a switch does not establish that its initial
+auxiliary variables have the required distribution.
+
+For the recurrent q20 model there is an additional structural difficulty.
+Hidden and cell coordinates evolve deterministically given the preceding
+state. A generic backward-sampling formula that evaluates a nonsingular
+full-state transition density is therefore not directly applicable.
+Possible approaches include conditioning on the deterministic recurrence
+or expressing the model through its genuine innovations and initial state.
+Either requires a derivation of the resulting conditional sampler. Adding
+small artificial noise would change the state model and is not a harmless
+way to make generic particle Gibbs executable.
+
+\subsection{Two kinds of density tempering}
+
+Annealed SMC and SMC$^2$ are not mutually exclusive. In addition to adding
+observations sequentially, one can temper a full-data likelihood. But three
+intermediate targets must be distinguished. The intended marginal path is
+$r(\theta)L_T(\theta)^\beta$. The extended path
+$r(\theta)m_{\theta,N_x}(u)\widehat L_T(\theta,u)^\beta$ has marginal
+$r(\theta)\E_m[\widehat L_T^\beta]$. In general,
+\begin{equation}
+ \E_m[\widehat L_T^\beta]\ne L_T^\beta,
+ \qquad 0<\beta<1,
+ \label{eq:bf-is-smc2-power-inequality}
+\end{equation}
+with the left side no greater than the right by concavity when the
+expectations exist. Properly corrected extended-space tempering can still
+have the desired endpoint at $\beta=1$; it must not claim the marginal
+intermediate distributions of ordinary likelihood annealing
+\citep[Section 5.2]{chopin2013smc2}.
+
+A third path tempers the conditional observation likelihood before
+integrating out the states:
+\begin{equation}
+ \gamma_\beta^{\rm joint}(\theta,ds_{0:T})
+ =r(\theta)\mu_\theta(ds_0)
+     \prod_{t=1}^T F_\theta(ds_t\mid s_{t-1})
+                         g_\theta(y_t\mid s_t)^\beta.
+ \label{eq:bf-is-smc2-joint-tempering}
+\end{equation}
+Its parameter marginal involves $\E_{S\mid\theta}
+[\prod_t g_\theta(y_t\mid S_t)^\beta]$, rather than
+$\{\E_{S\mid\theta}\prod_t g_\theta(y_t\mid S_t)\}^\beta$.
+A PF using $g^\beta$ estimates the former normalizer. This difference
+underlies the compatible and incompatible kernel combinations discussed
+in \citet[Section 2.3]{botha2023switchingsmc2}.
+
+For a scalar Gaussian observation with variance $R$ and $\beta>0$,
+\begin{equation}
+ \calN(y;m,R)^\beta
+ =(2\pi R)^{(1-\beta)/2}\beta^{-1/2}
+                         \calN(y;m,R/\beta).
+ \label{eq:bf-is-smc2-gaussian-power}
+\end{equation}
+Using observation variance $R/\beta$ without the prefactor computes a
+different potential. If $R$ depends on $\theta$, the omission also changes
+relative parameter weights. At $\beta=0$, use the limiting potential
+$g^0=1$ directly rather than an infinite-variance Gaussian representation.
+
+\subsection{An observation-adapted state proposal}
+\label{sec:bf-is-smc2-adapted-q20}
+
+In the preserved q20 model, conditional on the preceding full state
+$s_{t-1}$, the hidden and cell updates are fixed. The stochastic coordinates
+satisfy $z_t\sim\calN(m_\theta(s_{t-1}),Q)$ and
+$y_t\mid z_t\sim\calN(H_\theta z_t+b_\theta,R)$, where $R>0$ is scalar
+and $Q$ is positive definite. The joint covariance of $(z_t,y_t)$ is
+\begin{equation}
+ \begin{pmatrix}Q&QH_\theta^\top\\H_\theta Q&S_\theta\end{pmatrix},
+ \qquad S_\theta=H_\theta QH_\theta^\top+R.
+ \label{eq:bf-is-smc2-adapted-joint-cov}
+\end{equation}
+Conditioning this Gaussian gives $K_\theta=QH_\theta^\top S_\theta^{-1}$
+and
+\begin{equation}
+ z_t\mid s_{t-1},y_t,\theta\sim
+ \calN\!\left(m+K_\theta(y_t-H_\theta m-b_\theta),
+             Q-QH_\theta^\top S_\theta^{-1}H_\theta Q\right).
+ \label{eq:bf-is-smc2-adapted-proposal}
+\end{equation}
+The predictive observation density for ancestor $i$ is
+$a_i=\calN(y_t;H_\theta m_\theta(s_{t-1}^i)+b_\theta,S_\theta)$.
+With preceding normalized weights $w_i$, a fully adapted auxiliary filter
+selects that ancestor with probability $w_i a_i/\sum_jw_j a_j$ and draws
+from \eqref{eq:bf-is-smc2-adapted-proposal}. Bayes' formula makes its
+post-proposal importance ratio constant:
+\begin{equation}
+ \frac{w_i\,p(z_t\mid s_{t-1}^i,\theta)
+                    g_\theta(y_t\mid z_t)}
+      {[w_i a_i/\sum_jw_j a_j]\,
+                    p(z_t\mid s_{t-1}^i,y_t,\theta)}
+ =\sum_jw_j a_j.
+ \label{eq:bf-is-smc2-adapted-weight}
+\end{equation}
+That weighted predictive average is the likelihood-normalizer increment.
+This derivation by Gaussian conditioning exploits the actual stochastic
+coordinates and preserves the deterministic recurrence. Its potential
+benefit is avoiding proposals inconsistent with the current observation.
+It does not prevent loss of ancestral histories or guarantee efficient
+parameter-mode exploration. No implementation or performance result for
+this adapted q20 filter is asserted here.

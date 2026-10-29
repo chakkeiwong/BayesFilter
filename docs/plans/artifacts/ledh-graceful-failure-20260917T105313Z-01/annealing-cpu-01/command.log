@@ -1,0 +1,41 @@
+..........F                                                              [100%]
+=================================== FAILURES ===================================
+______________ test_annealed_full_union_is_tf_function_compilable ______________
+tests/highdim/test_ledh_canonical_batch_fused.py:491: in test_annealed_full_union_is_tf_function_compilable
+    values, scores, diagnostics = compiled(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+tests/highdim/test_ledh_canonical_batch_fused.py:476: in compiled
+    return canonical_batch_fused_value_score(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:298: in canonical_batch_fused_value_score
+    values,scores,diagnostics = _map_evaluations(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:34: in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:266: in evaluate_row
+    values,scores,direction_status = _map_evaluations(
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:34: in _map_evaluations
+    return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:257: in evaluate_direction
+    value, score, status = canonical_value_and_analytical_score(
+bayesfilter/highdim/ledh_canonical_score_tf.py:860: in canonical_value_and_analytical_score
+    return _value_and_analytical_score_impl(
+bayesfilter/highdim/ledh_canonical_score_tf.py:799: in _value_and_analytical_score_impl
+    loop_result = tf.while_loop(
+bayesfilter/highdim/ledh_canonical_score_tf.py:428: in time_loop_body
+    predicted_covs,d_predicted_covs,_,_,_,_,status,total,d_total)=tf.while_loop(
+E   ValueError: Input tensor `map/while/map/while/while/add_17:0` enters the loop with shape (16, 2), but has shape (None, 2) after one iteration. To allow the shape to vary across iterations, use the `shape_invariants` argument of tf.while_loop to specify a less-specific shape.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_ledh_canonical_batch_fused.py::test_annealed_full_union_is_tf_function_compilable
+1 failed, 10 passed, 2 warnings in 54.87s

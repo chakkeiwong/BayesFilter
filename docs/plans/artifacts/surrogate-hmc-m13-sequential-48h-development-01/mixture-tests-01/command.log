@@ -1,0 +1,126 @@
+F..F........                                                             [100%]
+=================================== FAILURES ===================================
+________ test_heterogeneous_charts_match_general_kernel_for_each_chain _________
+
+    def test_heterogeneous_charts_match_general_kernel_for_each_chain():
+        kernel = fixture_kernel()
+        start = tf.constant([[-1., .2], [.1, -.5], [1.2, .6], [-.3, -.8]], F64)
+        scales = tf.constant([[.125], [1.], [.25], [.5]], F64)
+        seed = tf.constant([19, 37], tf.int32)
+    
+        @tf.function(input_signature=[tf.TensorSpec([4, 2], F64),
+                                      tf.TensorSpec([4, 1], F64),
+                                      tf.TensorSpec([2], tf.int32)],
+                     jit_compile=True, autograph=False)
+        def mixture(x, s, rng):
+            return scaled_step(kernel, x, kernel.bootstrap_results(x), s, rng)
+    
+        got = mixture(start, scales, seed)
+        for i, multiplier in enumerate((.125, 1., .25, .5)):
+            reference = NeuralForceTransitionKernel(
+                force=kernel.force, target=kernel.target,
+                config=replace(kernel.config, step_size=.6 * multiplier))
+            expected = reference.one_step(start, reference.bootstrap_results(start), seed=seed)
+>           tf.debugging.assert_near(got[0][i], expected[0][i], atol=2e-12, rtol=2e-12)
+
+tests/test_surrogate_hmc_m13_step_mixture.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = <tf.Tensor: shape=(), dtype=bool, numpy=False>
+data = ['', 'x and y not equal to tolerance rtol = tf.Tensor(2e-12, shape=(), dtype=float64), atol = tf.Tensor(2e-12, shape=(...)>, 'y (shape=(2,) dtype=float64) = ', <tf.Tensor: shape=(2,), dtype=float64, numpy=array([-0.75798394,  0.70922257])>]
+summarize = None, name = None
+
+    @tf_export("debugging.Assert", "Assert")
+    @dispatch.add_dispatch_support
+    @tf_should_use.should_use_result
+    def Assert(condition, data, summarize=None, name=None):
+      """Asserts that the given condition is true.
+    
+      If `condition` evaluates to false, print the list of tensors in `data`.
+      `summarize` determines how many entries of the tensors to print.
+    
+      Args:
+        condition: The condition to evaluate.
+        data: The tensors to print out when condition is false.
+        summarize: Print this many entries of each tensor.
+        name: A name for this operation (optional).
+    
+      Returns:
+        assert_op: An `Operation` that, when executed, raises a
+        `tf.errors.InvalidArgumentError` if `condition` is not true.
+        @compatibility(eager)
+        returns None
+        @end_compatibility
+    
+      Raises:
+        @compatibility(TF1)
+        When in TF V1 mode (that is, outside `tf.function`) Assert needs a control
+        dependency on the output to ensure the assertion executes:
+    
+      ```python
+      # Ensure maximum element of x is smaller or equal to 1
+      assert_op = tf.Assert(tf.less_equal(tf.reduce_max(x), 1.), [x])
+      with tf.control_dependencies([assert_op]):
+        ... code using x ...
+      ```
+    
+        @end_compatibility
+      """
+      if context.executing_eagerly():
+        if not condition:
+          xs = ops.convert_n_to_tensor(data)
+          data_str = [_summarize_eager(x, summarize) for x in xs]
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message="Expected '%s' to be true. Summarized data: %s" %
+              (condition, "\n".join(data_str)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''
+E         b'x and y not equal to tolerance rtol = tf.Tensor(2e-12, shape=(), dtype=float64), atol = tf.Tensor(2e-12, shape=(), dtype=float64)'
+E         b'x (shape=(2,) dtype=float64) = '
+E         -1.49326740365422, -0.038613204460944996
+E         b'y (shape=(2,) dtype=float64) = '
+E         -0.7579839391161243, 0.7092225723841904
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/control_flow_assert.py:102: InvalidArgumentError
+----------------------------- Captured stderr call -----------------------------
+2026-09-29 01:39:22.996710: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790617163.545000 1403374 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+________ test_factory_binds_scale_law_and_rejects_unsupported_host_lane ________
+
+    def test_factory_binds_scale_law_and_rejects_unsupported_host_lane():
+        kernel = fixture_kernel()
+        base = bind_neural_force_hmc_tuning_runner(
+            force=kernel.force, target=kernel.target, target_scope="mixture-mechanics")
+        assert bind_step_mixture(base, (1.,)) is base
+        mixed = bind_step_mixture(base, (.125, 1.))
+        other = bind_step_mixture(base, (.25, 1.))
+        assert len({base.binding_hash, mixed.binding_hash, other.binding_hash}) == 3
+        assert mixed.force_identity == base.force_identity
+        assert mixed.endpoint_target_identity == base.endpoint_target_identity
+        assert "fixed_step_mixture" not in base.source_dependency_closure
+        policy = mixed.source_dependency_closure["fixed_step_mixture"]
+>       assert policy["multipliers"] == (.125, 1.)
+E       assert [0.125, 1.0] == (0.125, 1.0)
+E         
+E         Use -v to get more diff
+
+tests/test_surrogate_hmc_m13_step_mixture.py:118: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_step_mixture.py::test_heterogeneous_charts_match_general_kernel_for_each_chain
+FAILED tests/test_surrogate_hmc_m13_step_mixture.py::test_factory_binds_scale_law_and_rejects_unsupported_host_lane
+2 failed, 10 passed, 2 warnings in 3.04s

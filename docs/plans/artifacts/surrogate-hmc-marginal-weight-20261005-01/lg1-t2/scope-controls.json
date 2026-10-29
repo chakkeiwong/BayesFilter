@@ -1,0 +1,41 @@
+{
+  "model": "lg1-t2",
+  "n": 256,
+  "dimensions": {
+    "t": 2,
+    "d": 1,
+    "m": 1,
+    "p": 1
+  },
+  "dtype": "float32",
+  "tf32": true,
+  "controls": {
+    "substeps": 10,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 2.0,
+    "reset_sinkhorn_steps": 8,
+    "reset_balance_steps": 8,
+    "reset_ridge": 1e-08,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 1e-06,
+    "correction_lm_scale_floor": 1e-09,
+    "correction_trust_radius": 100.0,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2000.0,
+    "coordinate_cap": 16000.0,
+    "coordinate_cap_power": 8
+  },
+  "chosen": 1,
+  "selection": "minimize paired worst-method mean error on calibration only",
+  "validation": "disjoint data, finite full-consumer outputs; diagnostic scope only",
+  "status": "frozen_controlled_comparison_not_canonical_tuning_admission",
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "526949211b67fbdc068bf7f8c136e777ac62973f16564a464f1c39a391422da2",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "2effce92b394bd51826ea5a1bed6c407cd9d0f0e97169eff70b84d212a9d748d",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "6174c117d172a1fb502bd34fcc88b6aa7efba7ff8e5e02da38a5c0b25f327e1f",
+    "bayesfilter/testing/marginal_weight_campaign.py": "d20c1a2cc1d19a9c6a6617682fb76b47eb8a6a9bab92800e401f0f01ca7e7341",
+    "scripts/run_surrogate_hmc_marginal_weight_campaign.py": "589b2d63e599453b238b955bec68f5c7b6db3d3183889662f707202329ab3d12"
+  }
+}

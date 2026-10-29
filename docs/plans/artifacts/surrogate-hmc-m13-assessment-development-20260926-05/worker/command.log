@@ -1,0 +1,66 @@
+..........F..                                                            [100%]
+=================================== FAILURES ===================================
+___ test_retained_consumer_calls_verified_public_runner_and_excludes_warmup ____
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-98/test_retained_consumer_calls_v0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7c5f391db390>
+
+    def test_retained_consumer_calls_verified_public_runner_and_excludes_warmup(tmp_path, monkeypatch):
+        variance = math.log(2.)**2
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)], jit_compile=True)
+        def force(x):
+            return PositionOnlyForceEvaluation(x/variance, tf.ones(tf.shape(x)[:-1], tf.bool))
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)], jit_compile=True)
+        def endpoint(x):
+            valid = tf.ones(tf.shape(x)[:-1], tf.bool)
+            return TargetPotentialEvaluation(tf.reduce_sum(x*x, -1)/(2*variance),
+                dict(value_valid=valid, force_valid=valid, numerical_failure=~valid,
+                     outside_declared_support=~valid))
+        scope = "Gaussian-retained-consumer-mechanics-only"
+        binding = bind_components(force, endpoint, scope)
+        adapter = SimpleNamespace(target_scope=scope, adapter_signature=lambda: scope+":"+binding.binding_hash)
+        config = tuning_config(scope)
+        config = dataclasses.replace(config, nomination=dataclasses.replace(config.nomination,
+            mass_window_results=(16, 32), step_adaptation_results=64, verification_results=64),
+            warmup_results=100)
+>       tuning = tune_hmc_kernel(adapter=adapter, initial_position=tf.constant(
+            config.initial_chain_positions, tf.float64), config=config,
+            output_dir=tmp_path/"tuning", runner_binding=binding)
+
+tests/test_surrogate_hmc_m13_retained.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_tuning_dispatch.py:70: in tune_hmc_kernel
+    return implementation(
+bayesfilter/inference/hmc_tensorflow_verified.py:200: in _run_verified_tensorflow_tuning
+    nomination = stage._run_tensorflow_hmc_tuning(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _run_tensorflow_hmc_tuning(
+        *,
+        adapter: Any,
+        initial_position: Any,
+        config: TensorFlowHMCKernelTuningConfig,
+        output_dir: str | Path | None,
+        parameter_scales: Any,
+        runner_binding: HMCTuningRunnerBinding,
+    ) -> TensorFlowHMCKernelTuningResult:
+        if not isinstance(runner_binding, HMCTuningRunnerBinding):
+            raise TypeError("TensorFlow tuning requires HMCTuningRunnerBinding")
+        if parameter_scales is None:
+>           raise ValueError("TensorFlow tuning requires parameter_scales")
+E           ValueError: TensorFlow tuning requires parameter_scales
+
+bayesfilter/inference/hmc_tensorflow_tuning.py:1542: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_retained.py::test_retained_consumer_calls_verified_public_runner_and_excludes_warmup
+1 failed, 12 passed, 2 warnings in 3.82s

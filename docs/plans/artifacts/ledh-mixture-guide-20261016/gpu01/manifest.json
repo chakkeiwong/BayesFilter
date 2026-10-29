@@ -1,0 +1,233 @@
+{
+  "schema": "ledh_mixture_guide_integration_diagnostic_v1",
+  "git_commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+  "branch": "ledh-refactor-with-policy-fix",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_ledh_mixture_guide_check.py",
+    "--output",
+    "docs/plans/artifacts/ledh-mixture-guide-20261016/gpu01",
+    "--budget-seconds",
+    "370"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "plan": "docs/plans/ledh-mixture-guide-integration-20261016.md",
+  "result": "docs/plans/artifacts/ledh-mixture-guide-20261016/gpu01/result.json",
+  "execution": "escalated GPU FP64 XLA; CPU graph parity reference",
+  "cuda_visible_devices": "1",
+  "claim": "finite-program implementation diagnostic only",
+  "data_version": "synthetic_fixed_gaussian_mixture_guide_v1",
+  "seeds": [
+    [
+      861,
+      1
+    ],
+    [
+      861,
+      2
+    ],
+    [
+      861,
+      3
+    ]
+  ],
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "epsilon": 1.0,
+  "sinkhorn_iterations": 5,
+  "particles": 24,
+  "state_dimension": 2,
+  "horizon": 3,
+  "flow_steps": 16,
+  "correction_steps": 2,
+  "beta": [
+    0.2,
+    0.3,
+    0.5
+  ],
+  "status": "passed",
+  "source_sha256": {
+    "bayesfilter/highdim/covariance_proposal_tf.py": "f2de7753b193dd832e71c5146327d7a77f30d791fc148ed36a83156602c6b143",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "3251c35284d7c4c2e079c0ff3915b1515a0550807e96168718fb326ace7246ca",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "scripts/run_ledh_mixture_guide_check.py": "715b8b7f644d075f617d573386952fe0b83ed585ea7ebad967e0aad87fb30068"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "physical_gpus": [
+    "/physical_device:GPU:0"
+  ],
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "theta": [
+    0.8,
+    -0.3,
+    0.6,
+    0.8
+  ],
+  "observations": [
+    [
+      0.5,
+      -0.2
+    ],
+    [
+      0.2,
+      0.8
+    ],
+    [
+      -0.4,
+      0.3
+    ]
+  ],
+  "guide": {
+    "logits": [
+      [
+        0.2,
+        -0.3
+      ],
+      [
+        -0.4,
+        0.1
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "centers": [
+      [
+        [
+          -0.8,
+          0.4
+        ],
+        [
+          0.7,
+          -0.6
+        ]
+      ],
+      [
+        [
+          -0.4,
+          -0.7
+        ],
+        [
+          0.9,
+          0.5
+        ]
+      ],
+      [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "covariances": [
+      [
+        [
+          [
+            0.8,
+            0.15
+          ],
+          [
+            0.15,
+            1.1
+          ]
+        ],
+        [
+          [
+            1.2,
+            -0.2
+          ],
+          [
+            -0.2,
+            0.7
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            0.8,
+            0.15
+          ],
+          [
+            0.15,
+            1.1
+          ]
+        ],
+        [
+          [
+            1.2,
+            -0.2
+          ],
+          [
+            -0.2,
+            0.7
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            0.8,
+            0.15
+          ],
+          [
+            0.15,
+            1.1
+          ]
+        ],
+        [
+          [
+            1.2,
+            -0.2
+          ],
+          [
+            -0.2,
+            0.7
+          ]
+        ]
+      ]
+    ],
+    "active": [
+      true,
+      true,
+      false
+    ]
+  },
+  "tracing_count": 1,
+  "allocator": {
+    "current": 24832,
+    "peak": 333568
+  },
+  "wall_seconds": 17.378319413997815
+}

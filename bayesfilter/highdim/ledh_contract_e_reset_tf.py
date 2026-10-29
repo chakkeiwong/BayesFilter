@@ -6,6 +6,9 @@ from typing import Any
 
 import tensorflow as tf
 
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
+import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+
 
 def _sym(value: tf.Tensor) -> tf.Tensor:
     return 0.5 * (value + tf.linalg.matrix_transpose(value))
@@ -35,7 +38,7 @@ def _uniform_moments(points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
 def _factor_condition_proxy(chol: tf.Tensor) -> tf.Tensor:
     dimension = tf.shape(chol)[-1]
     identity = tf.eye(dimension, batch_shape=[tf.shape(chol)[0]], dtype=chol.dtype)
-    inverse_action = tf.linalg.triangular_solve(chol, identity)
+    inverse_action = small_matrix.triangular_solve(chol, identity)
     return tf.linalg.norm(chol, ord="fro", axis=[-2, -1]) * tf.linalg.norm(
         inverse_action, ord="fro", axis=[-2, -1]
     )
@@ -63,7 +66,7 @@ def _contract_e_chol_cloud_forward_core(
     plus_mean, plus_cov = _uniform_moments(transported_particles)
     gap = _sym(target_cov - plus_cov)
     gap_eigenvalues = tf.linalg.eigvalsh(gap)
-    gap_chol = tf.linalg.cholesky(gap + ridge_identity)
+    gap_chol = small_matrix.cholesky(gap + ridge_identity)
 
     injected_particles = transported_particles + _apply_rows(
         residual_design, gap_chol
@@ -71,9 +74,9 @@ def _contract_e_chol_cloud_forward_core(
     injected_mean, injected_cov = _uniform_moments(injected_particles)
     centered_injected = injected_particles - injected_mean[:, None, :]
 
-    target_chol = tf.linalg.cholesky(target_cov + ridge_identity)
-    injected_chol = tf.linalg.cholesky(injected_cov + ridge_identity)
-    solved = tf.linalg.triangular_solve(
+    target_chol = small_matrix.cholesky(target_cov + ridge_identity)
+    injected_chol = small_matrix.cholesky(injected_cov + ridge_identity)
+    solved = small_matrix.triangular_solve(
         injected_chol,
         tf.linalg.matrix_transpose(target_chol),
         adjoint=True,
@@ -208,8 +211,8 @@ def _uniform_moments_jvp(
 
 
 def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
-    left = tf.linalg.triangular_solve(chol, matrix_tangent)
-    inner = tf.linalg.triangular_solve(
+    left = small_matrix.triangular_solve(chol, matrix_tangent)
+    inner = small_matrix.triangular_solve(
         chol, tf.linalg.matrix_transpose(left)
     )
     lower = tf.linalg.band_part(inner, -1, 0)
@@ -220,7 +223,7 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
 def _right_triangular_solve(
     right_hand_side: tf.Tensor, lower: tf.Tensor
 ) -> tf.Tensor:
-    solved_transpose = tf.linalg.triangular_solve(
+    solved_transpose = small_matrix.triangular_solve(
         lower, tf.linalg.matrix_transpose(right_hand_side), adjoint=True
     )
     return tf.linalg.matrix_transpose(solved_transpose)
@@ -348,8 +351,8 @@ def _cholesky_vjp(chol: tf.Tensor, chol_bar: tf.Tensor) -> tf.Tensor:
     product = tf.linalg.matmul(chol, chol_bar, transpose_a=True)
     lower = tf.linalg.band_part(product, -1, 0)
     phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(lower))
-    left = tf.linalg.triangular_solve(chol, phi, adjoint=True)
-    solved_transpose = tf.linalg.triangular_solve(
+    left = small_matrix.triangular_solve(chol, phi, adjoint=True)
+    solved_transpose = small_matrix.triangular_solve(
         chol, tf.linalg.matrix_transpose(left), adjoint=True
     )
     return _sym(tf.linalg.matrix_transpose(solved_transpose))
@@ -414,7 +417,7 @@ def _contract_e_chol_cloud_vjp_core(
     )
 
     target_chol_bar = tf.linalg.matrix_transpose(
-        tf.linalg.triangular_solve(
+        small_matrix.triangular_solve(
             forward["injected_chol"],
             tf.linalg.matrix_transpose(affine_bar),
         )
@@ -480,7 +483,7 @@ def _contract_e_chol_cloud_vjp_core(
     }
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_forward_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,
@@ -499,7 +502,7 @@ def contract_e_chol_cloud_forward_tf(
     )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_jvp_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,
@@ -528,7 +531,7 @@ def contract_e_chol_cloud_jvp_tf(
     )["particles"]
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(dtype_like="source_particles")
 def contract_e_chol_cloud_vjp_tf(
     source_particles: tf.Tensor,
     normalized_weights: tf.Tensor,

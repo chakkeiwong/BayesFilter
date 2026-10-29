@@ -1,0 +1,74 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+    "worker",
+    "--job",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/004-w3-lr0.01-s100-r64/job.json"
+  ],
+  "git_commit": "591b36ee6d8a8d009314a091e56afb0bfdd94dd4",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "plan": "docs/plans/sir-neutra-training-execution-2026-10-21.md",
+  "job": {
+    "kind": "train",
+    "key": "w3-lr0.01-s100-r64",
+    "tuning": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/001-tuning",
+    "scale": 0.35,
+    "width": 3,
+    "rate": 0.01,
+    "seed": 100,
+    "updates": 64
+  },
+  "source_sha256": {
+    "scripts/run_sir_neutra_training.py": "5e336e0da1901185201fc960a8c5a538ee4713f683ea4f3a6ea15f878f8d1a04",
+    "bayesfilter/testing/surrogate_hmc_sir_neutra.py": "1c6116a6f5b8b6d672825c3db12cfcd225bcc4d71af86d1747c87636a793773d",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "167db5fb6835008b3200097da3bd3fc4d51d9ed2c89a257d58720b12f2dc6a64",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "a27b6aa17b16796dfc53a28d751276f2ccb114b5902bb905f56c35abe87e5a84",
+    "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "f159b7a4a032bcc74057a84d5ed8576b7f1b5fa13e85fd2751cc2b2496c89b8f",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+    "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py": "4f86288b7246ba60f6630d8e660717f9f302096eb2fec69ffd2bc0764fcc35c2",
+    "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "8947515c408475e46749497482727e8daff6e3e4a9528d8dcac089f3d92660ca",
+    "bayesfilter/inference/neutra_transport.py": "895132e622d4a1cc22a8b3b03055416f386f8a25595b4d5fb895884b10ca8b79",
+    "bayesfilter/inference/neutra_transport_core.py": "e2ee81730484383a4e29c4d27bb20012961e4281fa09dfa396e602955dab8cc3",
+    "bayesfilter/inference/neutra_hmc.py": "b23c11900bca09221d2c9d7140acdf64d025b3205c04d3a868a191b340ac13a1",
+    "bayesfilter/inference/hmc_tensorflow_verified.py": "1078e3bbe37b4b4e5d0f175b1fb2dc47b4eba3a0d13f57b08cbf0fac7a4fbb31",
+    "bayesfilter/inference/hmc_tensorflow_resume.py": "262eea79821f025179fa4f282e86c4f5659ae245dc8a018211984d24692a13ba",
+    "bayesfilter/inference/hmc_sequential_verification.py": "994699798263d02bfdf579267c301192cbb471a277298e51052f75fb6449e8b3"
+  },
+  "backend": "TensorFlow GPU XLA",
+  "dtype": "float32",
+  "tf32": false,
+  "jit_compile": true,
+  "gpu_access": "escalated",
+  "logical_batch": 8,
+  "native_batch": 4,
+  "map_and_hmc_dtype": "float32",
+  "native_batch_sizes": null,
+  "sample_wise_target_loop": false,
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/004-w3-lr0.01-s100-r64/result.json",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "status": "FINISHED",
+  "wall_seconds": 763.3420946730766
+}

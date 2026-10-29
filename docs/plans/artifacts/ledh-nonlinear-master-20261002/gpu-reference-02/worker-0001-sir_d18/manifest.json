@@ -1,0 +1,87 @@
+{
+  "schema": "bayesfilter.nonlinear_moment_comparison.v1",
+  "job": {
+    "model": "sir_d18",
+    "horizon": 1,
+    "particles": 72,
+    "data_seed": 260201,
+    "route": "iid_dual_cap",
+    "controls": {
+      "flow_substeps": 1,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 4,
+      "reset_balance_steps": 2,
+      "correction_steps": 1,
+      "correction_strength": 0.12,
+      "pairwise_steps": 1,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12
+    },
+    "theta_points": null,
+    "design_seeds": [
+      260301
+    ],
+    "arms": [
+      "guarded_pairwise"
+    ],
+    "device": "gpu",
+    "dtype": "float64",
+    "jit_compile": true,
+    "trace": true,
+    "references": []
+  },
+  "git_commit": "688878c8f82ef8525197ba13ea704396d740db6b",
+  "command": [
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_ledh_nonlinear_master.py",
+    "_worker",
+    "--job",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-nonlinear-master-20261002/gpu-reference-02/worker-0001-sir_d18/job.json"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "/GPU:0",
+  "cpu_gpu_hidden": false,
+  "tf32": false,
+  "jit_compile": true,
+  "chunk_size": 72,
+  "evidence_role": "diagnostic_only",
+  "tuning_status": "untuned_scope_warm_start",
+  "plan": "docs/plans/ledh-nonlinear-master-20261002.md",
+  "score_method": "analytical_recursive_total_selected_branch",
+  "observations_timing": "x0_then_transition_then_observe_y1_to_yT",
+  "allocator": {
+    "current": 83968,
+    "peak": 16861696
+  },
+  "completed_rows": 1
+}

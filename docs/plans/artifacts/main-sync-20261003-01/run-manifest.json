@@ -1,0 +1,68 @@
+{
+  "purpose": "Main sync and focused engineering/score diagnostic; no posterior experiment.",
+  "finished_utc": "2026-10-03T19:10:30.451396+00:00",
+  "checkout": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "pre_merge_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "main_commit": "a925f67a19d8c5d265b8ff71bfd2c78ac1964ff4",
+  "merge_commit": "a55c6be7a16e9401242ee3449248fa347eb58d90",
+  "main_is_ancestor": true,
+  "local_changes_preserved_in_stash": "stash@{0}: On ledh-graceful-failure-execution-20260917: main-sync-preserve-20261003-local-tracked",
+  "working_tree_patch": "docs/plans/artifacts/main-sync-20261003-01/post-sync-working-tree.patch",
+  "environment": {
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "conda_env": "tftwogpu",
+    "tensorflow": "2.20.0.dev0+selfbuilt",
+    "tensorflow_probability": "0.25.0",
+    "pytest": "9.0.2",
+    "device": "CPU only; GPU intentionally hidden with CUDA_VISIBLE_DEVICES=-1",
+    "GPU_memory_policy": "N/A: deliberate CPU-only diagnostic",
+    "jit": "Tests exercise their declared graph/XLA routes; no GPU qualification."
+  },
+  "data_version": "Deterministic fixtures in the listed tests; saved M13 posterior draws untouched.",
+  "seeds": "Test-defined deterministic fixtures/seeds; no new campaign seed or draw.",
+  "batches": [
+    {
+      "log": "docs/plans/artifacts/main-sync-20261003-01/safety-and-ksc-score-03.log",
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_CPP_MIN_LOG_LEVEL=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q --maxfail=5 tests/highdim/test_moment_safety_tf.py tests/highdim/test_ledh_numerical_safety_tf.py tests/highdim/test_sqmc_ksc.py tests/test_hmc_tensorflow_verified.py > docs/plans/artifacts/main-sync-20261003-01/safety-and-ksc-score-03.log 2>&1",
+      "passed": 42,
+      "skipped": 1,
+      "exit_code": 0,
+      "wall_time_seconds": 32.37
+    },
+    {
+      "log": "docs/plans/artifacts/main-sync-20261003-01/final-integration-01.log",
+      "command": "CUDA_VISIBLE_DEVICES=-1 TF_CPP_MIN_LOG_LEVEL=2 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q --maxfail=3 tests/test_surrogate_hmc_m13_public_tuning.py tests/test_surrogate_hmc_cumulative_master.py tests/test_surrogate_hmc_m13_consumer.py tests/test_ledh_structural_innovation.py tests/highdim/test_ledh_canonical_batch_fused.py tests/contracts/test_oracle_contract.py tests/test_hmc_tuning_dispatch.py > docs/plans/artifacts/main-sync-20261003-01/final-integration-01.log 2>&1",
+      "passed": 92,
+      "skipped": 0,
+      "exit_code": 0,
+      "wall_time_seconds": 422.71
+    }
+  ],
+  "final_validation_wall_time_seconds": 455.08,
+  "plan": "docs/plans/main-sync-score-fix-20261003.md",
+  "result": "docs/plans/artifacts/main-sync-20261003-01/result.md",
+  "preservation_audit": "docs/plans/artifacts/main-sync-20261003-01/preservation-check.json",
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "3cf2c703616f2d794c8f1cc7ebfc6245d83a559fc3037bea15ef4154772c7b63",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "97f312991b8054b868ea7a75df377b93a6bbe85145f0c895a84bb4de2dc06900",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "92addea5a2bb39f828fe33cc44ab4d7ccbba450bab595fe0b0639d0b25504850",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "619ae5dea50e87e8c6804003eba12218168a3d567c11a86946f5397d82ba7956",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "2cd051a1f0e680a66ad7a6015c67790d4cb40f48a2f68da410035243f73b5fe1",
+    "bayesfilter/inference/hmc_tuning_dispatch.py": "8854bef168fb35422c5aa0a6407cac64cdd8483a47041c83b51d40b01e5be72a",
+    "bayesfilter/inference/hmc_tensorflow_verified.py": "94795f6ab7f14d3193e9194d10e2bf5ab847ce2c5b3789df79c23379203f5f62",
+    "tests/test_hmc_tensorflow_verified.py": "230bdcf2ecffc8fe8112b9d0be644e0ccb5bbc090d6714356c025c5a44b8c6ec",
+    "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+    "bayesfilter/testing/surrogate_hmc_m13_endpoint_mechanics.py": "18e3f255dcc2927f169f65433be61a4da4c6dff01c55cc4c2f4d52a45c01aaa6"
+  },
+  "warnings": [
+    "Two TFP distutils deprecation warnings in each final batch.",
+    "One inherited tf.test.TestCase test_session placeholder skipped; see safety log."
+  ],
+  "prior_attempts": "Earlier failed merge-integration attempts and repairs are preserved in this directory; result.md summarizes them.",
+  "nonclaims": [
+    "No new M13 force-difference measurement",
+    "No acceptance, ESS, R-hat, runtime, or whitening improvement established",
+    "No all-model campaign completion or GPU readiness claim"
+  ]
+}

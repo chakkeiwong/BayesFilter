@@ -1,0 +1,628 @@
+diff --git a/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py b/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
+index d3099448b..f5e7f5b8f 100644
+--- a/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
+@@ -327,6 +327,7 @@ def canonical_batch_fused_value_score(
+         # observability lane because adding TensorFlow outputs can change an
+         # XLA graph and therefore alter floating-point operation ordering.
+         if return_all_correction_diagnostics:
++            status_signature['pushed_covariance_precision_repair_count'] = tf.TensorSpec([horizon], tf.int32)
+             correction_diagnostics = higher_moment_diagnostic_signature(dimension, dtype)
+         else:
+             correction_diagnostics = {
+@@ -385,6 +386,9 @@ def canonical_batch_fused_value_score(
+                 status.update(filtering_mean=tf.stack(means),
+                               filtering_covariance=tf.stack(covs),filtering_ess=tf.stack(esses),
+                               post_reset_mean=tf.stack(reset_means),post_reset_covariance=tf.stack(reset_covs))
++                if return_all_correction_diagnostics:
++                    status['pushed_covariance_precision_repair_count'] = tf.stack(
++                        [step['pushed_covariance_precision_repair_count'] for step in trace])
+                 for key, spec in correction_diagnostics.items():
+                     # A disabled correction has no computed diagnostic. Explicit
+                     # sentinels preserve that distinction from a healthy zero.
+diff --git a/bayesfilter/highdim/ledh_canonical_score_tf.py b/bayesfilter/highdim/ledh_canonical_score_tf.py
+index 189168417..c2623f886 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_tf.py
+@@ -395,6 +395,7 @@ def _value_and_analytical_score_impl(
+         return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
+ 
+     def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, status, total, d_total):
++        pushed_covariance_precision_repair_count = tf.constant(0, tf.int32)
+         # Apply the fixed SQMC ancestry map used by the main score program.
+         # The selected indices are part of the diagnostic trace so the realized
+         # piecewise-constant program can be audited independently of its score.
+@@ -645,11 +646,11 @@ def _value_and_analytical_score_impl(
+             if importance_weight_policy == "marginal_mixture":
+                 from bayesfilter.highdim.ledh_marginal_weights_tf import marginal_prior_ratio_tangent
+                 proposal_means, d_proposal_means, matrix, d_matrix = flow_outputs[6:]
+-                ratio, d_ratio, mixture_valid, mixture_force_valid = marginal_prior_ratio_tangent(
++                ratio, d_ratio, mixture_valid, mixture_force_valid, pushed_covariance_precision_repair_count = marginal_prior_ratio_tangent(
+                     children, d_children, anchors, d_anchors, process_covariance,
+                     tf.zeros_like(process_covariance) if d_q is None else d_q,
+                     proposal_means, d_proposal_means, matrix, d_matrix,
+-                    weights_log, d_step_incoming_log_weights)
++                    weights_log, d_step_incoming_log_weights, return_precision_diagnostics=True)
+                 prior_observation_logits = weights_log + ratio
+                 d_prior_observation_logits = d_step_incoming_log_weights + d_ratio
+                 status = record_failure(status, mixture_valid, mixture_force_valid,
+@@ -912,6 +913,7 @@ def _value_and_analytical_score_impl(
+                 "post_covariances_finite": tf.reduce_all(tf.math.is_finite(post_covs)),
+                 "flow_states_finite": tf.reduce_all(tf.math.is_finite(children)),
+                 "flow_tangents_finite": tf.reduce_all(tf.math.is_finite(d_children)),
++                "pushed_covariance_precision_repair_count": pushed_covariance_precision_repair_count,
+                 "posterior_logits_finite": tf.reduce_all(tf.math.is_finite(logits)),
+                 "reset_states_finite": tf.reduce_all(tf.math.is_finite(new_states)),
+                 "reset_tangents_finite": tf.reduce_all(tf.math.is_finite(new_d_states)),
+diff --git a/bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py b/bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py
+index 947ceae23..a2e7ff167 100644
+--- a/bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py
++++ b/bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py
+@@ -22,9 +22,15 @@ def stationary_covariance_and_tangent(f,q,d_f,d_q):
+     q=tf.cast(q,dtype); d_f=tf.cast(d_f,dtype); d_q=tf.cast(d_q,dtype)
+     finite=all_finite(f,q)
+     safe_f=tf.where(finite,f,tf.zeros_like(f))
+-    gram=tf.matmul(safe_f,safe_f,transpose_a=True)
++    # A residual checked against input-dtype epsilon must not itself use
++    # TF32 products. The derivative RHS needs the same precision. These are
++    # small state-space matrices; the particle filter and both solves retain
++    # their input dtype and the caller's TF32 policy.
++    work_dtype=tf.float64 if dtype==tf.float32 else dtype
++    work_f=tf.cast(safe_f,work_dtype)
++    gram=tf.matmul(work_f,work_f,transpose_a=True)
+     norm_squared=tf.reduce_max(tf.linalg.eigvalsh(gram))
+-    stable=finite & (norm_squared < tf.constant(1.,dtype))
++    stable=finite & (norm_squared < tf.constant(1.,work_dtype))
+     q_valid,_=safe_cholesky(q,"stationary_process")
+     allowed=stable & q_valid
+     kron=tf.reshape(tf.einsum("ij,kl->ikjl",safe_f,safe_f),[n*n,n*n])
+@@ -34,16 +40,21 @@ def stationary_covariance_and_tangent(f,q,d_f,d_q):
+     p=tf.reshape(tf.linalg.solve(operator,tf.reshape(rhs,[n*n,1])),[n,n])
+     p=(p+tf.transpose(p))*tf.constant(.5,dtype)
+     p_valid,_=safe_cholesky(p,"stationary_covariance")
+-    residual=p-f@p@tf.transpose(f)-q
+-    residual_scale=tf.maximum(tf.reduce_max(tf.abs(p))+tf.reduce_max(tf.abs(q)),
+-                              tf.constant(1e-30,dtype))
++    work_p=tf.cast(p,work_dtype)
++    work_q=tf.cast(q,work_dtype)
++    residual=work_p-work_f@work_p@tf.transpose(work_f)-work_q
++    residual_scale=tf.maximum(tf.reduce_max(tf.abs(work_p))+tf.reduce_max(tf.abs(work_q)),
++                              tf.constant(1e-30,work_dtype))
+     relative_residual=tf.reduce_max(tf.abs(residual))/residual_scale
+     eps=2.**(-23 if dtype==tf.float32 else -52)
+-    valid=allowed & p_valid & (relative_residual <= tf.constant(64*n*eps,dtype))
++    valid=allowed & p_valid & (relative_residual <= tf.constant(64*n*eps,work_dtype))
+     tangent_input_valid=all_finite(d_f,d_q)
+     safe_df=tf.where(tangent_input_valid,d_f,tf.zeros_like(d_f))
+     safe_dq=tf.where(tangent_input_valid,d_q,tf.zeros_like(d_q))
+-    d_rhs=safe_df@p@tf.transpose(safe_f)+safe_f@p@tf.transpose(safe_df)+safe_dq
++    work_df=tf.cast(safe_df,work_dtype)
++    d_rhs=tf.cast(work_df@work_p@tf.transpose(work_f)
++                  +work_f@work_p@tf.transpose(work_df)
++                  +tf.cast(safe_dq,work_dtype),dtype)
+     dp=tf.reshape(tf.linalg.solve(operator,tf.reshape(d_rhs,[n*n,1])),[n,n])
+     dp=(dp+tf.transpose(dp))*tf.constant(.5,dtype)
+     # Nonfinite placeholders are confined to the model-to-core boundary.
+diff --git a/bayesfilter/highdim/ledh_marginal_weights_tf.py b/bayesfilter/highdim/ledh_marginal_weights_tf.py
+index 2356e626b..c2f8c67e5 100644
+--- a/bayesfilter/highdim/ledh_marginal_weights_tf.py
++++ b/bayesfilter/highdim/ledh_marginal_weights_tf.py
+@@ -99,12 +99,16 @@ def gaussian_mixture_log_density_tangent(
+ def marginal_prior_ratio_tangent(
+     points, d_points, anchors, d_anchors, process_covariance, d_process_covariance,
+     proposal_means, d_proposal_means, affine_matrix, d_affine_matrix,
+-    log_weights, d_log_weights,
++    log_weights, d_log_weights, *, return_precision_diagnostics=False,
+ ):
+     """Return log p_N(x)-log q_N(x), its total tangent, and validity.
+ 
+     ``proposal_means`` is the auxiliary endpoint F_j(m_j) computed by the
+     *same* flow loop. The pushed Gaussian covariance is B_j Q B_j'.
++    FP32 products failing the unchanged symmetry margin are recomputed in
++    FP64 and cast back, together with their total tangent. This defines a
++    piecewise precision policy; no derivative of the switching event is claimed.
++    Optional diagnostics report how many component products were recomputed.
+     """
+     n, d = int(points.shape[0]), int(points.shape[1])
+     q = tf.broadcast_to(process_covariance, [n, d, d])
+@@ -114,8 +118,37 @@ def marginal_prior_ratio_tangent(
+     s = tf.linalg.matmul(bq, b, transpose_b=True)
+     ds = (tf.linalg.matmul(tf.linalg.matmul(db, q) + tf.linalg.matmul(b, dq), b, transpose_b=True)
+           + tf.linalg.matmul(bq, db, transpose_b=True))
++    repaired = tf.zeros([n], tf.bool)
++    if points.dtype == tf.float32:
++        # Use precisely the scale-free symmetry margin in safe_cholesky.
++        # Preserve healthy component products bit for bit. Recompute both
++        # covariance and its analytical tangent only after a symmetry failure.
++        finite = tf.reduce_all(tf.math.is_finite(s), axis=[-2, -1])
++        clean = tf.where(finite[:, None, None], s, tf.eye(d, batch_shape=[n], dtype=s.dtype))
++        scale = tf.reduce_max(tf.abs(clean), axis=[-2, -1], keepdims=True)
++        normalized = clean / tf.where(scale > 0, scale, tf.ones_like(scale))
++        asymmetry = tf.reduce_max(
++            tf.abs(normalized - tf.linalg.matrix_transpose(normalized)), axis=[-2, -1])
++        repaired = finite & (asymmetry > tf.constant(8 * d * 2.0**-23, s.dtype))
++
++        def precise_products():
++            q64, dq64 = tf.cast(q, tf.float64), tf.cast(dq, tf.float64)
++            b64, db64 = tf.cast(b, tf.float64), tf.cast(db, tf.float64)
++            bq64 = tf.linalg.matmul(b64, q64)
++            s64 = tf.linalg.matmul(bq64, b64, transpose_b=True)
++            ds64 = (tf.linalg.matmul(tf.linalg.matmul(db64, q64)
++                    + tf.linalg.matmul(b64, dq64), b64, transpose_b=True)
++                    + tf.linalg.matmul(bq64, db64, transpose_b=True))
++            return (tf.where(repaired[:, None, None], tf.cast(s64, s.dtype), s),
++                    tf.where(repaired[:, None, None], tf.cast(ds64, ds.dtype), ds))
++
++        s, ds = tf.cond(tf.reduce_any(repaired), precise_products, lambda: (s, ds))
++    # Final finite/SPD/symmetry checks remain in the mixture-density evaluator.
+     p, dp, pv, pf = gaussian_mixture_log_density_tangent(
+         points, d_points, anchors, d_anchors, q, dq, log_weights, d_log_weights)
+     proposal, dproposal, qv, qf = gaussian_mixture_log_density_tangent(
+         points, d_points, proposal_means, d_proposal_means, s, ds, log_weights, d_log_weights)
+-    return p-proposal, dp-dproposal, pv & qv, pf & qf
++    result = (p-proposal, dp-dproposal, pv & qv, pf & qf)
++    if return_precision_diagnostics:
++        return (*result, tf.reduce_sum(tf.cast(repaired, tf.int32)))
++    return result
+diff --git a/bayesfilter/testing/marginal_weight_campaign.py b/bayesfilter/testing/marginal_weight_campaign.py
+index ad8cebf5b..46c41eb22 100644
+--- a/bayesfilter/testing/marginal_weight_campaign.py
++++ b/bayesfilter/testing/marginal_weight_campaign.py
+@@ -67,8 +67,11 @@ def specification(name, dtype=tf.float32):
+     t = int(horizon)
+     if kind.startswith("lg"):
+         d = int(kind[2:])
+-        a = tf.eye(d, dtype=dtype) if d == 1 else tf.constant(
+-            [[.6, .1, 0.], [.1, .6, .1], [0., .1, .6]], dtype)
++        if d < 1:
++            raise ValueError("LGSSM dimension must be positive")
++        a = (tf.eye(d, dtype=dtype) if d == 1 else
++             .6*tf.eye(d, dtype=dtype) + .1*tf.linalg.diag(tf.ones([d-1], dtype), k=1)
++             + .1*tf.linalg.diag(tf.ones([d-1], dtype), k=-1))
+         q, h, r = tf.eye(d, dtype=dtype), tf.eye(d, dtype=dtype), .5*tf.eye(d, dtype=dtype)
+         points = [[.4], [.8], [.9]] if d == 1 else [[1., 0.], [.8, -.5], [1.2, .3]]
+         model = linear_gaussian_parameter_model(a, q, h, r, infer_process_scale=d > 1)
+@@ -98,18 +101,19 @@ def controls(index):
+     return settings
+ 
+ 
+-def dataset(spec, partition):
++def dataset(spec, partition, *, dataset_id=None):
+     """Small CPU-only fixed-input generation exception; no transport training."""
+     role = PARTITIONS[partition]
++    epoch = 20261005 if dataset_id is None else 20261006 + 7919*(dataset_id+1)
+     with tf.device("/CPU:0"):
+         if spec["kind"] == "m13":
+-            seed = 1704 if partition == "claim" else 20261005 + role
++            seed = (1704 if partition == "claim" else 20261005 + role) if dataset_id is None else epoch + role
+             return tf.cast(range_fixture(spec["t"], seed).observations, tf.float64)
+         truth = tf.constant(spec["truth"], tf.float64)
+         model = specification(spec["name"], tf.float64)["model"]
+         mean, covariance = model.initial_distribution_fn(truth)
+         random = tf.random.stateless_normal([spec["t"]+1, spec["d"]+spec["m"]+1],
+-                                            [20261005, role*1000+spec["d"]*100+spec["t"]], dtype=tf.float64)
++                                            [epoch, role*1000+spec["d"]*100+spec["t"]], dtype=tf.float64)
+         x = mean + tf.linalg.matvec(tf.linalg.cholesky(covariance), random[0, :spec["d"]])
+         values = []
+         mixture = ksc_1998_log_chi_square_mixture() if spec["kind"] == "ksc" else None
+@@ -119,7 +123,7 @@ def dataset(spec, partition):
+                 tf.linalg.cholesky(q), random[i+1, :spec["d"]])
+             if mixture is not None:
+                 component = tf.random.stateless_categorical(tf.math.log(mixture.weights)[None], 1,
+-                    [20261005+role, i+100*spec["t"]])[0, 0]
++                    [epoch+role, i+100*spec["t"]])[0, 0]
+                 y = (x + 2*tf.math.log(truth[1]) + tf.gather(mixture.means, component)
+                      + tf.sqrt(tf.gather(mixture.variances, component))*random[i+1, spec["d"]])
+             else:
+@@ -129,9 +133,10 @@ def dataset(spec, partition):
+         return tf.stack(values)
+ 
+ 
+-def designs(spec, n, partition, replicate, dtype=tf.float32):
++def designs(spec, n, partition, replicate, dtype=tf.float32, *, dataset_id=None):
+     role = PARTITIONS[partition]
+-    seed = [20261005+role, 100000*spec["d"]+1000*spec["t"]+replicate]
++    epoch = 20261005 if dataset_id is None else 20261006 + 7919*(dataset_id+1)
++    seed = [epoch+role, 100000*spec["d"]+1000*spec["t"]+replicate]
+     with tf.device("/CPU:0"):
+         z = tf.random.stateless_normal([spec["t"]+2, n, spec["d"]], seed, dtype=tf.float64)
+         base, noise, reset = z[0], z[1:-1], z[-1]
+@@ -166,15 +171,33 @@ def compile_filter(spec, n, setting, policy, dtype=tf.float32):
+     return evaluate
+ 
+ 
+-def kalman_reference(spec, observed):
++def compile_reference(evaluate, spec, dtype, observed, dynamic_observations=False, seeded=False):
++    """Build a stable pure numerical graph after host-side fixture validation."""
++    theta_spec = tf.TensorSpec([spec["p"]], dtype)
++    seed_spec = tf.TensorSpec([2], tf.int32)
++    if dynamic_observations:
++        signature = [theta_spec, tf.TensorSpec([spec["t"], spec["m"]], dtype)]
++        if seeded:
++            signature.append(seed_spec)
++        return tf.function(evaluate, input_signature=signature, jit_compile=True, autograph=False)
++    if seeded:
++        def bound(theta, seed):
++            return evaluate(theta, observed, seed)
++        signature = [theta_spec, seed_spec]
++    else:
++        def bound(theta):
++            return evaluate(theta, observed)
++        signature = [theta_spec]
++    return tf.function(bound, input_signature=signature, jit_compile=True, autograph=False)
++
++
++def kalman_reference(spec, observed, *, dynamic_observations=False, dtype=tf.float64):
+     """Independent covariance Kalman likelihood; AD is reference-only."""
+-    dtype = tf.float64
+     d, p = spec["d"], spec["p"]
+     a, base_q, h, r = (tf.cast(spec[k], dtype) for k in ("a", "q", "h", "r"))
+     eye = tf.eye(d*d, dtype=dtype)
+ 
+-    @tf.function(input_signature=[tf.TensorSpec([p], dtype)], jit_compile=True, autograph=False)
+-    def evaluate(theta):
++    def evaluate(theta, observed):
+         with tf.GradientTape() as tape:
+             tape.watch(theta)
+             f, q = theta[0]*a, base_q*(tf.exp(2*theta[1]) if p == 2 else 1.)
+@@ -195,10 +218,10 @@ def kalman_reference(spec, observed):
+                 mean += tf.linalg.matvec(gain, residual)
+                 covariance -= gain@s@tf.transpose(gain)
+         return dict(value=total, score=tape.gradient(total, theta))
+-    return evaluate
++    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=False)
+ 
+ 
+-def ksc_grid_reference(spec, observed, cells=512, extent=18.):
++def ksc_grid_reference(spec, observed, cells=512, extent=18., *, dynamic_observations=False):
+     """Independent 1D forward integration and analytical density derivatives."""
+     dtype = tf.float64
+     mixture = ksc_1998_log_chi_square_mixture()
+@@ -206,8 +229,7 @@ def ksc_grid_reference(spec, observed, cells=512, extent=18.):
+     x = -tf.constant(extent, dtype) + (tf.cast(tf.range(cells), dtype)+.5)*dx
+     log2pi = tf.constant(math.log(2*math.pi), dtype)
+ 
+-    @tf.function(input_signature=[tf.TensorSpec([2], dtype)], jit_compile=True, autograph=False)
+-    def evaluate(theta):
++    def evaluate(theta, observed):
+         gamma, beta = theta[0], theta[1]
+         variance = 1/(1-gamma*gamma)
+         initial = tf.exp(-.5*x*x/variance)/tf.sqrt(2*tf.constant(math.pi, dtype)*variance)*dx
+@@ -237,17 +259,15 @@ def ksc_grid_reference(spec, observed, cells=512, extent=18.):
+         _, _, _, value, score = tf.while_loop(lambda i, *_: i < spec["t"], body,
+             (tf.constant(0), initial, initial_d, tf.zeros([], dtype), tf.zeros([2], dtype)))
+         return dict(value=value, score=score)
+-    return evaluate
++    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=False)
+ 
+ 
+-def bootstrap_reference(spec, observed, n):
++def bootstrap_reference(spec, observed, n, *, dynamic_observations=False, dtype=tf.float64):
+     """Cheap no-flow particle-filter adversary; value only, no score claim."""
+-    model = specification(spec["name"], tf.float64)["model"]
+-    dtype = tf.float64
++    model = specification(spec["name"], dtype)["model"]
+     d, p, t = spec["d"], spec["p"], spec["t"]
+ 
+-    @tf.function(input_signature=[tf.TensorSpec([p], dtype), tf.TensorSpec([2], tf.int32)], jit_compile=True, autograph=False)
+-    def evaluate(theta, seed):
++    def evaluate(theta, observed, seed):
+         if spec["kind"] == "m13":
+             mean, covariance = tf.cast(spec["fixture"].m0, dtype), tf.cast(spec["fixture"].P0, dtype)
+         else:
+@@ -273,16 +293,15 @@ def bootstrap_reference(spec, observed, n):
+             indices = tf.searchsorted(cdf, u, side="right")
+             return i+1, tf.gather(x, indices), value
+         return tf.while_loop(lambda i, *_: i < t, body, (tf.constant(0), x, tf.zeros([], dtype)))[2]
+-    return evaluate
++    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=True)
+ 
+ 
+-def m13_fisher_reference(spec, observed, n=32768, replicates=16):
++def m13_fisher_reference(spec, observed, n=32768, replicates=16, *, dynamic_observations=False):
+     """Independent genealogical Fisher score; MC variance and particle bias remain."""
+     dtype = tf.float64
+     a,q0,r0,m0,p0 = (tf.cast(getattr(spec["fixture"],k),dtype) for k in ("A","Q","R","m0","P0"))
+     pi = tf.constant(math.pi,dtype)
+-    @tf.function(input_signature=[tf.TensorSpec([2],dtype),tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+-    def evaluate(theta,seed):
++    def evaluate(theta, observed, seed):
+         x = m0+tf.random.stateless_normal([replicates,n,4],seed,dtype=dtype)@tf.transpose(tf.linalg.cholesky(p0))
+         qchol = tf.linalg.cholesky(q0)*tf.exp(theta[0])
+         sigma = tf.sqrt(tf.linalg.diag_part(r0))*tf.exp(theta[1])
+@@ -315,7 +334,7 @@ def m13_fisher_reference(spec, observed, n=32768, replicates=16):
+         jack = tf.concat([leave_value[:,None],leave_score],axis=1)
+         mcse = tf.sqrt((replicates-1)*tf.reduce_mean((jack-tf.reduce_mean(jack,axis=0))**2,axis=0))
+         return dict(value=mean_value,score=mean_score,mcse=mcse,replicate_values=value,replicate_scores=score)
+-    return evaluate
++    return compile_reference(evaluate, spec, dtype, observed, dynamic_observations, seeded=True)
+ 
+ 
+ def references(spec, observed, *, claim=False):
+diff --git a/docs/chapters/ch19c_dpf_implementation_literature.tex b/docs/chapters/ch19c_dpf_implementation_literature.tex
+index 8f6a29a7e..511303d01 100644
+--- a/docs/chapters/ch19c_dpf_implementation_literature.tex
++++ b/docs/chapters/ch19c_dpf_implementation_literature.tex
+@@ -1,4 +1,5 @@
+ \chapter{Particle-Flow Particle Filters and Proposal Correction}
++\chaptermark{Particle-Flow Filtering}
+ \label{ch:bf-dpf-pfpf}
+ 
+ The previous chapter developed particle flow as a transport construction.  The
+@@ -8,12 +9,15 @@ no.  Outside exact special cases, the flow should be interpreted first as a
+ proposal mechanism.  The role of the present chapter is to make that proposal
+ interpretation explicit and to derive the corresponding importance correction.
+ 
+-This chapter is therefore the mathematical bridge between raw flow transport and
+-a more principled particle-based likelihood interpretation.  It does not yet
+-introduce differentiable resampling or optimal transport relaxations.  Instead,
+-it asks a prior question: once a particle has been moved by a deterministic flow
+-map, what density does that transported particle actually have, and what
+-importance weight is required to target the intended posterior law?
++The starting question is concrete: once a particle has been moved by a
++deterministic flow, what density does that particle have, and what weight
++corrects it to the filtering target? We first derive the ancestor-conditioned
++answer used by Li--Coates. We then derive BayesFilter's optional marginal-mixture
++answer and its analytical total derivative. The final recursion includes the
++UKF covariance lifecycle, Contract E--Chol transport reset, and dual-cap GenUT
++correction; the later transport chapters develop those reset operations in
++detail. The implementation and numerical evidence described here are current
++through 6 October 2026.
+ 
+ \section{Objects, assumptions, and source roles}
+ \label{sec:bf-pfpf-objects}
+@@ -86,8 +90,10 @@ Assume that for each fixed time step and observation, the flow map
+ $\Phi_t: \mathbb{R}^{n_x} \to \mathbb{R}^{n_x}$ is a differentiable bijection on
+ the region of interest and that its forward Jacobian
+ $D\Phi_t(x_{t,0})$ is an $n_x\times n_x$ nonsingular matrix along the proposal
+-paths being weighted.  Equivalently, the calculation below is a local
+-diffeomorphism calculation on the support actually used by the proposal.  Let
++paths being weighted.  Local nonsingularity alone is insufficient if several pre-images map to the
++same endpoint: their density contributions would have to be summed. The affine
++maps used below are globally one-to-one whenever their matrices are
++nonsingular. Let
+ the pre-flow proposal density be
+ \begin{equation}
+ \label{eq:bf-pfpf-preflo-density}
+@@ -344,32 +350,29 @@ an extension and audited separately from the Li--Coates source algorithm.
+ \subsection{Why the OT block begins here}
+ \label{sec:bf-pfpf-ot-why-here}
+ 
+-The next chapters do not reopen proposal correction.  By the end of the PF-PF
+-stage, the object of record is already the weighted post-flow ensemble together
+-with its carried particle-local state.  The remaining question is different: once
+-that weighted object exists, what equal-weighting rule should act on it?  The OT
+-block begins here because BayesFilter still needs a transport object that turns
+-that weighted PF-PF output into an equally weighted downstream representation.
++After importance weighting, the filter has a weighted post-flow ensemble
++and particle-local covariances. To continue with equally weighted particles,
++the implemented algorithm applies entropic transport, the Contract E--Chol
++reset and the higher-moment correction. The transport chapters derive these
++operations; Section~\ref{sec:bf-pfpf-current-recursion} places them in the
++complete recursion together with either importance-weight policy.
+ 
+ \subsection{What the later OT chapters inherit from PF-PF}
+ \label{sec:bf-pfpf-ot-handoff}
+ 
+-The next boundary can be stated sharply.  After
+-PF-PF correction, the BayesFilter object handed to a later resampling layer is
+-not a vague ``particle cloud.''  It is a weighted empirical ensemble together
+-with any carried auxiliary state.  In the Algorithm~1 reading fixed above, the
+-state handed forward is precisely the weighted triple
+-\eqref{eq:bf-pfpf-alg1-resampling-triple}.  Thus a later optimal-transport
+-layer does not merely need an OT scalar or distance certificate.  It needs a
+-usable transport object that can act on the weighted ensemble:
++The input to resampling is the weighted ensemble together with its
++particle-local state. In Li--Coates Algorithm~1 this is the triple in
++\eqref{eq:bf-pfpf-alg1-resampling-triple}. A transport layer must produce an
++operation that acts on that ensemble, such as
+ \begin{equation}
+ \label{eq:bf-pfpf-transport-object-inventory}
+-  \text{coupling matrix, barycentric transform, factorized transport operator,}
+-  \text{ or directly transported equal-weight cloud.}
++\begin{gathered}
++ \text{a coupling matrix, barycentric transform, or factorized operator,}\\
++ \text{or a directly transported equally weighted cloud.}
++\end{gathered}
+ \end{equation}
+-A fast value of \(\operatorname{OT}(\mu,\nu)\) alone is not enough to continue the filtering
+-recursion, because the filter must actually produce the next equal-weighted
+-particle representation.
++A value of \(\operatorname{OT}(\mu,\nu)\) alone cannot continue the filtering
++recursion; the next particle locations and their covariances are required.
+ 
+ Write the PF-PF output cloud schematically as
+ \begin{equation}
+@@ -382,12 +385,11 @@ with carried covariance or particle-local state attached to each support point.
+ A deterministic OT equal-weighting layer or entropic OT/Sinkhorn layer, in the
+ spirit of ensemble-transform and differentiable OT resampling
+ \citep{reich2013nonparametric,corenflos2021differentiable}, then asks for a
+-map from the weighted object \(\mu_t^N\) to an equal-weight object.  The next
+-chapters will spell out that map through couplings, barycentric projections, and
+-teacher-versus-numerical transport objects.  The present chapter's narrower role
+-is only to make the handoff precise: PF-PF supplies the weighted source object,
+-and any later OT resampling route must declare how that weighted object is
+-actually transported rather than merely reporting a scalar transport score.
++map from \(\mu_t^N\) to an equally weighted ensemble. The following transport
++chapters derive couplings and barycentric projections. In the implemented
++filter, the Contract E--Chol reset additionally restores specified moments,
++and GenUT controls higher-moment discrepancies. These steps operate on the
++weights produced by the chosen importance correction.
+ 
+ These details give a sharper audit checklist than the generic PF-PF equations:
+ \begin{enumerate}[label=(\roman*)]
+@@ -406,6 +408,8 @@ These details give a sharper audit checklist than the generic PF-PF equations:
+     weights.
+ \end{enumerate}
+ 
++\input{chapters/ch19c_marginal_extension}
++
+ \section{Jacobian determinant and log-determinant evolution}
+ \label{sec:bf-pfpf-logdet}
+ 
+@@ -531,8 +535,8 @@ value-side candidate in later HMC experiments.
+     cloud with and without the determinant/proposal-density term to confirm that
+     the diagnostic detects the expected discrepancy.
+   \item \textbf{Path consistency}: on fixed random seeds, verify that the scalar
+-    value and any autodiff gradient use the same proposal density, flow map, and
+-    log-determinant path.
++    value and analytical total score use the same proposal density, flow map,
++    and log-determinant path; autodiff is a diagnostic comparator only.
+ \end{enumerate}
+ 
+ These are not tuning diagnostics.  They are algebraic and numerical checks of
+@@ -557,17 +561,9 @@ flow-as-transport from flow-as-proposal.
+ \section{What this chapter does and does not claim}
+ \label{sec:bf-pfpf-chapter-boundary}
+ 
+-This chapter derives the proposal-correction structure for flow-based particle
+-methods.  It does \emph{not} yet claim:
+-\begin{itemize}
+-  \item that differentiable resampling has been resolved;
+-  \item that the resulting method is already the final HMC target for nonlinear
+-    DSGE or MacroFinance models;
+-  \item that OT or learned transport relaxations have been introduced;
+-  \item that finite-particle, discretization, and Jacobian numerical issues are
+-    negligible.
+-\end{itemize}
+-Those belong to the later resampling and HMC-assessment chapters.  The role of
+-this chapter is more specific: it explains mathematically how a particle flow is
+-turned into a proposal-corrected particle method and what that correction does
+-and does not restore.
++This chapter derives both ancestor-conditioned and marginal-mixture importance
++corrections, the analytical derivative of the implemented finite filter, and
++how the weighting step composes with the UKF, OT reset, and GenUT correction.
++The October experiments support a conditional partial repair. The expanded
++fresh-data campaign and the later HMC assessment must still establish how the
++component behaves across datasets, larger scopes, and posterior inference.
+diff --git a/docs/references.bib b/docs/references.bib
+index 875939564..948e5d66c 100644
+--- a/docs/references.bib
++++ b/docs/references.bib
+@@ -1570,3 +1570,12 @@
+   booktitle = {Proceedings of ICML}, series = {Proceedings of Machine Learning Research},
+   volume = {267}, year = {2025}, url = {https://proceedings.mlr.press/v267/wu25ak.html}
+ }
++
++@inproceedings{klaas2005marginal,
++  author = {Klaas, Mike and de Freitas, Nando and Doucet, Arnaud},
++  title = {Toward Practical $N^2$ Monte Carlo: The Marginal Particle Filter},
++  booktitle = {Proceedings of the Twenty-First Conference on Uncertainty in Artificial Intelligence},
++  year = {2005},
++  pages = {308--315},
++  url = {https://www.cs.ubc.ca/~arnaud/klass_defreitas_doucet_marginalparticlefilterUAI2005.pdf}
++}
+diff --git a/scripts/diagnose_marginal_weight_campaign.py b/scripts/diagnose_marginal_weight_campaign.py
+index 96ed1cdcb..fac6b9d0e 100644
+--- a/scripts/diagnose_marginal_weight_campaign.py
++++ b/scripts/diagnose_marginal_weight_campaign.py
+@@ -22,12 +22,11 @@ def source(name):
+     raise FileNotFoundError(name)
+ 
+ 
+-def prior_trajectory_reference(tf,m,spec,observed,n):
++def prior_trajectory_reference(tf,m,spec,observed,n,*,dtype=None,dynamic_observations=False):
+     """Naive full-prior trajectory importance sampling, deliberately no resampling."""
+-    dtype=tf.float64;d,p,t=(spec[k] for k in ('d','p','t'));model=spec['model']
+-    @tf.function(input_signature=[tf.TensorSpec([p],dtype),tf.TensorSpec([2],tf.int32)],jit_compile=True,autograph=False)
+-    def evaluate(theta,seed):
+-        if spec['kind']=='m13':mean,covariance=spec['fixture'].m0,spec['fixture'].P0
++    dtype=tf.float64 if dtype is None else dtype;d,p,t=(spec[k] for k in ('d','p','t'));model=spec['model']
++    def evaluate(theta,observed,seed):
++        if spec['kind']=='m13':mean,covariance=tf.cast(spec['fixture'].m0,dtype),tf.cast(spec['fixture'].P0,dtype)
+         else:mean,covariance=model.initial_distribution_fn(theta)
+         x=mean+tf.random.stateless_normal([n,d],seed,dtype=dtype)@tf.transpose(tf.linalg.cholesky(covariance))
+         rows=tf.broadcast_to(theta,[n,p])
+@@ -45,19 +44,18 @@ def prior_trajectory_reference(tf,m,spec,observed,n):
+             return i+1,x,logw+logg
+         _,_,logw=tf.while_loop(lambda i,*_:i<t,body,(tf.constant(0),x,tf.zeros([n],dtype)))
+         return tf.reduce_logsumexp(logw)-tf.math.log(tf.cast(n,dtype))
+-    return evaluate
++    return m.compile_reference(evaluate,spec,dtype,observed,dynamic_observations,seeded=True)
+ 
+ 
+-def gaussian_reference(tf,m,spec,observed):
++def gaussian_reference(tf,m,spec,observed,*,dtype=None,dynamic_observations=False):
+     """Kalman / moment-matched KSC / EKF comparator; AD is diagnostic only."""
+-    dtype=tf.float64;d,p=(spec[k] for k in ('d','p'));kind=spec['kind']
+-    if kind.startswith('lg'):return m.kalman_reference(spec,observed)
++    dtype=tf.float64 if dtype is None else dtype;d,p=(spec[k] for k in ('d','p'));kind=spec['kind']
++    if kind.startswith('lg'):return m.kalman_reference(spec,observed,dtype=dtype,dynamic_observations=dynamic_observations)
+     mixture=m.ksc_1998_log_chi_square_mixture()
+     weights,means,variances=(tf.cast(getattr(mixture,k),dtype) for k in ('weights','means','variances'))
+     mixture_mean=tf.reduce_sum(weights*means)
+     mixture_variance=tf.reduce_sum(weights*(variances+means*means))-mixture_mean**2
+-    @tf.function(input_signature=[tf.TensorSpec([p],dtype)],jit_compile=True,autograph=False)
+-    def evaluate(theta):
++    def evaluate(theta,observed):
+         with tf.GradientTape() as tape:
+             tape.watch(theta)
+             if kind=='ksc':
+@@ -65,8 +63,8 @@ def gaussian_reference(tf,m,spec,observed):
+                 f=tf.reshape(theta[0],[1,1]);q=tf.ones([1,1],dtype)
+                 r=tf.reshape(mixture_variance,[1,1])
+             else:
+-                fixture=spec['fixture'];mean,covariance=fixture.m0,fixture.P0
+-                f=fixture.A;q=fixture.Q*tf.exp(2*theta[0]);r=fixture.R*tf.exp(2*theta[1])
++                fixture=spec['fixture'];mean,covariance=tf.cast(fixture.m0,dtype),tf.cast(fixture.P0,dtype)
++                f=tf.cast(fixture.A,dtype);q=tf.cast(fixture.Q,dtype)*tf.exp(2*theta[0]);r=tf.cast(fixture.R,dtype)*tf.exp(2*theta[1])
+             total=tf.zeros([],dtype)
+             for i in range(spec['t']):
+                 mean=tf.linalg.matvec(f,mean);covariance=f@covariance@tf.transpose(f)+q
+@@ -88,7 +86,7 @@ def gaussian_reference(tf,m,spec,observed):
+                 stable=tf.eye(d,dtype=dtype)-gain@h
+                 covariance=stable@covariance@tf.transpose(stable)+gain@r@tf.transpose(gain)
+         return dict(value=total,score=tape.gradient(total,theta))
+-    return evaluate
++    return m.compile_reference(evaluate,spec,dtype,observed,dynamic_observations)
+ 
+ 
+ def run(args,tf,m):
+diff --git a/tests/highdim/test_ledh_marginal_weights.py b/tests/highdim/test_ledh_marginal_weights.py
+index 0ea72c612..8ca446bc3 100644
+--- a/tests/highdim/test_ledh_marginal_weights.py
++++ b/tests/highdim/test_ledh_marginal_weights.py
+@@ -69,3 +69,43 @@ def test_affine_bookkeeping_matches_actual_nonlinear_flow():
+     tf.debugging.assert_equal(tf.reduce_all(vv & fv),True)
+     tf.debugging.assert_near(x,mean+tf.linalg.matvec(b,innovation),atol=1e-12,rtol=1e-12)
+     tf.debugging.assert_near(dx,dmean+tf.linalg.matvec(db,innovation)+tf.linalg.matvec(b,di),atol=1e-12,rtol=1e-12)
++
++    # The Gaussian pushforward additionally requires that its coefficients
++    # do not depend on this child's fresh innovation. Affine bookkeeping alone
++    # would not detect coefficients evaluated on the actual random child.
++    changed_innovation = -2.3*innovation
++    changed_di = 1.7*di
++    other = _flow_substeps_with_tangent(
++        model,anchors+changed_innovation,da+changed_di,anchors,da,p,dp,
++        spec["fixture"].observations[0],r,dr,rinv,-rinv@dr@rinv,
++        substeps=10,eye=tf.eye(4,dtype=tf.float64),return_affine=True)
++    tf.debugging.assert_equal(tf.reduce_all(other[4] & other[5]),True)
++    for original_coefficient,changed_coefficient in zip(out[6:],other[6:]):
++        tf.debugging.assert_near(original_coefficient,changed_coefficient,atol=1e-12,rtol=1e-12)
++    tf.debugging.assert_near(other[0],mean+tf.linalg.matvec(b,changed_innovation),atol=1e-12,rtol=1e-12)
++    tf.debugging.assert_near(other[1],
++        dmean+tf.linalg.matvec(db,changed_innovation)+tf.linalg.matvec(b,changed_di),
++        atol=1e-12,rtol=1e-12)
++
++
++
++@pytest.mark.parametrize("dtype", [tf.float32, tf.float64])
++def test_precision_policy_keeps_invalid_covariance_invalid(dtype):
++    args=[tf.cast(x,dtype) for x in inputs()]
++    x,dx,m,dm,c,dc,lw,dlw=args
++    q=tf.linalg.diag(tf.constant([1.,1.,-1.],dtype))
++    b=tf.eye(3,batch_shape=[5],dtype=dtype)
++    result=marginal_prior_ratio_tangent(x,dx,m,dm,q,dc[0],m,dm,b,
++        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
++    assert not bool(result[2])
++    assert int(result[4])==0
++
++
++def test_fp64_precision_observability_preserves_identity_cancellation():
++    x,dx,m,dm,c,dc,lw,dlw=inputs()
++    b=tf.eye(3,batch_shape=[5],dtype=tf.float64)
++    result=marginal_prior_ratio_tangent(x,dx,m,dm,c[0],dc[0],m,dm,b,
++        tf.zeros_like(b),lw,dlw,return_precision_diagnostics=True)
++    assert int(result[4])==0 and bool(result[2] & result[3])
++    tf.debugging.assert_near(result[0],tf.zeros([5],tf.float64),atol=1e-13)
++    tf.debugging.assert_near(result[1],tf.zeros([5],tf.float64),atol=1e-13)

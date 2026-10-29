@@ -1,0 +1,170 @@
+{
+  "arms": [
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-recovery-01/m13-controls-recovery/calibration/arm-0.json",
+      "sha256": "063a536edc401bc0146143fbc927c62e05e03e27e584c9d1c4fad8cdac020630"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-recovery-01/m13-controls-recovery/calibration/arm-1.json",
+      "sha256": "587606046fbfa6c8f88945c7b40ec140c5b424ba9d402b3a44d4c08b38f0c2df"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-recovery-01/m13-controls-recovery/calibration/arm-2.json",
+      "sha256": "4bbe96d6f4e44ae18ccbecea62caa866f237d518e3a73c425b56a71ead639cb2"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-recovery-01/m13-controls-recovery/calibration/arm-3.json",
+      "sha256": "f7396c13b0947613d0936e21b9e329636e83a3868f8c3bfe87334424fea065ba"
+    }
+  ],
+  "data_sha256": "41ecfaecc4b2c9a95f4126e6ee20dd698de25ad3b30998519f3e4cb671b33ddd",
+  "pairs": [
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 7.591613639837198e-05,
+          "filtering_mean": 0.002225125251459057,
+          "post_reset_covariance": 7.595811807359624e-05,
+          "post_reset_mean": 0.0022250981131740665,
+          "score": 0.008644465200344951,
+          "value": 0.005675019627218912
+        },
+        "stress": {
+          "filtering_covariance": 0.0005557393861596139,
+          "filtering_mean": 0.008669363402503542,
+          "post_reset_covariance": 0.0005478825515345875,
+          "post_reset_mean": 0.008669342889421283,
+          "score": 0.2920275514487244,
+          "value": null
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": false,
+      "normalized_maximum_change": 0.008644465200344951,
+      "stress_safe": true,
+      "tolerance": 0.001
+    },
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 5.639342791694331e-05,
+          "filtering_mean": 0.0022548363483514008,
+          "post_reset_covariance": 5.5807841296364126e-05,
+          "post_reset_mean": 0.002255194413183704,
+          "score": 0.011749228991269844,
+          "value": 0.011447664489581537
+        },
+        "stress": {
+          "filtering_covariance": 0.0005834646395577439,
+          "filtering_mean": 0.008204072729264131,
+          "post_reset_covariance": 0.0005243604981254915,
+          "post_reset_mean": 0.008204040358430635,
+          "score": 0.07864895941467259,
+          "value": null
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": false,
+      "normalized_maximum_change": 0.011749228991269844,
+      "stress_safe": true,
+      "tolerance": 0.001
+    },
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 5.417617528685464e-05,
+          "filtering_mean": 0.0007371110618579711,
+          "post_reset_covariance": 5.324740392937616e-05,
+          "post_reset_mean": 0.0007371110568466938,
+          "score": 0.008231626650153404,
+          "value": 0.0009417285577286616
+        },
+        "stress": {
+          "filtering_covariance": 0.0005964277330207001,
+          "filtering_mean": 0.005581063866662228,
+          "post_reset_covariance": 0.000505892853549426,
+          "post_reset_mean": 0.0055812778048659134,
+          "score": 0.08989539319757778,
+          "value": null
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": false,
+      "normalized_maximum_change": 0.008231626650153404,
+      "stress_safe": true,
+      "tolerance": 0.001
+    }
+  ],
+  "scope": {
+    "attempt": 4,
+    "chunk_extent": 2048,
+    "control_family": "m13_fixed_reset_caps_lm_curve_v1",
+    "data_regime": "independent T20 calibration/validation/claim; once-rounded FP32 observations",
+    "design_seed": 20260923,
+    "draw_design": "scrambled_halton_gaussian",
+    "dtype": "float32",
+    "fixed_initial_law": true,
+    "fixture": "range_bearing_gaussian_tf_tfp_moderate",
+    "horizon": 20,
+    "jit_compile": true,
+    "model": "M13",
+    "noise_law": "Q=exp(2*lambda_Q)*Q0; R=exp(2*lambda_R)*R0",
+    "observation_dimension": 2,
+    "parameter_dimension": 2,
+    "parameters": [
+      "lambda_Q",
+      "lambda_R"
+    ],
+    "particle_count": 4096,
+    "partition_seeds": {
+      "calibration": {
+        "data_seed": 1704,
+        "design_partition": 9
+      },
+      "claim": {
+        "data_seed": 3701,
+        "design_partition": 2
+      },
+      "validation": {
+        "data_seed": 2704,
+        "design_partition": 10
+      }
+    },
+    "prior": "independent N(0,log(2)^2)",
+    "prior_support": "R^2",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "state_dimension": 4,
+    "tf32": true
+  },
+  "source_hashes": {
+    "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/testing/surrogate_hmc_ar2_controls.py": "335b2741c8843cc3e8478f38fb84f8c3f6331b2cec0139f7acfe1f9183bf4ccf",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+    "bayesfilter/testing/surrogate_hmc_m13_controls.py": "12819509f8144aff866cb3a522c908bfeabbc89a5a3908b6590b165b2cd64f21",
+    "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+  }
+}

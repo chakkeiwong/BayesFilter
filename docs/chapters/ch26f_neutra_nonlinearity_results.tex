@@ -1,0 +1,458 @@
+\section[Isolating scalar nonlinearity]{Isolating the contribution of scalar nonlinearity}
+\label{sec:neutra-scalar-nonlinearity-study}
+
+The October 5--6 study asks a narrower question than whether NAF is always
+better than IAF: does replacing an affine scalar transformation by a nonlinear
+one improve density fitting when the conditioner, parameter arrays, training
+data and optimization schedule are otherwise held fixed? This distinction
+matters because the earlier change of architecture also changed initialization,
+parameter count and the conditioner. A successful replacement could not by
+itself identify which change was responsible.
+
+For coordinate $j$, write $h=x_{<j}$ and let one conditioner produce positive
+slopes $a_k(h)$, offsets $b_k(h)$ and normalized positive weights $w_k(h)$,
+with $\sum_k w_k(h)=1$. The experiment compares two readouts of exactly these
+same outputs:
+\begin{align}
+ A_\theta(u;h)&=\sum_{k=1}^K w_k(h)\{a_k(h)u+b_k(h)\},\\
+ N_\theta(u;h)&=\operatorname{logit}\!\left[
+        \sum_{k=1}^K w_k(h)\sigma\{a_k(h)u+b_k(h)\}\right].
+ \label{eq:neutra-attribution-readouts}
+\end{align}
+The second expression is the deep sigmoidal flow scalar transformation in
+\citet[Section~3.1, Eq.~(8)]{huang2018naf}. The first is a local experimental
+control, not the author's IAF implementation. Both use all three output groups,
+although the affine readout reduces their functional effect to a slope and an
+intercept. Matching nominal parameter counts therefore does not match the
+number of identifiable shape degrees of freedom: that shape freedom is the
+intervention being tested.
+
+Writing $S=\sum_k w_k\sigma(a_ku+b_k)$, the derivatives are
+\begin{equation}
+ \partial_u A_\theta=\sum_k w_ka_k>0,
+ \qquad
+ \partial_u N_\theta=
+ \frac{\sum_k w_ka_k\sigma(a_ku+b_k)[1-\sigma(a_ku+b_k)]}{S(1-S)}>0.
+\end{equation}
+Both maps have limits $-\infty$ and $+\infty$ as $u$ approaches the respective
+ends of the real line. They are thus invertible scalar transformations with
+triangular autoregressive Jacobians. The nonlinear readout changes scalar
+curvature without removing the analytic diagonal Jacobian needed for training.
+
+\subsection{A one-dimensional expressivity control}
+
+An optimizer-independent comparison is possible for the symmetric mixture
+\[
+p(x)=\tfrac12\mathcal N(x;-m,s^2)+\tfrac12\mathcal N(x;m,s^2).
+\]
+With a one-dimensional Gaussian base and no additional latent variables,
+compositions of affine autoregressive layers remain affine and hence give a
+Gaussian density. The best Gaussian in forward KL has mean zero and variance
+$v=m^2+s^2$, since its cross entropy is
+\begin{equation}
+ -E_p\log\mathcal N(X;\mu,\tau^2)
+ =\tfrac12\log(2\pi\tau^2)+\frac{v+\mu^2}{2\tau^2},
+\end{equation}
+minimized at $\mu=0$ and $\tau^2=v$. If $C$ is the mixture label, then
+$h(X)=h(X\mid C)+I(X;C)\leq\tfrac12\log(2\pi e s^2)+\log2$.
+Subtracting this entropy bound from the optimal Gaussian cross entropy gives
+\begin{equation}
+ \inf_{q\ \mathrm{Gaussian}}D_{\mathrm{KL}}(p\Vert q)
+ \geq\tfrac12\log(1+m^2/s^2)-\log2.
+ \label{eq:neutra-affine-expressivity-bound}
+\end{equation}
+For $m=3,s=1$, the bound is $0.4581454$ nats. A nonlinear increasing map can
+represent this target exactly: $T=F_p^{-1}\circ\Phi$ satisfies
+$p(T(z))T'(z)=\varphi(z)$. This proves a scalar expressivity obstruction in the
+stated one-dimensional setting, not convergence of a particular finite neural
+network or impossibility for multivariate affine autoregressive compositions.
+
+The fitted four-component DSF obtained estimated forward KL $0.0009864$, with
+a conditional 99\% Monte Carlo interval $[0.0006525,0.0013204]$, whereas the
+fitted affine control obtained $0.459492$. The interval is a normal
+approximation for independent reference draws conditional on the fitted map;
+the entropy lower bound itself is analytic. Both readouts also passed a
+Gaussian positive control, with estimated KL approximately $0.00017$.
+
+\subsection{Paired multivariate fits and uncertainty}
+
+Each two-dimensional fit used three autoregressive stages, two width-64 hidden
+layers, four sigmoid components per scalar readout and batch size 64. Both
+members of a pair received the same exact target samples and initial parameter
+arrays, 8,192 Adam updates at learning rate $.001$, and a further 8,192 at
+$.0003$ after resetting Adam. Computation used FP64 TensorFlow GPU/XLA. A
+second pair of readouts used a diagnostic Hoffman-style masked conditioner,
+so a result confined to cMADE would reveal conditioner dependence.
+
+On an independent reference sample $X_i\sim p$, the measured contrast was
+\begin{equation}
+ \widehat\Delta=\frac1n\sum_{i=1}^n
+    \{\log q_N(X_i)-\log q_A(X_i)\},
+ \qquad
+ E[\widehat\Delta\mid q_A,q_N]
+   =D_{\mathrm{KL}}(p\Vert q_A)-D_{\mathrm{KL}}(p\Vert q_N).
+ \label{eq:neutra-attribution-kl-contrast}
+\end{equation}
+Each pair shared 131,072 reference draws. Eight new fitting seeds per
+target/conditioner combination were reserved after separate pilots. The
+predeclared one-sided sign test used fitting seeds as the replication units,
+counting a benefit as positive only when its conditional 99\% reference
+interval lay above zero. Bonferroni correction covered the four comparisons.
+Reference rows improve integration precision but do not become additional
+training replications.
+
+\begin{table}[htbp]
+ \centering\small
+ \begin{tabular}{llrrrr}
+  \toprule
+  Modes & Conditioner & Positive pairs & Mean $\widehat\Delta$ & Passes A/N & Adjusted $p$\\
+  \midrule
+  Two & cMADE & 8/8 & .02326 & 6/8, 8/8 & .015625\\
+  Two & Hoffman diagnostic & 8/8 & .01451 & 8/8, 8/8 & .015625\\
+  Three & cMADE & 8/8 & .33169 & 1/8, 7/8 & .015625\\
+  Three & Hoffman diagnostic & 8/8 & .09530 & 0/8, 7/8 & .015625\\
+  \bottomrule
+ \end{tabular}
+ \caption{Scalar-readout attribution under the fixed training schedule. Mean
+ KL differences, in nats, are descriptive; the sign tests support a directional
+ density-fitting effect. A/N denotes the affine/nonlinear distribution-screen
+ counts, not convergence or posterior validation.}
+ \label{tab:neutra-scalar-attribution}
+\end{table}
+
+The directional density effect is supported in all four settings. Two nonlinear
+fits nevertheless failed the distribution screen: on the three-mode target,
+seed 449 gave maximum standardized feature discrepancies of $5.38048$ and
+$6.38703$ for the two conditioners, above the fixed threshold of 5. Their
+lower density error does not override these failures. Thirty of 32 nonlinear
+confirmation fits remain viable under this exploratory screen; that observed
+fraction is not a guarantee of training reliability.
+
+Initial validation cross entropy slightly favored the affine member in every
+confirmation pair, by $.000041$ to $.001316$ nats. Thus the measured benefit
+does not arise from a better initial nonlinear density according to this
+diagnostic. Identical arrays still define different initial functions, and
+different optimization conditioning can remain part of the explanation.
+
+\subsection{Capacity, training time and new geometries}
+
+The sensitivity controls tested canonical IAF at widths 64 and 134 and an
+uncapped-scale width-134 configuration, each with final learning rates $.001$
+and $.0003$ and two development seeds. One of these 24 fits passed the
+distribution screen. This finite grid did not consistently repair the affine
+fits; it cannot exclude a successful wider search. Separate rate checks on
+both matched readout families selected $.0003$ by development validation.
+
+Four affine controls were also continued until their recorded training time
+matched that of their paired nonlinear fits. They received 45,056--53,248
+updates, with achieved time ratios between 1.005 and 1.036. The remaining
+nonlinear density benefits were $.00858$ and $.02553$ nats on the two-mode
+target and $.17346$ and $.06632$ on the three-mode target. Two extended affine
+fits passed their distribution checks. These pilot-seed controls support the
+finite-training interpretation descriptively; they are not extra independent
+confirmation replications.
+
+The frozen primary recipe was then applied to four unseen geometries, with
+two fitting seeds each. Two geometries had two components and two had three.
+Pairwise center distances were drawn uniformly on $[6,10]$, component variances
+on $[.5,2]$, with random rotation and translation and component weights bounded
+below by $.1$. All eight nonlinear fits passed the distribution screen,
+compared with one of eight matched affine fits; all eight density contrasts
+were positive. This is evidence of transfer within the declared family, with
+only four independent geometries. It does not establish a population-wide
+ranking, high-dimensional transfer or adequate mixing for the state-space
+posterior.
+
+These results justify selecting the full conditional DSF/NAF as the default
+architecture for the subsequent training study, as directed on October 6.
+The implementation remains a configuration of the shared numerical transport
+code; the repaired author IAF remains an explicit comparator. Architecture
+selection does not turn an untested training recipe into a validated one.
+The completed evidence consists of 87 workers, including all controls and
+transfer fits; 146 frozen endpoints have complete finite 1,000-point probes.
+The exact commands, numerical settings, unsuccessful fits and terminal review
+are recorded in the October 6 scalar-nonlinearity result note.
+
+\subsection{From an approximate teacher to reverse KL}
+
+The next question concerns the training distribution rather than only the
+scalar representation. If a posterior method supplies particles $x_i$ with
+normalized weights $\bar w_i$, the forward objective is
+\begin{equation}
+ \widehat L_F(\theta)=-\sum_i\bar w_i\log q_\theta(x_i).
+\end{equation}
+Sampling an index $I$ with probability $\bar w_i$ gives an unbiased gradient
+for this finite weighted objective, provided the particles and weights are
+held fixed during differentiation. It is not an unbiased gradient of population
+forward KL merely because its weights are normalized. Independent complete
+teacher populations therefore assess coverage and sampling error before the
+student is interpreted. Mode search and local Laplace approximations may
+initialize those populations, but importance or annealing corrections must
+use the actual proposal density, and finding several modes is not proof that
+all modes have been found.
+
+After saving the forward-trained map, pure reverse KL uses fresh Gaussian-base
+draws and the exact unnormalized target $\gamma$:
+\begin{equation}
+ L_R(\theta)=E_{Z\sim\varphi}\!\left[
+    \log\varphi(Z)-\log|\det DT_\theta(Z)|
+       -\log\gamma(T_\theta(Z))\right].
+\end{equation}
+This differs from $D_{\mathrm{KL}}(q_\theta\Vert p)$ only by the
+parameter-independent constant $-\log Z_\gamma$. It avoids teacher approximation
+in the reverse objective, but the responsibility decomposition in
+Eq.~\eqref{eq:neutra-responsibility-kl-decomposition} still permits loss of a
+poorly represented mode. The forward checkpoint must therefore remain the
+comparison, and a lower reverse loss cannot excuse a failed coverage check.
+The completed follow-up used independent annealed-SMC populations to construct
+the training and validation distributions. Four complete populations entered
+each partition, with 4,096 particles per population. A discovered Laplace
+mixture with a defensive broad component supplied the initial proposal $g_0$.
+The sampler traversed $g_0^{1-\beta}\gamma^\beta$ at 32 equally spaced
+temperatures, with eight Metropolis-adjusted Langevin moves per stage and
+time step $.05$. Systematic resampling occurred when ESS fell below half the
+population size. The independent populations shared the frozen proposal;
+replication therefore assessed sampling error conditional on that proposal,
+not uncertainty about undiscovered modes. Exact draws from the synthetic target were reserved for
+assessment and never supplied a training gradient. The recipe was calibrated
+on development targets and then frozen: three conditional DSF stages, two
+hidden layers of width 64 per stage, four sigmoid components and minibatches
+of 64. Forward training used 8,192 Adam updates at learning rate $.001$ and
+8,192 at $.0003$, resetting Adam at the change. A further 256 updates at
+$.0001$, with a fresh optimizer, minimized reverse KL. These are measured
+study settings, not universal choices for a new posterior. The calculations
+used GPU/XLA with double-precision maps; this experiment does not validate
+the same recipe in TF32.
+
+An intermediate map need not satisfy the accuracy requirement for the final
+fit. Two of the six fixed forward fits failed the original feature screen,
+although their final reverse-trained maps passed. To understand that failure,
+write $r_k(x)$ for the exact component responsibility and $u$ for the unwarped
+coordinate. The feature
+\begin{equation}
+ f_{kj}(x)=r_k(x)\frac{u_j-\mu_{kj}}{\sigma_{kj}}
+\end{equation}
+has expectation zero under the target: multiplying its mixture density by
+$r_k$ leaves the weighted density of component $k$, whose centered first
+moment is zero. The screen compared feature means from 2,048 independent map
+draws and 32,768 independent exact draws. For each feature its standardized
+discrepancy was
+\begin{equation}
+ z_f=\frac{|\bar f_q-\bar f_p|}
+ {\sqrt{s_q^2/2048+s_p^2/32768}},
+ \qquad s_a^2=\frac{1}{n_a-1}\sum_i(f_{a,i}-\bar f_a)^2.
+\end{equation}
+The largest discrepancies for the two failed forward maps were 5.555 and
+7.786, exceeding the exploratory cutoff of 5. They represented within-component
+mean shifts of about $.23$ and $.21$ standard deviations. The independent
+teacher means were much closer to zero; the discrepancy arose in the fitted
+map and was removed by the subsequent reverse updates. The evidence supports
+remaining forward-fit error, rather than demonstrating that either teacher
+was exact or that the forward optimizer had converged.
+
+Following inspection of these results, the intermediate requirement was
+revised to assess suitability as a warm start. A forward map had to reload
+correctly, remain finite on its complete 1,000-point score probe, retain at
+least half of each reference component's responsibility mass, and have maximum
+absolute mass error at most $.15$. Its cross entropy under exact reference
+draws could exceed that of the identity Gaussian by at most $.25$ nats. This
+last difference is a gross-fit screen, not an upper bound on forward KL.
+The half-mass and $.15$ limits are undercoverage heuristics. Forward feature
+discrepancies became explanatory; the final fit still had to pass the original
+feature, density, mass and finite-probe screens. Reassessment of the six fixed
+pairs was retrospective, and their original failures remain recorded.
+
+The revised rule was declared before evaluating four reserved random
+geometries, with three fitting seeds each. These targets were two-dimensional,
+unwarped Gaussian mixtures: two geometries had two components and two had
+three. Center distances were generated on $[6,10]$, variances on $[.5,2]$,
+and random weights were bounded below by $.1$. Fixed warped targets were
+tested separately; the randomized study did not also randomize a warp. All
+12 approximate teachers, forward warm starts and final maps passed their
+respective screens. In fact, all 12 random forward maps also passed the older
+feature screen. Table~\ref{tab:neutra-forward-reverse-random} reports the
+final density estimates and the largest feature discrepancy over the three
+seeds for each geometry.
+
+\begin{table}[htbp]
+\centering
+\caption{Reserved random geometries after approximate forward training and
+reverse KL. Intervals are observed minima and maxima across three fitting
+seeds, not confidence intervals.}
+\label{tab:neutra-forward-reverse-random}
+\begin{tabular}{lccc}
+\toprule
+Geometry & Final estimated forward KL & Largest $z_f$ & Passing pairs\\
+\midrule
+Two components, 1103 & $.00253$--$.00478$ & 3.000 & 3/3\\
+Two components, 1104 & $.00283$--$.00406$ & 2.847 & 3/3\\
+Three components, 2103 & $.00569$--$.00707$ & 2.770 & 3/3\\
+Three components, 2104 & $.00836$--$.01766$ & 3.979 & 3/3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Forward KL in the table is the Monte Carlo average of $\log p(X)-\log
+q_\theta(X)$ over independent exact target draws; the synthetic mixture's
+normalizing constant is known. The smallest forward component-mass ratio was
+$.9182$. Final maximum absolute mass errors ranged from $.00465$ to $.03028$.
+Estimated forward KL decreased after reverse training in 11 of 12 cases, but
+no uncertainty analysis established a ranking of the forward and final maps.
+These changes are descriptive, and four independent geometries provide
+limited evidence about transfer to the wider target family.
+
+Density accuracy did not imply uniform whitening. For a differentiable
+invertible map $T$, define the unnormalized transformed density
+$\gamma_z(z)=\gamma(T(z))|\det DT(z)|$. A standard Gaussian transformed
+posterior has score $-z$, so the residual
+\begin{equation}
+ e(z)=\nabla_z\log\gamma_z(z)+z
+      =\nabla_z\left\{\log\gamma_z(z)+\tfrac12\|z\|^2\right\}
+\end{equation}
+vanishes everywhere when the whitening is exact. The unknown normalizing
+constant disappears under differentiation. Across the 12 final maps, the
+median of $\|e(z)\|$ on 1,000 independent standard-normal base draws ranged
+from $.0967$ to $.3885$, while the 99th percentiles ranged from $10.38$ to
+$67.65$ and maxima from $38.15$ to $324.90$. Local sharp derivatives can
+therefore coexist with small integrated density errors and adequate measured
+component masses. A finite probe can expose this failure cheaply, but cannot
+bound derivatives outside its sampled points or prove that all posterior modes
+are covered.
+
+All 48 teacher and fitting workers completed, all training updates were finite,
+and no updates were clipped. The terminal check verified 78 complete finite
+1,000-point probes and preserved the original fixed-case evidence. These
+results support using the two-stage training procedure as a candidate on a
+new target. They establish neither HMC mixing nor transfer to q20. There the
+UKF approximation defines a four-parameter posterior for a model with 20 latent
+state coordinates; teacher reliability, numerical precision and whitening
+must be assessed again for that posterior. Short forward fits, preserved
+forward checkpoints, paired score probes and independent coverage checks can
+detect early failures before a long training run is justified.
+
+\subsection{A short q20 transfer test}
+
+The first q20 test applied the same diagnostics to the four free parameters of
+the $T=30$ UKF approximation. The latent state has twenty coordinates, but the
+learned transport acts on the four parameters
+$(\theta_{\mathrm{mean}},\theta_{\mathrm{bias}},
+\theta_{\mathrm{obs}},\theta_{\mathrm{obs,bias}})$. The target was evaluated
+with the batch-native principal-square-root backend used in the preceding q20
+calibration. A prior-importance pilot was
+rejected before training: its eight 512-point populations had effective sample
+sizes between 2.31 and 9.53 and maximum normalized weights between .173 and
+.613. The particles were not used as a teacher.
+
+Instead, eight previously saved beta-one annealed-SMC populations were replayed
+with the current target. Their stored log densities use the affine chart
+$\theta=c+Fz$, so the replay subtracted the exactly reconstructed
+$\log|\det F|$. For every one of the 800 particles,
+\begin{equation}
+ \frac{|\ell_{\mathrm{current}}(\theta)-
+ [\ell_{\mathrm{saved}}(z)-\log|\det F|]|}
+ {1+|\ell_{\mathrm{saved}}(z)-\log|\det F|} < 5.20\times 10^{-16}.
+\end{equation}
+Four populations were frozen for training and four for validation. Their
+effective sample sizes ranged from 87.83 to 100 out of 100. The training and
+validation averages of negative observation-weight mass differed by .1062
+(between-population standard error .0408). This supplies an approximate
+teacher checked for replay consistency and agreement between populations,
+conditional on the two
+known proposal-supported sign regions. It does not establish exhaustive mode
+discovery.
+
+Before a long ladder, the short test used three forward checkpoints and a
+32-update reverse phase. The results are reported as diagnostics rather than
+convergence claims:
+
+\begin{table}[htbp]
+\centering
+\caption{First short q20 fit. Cross entropy uses the validation teacher;
+$\hat p_-$ is the generated negative observation-weight fraction. Score
+summaries use 128 base draws for the first two rows and the same 1,000 base
+draws for both objective endpoints. All numbers are descriptive.}
+\label{tab:neutra-q20-short}
+\begin{tabular}{lrrrrrr}
+\toprule
+Endpoint & Updates & $\widehat L_F$ & $\hat p_-$ & Median & P99 & Maximum\\
+\midrule
+Initial map & 0 & 18.020 & .516 & 32.77 & 241.54 & 335.93\\
+Forward & 128 & 8.117 & .477 & 193.98 & 822.96 & 882.84\\
+Forward & 512 & 6.531 & .459 & 32.04 & 2041.89 & 5490.36\\
+Reverse & 32 & 9.757 & .421 & 8.34 & 479.51 & 745.13\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Here $e(z)=\nabla_z\log\gamma_z(z)+z$ is the exact-Gaussian whitening
+residual defined above. Every update was finite, XLA compiled and unclipped;
+the maps reloaded with inverse and log-determinant checks, and the represented
+sign regions retained the declared coverage. Cross entropy shows a closer fit
+to the approximate teacher. The residual tails show substantial departures
+from the Gaussian score within the tested base region.
+The reverse phase reduced the residual median and the weighted residual mean
+on held-out teacher points (from 16.85 initially to 5.81), while its P99
+remained 479.51. The full-moment Gaussian control had median/P99 residuals
+167.18/710.91, so the NAF center is descriptively better; no uncertainty
+analysis supports a method ranking. The large tails motivated a second fitting
+seed and a bounded reverse-training continuation. This short test rules out a trivial frozen or nonexecuting
+training path, but it does not establish posterior correctness, complete mode
+coverage, uniform whitening, HMC readiness or transfer to the full latent
+state distribution.
+
+A second fitting seed tested a larger, still bounded budget: 2,048 forward
+updates at $.001$, then 128 reverse updates at $.0001$. Validation cross entropy
+was 5.809 at the forward endpoint and 5.989 after reverse refinement. The
+generated negative sign fraction was .457, and all finite, inverse and
+represented-region checks passed. Table~\ref{tab:neutra-q20-continuation}
+reports the paired score diagnostics and the subsequent continuation.
+These are within-seed changes; the different budget prevents attributing the
+difference from the first seed to randomness alone.
+
+The largest residuals were not confined to $\|z\|>3$: the maximum after 128
+reverse updates also occurred inside that ball. To examine whether these
+points represent excess generated density, write
+$r_i=\log\gamma_z(z_i)+\|z_i\|^2/2$ for each of the $n=1000$ base draws.
+Since $\gamma(T(z))/q(T(z))=(2\pi)^{d/2}\exp r(z)$, normalizing by the same
+bank's importance estimate of $Z_\gamma$ gives
+\begin{equation}
+ \widehat{\log\frac{p(T(z_i))}{q(T(z_i))}}
+ =r_i-\log\left\{\frac1n\sum_{j=1}^{n}\exp r_j\right\}.
+\end{equation}
+All ten points with the largest residuals had this estimate below $-3$.
+The normalizer is itself estimated from the generated sample, so this is an
+explanatory diagnostic, not an exact posterior-density comparison.
+Forward fitting a finite teacher does not directly penalize density placed
+where that teacher has few particles. Reverse KL averages
+$\log\{q(X)/\gamma(X)\}$ under $q$ itself and can therefore penalize this
+excess density. This diagnosis motivated an extension from 128 to 256 reverse
+updates, preserving Adam's state and the random-number counter. It took
+17.5 minutes, including compilation and endpoint diagnostics.
+
+\begin{table}[htbp]
+\centering
+\caption{Second q20 fit and its reverse continuation. The forward map used
+2,048 updates; reverse counts are cumulative updates from that map. Every
+row uses the same 1,000 base points. Score columns summarize $\|e(z)\|$.}
+\label{tab:neutra-q20-continuation}
+\begin{tabular}{lrrrrrr}
+\toprule
+Endpoint & Updates & $\widehat L_F$ & $\hat p_-$ & Median & P99 & Maximum\\
+\midrule
+Forward & 2048 & 5.809 & .462 & 3.087 & 342.34 & 1694.00\\
+Reverse & 128 & 5.989 & .457 & 1.995 & 74.28 & 671.22\\
+Reverse & 256 & 5.735 & .457 & 1.681 & 57.44 & 279.99\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The continued map passed its finite-value, inverse and represented-region
+checks. The measured residuals decreased, including the held-out teacher's
+weighted residual mean, from 3.918 to 3.236. Nevertheless, 76.4\% of base
+draws still had residual norm greater than one. The observed changes support
+further target-specific calibration; they do not establish a statistical
+ranking, adequate Gaussianization or HMC readiness. Reverse KL does not itself
+control the maximum score error, and the finite teacher still cannot establish
+complete mode coverage. The short-test allocation therefore closes with a
+working, resumable training procedure and an unresolved geometry problem,
+rather than a promoted q20 map.

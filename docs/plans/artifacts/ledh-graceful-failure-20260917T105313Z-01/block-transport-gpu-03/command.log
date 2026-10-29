@@ -1,0 +1,17 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789647704.680739 2036317 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1789647704.697397 2036317 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789647704.844568 2036317 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647704.844644 2036317 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647704.844651 2036317 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647704.844654 2036317 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1789647708.742872 2036317 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1789647711.320118 2036317 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789647712.636436 2036317 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{'dtype': 'float64', 'n': 4096, 'k': 2048, 'block_grid': [2, 2], 'value_tangent_error': 1.498024508347267e-11, 'covariance_tangent_error': 2.4818766952863536e-11, 'row_sum_error': 2.220446049250313e-16, 'row_tangent_error': 2.6020852139652106e-18, 'seconds': 3.5287470210168976, 'valid': True}
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 42, in <module>
+    assert max(value_error,covariance_error)<limit,(value_error,covariance_error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: (0.0012892067898064852, 0.0021456920076161623)

@@ -1,0 +1,32 @@
+{
+  "checked_utc": "2026-09-29T04:23:44.841593+00:00",
+  "command": [
+    "systemd-run",
+    "--user",
+    "--unit=bayesfilter-hmc-ssm-repair-sequence-20260929-r1",
+    "--service-type=exec",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=23405",
+    "--property=TimeoutStopSec=30",
+    "--property=StandardOutput=append:/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-pilot-repair-2026-09-29/sequence-r1.log",
+    "--property=StandardError=inherit",
+    "--working-directory=/home/ubuntu/python/BayesFilter",
+    "--setenv=TF_FORCE_GPU_ALLOW_GROWTH=true",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "scripts/continue_hmc_ssm_after_diagnosis.py",
+    "docs/plans/artifacts/hmc-shared-gpu-recovery-2026-09-29/configuration.json",
+    "docs/plans/artifacts/hmc-ssm-pilot-repair-2026-09-29/diagnosis-r3",
+    "docs/plans/artifacts/hmc-ssm-pilot-repair-2026-09-29/recovery-r1",
+    "--gpu",
+    "GPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91",
+    "--service",
+    "bayesfilter-hmc-ssm-pilot-continuation-20260929-r1"
+  ],
+  "original_main_denominator": 32,
+  "plan_file": "docs/plans/bayesfilter-hmc-ssm-pilot-repair-2026-09-29.md",
+  "predecessor": "bayesfilter-hmc-ssm-startup-diagnosis-20260929-r3.service",
+  "result_file": "docs/plans/artifacts/hmc-ssm-pilot-repair-2026-09-29/result.md",
+  "runtime_ceiling_derivation": "1775 second diagnostic bound + 21600 second whole repair pool + 30 second shutdown; numerical launcher independently deducts all prior pool charges and applies original wall deadline",
+  "waiting_interpretation": "framework-free observer; numerical diagnostic charged once by its own enclosing receipt",
+  "waiting_process_initializes_GPU": false
+}

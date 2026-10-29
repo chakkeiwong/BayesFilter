@@ -1,0 +1,412 @@
+{
+  "classification": "calibration_curves_not_admission",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "candidate_list": [
+    {
+      "name": "warm",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "flow-20",
+      "n": 256,
+      "controls": {
+        "substeps": 20,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "flow-40",
+      "n": 256,
+      "controls": {
+        "substeps": 40,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "flow-80",
+      "n": 256,
+      "controls": {
+        "substeps": 80,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "ot-32",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 32,
+        "reset_balance_steps": 32,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "ot-128",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 128,
+        "reset_balance_steps": 128,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "epsilon-0.5",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 0.5,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "epsilon-1.0",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 1.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "epsilon-4.0",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 4.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "ridge-1e-06",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-06,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "ridge-0.0001",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 0.0001,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "correction-4",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 4,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "lm-0.01",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "trust-0.5",
+      "n": 256,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.5,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "N1024-warm",
+      "n": 1024,
+      "controls": {
+        "substeps": 10,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 8,
+        "reset_balance_steps": 8,
+        "reset_ridge": 1e-05,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "refined",
+      "n": 256,
+      "controls": {
+        "substeps": 80,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 128,
+        "reset_balance_steps": 128,
+        "reset_ridge": 1e-05,
+        "correction_steps": 4,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    },
+    {
+      "name": "N1024-refined",
+      "n": 1024,
+      "controls": {
+        "substeps": 80,
+        "reset_policy": "contract_e",
+        "reset_epsilon": 2.0,
+        "reset_sinkhorn_steps": 128,
+        "reset_balance_steps": 128,
+        "reset_ridge": 1e-05,
+        "correction_steps": 4,
+        "correction_strength": 0.2,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_trust_radius": 0.1,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap": 0.98,
+        "coordinate_cap_power": 8
+      }
+    }
+  ],
+  "parameter_design": [
+    -0.9,
+    0.0,
+    0.9
+  ],
+  "dataset_replicates": [
+    0,
+    2
+  ],
+  "curves": []
+}

@@ -24,7 +24,8 @@ def test_public_multimodel_candidates_reload_and_exclude_warmup(tmp_path,target,
         options={"acceptance_policy":{"practical_region":(.41,.99),"repair_region":(.405,.995)},
                  "search":{"pilot_enabled":False,"refinement_rounds":0,"total_budget_units":24,
                            "repair_reserve_units":4,"evidence_rungs":(1,)}})
-    result=execute_pipeline(design,tmp_path)
+    fit_root = tmp_path / "replication-0000"
+    result=execute_pipeline(design,fit_root)
     inventory=check_inventory(read_json(result["tuning_path"]))
     assert inventory["finding"]=="inventory_passed"
     assert result["verified_candidate_ids"], result
@@ -34,6 +35,23 @@ def test_public_multimodel_candidates_reload_and_exclude_warmup(tmp_path,target,
         assert member["warmup_exclusion_matches"]
         assert read_tensor(member["draws_path"]).shape[0]==member["posterior"]["retained_results_per_chain"]
         assert member["posterior"]["assessment_role"]=="posterior_only"
+        for check in member["posterior"]["warmup_checks"]:
+            if check["modern_rhat"] is None:
+                continue
+            report = check["modern_rhat"]["assessment"]
+            assert report["sample_counts"]["draws_per_chain"] == check["check_window_results_per_chain"]
+            assert report["sample_counts"]["chain_count"] == 4
+            assert not report["requirements"]["precision_required"]
+            assert report["passed"] == (not report["failed_checks"])
     before={m["candidate_id"]:file_hash(m["draws_path"]) for m in result["members"]}
-    resumed=execute_pipeline(design,tmp_path)
+    resumed=execute_pipeline(design,fit_root)
     assert before=={m["candidate_id"]:file_hash(m["draws_path"]) for m in resumed["members"]}
+    from bayesfilter.testing.inference_validation.engines.pipeline import run_replication, summarize_replications
+    record = run_replication(design, tmp_path, 0)
+    report = summarize_replications(design, [record])["delivery_coverage"]
+    assert report["planned"] == report["recorded"] == 1
+    assert report["delivery"]["screen_passed"] is None
+    assert report["quantities"]
+    for quantity in report["quantities"].values():
+        assert quantity["coverage"]["total"] == quantity["delivery_and_coverage"]["total"] == 1
+        assert quantity["delivery_and_coverage"]["count"] <= report["delivery"]["count"]

@@ -1,0 +1,22 @@
+............F..........s....                                             [100%]
+=================================== FAILURES ===================================
+_____________ test_actual_dual_force_failure_preserves_exact_value _____________
+tests/integration/test_ledh_failure_contract.py:113: in test_actual_dual_force_failure_preserves_exact_value
+    target=DualParameterLEDHTarget(model,*inputs,exact_params=controls,biased_params=biased)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/ledh_dual_parameter_target.py:78: in __init__
+    raise ValueError(
+E   ValueError: Parameter key mismatch: exact={'reset_sinkhorn_steps', 'substeps', 'correction_steps', 'reset_balance_steps', 'pairwise_steps', 'reset_ridge', 'correction_trust_radius', 'reset_design', 'coordinate_cap', 'reset_policy'}, biased={'reset_sinkhorn_steps', 'substeps', 'correction_steps', 'reset_balance_steps', 'correction_strength', 'pairwise_steps', 'reset_ridge', 'correction_trust_radius', 'reset_design', 'coordinate_cap', 'reset_policy'}
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/integration/test_ledh_failure_contract.py::test_actual_dual_force_failure_preserves_exact_value
+1 failed, 26 passed, 1 skipped, 2 warnings in 44.63s

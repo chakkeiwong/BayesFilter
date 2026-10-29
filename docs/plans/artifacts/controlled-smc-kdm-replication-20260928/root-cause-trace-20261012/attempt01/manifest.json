@@ -1,0 +1,55 @@
+{
+  "schema": "kdm_root_cause_trace_manifest_v1",
+  "plan": "/home/chakwong/BayesFilter/docs/plans/controlled-smc-kdm-root-cause-trace-20261012.md",
+  "result": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt01/result.json",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt01"
+  ],
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "git_branch": "surrogate-hmc",
+  "file_hashes": {
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py": "8ff5814514ad903418f3ac3a35dbf1d5411372924397e4feb5f49fbbae8f0ede",
+    "/home/chakwong/BayesFilter/docs/plans/controlled-smc-kdm-root-cause-trace-20261012.md": "95feae622d69a86619639947ec2dfeace5ca86d3a17e2f2254505e4d98176000"
+  },
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "source_environment": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+  "seed": [
+    202610122,
+    0
+  ],
+  "data_version": "Existing coupled attempt03 unit01 update0 initial cloud and checkpoints; hashes in result",
+  "hardware": "GPU/XLA noise regeneration; CPU-only pinned author reference",
+  "worker_commands": [
+    [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "-I",
+      "-B",
+      "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py",
+      "--worker",
+      "gpu",
+      "--output",
+      "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt01"
+    ],
+    [
+      "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+      "-I",
+      "-B",
+      "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py",
+      "--worker",
+      "source",
+      "--output",
+      "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt01"
+    ]
+  ],
+  "timeout_seconds": 600,
+  "status": "FAIL",
+  "error": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py\", line 236, in supervise\n    subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT,\n  File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/home/chakwong/anaconda3/envs/tf-gpu2/bin/python', '-I', '-B', '/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_root_cause_trace.py', '--worker', 'source', '--output', '/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt01']' returned non-zero exit status 1.\n",
+  "wall_seconds": 10.277816163841635,
+  "conservative_cpu_charge_seconds": 10.277816163841635,
+  "conservative_gpu_charge_seconds": 10.277816163841635
+}

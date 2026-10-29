@@ -13,6 +13,13 @@ question.  If one of those constructions is used inside Hamiltonian Monte Carlo
 for a nonlinear DSGE or MacroFinance model, what target is the Markov chain
 intended to leave invariant?
 
+The observation-parent experiments sharpen this question. A conditional
+proposal can produce much more even weights and a derivative that agrees
+with finite differences, while still giving a poor estimate of the model
+score. The weighted-parent default addresses weight balance; it does not
+settle which posterior an HMC chain would target. Chapter~\ref{ch:bf-dpf-observation-parent-failures}
+develops the measured counterexamples after the target distinctions below.
+
 The answer cannot be inferred from the label ``differentiable particle
 filter.''  HMC is a target-specific algorithm.  Its mathematical interpretation
 depends on the scalar log target used for accept/reject decisions, the gradient
@@ -450,7 +457,10 @@ Chapter~\ref{ch:bf-hnn-surrogate-hmc} gives the complete construction, proves
 the discrete proposal conditions, and explains why a true endpoint likelihood
 value is not by itself a universal correction.  These methods attempt to
 improve movement through an already chosen target, or to use a surrogate
-proposal that is later corrected against that target.  DPF methods may instead
+proposal that is later corrected against that target.  The completed
+five-model case study in Chapter~\ref{ch:bf-surrogate-hmc-five-models} is an
+instance of the latter construction: the LEDH filter score supplies a frozen
+proposal force, while the endpoint value determines the Metropolis correction.  DPF methods may instead
 alter the filtering likelihood itself through flow approximation, relaxed
 resampling, or learned transport.  The distinction is operational:
 \begin{itemize}

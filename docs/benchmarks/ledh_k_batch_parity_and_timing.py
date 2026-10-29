@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""K-direction batching: numerical parity + timing, sequential vs pfor.
+"""HISTORICAL — retired pfor exploration; do not execute or use as current evidence.
+
+K-direction batching: numerical parity + timing, sequential vs pfor.
 
 Executes the check protocol from
 docs/plans/ledh-vectorized-map-approval-request.md.
@@ -18,6 +20,13 @@ Checks:
 Not concluded here: that pfor is safe as a default. That needs the HMC-level
 checks (acceptance, ESS) named in the approval request.
 """
+
+# Historical source retained; executable retirement precedes device/framework import.
+raise RuntimeError(
+    "HISTORICAL pfor exploration is retired: no applicable written approval. "
+    "See docs/plans/filter_gradient_ledh_pfor_disposition_20260929.md."
+)
+
 import os
 os.environ.setdefault("CUDA_DEVICE_ORDER", "PCI_BUS_ID")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")

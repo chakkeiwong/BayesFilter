@@ -1,0 +1,44 @@
+{
+  "schema": "m13_existing_master_scope_preparation_v1",
+  "question": "Does canonical analytical DCTR surrogate HMC recover the declared model parameter posterior?",
+  "model_id": "M13",
+  "scope_kind": "declared_noise_scale_inference_exercise",
+  "state_dimension": 4,
+  "observation_dimension": 2,
+  "parameter_dimension": 2,
+  "horizon": 20,
+  "model_law": "constant-velocity Gaussian transition; wrapped correlated-Gaussian range/bearing observation; transition before observation",
+  "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R); fixed remaining coefficients and N(m0,P0) initialization",
+  "prior": {
+    "distribution": "independent Normal(0, log(2)^2)",
+    "coordinates": [
+      "lambda_Q",
+      "lambda_R"
+    ],
+    "support": "R^2",
+    "status": "declared in existing master; posterior implementation pending",
+    "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md:495"
+  },
+  "precision": {
+    "force": "float32",
+    "tf32": true,
+    "jit_compile": true,
+    "fp64_role": "explicit reference and derivative checks"
+  },
+  "engineering_decision": "docs/plans/artifacts/surrogate-hmc-closure-20260924-fp32-policy-01/assessment/report.json",
+  "observed_fixture_seed": 701,
+  "observed_seed_role": "qualification data; not an untouched posterior claim",
+  "current_particle_count": 256,
+  "current_controls_status": "warm_start_not_scope_tuned",
+  "pending": [
+    "freeze disjoint calibration/validation/untouched claim partitions",
+    "evaluate M13-specific numerical controls",
+    "implement and qualify a full-support posterior endpoint/reference, including tails and alias limits",
+    "bind public artifact-authority HMC tuner and prospective posterior precision/cost design"
+  ],
+  "optional_diagnostic": "saved-run FP32 process repeatability; not prerequisite",
+  "scope_controls_qualified": false,
+  "posterior_qualified": false,
+  "inference_launched": false,
+  "next_work_is_part_of_existing_master": true
+}

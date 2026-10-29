@@ -1,0 +1,27 @@
+{
+  "status": "diagnosis_complete",
+  "baseline": "actual unmodified bounded density_l2 fit",
+  "known_target_recovery": "baseline rejected in these fixtures",
+  "zero_step_failure_counts": {
+    "cpu": 8,
+    "gpu": 8
+  },
+  "fixed_scale_alone": "insufficient",
+  "independent_R": "30 of 30 known targets recovered",
+  "default_readiness": false,
+  "heuristic_dominance": {
+    "verdict": "veto",
+    "situations": [
+      "dimension 5/10/20/40/80",
+      "healthy/narrow/broad"
+    ],
+    "adversaries": [
+      "known Gaussian oracle",
+      "diagonal log-quadratic QR",
+      "cloud-moment baseline"
+    ],
+    "reason": "learned fits lose to oracle/QR; some narrow fits also lose to initial cloud moments"
+  },
+  "statistical_ranking": "none; deterministic known-target failures only",
+  "next_action": "isolate QR initialization and fixed objective scaling in the actual fitter; preserve the density objective and defaults"
+}

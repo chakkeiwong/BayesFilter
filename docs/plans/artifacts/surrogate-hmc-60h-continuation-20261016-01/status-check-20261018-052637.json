@@ -1,0 +1,120 @@
+{
+  "checked_utc": "2026-10-18T05:26:37.344707+00:00",
+  "kind": "saved_result_status_inspection_not_new_experiment",
+  "git_commit_at_inspection": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "models": {
+    "LGSSM": {
+      "source": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/literature-prior-hmc-01/lgssm/inference/hmc.json",
+      "status": "VERIFIED",
+      "warmup_per_chain": 2000,
+      "retained_per_chain": 1000,
+      "warmup_ready": true,
+      "posterior_sampling_complete": true,
+      "max_modern_rhat": 1.0070823977215302,
+      "acceptance_per_chain": [
+        0.743,
+        0.745,
+        0.743,
+        0.739
+      ],
+      "max_abs_delta_h": 8.594236177548268,
+      "divergence_count": 0,
+      "force_fallback_count": 0,
+      "posterior_agreement": "not_checked"
+    },
+    "KSC SV": {
+      "source": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/literature-prior-hmc-01/ksc/inference/hmc.json",
+      "status": "VERIFIED",
+      "warmup_per_chain": 2000,
+      "retained_per_chain": 1000,
+      "warmup_ready": true,
+      "posterior_sampling_complete": true,
+      "max_modern_rhat": 1.0059978913954408,
+      "acceptance_per_chain": [
+        0.698,
+        0.726,
+        0.685,
+        0.693
+      ],
+      "max_abs_delta_h": 78.03596144579501,
+      "divergence_count": 0,
+      "force_fallback_count": 0,
+      "posterior_agreement": "not_checked"
+    },
+    "Predator-prey": {
+      "source": "docs/plans/artifacts/surrogate-hmc-60h-continuation-20261016-01/predator_prey/predator_prey/inference/hmc.json",
+      "status": "BUDGET_EXHAUSTED",
+      "warmup_per_chain": 3000,
+      "retained_per_chain": 2750,
+      "warmup_ready": true,
+      "posterior_sampling_complete": false,
+      "max_modern_rhat": 1.029703200786308,
+      "acceptance_per_chain": [
+        0.7043636363636364,
+        0.7145454545454546,
+        0.7192727272727273,
+        0.7167272727272728
+      ],
+      "max_abs_delta_h": 74.71600683723356,
+      "divergence_count": 0,
+      "force_fallback_count": 0,
+      "posterior_agreement": "not_checked"
+    },
+    "SIR": {
+      "source": "docs/plans/artifacts/surrogate-hmc-60h-continuation-20261016-01/sir_d18/sir_d18/inference/hmc.json",
+      "status": "BUDGET_EXHAUSTED",
+      "warmup_per_chain": 2000,
+      "retained_per_chain": 0,
+      "warmup_ready": false,
+      "posterior_sampling_complete": false,
+      "max_modern_rhat": null,
+      "acceptance_per_chain": null,
+      "max_abs_delta_h": null,
+      "divergence_count": null,
+      "force_fallback_count": null,
+      "posterior_agreement": "not_checked"
+    },
+    "Range bearing": {
+      "source": "docs/plans/artifacts/surrogate-hmc-60h-continuation-20261016-01/range-bearing-retry-01/run/range_bearing/inference/hmc.json",
+      "status": "HEALTH_VETO",
+      "warmup_per_chain": 2000,
+      "retained_per_chain": 500,
+      "warmup_ready": true,
+      "posterior_sampling_complete": false,
+      "max_modern_rhat": 1.02058461569554,
+      "acceptance_per_chain": [
+        0.958,
+        0.968,
+        0.968,
+        0.954
+      ],
+      "max_abs_delta_h": 1509.0488772466938,
+      "divergence_count": 0,
+      "force_fallback_count": 0,
+      "posterior_agreement": "not_checked"
+    }
+  },
+  "inspected_worker_supervisor_pids": [
+    1119837,
+    1485735,
+    1956542,
+    1956544
+  ],
+  "all_inspected_processes_stopped": true,
+  "budget": {
+    "authorized_gpu_wall_seconds": 216000,
+    "used_seconds": 193390.38948677393,
+    "remaining_seconds": 22609.61051322607,
+    "max_attempts": 6
+  },
+  "attempt_count": 4,
+  "range_energy_error_limit": 1000.0,
+  "decision": "queue_finished_five_model_goal_incomplete",
+  "next_action": "Review the range energy-error continuation veto before any retry; predator-prey and SIR need allocation/tuning review. Preserve all terminal artifacts.",
+  "nonclaims": [
+    "No independent posterior agreement established",
+    "No statistical method ranking",
+    "No extra validation chain required"
+  ]
+}

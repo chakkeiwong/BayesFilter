@@ -124,6 +124,7 @@ def tune_map(config, bridge, finalized, root, *, max_seconds):
     save(root/"curvature.json", proposal)
     save(root/"protocol.json", config)
     execution, search = tuning_configs(config, label)
+    execution = replace(execution, reuse_leapfrog_graphs=True)
     paths = [ROOT/path for path in source_snapshot()] + [Path(__file__).resolve()]
     binding = bind_hmc_candidate_set_execution(adapter=adapter, initial_position=latent,
         target_scope=adapter.target_scope, target_lineage={"model": "ssl_lstm_q20", "data": bridge.target_signature,
@@ -159,7 +160,7 @@ def assess_member(config, bridge, member_path, root, *, max_seconds, chunk_secon
     lineage = _check_member_protocol(member, config)
     if lineage["method"] != "neutra":
         raise ValueError("configured training assessment requires a NeuTra member")
-    label = "configured-training-"+member.candidate_id
+    label = "configured-training-"+member.candidate.candidate_id
     kwargs = sequential_kwargs(config, label)
     policy = kwargs["assessment_policy"]
     controller = SequentialNeuTraHMCConfig(step_size=member.step_size, num_leapfrog_steps=member.num_leapfrog_steps,

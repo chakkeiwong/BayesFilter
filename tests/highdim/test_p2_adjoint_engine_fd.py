@@ -11,17 +11,19 @@ vs centered FD of the SAME value program, relative error <= 1e-6
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from bayesfilter.highdim.squared_tt_adjoint_engine_tf import run_adjoint_score_filter
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
     DensityKernelAdapter,
     EngineConfig,
-    run_value_filter_branch_axis,
+    run_value_filter_branch_axis_reference as run_value_filter_branch_axis,
 )
 
 DTYPE = tf.float64
@@ -150,3 +152,22 @@ def test_i_p2_1_adjoint_gradient_matches_fd_n2() -> None:
         fd[k] = (float(vp.numpy()) - float(vm.numpy())) / (2.0 * step)
     rel = np.linalg.norm(grad.numpy() - fd) / max(1.0, np.linalg.norm(fd))
     assert rel <= 1e-6, f"adjoint vs FD rel {rel}: adjoint {grad.numpy()} fd {fd}"
+
+
+@pytest.mark.parametrize("floor,tau", [(0.1, 1e-6), (1e-12, 0.0)])
+def test_relative_gram_floor_and_zero_defensive_weight_preserve_total_gradient(floor, tau):
+    theta = np.array([0.13])
+    adapter, transition, observation, initial, ys = _family(1, theta, 61)
+    config = replace(_config(1), branch_gram_floor=floor, tau=tau)
+    value, score = run_adjoint_score_filter(
+        adapter, ys, config, transition_vjp=transition,
+        observation_vjp=observation, initial_vjp=initial, parameter_dim=1)
+    reference, _ = run_value_filter_branch_axis(adapter, ys, config)
+    np.testing.assert_allclose(value, reference, rtol=1e-10, atol=1e-10)
+    step = 1e-5
+    plus, *_ = _family(1, theta + step, 61)
+    minus, *_ = _family(1, theta - step, 61)
+    vp, _ = run_value_filter_branch_axis(plus, ys, config)
+    vm, _ = run_value_filter_branch_axis(minus, ys, config)
+    fd = (float(vp) - float(vm)) / (2.0 * step)
+    assert abs(float(score[0]) - fd) <= 1e-6 * max(1.0, abs(fd))

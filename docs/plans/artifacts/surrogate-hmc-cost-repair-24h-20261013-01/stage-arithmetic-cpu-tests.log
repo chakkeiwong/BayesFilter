@@ -1,0 +1,40 @@
+Deliberate CPU-only diagnostic checks: CUDA_VISIBLE_DEVICES=-1
+.F...................................................................... [ 47%]
+........................................................................ [ 94%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+____ test_localization_records_local_and_propagated_errors_and_fused_check _____
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-271/test_localization_records_loca0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73d3c41f74d0>
+
+    def test_localization_records_local_and_propagated_errors_and_fused_check(tmp_path, monkeypatch):
+        monkeypatch.setattr(runtime, "N", 16)
+        case = runtime.load_case("lgssm")
+        case.controls = replace(case.controls, flow_steps=2, reset_steps=2, correction_steps=0)
+        result = diagnostic.run_diagnostic(case, tmp_path, horizon=2)
+>       assert result["status"] == "STAGE_ARITHMETIC_LOCALIZED"
+E       AssertionError: assert 'STAGE_ARITHMETIC_INVALID' == 'STAGE_ARITHMETIC_LOCALIZED'
+E         
+E         - STAGE_ARITHMETIC_LOCALIZED
+E         ?                  ^^^   --
+E         + STAGE_ARITHMETIC_INVALID
+E         ?                  ^^^
+
+tests/test_surrogate_hmc_stage_arithmetic_diagnostic.py:34: AssertionError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791919321.134387 1919533 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_stage_arithmetic_diagnostic.py::test_localization_records_local_and_propagated_errors_and_fused_check
+1 failed, 151 passed, 2 warnings in 21.53s

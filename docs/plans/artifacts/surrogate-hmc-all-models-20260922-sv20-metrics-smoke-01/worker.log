@@ -1,0 +1,79 @@
+2026-09-22 03:07:14.012518: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-22 03:07:14.022031: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790017634.032099 3192348 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790017634.034863 3192348 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790017634.042680 3192348 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790017634.042740 3192348 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790017634.042747 3192348 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790017634.042748 3192348 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-22 03:07:14.045107: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1790017636.393811 3192348 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+2026-09-22 03:07:17.196388: I external/local_xla/xla/service/service.cc:152] XLA service 0x5c44a30a8550 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-22 03:07:17.196455: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-22 03:07:17.225577: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2026-09-22 03:07:17.236408: W tensorflow/core/framework/op_kernel.cc:1856] OP_REQUIRES failed at while_op.cc:403 : INVALID_ARGUMENT: Shapes of all inputs must match: values[0].shape = [1024,1025] != values[1].shape = [32,1025]
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 20, in body
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_posterior_reference.py", line 33, in statistics
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_reference.py", line 73, in physical_value_score
+
+	 [[{{function_node __inference_physical_value_score_553}}{{node stack}}]]
+	tf2xla conversion failed while converting __inference_statistics_633[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+	tf2xla conversion failed while converting while_body_183_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+
+2026-09-22 03:07:17.238234: W tensorflow/core/framework/op_kernel.cc:1856] OP_REQUIRES failed at xla_ops.cc:590 : INVALID_ARGUMENT: Shapes of all inputs must match: values[0].shape = [1024,1025] != values[1].shape = [32,1025]
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 20, in body
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_posterior_reference.py", line 33, in statistics
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_reference.py", line 73, in physical_value_score
+
+	 [[{{function_node __inference_physical_value_score_553}}{{node stack}}]]
+	tf2xla conversion failed while converting __inference_statistics_633[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+	tf2xla conversion failed while converting while_body_183_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+
+	 [[while]]
+	tf2xla conversion failed while converting __inference_evaluate_743[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+Traceback (most recent call last):
+  File "/tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+    theta,functions,valid=kernel(samples)
+                          ^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 53, in quick_execute
+    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Shapes of all inputs must match: values[0].shape = [1024,1025] != values[1].shape = [32,1025]
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 20, in body
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_posterior_reference.py", line 33, in statistics
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_reference.py", line 73, in physical_value_score
+
+	 [[{{function_node __inference_physical_value_score_553}}{{node stack}}]]
+	tf2xla conversion failed while converting __inference_statistics_633[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+	tf2xla conversion failed while converting while_body_183_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+
+Stack trace for op definition: 
+File "tmp/surrogate-hmc-sv20-metrics-smoke.py", line 19, in <module>
+File "home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_sv_inference_metrics.py", line 25, in evaluate
+
+	 [[while]]
+	tf2xla conversion failed while converting __inference_evaluate_743[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_evaluate_743]

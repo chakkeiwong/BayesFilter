@@ -1,0 +1,176 @@
+.........................................................FF........      [100%]
+=================================== FAILURES ===================================
+_ test_sv20_reference_result_does_not_promote_hmc[reference-QUALIFIED_LIKELIHOOD_PROBES-False] _
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-190/test_sv20_reference_result_doe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x786c342f2d50>
+capsys = <_pytest.capture.CaptureFixture object at 0x786c8ced9e90>
+stage = 'reference', status = 'QUALIFIED_LIKELIHOOD_PROBES'
+posterior_qualified = False
+
+    @pytest.mark.parametrize("stage,status,posterior_qualified", [
+        ("reference", "QUALIFIED_LIKELIHOOD_PROBES", False),
+        ("posterior", "QUALIFIED_MODEL_POSTERIOR_REFERENCE", True)])
+    def test_sv20_reference_result_does_not_promote_hmc(tmp_path, monkeypatch, capsys, stage, status, posterior_qualified):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(command)
+            target = Path(command[command.index("--output")+1])
+            target.mkdir(parents=True)
+            (target/"report.json").write_text(json.dumps(dict(
+                status=status, qualified=True)))
+            return dict(status="COMPLETED")
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path/"sv20"
+        args = ["--stage", "P3-SV20-"+stage, "--scope", "SV20", "--output", str(output)]
+        if stage == "posterior":
+            args += ["--reference-root", str(tmp_path/"prior-likelihood")]
+        assert program.main(args) == 2
+        capsys.readouterr()
+        assert len(launched) == 1
+        assert Path(launched[0][1]).name == f"prepare_surrogate_hmc_sv_{stage}.py"
+        decision = json.loads((output/"decision.json").read_text())
+        assert decision["reference_quality"] == status
+        assert decision["execution_status"] == "COMPLETED"
+        assert not decision["all_models_validated"]
+        assert not decision["scope_results"]["SV20"]["surrogate_hmc_tested"]
+        assert decision["scope_results"]["SV20"]["posterior_reference_qualified"] is posterior_qualified
+        assert all(v == "NOT_RUN" for v in decision["comparisons"].values())
+        register = json.loads((output/"model-register.json").read_text())
+        actual_sv = next(row for row in register["families"] if row["id"] == "M02")
+>       assert actual_sv["inference_status"] == "NOT_RUN"
+E       AssertionError: assert {'B/R': 'NOT_RUN', 'C/D': 'NOT_RUN', 'C/R': 'NOT_RUN', 'D/R': 'NOT_RUN'} == 'NOT_RUN'
+
+tests/test_surrogate_hmc_dependency_execution.py:214: AssertionError
+_ test_sv20_reference_result_does_not_promote_hmc[posterior-QUALIFIED_MODEL_POSTERIOR_REFERENCE-True] _
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-190/test_sv20_reference_result_doe1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x786bf40a9a90>
+capsys = <_pytest.capture.CaptureFixture object at 0x786bf40a8290>
+stage = 'posterior', status = 'QUALIFIED_MODEL_POSTERIOR_REFERENCE'
+posterior_qualified = True
+
+    @pytest.mark.parametrize("stage,status,posterior_qualified", [
+        ("reference", "QUALIFIED_LIKELIHOOD_PROBES", False),
+        ("posterior", "QUALIFIED_MODEL_POSTERIOR_REFERENCE", True)])
+    def test_sv20_reference_result_does_not_promote_hmc(tmp_path, monkeypatch, capsys, stage, status, posterior_qualified):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(command)
+            target = Path(command[command.index("--output")+1])
+            target.mkdir(parents=True)
+            (target/"report.json").write_text(json.dumps(dict(
+                status=status, qualified=True)))
+            return dict(status="COMPLETED")
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path/"sv20"
+        args = ["--stage", "P3-SV20-"+stage, "--scope", "SV20", "--output", str(output)]
+        if stage == "posterior":
+            args += ["--reference-root", str(tmp_path/"prior-likelihood")]
+        assert program.main(args) == 2
+        capsys.readouterr()
+        assert len(launched) == 1
+        assert Path(launched[0][1]).name == f"prepare_surrogate_hmc_sv_{stage}.py"
+        decision = json.loads((output/"decision.json").read_text())
+        assert decision["reference_quality"] == status
+        assert decision["execution_status"] == "COMPLETED"
+        assert not decision["all_models_validated"]
+        assert not decision["scope_results"]["SV20"]["surrogate_hmc_tested"]
+        assert decision["scope_results"]["SV20"]["posterior_reference_qualified"] is posterior_qualified
+        assert all(v == "NOT_RUN" for v in decision["comparisons"].values())
+        register = json.loads((output/"model-register.json").read_text())
+        actual_sv = next(row for row in register["families"] if row["id"] == "M02")
+>       assert actual_sv["inference_status"] == "NOT_RUN"
+E       AssertionError: assert {'B/R': 'NOT_RUN', 'C/D': 'NOT_RUN', 'C/R': 'NOT_RUN', 'D/R': 'NOT_RUN'} == 'NOT_RUN'
+
+tests/test_surrogate_hmc_dependency_execution.py:214: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  bayesfilter/highdim/stochastic_density_training.py:561: DeprecationWarning: invalid escape sequence '\('
+    """Return a guide-only loss for initializing the square-root TT.
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:168: DeprecationWarning: invalid escape sequence '\s'
+    ax1.set_ylabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:176: DeprecationWarning: invalid escape sequence '\s'
+    ax2.set_xlabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:116: DeprecationWarning: invalid escape sequence '\p'
+    ax1.errorbar(eps_p, rmse_p, yerr=std_p, fmt='-o', color='blue', capsize=5, label='RMSE (Bias $\pm$ Var)')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:117: DeprecationWarning: invalid escape sequence '\e'
+    ax1.set_xscale('log'); ax1.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax1.set_ylabel("RMSE", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:121: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_xscale('log'); ax2.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax2.set_ylabel("Execution Time (ms)", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:122: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_title("Computational Speed vs. $\epsilon$", fontsize=14); ax2.grid(True, alpha=0.3)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:103: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, b_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:104: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, lambdas, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:106: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].set_xlabel('$\lambda$'); axes[0,0].set_ylabel('$\\beta(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:113: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,1].set_xlabel('$\lambda$'); axes[0,1].set_ylabel('$e = \\beta^*(\lambda) - \lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:119: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,0].set_xlabel('$\lambda$'); axes[1,0].set_ylabel('$u^*$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:123: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:124: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_lin, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:126: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].set_xlabel('$\lambda$'); axes[1,1].set_ylabel('$R_{stiff}$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/old_pt1_submission/scripts/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[reference-QUALIFIED_LIKELIHOOD_PROBES-False]
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[posterior-QUALIFIED_MODEL_POSTERIOR_REFERENCE-True]
+2 failed, 65 passed, 21 warnings in 45.42s

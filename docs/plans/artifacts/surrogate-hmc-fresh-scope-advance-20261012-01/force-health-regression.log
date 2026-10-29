@@ -1,0 +1,75 @@
+....F................................................................... [ 62%]
+...........................................                              [100%]
+=================================== FAILURES ===================================
+_________ test_actual_consumer_evidence_survives_trace_compile_failure _________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-240/test_actual_consumer_evidence_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x79a46772d790>
+
+    def test_actual_consumer_evidence_survives_trace_compile_failure(tmp_path,monkeypatch):
+        case,path=fixture_record(tmp_path)
+        case.p=2; case.horizon=2
+        case.observations=tf.zeros([2,1],tf.float64)
+        case.fixed=(tf.zeros([4,1],tf.float64),tf.zeros([2,4,1],tf.float64),
+                    tf.zeros([2,4,1],tf.float64))
+        calls=[]
+        def actual(q):
+            calls.append(q)
+            return SimpleNamespace(force=tf.ones_like(q),force_valid=tf.constant([True,False,True,True]))
+        monkeypatch.setattr(runtime,"bindings",lambda c:dict(force=SimpleNamespace(function=actual)))
+        def fails(*a,**k):
+            raise RuntimeError("trace unavailable")
+        monkeypatch.setattr(diagnostic,"make_batched_score_filter",fails)
+        with pytest.raises(RuntimeError,match="trace unavailable"):
+>           diagnostic.run_diagnostic(case,tmp_path,path)
+
+tests/test_surrogate_hmc_force_health_diagnostic.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+case = namespace(scope=<function fixture_record.<locals>.<lambda> at 0x79a4677aafc0>, force_dtype=tf.float64, p=2, horizon=2,..._contraction='direct'), beta=<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0.33333333, 0.33333333, 0.33333333])>)
+output = PosixPath('/tmp/pytest-of-chakwong/pytest-240/test_actual_consumer_evidence_0')
+selection_path = PosixPath('/tmp/pytest-of-chakwong/pytest-240/test_actual_consumer_evidence_0/selection.json')
+
+    def run_diagnostic(case, output, selection_path):
+        output = Path(output)
+        output.mkdir(parents=True,exist_ok=True)
+        inputs = replay_inputs(case, selection_path)
+        starts = tf.constant([[q]*case.p for q in (-.15,-.05,.05,.15)],tf.float64)
+        result = dict(schema="surrogate_hmc_exact_force_health_v1",
+            status="EVALUATING_ACTUAL_CONSUMER", evidence_role="initial_force_call_chain_diagnostic",
+            scope=case.scope(), replay_inputs=inputs, starts=starts, beta=case.beta,
+            controls=asdict(case.controls), posterior_sampling_complete=False, hmc_executed=False,
+            jit_compile=True, cpu_only=not bool(tf.config.list_physical_devices("GPU")),
+            input_sha256=[hashlib.sha256(tf.io.serialize_tensor(a).numpy()).hexdigest()
+                          for a in (starts,case.observations,*case.fixed,case.beta)])
+        def save():
+            runtime.save(output/"force-health.json",result)
+        save()
+        binding = runtime.bindings(case)
+        begin = time.monotonic()
+        actual = binding["force"].function(starts)
+        actual.force.numpy(); actual.force_valid.numpy()
+        result["consumer"] = dict(force=actual.force,valid=actual.force_valid,
+            first_call_seconds=time.monotonic()-begin)
+        result["status"] = "EVALUATING_TRACE_CONSUMER"
+        save()
+>       program = make_batched_score_filter(case.spec,int(case.fixed[0].shape[0]),
+                                            ^^^^^^^^^
+            case.horizon,case.controls,case.force_dtype,jit_compile=True,batch_size=2,
+            precision_policy=case.precision_policy)
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'spec'
+
+bayesfilter/testing/surrogate_hmc_force_health_diagnostic.py:76: AttributeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_force_health_diagnostic.py::test_actual_consumer_evidence_survives_trace_compile_failure
+1 failed, 114 passed, 2 warnings in 3.27s

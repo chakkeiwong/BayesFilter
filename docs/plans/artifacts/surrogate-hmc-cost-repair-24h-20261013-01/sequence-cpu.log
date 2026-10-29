@@ -1,0 +1,95 @@
+...........FFFFF........................................................ [ 50%]
+........................................................................ [100%]
+=================================== FAILURES ===================================
+_____________ test_full_sequence_stages_match_fused_filter[lgssm] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-246/test_full_sequence_stages_matc0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b041cb2fa90>
+name = 'lgssm'
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_full_sequence_stages_match_fused_filter(tmp_path, monkeypatch, name):
+        monkeypatch.setattr(runtime, "N", 64)
+        case = runtime.configure_precision(runtime.load_case(name), "fp64_recursion_fp32_pairs")
+>       case.horizon = 3
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/test_surrogate_hmc_component_cost_diagnostic.py:69: AttributeError
+______________ test_full_sequence_stages_match_fused_filter[ksc] _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-246/test_full_sequence_stages_matc1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b04884a4390>
+name = 'ksc'
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_full_sequence_stages_match_fused_filter(tmp_path, monkeypatch, name):
+        monkeypatch.setattr(runtime, "N", 64)
+        case = runtime.configure_precision(runtime.load_case(name), "fp64_recursion_fp32_pairs")
+>       case.horizon = 3
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/test_surrogate_hmc_component_cost_diagnostic.py:69: AttributeError
+_________ test_full_sequence_stages_match_fused_filter[predator_prey] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-246/test_full_sequence_stages_matc2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b04884a4710>
+name = 'predator_prey'
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_full_sequence_stages_match_fused_filter(tmp_path, monkeypatch, name):
+        monkeypatch.setattr(runtime, "N", 64)
+        case = runtime.configure_precision(runtime.load_case(name), "fp64_recursion_fp32_pairs")
+>       case.horizon = 3
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/test_surrogate_hmc_component_cost_diagnostic.py:69: AttributeError
+____________ test_full_sequence_stages_match_fused_filter[sir_d18] _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-246/test_full_sequence_stages_matc3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b04297e8750>
+name = 'sir_d18'
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_full_sequence_stages_match_fused_filter(tmp_path, monkeypatch, name):
+        monkeypatch.setattr(runtime, "N", 64)
+        case = runtime.configure_precision(runtime.load_case(name), "fp64_recursion_fp32_pairs")
+>       case.horizon = 3
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/test_surrogate_hmc_component_cost_diagnostic.py:69: AttributeError
+_________ test_full_sequence_stages_match_fused_filter[range_bearing] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-246/test_full_sequence_stages_matc4')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7b04884bda90>
+name = 'range_bearing'
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_full_sequence_stages_match_fused_filter(tmp_path, monkeypatch, name):
+        monkeypatch.setattr(runtime, "N", 64)
+        case = runtime.configure_precision(runtime.load_case(name), "fp64_recursion_fp32_pairs")
+>       case.horizon = 3
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/test_surrogate_hmc_component_cost_diagnostic.py:69: AttributeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_component_cost_diagnostic.py::test_full_sequence_stages_match_fused_filter[lgssm]
+FAILED tests/test_surrogate_hmc_component_cost_diagnostic.py::test_full_sequence_stages_match_fused_filter[ksc]
+FAILED tests/test_surrogate_hmc_component_cost_diagnostic.py::test_full_sequence_stages_match_fused_filter[predator_prey]
+FAILED tests/test_surrogate_hmc_component_cost_diagnostic.py::test_full_sequence_stages_match_fused_filter[sir_d18]
+FAILED tests/test_surrogate_hmc_component_cost_diagnostic.py::test_full_sequence_stages_match_fused_filter[range_bearing]
+5 failed, 139 passed, 2 warnings in 251.36s (0:04:11)

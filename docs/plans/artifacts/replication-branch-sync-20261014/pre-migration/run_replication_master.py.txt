@@ -1,0 +1,928 @@
+#!/usr/bin/env python3
+"""Budgeted diagnostic and source-trial dispatcher for the replication master.
+
+This orchestrates reference diagnostics; it implements no filtering algorithm.
+A finished diagnostic campaign is not a completed scientific replication.
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import fcntl
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import platform
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+
+ROOT = Path(__file__).resolve().parents[1]
+LIMITS = {"cpu_seconds": 1800.0, "gpu_seconds": 900.0, "attempts": 12, "probe_seconds": 300.0}
+AUTHOR_COMMIT = "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18"
+FILES = (
+    "scripts/run_replication_master.py",
+    "docs/benchmarks/diagnose_replication_stage0.py",
+    "docs/benchmarks/diagnose_replication_training.py",
+    "docs/benchmarks/diagnose_replication_iwsg.py",
+    "docs/benchmarks/diagnose_replication_evaluation.py",
+    "docs/benchmarks/diagnose_replication_sequence.py",
+    "docs/benchmarks/diagnose_replication_expectation.py",
+    "docs/benchmarks/diagnose_iapf_eq15_escape.R",
+    "docs/benchmarks/diagnose_iapf_eq15_local_solver.R",
+    "tests/reference_iapf_eq15_solvers.R",
+    "tests/test_replication_master.py",
+    "docs/benchmarks/reference_iapf_paper.R",
+    "docs/benchmarks/reference_iapf_eq15_solvers.R",
+    "docs/benchmarks/diagnose_iapf_eq15_failures.R",
+)
+JOBS = (
+    ("iapf_equation15_algebra", "cpu"),
+    ("iapf_saved_failures", "cpu"),
+    ("mdpf_source_configuration", "cpu"),
+    ("tensorflow_gpu_xla_environment", "gpu"),
+    ("pytorch_author_gpu_environment", "gpu"),
+    ("mdpf_source_training", "gpu"),
+    ("iapf_eq15_local_solver", "cpu"),
+    ("mdpf_iwsg_matched_gradients", "cpu"),
+    ("iapf_eq15_escape", "cpu"),
+    ("mdpf_source_cost", "gpu"),
+    ("mdpf_evaluation_cost", "gpu"),
+    ("mdpf_sequence_gradients", "cpu"),
+    ("mdpf_iwsg_expectation", "cpu"),
+    ("mdpf_comparator_protocol", "cpu"),
+    ("mdpf_tg_cost", "gpu"),
+    ("mdpf_irg_cost", "gpu"),
+    ("mdpf_dis_cost", "gpu"),
+    ("mdpf_trial_smoke", "gpu"),
+    ("mdpf_source_trial", "gpu"),
+    ("mdpf_trial_evaluation", "gpu"),
+)
+LONG_JOB_TIMEOUTS = {"mdpf_source_trial": 43200.0, "mdpf_trial_evaluation": 900.0}
+
+
+def selected_jobs(requested):
+    """Long trials require explicit selection and never start with default diagnostics."""
+    return requested or [name for name, _ in JOBS if name not in LONG_JOB_TIMEOUTS]
+
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_json(path, value):
+    path = Path(path)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+    temporary.replace(path)
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def content_identity(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def interpreter_identity(executable):
+    """Bind executable, Python prefix, and installed-distribution records without GPU imports."""
+    executable = Path(executable).absolute()
+    info = json.loads(subprocess.check_output(
+        [str(executable), "-I", "-B", "-c",
+         "import json,sys,site; print(json.dumps(dict(version=sys.version, prefix=sys.prefix, "
+         "base_prefix=sys.base_prefix, sites=site.getsitepackages())))"],
+        text=True, timeout=20))
+    files = {str(executable.resolve()): digest(executable)}
+    for prefix in {info["prefix"], info["base_prefix"]}:
+        cfg = Path(prefix) / "pyvenv.cfg"
+        if cfg.is_file():
+            files[str(cfg)] = digest(cfg)
+    for name in ("libstdc++.so.6", "libgcc_s.so.1"):
+        library = Path(info["base_prefix"]) / "lib" / name
+        if library.is_file():
+            files[str(library.resolve())] = digest(library)
+    for directory in info["sites"]:
+        for pattern in ("*.dist-info/METADATA", "*.dist-info/RECORD", "*.egg-info/PKG-INFO"):
+            for path in sorted(Path(directory).glob(pattern)):
+                if path.is_file():
+                    files[str(path)] = digest(path)
+    return {"executable": str(executable), **info, "file_sha256": files}
+
+
+def dependency_inputs(manifest):
+    source = {relative: digest(ROOT / relative) for relative in FILES}
+    interpreters = {path: interpreter_identity(path)
+                    for path in {manifest["author_python"], sys.executable}}
+    author = Path(manifest["author_root"])
+    author_hashes = {}
+    for directory in (author / "src", author / "packages"):
+        for path in sorted(directory.rglob("*")):
+            if path.is_file() and path.suffix in (".py", ".yaml"):
+                author_hashes[str(path.relative_to(author))] = digest(path)
+    rscript = Path(shutil.which("Rscript") or "/missing/Rscript")
+    failures = {path: digest(path) for path in manifest["failure_sha256"]}
+    configuration = manifest.get("training_configuration")
+    training_artifact = manifest.get("training_artifact")
+    training_inputs = {str(Path(training_artifact) / part): digest(Path(training_artifact) / part)
+                       for part in ("result.json", "full_training/models/full_dpf_model_best.pt")} if training_artifact else None
+    return {"schema": "replication_dependencies_v1", "source_sha256": source,
+            "interpreters": interpreters, "author_sha256": author_hashes,
+            "Rscript": {"path": str(rscript), "sha256": digest(rscript),
+                        "version": subprocess.check_output([str(rscript), "--version"], text=True).strip()},
+            "failures": failures,
+            "configuration": {"path": configuration, "sha256": digest(configuration)} if configuration else None,
+            "training_artifact": training_inputs,
+            "policy": {"thread_limit": 1, "cpu_gpu_hidden": True, "gpu_growth": True,
+                       "limits": manifest["limits"], "inherited_loader": {key: os.environ.get(key, "")
+                           for key in ("LD_LIBRARY_PATH", "LD_PRELOAD")},
+                       "reference_loader": "base_python_prefix_lib_first_v1"}}
+
+
+def job_fingerprints(dependencies, author_python):
+    result = {}
+    for name, resource in JOBS:
+        value = {"schema": dependencies["schema"], "job": name, "resource": resource,
+                 "source": dependencies["source_sha256"], "policy": dependencies["policy"]}
+        if name.startswith("iapf_"):
+            value["interpreter"] = dependencies["Rscript"]
+            if name != "iapf_equation15_algebra":
+                value["failures"] = dependencies["failures"]
+        else:
+            path = sys.executable if name == "tensorflow_gpu_xla_environment" else author_python
+            value["interpreter"] = dependencies["interpreters"][path]
+            if name != "tensorflow_gpu_xla_environment":
+                value["author"] = dependencies["author_sha256"]
+            if name in ("mdpf_trial_evaluation", "mdpf_trial_smoke", "mdpf_source_trial", "mdpf_tg_cost", "mdpf_irg_cost", "mdpf_dis_cost", "mdpf_source_training", "mdpf_iwsg_matched_gradients", "mdpf_iwsg_expectation", "mdpf_source_cost", "mdpf_evaluation_cost", "mdpf_sequence_gradients"):
+                value["configuration"] = dependencies["configuration"]
+            if name in ("mdpf_trial_evaluation", "mdpf_evaluation_cost", "mdpf_sequence_gradients"):
+                value["training_artifact"] = dependencies["training_artifact"]
+        result[name] = content_identity(value)
+    return result
+
+
+def reference_environment(manifest, name):
+    if not (name.startswith("mdpf_") or name == "pytorch_author_gpu_environment"):
+        return {}
+    identity = manifest["dependencies"]["interpreters"][manifest["author_python"]]
+    directory = str(Path(identity["base_prefix"]) / "lib")
+    inherited = os.environ.get("LD_LIBRARY_PATH", "")
+    return {"LD_LIBRARY_PATH": directory + (os.pathsep + inherited if inherited else "")}
+
+
+def reusable(attempt, fingerprint, retry_incomplete=False):
+    if not fingerprint or attempt.get("dependency_fingerprint") != fingerprint:
+        return False
+    verdict = attempt.get("outcome", {}).get("check")
+    return verdict == "PASS" or (verdict == "INCOMPLETE" and not retry_incomplete)
+
+
+def git(root, *args):
+    return subprocess.check_output(
+        ["git", *args], cwd=root, text=True, stderr=subprocess.STDOUT, timeout=30
+    ).strip()
+
+
+def stop_group(process):
+    # Include descendants even when the parent has already exited.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait(timeout=10)
+
+
+def process_record(pid):
+    """Linux process identity; zombies are observable but no longer running."""
+    try:
+        root = Path('/proc') / str(pid)
+        fields = (root / 'stat').read_text().rsplit(')', 1)[1].split()
+        command = (root / 'cmdline').read_bytes().split(b'\0')
+        return {'state': fields[0], 'ppid': int(fields[1]), 'group': int(fields[2]),
+                'start_ticks': int(fields[19]), 'exit_status': int(fields[49]),
+                'command': [os.fsdecode(part) for part in command if part]}
+    except (FileNotFoundError, ProcessLookupError):
+        return None
+
+
+def process_running(pid):
+    record = process_record(pid)
+    return bool(record and record['state'] not in ('Z', 'X'))
+
+
+def recovered_source_artifacts(output):
+    """Recover artifact completion without inventing a lost process exit code."""
+    output = Path(output)
+    result = json.loads((output / 'result.json').read_text())
+    progress = json.loads((output / 'progress.json').read_text())
+    completed = json.loads((output / 'completed-phases.json').read_text())
+    wiring = json.loads((output / 'source-training-wiring.json').read_text())
+    if (result.get('check') != 'PASS' or result.get('mode') != 'source_trial'
+            or result.get('source_training_protocol_complete') is not True
+            or result.get('full_source_training_call_chain') != 'PASS_ON_COMPLETE_SOURCE_TRIAL'
+            or progress.get('terminal') is not True):
+        raise RuntimeError('Recovery requires complete source-trial terminal evidence')
+    for label, cap in (('pretraining', 400), ('full_training', 800)):
+        phase = result['phases'][label]
+        count = phase['epochs_completed']
+        if (phase != completed['phases'][label] or phase != progress['phases'][label]
+                or phase['status'] != 'PASS' or phase['epoch_cap'] != cap
+                or not 0 < count <= cap or phase.get('source_skipped_gradients') != 0
+                or phase['termination'] not in ('SOURCE_EARLY_STOP', 'SOURCE_EPOCH_CAP')
+                or (count < cap and phase['termination'] != 'SOURCE_EARLY_STOP')):
+            raise RuntimeError('Recovered phase is incomplete or inconsistent')
+        for function in ('do_training_epoch', 'do_validation_epoch'):
+            records = [r for r in completed['epochs'] if r['phase'] == label and r['function'] == function]
+            if ([r['epoch'] for r in records] != list(range(count))
+                    or any(not math.isfinite(r['loss']) for r in records)):
+                raise RuntimeError('Recovered epoch coverage or numerical validity failed')
+    checkpoints = wiring.get('checkpoint_sha256', {})
+    if (not checkpoints or len(checkpoints) != result.get('checkpoints_reloaded')
+            or not any(key.startswith('full_training/') for key in checkpoints)
+            or any(not (output / key).is_file() or digest(output / key) != value
+                   for key, value in checkpoints.items())
+            or not result.get('optimizer_gradient_checks')
+            or wiring.get('optimizer_gradient_checks') != result['optimizer_gradient_checks']):
+        raise RuntimeError('Recovered checkpoint or gradient evidence failed')
+    return result
+
+
+def detach_master(command, output, action):
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    log_path = output / ('supervisor-' + action + '-' + stamp + '.log')
+    with log_path.open('x') as log:
+        process = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
+                                   stdout=log, stderr=subprocess.STDOUT,
+                                   start_new_session=True, close_fds=True)
+    record = {'pid': process.pid, 'command': command, 'created_at': now(),
+              'log': str(log_path), 'detached': True}
+    write_json(log_path.with_suffix('.json'), record)
+    return record
+
+
+def supervise_existing(args, output, evidence_root):
+    """Adopt the orphaned source trial under its unchanged original deadline."""
+    record_path = output / ('supervision-recovery-attempt%02d.json' % args.after_attempt)
+    with (output / 'supervision.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        state = json.loads((output / 'ledger.json').read_text())
+        active = [a for a in state['attempts'] if a['status'] == 'RUNNING']
+        if (len(active) != 1 or active[0]['index'] != args.after_attempt
+                or active[0]['name'] != 'mdpf_source_trial'):
+            raise RuntimeError('Recovery requires exactly the named running source trial')
+        target = active[0]
+        if process_running(args.lost_supervisor_pid):
+            raise RuntimeError('Original supervisor is still alive')
+        watch_path = output / ('followup-after-attempt%02d.json' % args.after_attempt)
+        if watch_path.exists():
+            old_watch = json.loads(watch_path.read_text())
+            if process_running(old_watch['pid']):
+                raise RuntimeError('Original evaluation watcher is still alive')
+        if record_path.exists():
+            raise RuntimeError('Recovery record already exists; inspect before retrying')
+        pid = target['pid']
+        identity = process_record(pid)
+        started = datetime.fromisoformat(target['started_at']).timestamp()
+        deadline = started + target['timeout_seconds']
+        if identity is None:
+            try:
+                os.killpg(pid, 0)
+            except ProcessLookupError:
+                pass
+            else:
+                raise RuntimeError('Worker absent but its group remains; inspect descendants first')
+            recovered_source_artifacts(target['output'])
+            terminal_time = json.loads((Path(target['output']) / 'progress.json').read_text())['updated_unix_seconds']
+            if not started <= terminal_time <= deadline:
+                raise RuntimeError('Terminal training evidence is outside the original time budget')
+        elif (identity['state'] in ('Z', 'X') or identity['group'] != pid
+                or identity['command'] != target['command']):
+            raise RuntimeError('Running training process identity does not match ledger')
+        monotonic_deadline = time.monotonic() + deadline - time.time()
+        recovery = {'status': 'WATCHING', 'pid': os.getpid(), 'created_at': now(),
+                    'worker_pid': pid, 'worker_start_ticks': identity['start_ticks'] if identity else None,
+                    'original_started_at': target['started_at'], 'deadline_unix_seconds': deadline,
+                    'lost_supervisor_pid': args.lost_supervisor_pid, 'repair_note': args.repair_note,
+                    'plan': str(args.continuation_plan), 'source_sha256': digest(Path(__file__)),
+                    'argv': sys.argv, 'exit_status': 'UNKNOWN_UNTIL_OBSERVED'}
+        write_json(record_path, recovery)
+        try:
+            observed_exit = None
+            timed_out = False
+            while True:
+                current = process_record(pid)
+                if current is None:
+                    break
+                if identity is None or current['start_ticks'] != identity['start_ticks']:
+                    raise RuntimeError('Worker PID was reused; refusing to signal unrelated process')
+                if current['state'] in ('Z', 'X'):
+                    observed_exit = os.waitstatus_to_exitcode(current['exit_status'])
+                    break
+                if current['command'] != target['command'] or current['group'] != pid:
+                    raise RuntimeError('Worker command/group changed; refusing recovery')
+                if time.monotonic() >= monotonic_deadline:
+                    os.killpg(pid, signal.SIGKILL)
+                    timed_out = True
+                    break
+                recovery.update(updated_at=now(), elapsed_seconds=time.time() - started)
+                write_json(record_path, recovery)
+                time.sleep(min(30, max(0.01, monotonic_deadline - time.monotonic())))
+            if identity is not None:
+                try:
+                    os.killpg(pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            target.update(ended_at=now(), charged_seconds=max(0, time.time() - started),
+                          returncode=observed_exit,
+                          exit_status=('UNKNOWN_NONCHILD' if observed_exit is None else 'OBSERVED_PROC_STAT'),
+                          supervision_recovery=str(record_path),
+                          accounting_basis='Original start to observed exit; polling upper bound')
+            if timed_out or observed_exit not in (None, 0):
+                target.update(status='TIMEOUT' if timed_out else 'FAILED',
+                              reason='Original deadline reached' if timed_out else 'Observed nonzero exit')
+                target['outcome'] = inspect_attempt(target)
+            else:
+                try:
+                    target['outcome'] = recovered_source_artifacts(target['output'])
+                    target.update(status='RECOVERED_ARTIFACTS',
+                                  completion_basis='Verified terminal artifacts; process exit separately recorded')
+                except Exception as exc:
+                    target.update(status='FAILED', reason='Invalid recovered evidence: ' + repr(exc))
+                    target['outcome'] = inspect_attempt(target)
+            write_json(output / 'ledger.json', state)
+            write_json(Path(target['output']) / 'outcome.json', target['outcome'])
+            campaign = Campaign(output, resume=True)
+            report(campaign)
+            recovery.update(status=target['status'], updated_at=now(), exit_status=target['exit_status'])
+            write_json(record_path, recovery)
+            if target['status'] != 'RECOVERED_ARTIFACTS':
+                return 2
+            if watch_path.exists():
+                archived = watch_path.with_name(watch_path.stem + '-interrupted.json')
+                if archived.exists():
+                    raise RuntimeError('Interrupted watcher archive already exists')
+                watch_path.rename(archived)
+            command = [sys.executable, '-I', '-B', str(Path(__file__).resolve()), 'followup-evaluation',
+                       '--output', str(output), '--evidence-root', str(evidence_root), '--resume',
+                       '--after-attempt', str(args.after_attempt), '--continuation-plan', str(args.continuation_plan)]
+            recovery.update(status='EVALUATION_STARTING', command=command)
+            write_json(record_path, recovery)
+            completed = subprocess.run(command, cwd=ROOT, timeout=1500)
+            recovery.update(status='EVALUATION_FINISHED' if completed.returncode == 0 else 'EVALUATION_FAILED',
+                            evaluation_supervisor_returncode=completed.returncode, updated_at=now())
+            write_json(record_path, recovery)
+            return completed.returncode
+        except BaseException as exc:
+            recovery.update(status='BLOCKED', error=repr(exc), updated_at=now())
+            write_json(record_path, recovery)
+            raise
+
+
+class Campaign:
+    def __init__(self, output, *, resume=False):
+        self.output = Path(output)
+        self.state_path = self.output / "ledger.json"
+        if resume:
+            self.state = json.loads(self.state_path.read_text())
+            limits = self.state["limits"]
+            if set(limits) != set(LIMITS) or any(
+                isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value) or value <= 0 for value in limits.values()
+            ) or not isinstance(limits["attempts"], int):
+                raise ValueError("Invalid campaign limits")
+            if limits != LIMITS:
+                revisions = self.state.get("budget_revisions", [])
+                previous = LIMITS
+                for revision in revisions:
+                    if revision.get("before") != previous or not revision.get("authorization"):
+                        raise ValueError("Invalid budget revision history")
+                    previous = revision.get("after")
+                if previous != limits:
+                    raise ValueError("Campaign limits lack a recorded budget revision")
+            for attempt in self.state["attempts"]:
+                if attempt["status"] == "RUNNING":
+                    # Never relaunch while the old process group may still be alive.
+                    pid = attempt.get("pid")
+                    if pid is None:
+                        raise RuntimeError("Interrupted launch has no PID; inspect before resuming")
+                    try:
+                        os.killpg(pid, 0)
+                    except ProcessLookupError:
+                        pass
+                    else:
+                        raise RuntimeError("Previous process group still exists; inspect before resuming")
+                    attempt.update(status="INTERRUPTED", charged_seconds=attempt["timeout_seconds"],
+                                   ended_at=now(), reason="Conservative timeout charge on recovery")
+            self.save()
+        else:
+            self.output.mkdir(parents=True, exist_ok=False)
+            self.state = {"created_at": now(), "limits": LIMITS.copy(), "attempts": []}
+            self.save()
+
+    def save(self):
+        write_json(self.state_path, self.state)
+
+    def remaining(self, resource):
+        charged = sum(a.get("charged_seconds", a["timeout_seconds"])
+                      for a in self.state["attempts"] if a["resource"] == resource)
+        return max(0.0, self.state["limits"][resource + "_seconds"] - charged)
+
+    def launch(self, name, resource, command_builder, *, cwd, timeout=300.0, fingerprint=None, environment=None):
+        if resource not in ("cpu", "gpu") or not 0 < timeout <= self.state["limits"]["probe_seconds"]:
+            raise ValueError("Invalid resource or probe timeout")
+        if len(self.state["attempts"]) >= self.state["limits"]["attempts"]:
+            raise RuntimeError("Attempt budget exhausted")
+        if self.remaining(resource) < timeout:
+            raise RuntimeError("Insufficient budget to reserve this probe's full timeout")
+        index = len(self.state["attempts"]) + 1
+        output = self.output / "stage0" / ("attempt%02d" % index)
+        output.mkdir(parents=True, exist_ok=False)
+        command = [str(x) for x in command_builder(output)]
+        env = os.environ.copy()
+        env.update(OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1",
+                   TF_NUM_INTRAOP_THREADS="1", TF_NUM_INTEROP_THREADS="1",
+                   TF_FORCE_GPU_ALLOW_GROWTH="true", PYTHONUNBUFFERED="1",
+                   PYTHONDONTWRITEBYTECODE="1", MPLCONFIGDIR=str(output / "matplotlib"))
+        env.update(environment or {})
+        if resource == "cpu":
+            env["CUDA_VISIBLE_DEVICES"] = "-1"
+        else:
+            env.pop("CUDA_VISIBLE_DEVICES", None)
+        attempt = {
+            "manifest": self.state.get("active_manifest"),
+            "dependency_fingerprint": fingerprint,
+            "runtime_environment": {key: env.get(key) for key in
+                                    ("CUDA_VISIBLE_DEVICES", "LD_LIBRARY_PATH", "LD_PRELOAD",
+                                     "TF_FORCE_GPU_ALLOW_GROWTH", "OMP_NUM_THREADS")},
+            "index": index, "name": name, "resource": resource, "status": "RUNNING",
+            "supervisor_pid": os.getpid(),
+            "command": command, "cwd": str(cwd), "output": str(output),
+            "timeout_seconds": timeout, "started_at": now(),
+            "environment_overrides": {k: env.get(k) for k in (
+                "CUDA_VISIBLE_DEVICES", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+                "MKL_NUM_THREADS", "TF_NUM_INTRAOP_THREADS", "TF_NUM_INTEROP_THREADS",
+                "TF_FORCE_GPU_ALLOW_GROWTH", "PYTHONDONTWRITEBYTECODE", "MPLCONFIGDIR")},
+        }
+        self.state["attempts"].append(attempt)
+        self.save()
+        report(self)
+        start = time.monotonic()
+        process = None
+        interrupted = None
+        try:
+            with (output / "command.log").open("w") as log:
+                process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log,
+                                           stderr=subprocess.STDOUT, start_new_session=True)
+                attempt["pid"] = process.pid
+                self.save()
+                try:
+                    returncode = process.wait(timeout=timeout)
+                    attempt.update(returncode=returncode,
+                                   status="COMPLETED" if returncode == 0 else "FAILED")
+                except subprocess.TimeoutExpired:
+                    attempt.update(status="TIMEOUT", reason="Probe wall-time limit")
+        except BaseException as exc:
+            attempt.update(status="INTERRUPTED" if isinstance(exc, (KeyboardInterrupt, SystemExit))
+                           else "FAILED", reason=repr(exc))
+            if isinstance(exc, (KeyboardInterrupt, SystemExit)):
+                interrupted = exc
+        finally:
+            if process is not None:
+                stop_group(process)
+            attempt.update(ended_at=now(), charged_seconds=time.monotonic() - start)
+            self.save()
+        if interrupted is not None:
+            raise interrupted
+        return attempt
+
+
+def prepare(campaign, evidence_root, repair_note=None, author_python=None, configuration=None, continuation_plan=None, training_artifact=None):
+    author = evidence_root / ".localresources/code/younis-mdpf-neurips-2023"
+    failures = evidence_root / "docs/plans/artifacts/iapf-r-equation15-resolution-20260921-01"
+    plan = evidence_root / "docs/plans/iapf-kdm-replication-master-program-2026-09-24.md"
+    contract = evidence_root / "docs/plans/artifacts/iapf-kdm-replication-master-20260924-01/executable-review-and-contract.md"
+    if git(author, "rev-parse", "HEAD") != AUTHOR_COMMIT:
+        raise ValueError("Wrong MDPF author-source revision")
+    paths = sorted((failures / "runs").rglob("candidate-failure.rds"))
+    if len(paths) != 32:
+        raise ValueError("Expected the preserved 32 iAPF failure records")
+    revision = len(campaign.state.get("revisions", [])) + 1
+    suffix = "" if revision == 1 else "-repair%02d" % revision
+    snapshot = campaign.output / ("source" + suffix)
+    snapshot.mkdir(exist_ok=False)
+    for relative in FILES:
+        source = ROOT / relative
+        target = snapshot / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    review = evidence_root / "docs/plans/artifacts/iapf-kdm-replication-master-20260924-01/gap-resolution-review-20260924.md"
+    for source in (plan, contract, review):
+        shutil.copy2(source, snapshot / source.name)
+    if continuation_plan:
+        shutil.copy2(continuation_plan, snapshot / Path(continuation_plan).name)
+    scope = list(FILES) + ["tests/test_replication_master.py"]
+    (campaign.output / ("working-tree" + suffix + ".patch")).write_text(git(ROOT, "diff", "HEAD", "--", *scope))
+    (campaign.output / ("author-working-tree" + suffix + ".patch")).write_text(git(author, "diff", "HEAD", "--", "src", "packages"))
+    manifest = {
+        "snapshot_root": str(snapshot), "repair_note": repair_note,
+        "author_python": os.path.abspath(author_python or sys.executable),
+        "created_at": now(), "command": sys.argv, "python": sys.executable,
+        "python_version": platform.python_version(), "platform": platform.platform(),
+        "code_root": str(ROOT), "code_branch": git(ROOT, "branch", "--show-current"),
+        "code_commit": git(ROOT, "rev-parse", "HEAD"),
+        "evidence_root": str(evidence_root), "author_root": str(author),
+        "author_commit": AUTHOR_COMMIT, "failure_root": str(failures),
+        "plan": str(plan), "contract": str(contract), "stage": "stage0",
+        "limits": campaign.state["limits"].copy(), "claim": "Diagnostics and explicitly selected source trial; no overall replication claim",
+        "source_sha256": {f: digest(ROOT / f) for f in FILES},
+        "failure_sha256": {str(p): digest(p) for p in paths},
+        "seeds": {"iapf_algebra": [921901, 921902],
+                  "saved_failures": "Preserved in individual RDS records",
+                  "gpu_smoke": "Deterministic input; no RNG",
+                  "mdpf_configuration": {"model_initialization": 924001, "fixture_sampling": 924002,
+                                         "paper_training": "NOT_RUN; author seed code is commented out"}},
+    }
+    configurations = [Path(attempt["output"]) / "resolved-configuration.json"
+                      for attempt in campaign.state["attempts"]
+                      if attempt["name"] == "mdpf_source_configuration"]
+    configurations = [path for path in configurations if path.is_file()]
+    manifest["training_configuration"] = str(Path(configuration).resolve()) if configuration else (str(configurations[-1]) if configurations else None)
+    manifest["training_artifact"] = str(Path(training_artifact).resolve()) if training_artifact else None
+    manifest["continuation_plan"] = str(continuation_plan) if continuation_plan else None
+    manifest["continuation_plan_sha256"] = digest(continuation_plan) if continuation_plan else None
+    manifest["seeds"]["iwsg_mechanics"] = 924101
+    manifest["seeds"]["iwsg_expectation"] = {"model": 924150, "sampling": list(range(924151, 924159))}
+    manifest["seeds"]["iwsg_sequence"] = {"model": 924140, "sampling": [924141, 924142, 924143]}
+    manifest["seeds"]["iapf_escape"] = 924121
+    manifest["seeds"]["evaluation_cost"] = {"data": 924131, "initialization": 924132, "source_effective": 0}
+    manifest["gap_resolution_review"] = str(review)
+    manifest["seeds"]["mdpf_training_reference"] = {"numpy_data": 924011, "pretrain_torch": 924012,
+                                                   "full_training_torch": 924013}
+    manifest["seeds"]["mdpf_source_trial"] = {"data": 925201, "pretraining": 925202, "full_training": 925203}
+    manifest["seeds"]["iapf_local_solver_control"] = 924021
+    dependencies = dependency_inputs(manifest)
+    manifest["dependencies"] = dependencies
+    manifest["job_fingerprints"] = job_fingerprints(dependencies, manifest["author_python"])
+    manifest_name = "manifest" + suffix + ".json"
+    write_json(campaign.output / manifest_name, manifest)
+    campaign.state["active_manifest"] = manifest_name
+    campaign.state.setdefault("revisions", []).append({
+        "manifest": manifest_name, "repair_note": repair_note, "created_at": now()})
+    campaign.save()
+    return manifest
+
+
+def build_jobs(campaign, manifest):
+    source = Path(manifest["snapshot_root"])
+    worker = source / "docs/benchmarks/diagnose_replication_stage0.py"
+    rscript = shutil.which("Rscript")
+    if not rscript:
+        raise RuntimeError("Rscript is unavailable")
+    return {
+        "iapf_equation15_algebra": lambda out: [
+            rscript, "--vanilla", source / "tests/reference_iapf_eq15_solvers.R", source],
+        "iapf_saved_failures": lambda out: [
+            rscript, "--vanilla", source / "docs/benchmarks/diagnose_iapf_eq15_failures.R",
+            manifest["failure_root"], out / "failures.csv"],
+        "mdpf_comparator_protocol": lambda out: [
+            manifest["author_python"], "-I", "-B", worker, "protocol",
+            "--author-root", manifest["author_root"], "--output", out],
+        "mdpf_source_configuration": lambda out: [
+            manifest["author_python"], "-I", "-B", worker, "mdpf", "--author-root", manifest["author_root"],
+            "--output", out],
+        "tensorflow_gpu_xla_environment": lambda out: [
+            sys.executable, "-I", "-B", worker, "gpu", "--output", out],
+        "pytorch_author_gpu_environment": lambda out: [
+            manifest["author_python"], "-I", "-B", worker, "torch_gpu", "--output", out],
+        "mdpf_source_training": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--author-root", manifest["author_root"], "--configuration", manifest["training_configuration"],
+            "--output", out],
+        "mdpf_iwsg_matched_gradients": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_iwsg.py",
+            "--author-root", manifest["author_root"], "--configuration", manifest["training_configuration"],
+            "--output", out],
+        "mdpf_iwsg_expectation": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_expectation.py",
+            "--author-root", manifest["author_root"], "--configuration", manifest["training_configuration"],
+            "--output", out],
+        "mdpf_tg_cost": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "cost", "--source-arm", "tg", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_irg_cost": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "cost", "--source-arm", "irg", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_dis_cost": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "cost", "--source-arm", "dis", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_trial_smoke": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "trial_smoke", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_source_trial": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "source_trial", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_source_cost": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_training.py",
+            "--mode", "cost", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"], "--output", out],
+        "mdpf_trial_evaluation": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_evaluation.py",
+            "--mode", "source_trial", "--author-root", manifest["author_root"],
+            "--configuration", manifest["training_configuration"],
+            "--training-artifact", manifest["training_artifact"], "--output", out],
+        "mdpf_evaluation_cost": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_evaluation.py",
+            "--author-root", manifest["author_root"], "--configuration", manifest["training_configuration"],
+            "--training-artifact", manifest["training_artifact"], "--output", out],
+        "mdpf_sequence_gradients": lambda out: [
+            manifest["author_python"], "-I", "-B", source / "docs/benchmarks/diagnose_replication_sequence.py",
+            "--author-root", manifest["author_root"], "--configuration", manifest["training_configuration"],
+            "--training-artifact", manifest["training_artifact"], "--output", out],
+        "iapf_eq15_escape": lambda out: [
+            rscript, "--vanilla", source / "docs/benchmarks/diagnose_iapf_eq15_escape.R",
+            source, manifest["failure_root"], out],
+        "iapf_eq15_local_solver": lambda out: [
+            rscript, "--vanilla", source / "docs/benchmarks/diagnose_iapf_eq15_local_solver.R",
+            source, manifest["failure_root"], out],
+    }
+
+
+def inspect_attempt(attempt):
+    output = Path(attempt["output"])
+    if attempt["status"] == "RECOVERED_ARTIFACTS":
+        return recovered_source_artifacts(output)
+    if attempt["status"] != "COMPLETED":
+        failure = {"check": "FAILED", "detail": attempt.get("reason", "Nonzero process exit")}
+        child_result = output / "result.json"
+        if child_result.is_file():
+            try:
+                child = json.loads(child_result.read_text())
+            except (OSError, json.JSONDecodeError):
+                child = {}
+            for field in ("classification", "error"):
+                if field in child:
+                    failure[field] = child[field]
+        return failure  # A child PASS never overrides an unsuccessful process.
+    if attempt["name"] == "iapf_equation15_algebra":
+        log = (output / "command.log").read_text()
+        if "PASS" not in log:
+            return {"check": "FAILED", "detail": "Expected R invariant-check completion marker absent"}
+        return {"check": "PASS", "scientific_replication": "INCOMPLETE",
+                "detail": "Equation identities, gradients and short controller mechanics only"}
+    if attempt["name"] == "iapf_saved_failures":
+        with (output / "failures.csv").open() as stream:
+            rows = list(csv.DictReader(stream))
+        if len(rows) != 32 or len({r["job_id"] for r in rows}) != 32:
+            return {"check": "FAILED", "detail": "Saved failure records missing or duplicated"}
+        counts = {}
+        for row in rows:
+            counts[row["reason"]] = counts.get(row["reason"], 0) + 1
+        return {"check": "PASS", "scientific_replication": "INCOMPLETE",
+                "saved_failed_attempts": len(rows), "failure_reasons": counts,
+                "detail": "Historical candidate failures preserved; no new full-filter attempts"}
+    result = json.loads((output / "result.json").read_text())
+    if result.get("check") not in ("PASS", "INCOMPLETE", "FAILED"):
+        raise ValueError("Child omitted an explicit check verdict")
+    return result
+
+
+def report(campaign):
+    manifest_name = campaign.state.get("active_manifest")
+    manifest = json.loads((campaign.output / manifest_name).read_text()) if manifest_name else {}
+    fingerprints = manifest.get("job_fingerprints", {})
+    latest = {}
+    for attempt in campaign.state["attempts"]:
+        expected = fingerprints.get(attempt["name"])
+        current = bool(expected and attempt.get("dependency_fingerprint") == expected)
+        latest[attempt["name"]] = {
+            "index": attempt["index"], "process": attempt["status"],
+            "output": attempt.get("output"), "manifest": attempt.get("manifest"),
+            "freshness": "CURRENT_MANIFEST" if current else "LEGACY_OR_STALE",
+            "current_check": attempt.get("outcome", {}).get("check", "NOT_CHECKED") if current else "NOT_CHECKED",
+            "outcome": attempt.get("outcome", {"check": "NOT_CHECKED"})}
+    all_dispatched = all(name in latest for name, _ in JOBS)
+    checks_pass = all(latest.get(name, {}).get("current_check") == "PASS" for name, _ in JOBS)
+    selection = campaign.state.get("last_selection", [])
+    selected_done = bool(selection) and all(
+        latest.get(name, {}).get("freshness") == "CURRENT_MANIFEST"
+        and latest.get(name, {}).get("process") != "RUNNING" for name in selection)
+    result = {
+        "execution": "FINISHED" if all_dispatched else "PARTIAL",
+        "selected_execution": "FINISHED" if selected_done else "PARTIAL",
+        "selected_jobs": selection, "active_manifest": manifest_name,
+        "stage0": "INCOMPLETE",
+        "prerequisite_checks": "PASS" if checks_pass else "INCOMPLETE",
+        "iapf_replication": "INCOMPLETE", "mdpf_replication": "INCOMPLETE",
+        "full_replication_budget": "NOT_BUDGETED", "checks": latest,
+        "attempts_used": len(campaign.state["attempts"]),
+        "attempts_remaining": campaign.state["limits"]["attempts"] - len(campaign.state["attempts"]),
+        "limits": campaign.state["limits"].copy(),
+        "remaining": {k + "_seconds": campaign.remaining(k) for k in ("cpu", "gpu")},
+        "phase_handlers": {"0R": "IMPLEMENTED", "0M": "IMPLEMENTED_DIAGNOSTIC",
+                           "I2a": "IMPLEMENTED_DIAGNOSTIC",
+                           "I2a.1": "IMPLEMENTED_ESCAPE_DIAGNOSTIC_FIT_POLICY_OPEN",
+                           "K1": "IMPLEMENTED_ENDPOINT_AND_TRUNCATED_SEQUENCE_DIAGNOSTICS",
+                           "B1": "IMPLEMENTED_TRAINING_AND_EVALUATION_COST_DIAGNOSTIC",
+                           "K3_single_trial": "IMPLEMENTED_EXPLICIT_MDPF_NLL_SOURCE_TRIAL",
+                           "remaining_phases": "SPECIFIED_NOT_IMPLEMENTED_OR_BUDGETED"},
+        "next": "Complete bounded source trial and untouched evaluation; resolve Appendix B and iAPF fit policy. Both replications remain incomplete.",
+        "freshness_basis": "Recorded manifest dependencies; run revalidates live dependencies before reuse.",
+    }
+    write_json(campaign.output / "result.json", result)
+    lines = ["# Replication diagnostic result", "",
+             "Selected execution: **%s**. Stage 0 and both paper replications: **INCOMPLETE**."
+             % result["selected_execution"], "",
+             "| Check | Process | Recorded verdict | Freshness |",
+             "| --- | --- | --- | --- |"]
+    for name, record in latest.items():
+        lines.append("| %s | %s | %s | %s |" % (name, record["process"],
+                     record["outcome"]["check"], record["freshness"]))
+    lines += ["", "Attempts: %s / %s. Remaining CPU seconds: %.3f; GPU seconds: %.3f."
+              % (result["attempts_used"], campaign.state["limits"]["attempts"], campaign.remaining("cpu"), campaign.remaining("gpu")),
+              "", "Full replication budget: **NOT_BUDGETED**.", "", result["next"],
+              "", "Legacy results remain preserved; they are not reusable passing checks for changed dependencies."]
+    (campaign.output / "result.md").write_text("\n".join(lines) + "\n")
+    return result
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("plan", "run", "status", "followup-evaluation", "recover-supervision"))
+    parser.add_argument("--stage", choices=("stage0",), default="stage0")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--evidence-root", type=Path)
+    parser.add_argument("--author-python", help="Existing interpreter for the independent author reference")
+    parser.add_argument("--jobs", nargs="+", choices=[name for name, _ in JOBS],
+                        help="Run only named independent checks; does not reset the campaign budget")
+    parser.add_argument("--after-attempt", type=int, help="Completed source trial to follow; read-only wait until terminal")
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--detach", action="store_true", help="Keep long supervision independent of the tool session")
+    parser.add_argument("--lost-supervisor-pid", type=int, help="Prior supervisor that must be absent for recovery")
+    parser.add_argument("--retry-incomplete", action="store_true")
+    parser.add_argument("--repair-note", help="Record a localized source repair; keep the existing budget")
+    parser.add_argument("--configuration", type=Path, help="Preserved resolved author configuration; hashed in manifest")
+    parser.add_argument("--continuation-plan", type=Path, help="Bounded continuation plan; copied and hashed")
+    parser.add_argument("--training-artifact", type=Path, help="Successful source cost attempt supplying the short-trained checkpoint")
+    args = parser.parse_args()
+    if args.action == "plan":
+        print(json.dumps({"stage": args.stage, "jobs": JOBS, "limits": LIMITS,
+                          "other_stages": "UNIMPLEMENTED / NOT_BUDGETED"}, indent=2))
+        return 0
+    if not args.output:
+        parser.error("--output is required")
+    output = args.output.resolve()
+    if args.action == "status":
+        print((output / "result.json").read_text())
+        return 0
+    if not args.evidence_root:
+        parser.error("--evidence-root is required")
+    evidence_root = args.evidence_root.resolve()
+    if args.repair_note and not args.resume:
+        parser.error("--repair-note requires --resume")
+    if args.action == 'recover-supervision' and (not args.resume or not args.after_attempt
+            or not args.lost_supervisor_pid or not args.continuation_plan or not args.repair_note):
+        parser.error('recover-supervision requires --resume, --after-attempt, --lost-supervisor-pid, --continuation-plan and --repair-note')
+    if args.detach:
+        command = [sys.executable, '-I', '-B', str(Path(__file__).resolve()),
+                   *[arg for arg in sys.argv[1:] if arg != '--detach']]
+        print(json.dumps(detach_master(command, output, args.action)), flush=True)
+        return 0
+    if args.action == 'recover-supervision':
+        return supervise_existing(args, output, evidence_root)
+    if args.action == "followup-evaluation":
+        if not args.resume or not args.after_attempt or not args.continuation_plan:
+            parser.error("followup-evaluation requires --resume, --after-attempt and --continuation-plan")
+        watch_path = output / ("followup-after-attempt%02d.json" % args.after_attempt)
+        if watch_path.exists():
+            raise RuntimeError("Follow-up watcher already exists; inspect it before restarting")
+        watch = {"created_at": now(), "pid": os.getpid(), "status": "WAITING",
+                 "after_attempt": args.after_attempt, "plan": str(args.continuation_plan)}
+        write_json(watch_path, watch)
+        deadline = time.monotonic() + 43800
+        try:
+            while True:
+                ledger = json.loads((output / "ledger.json").read_text())
+                attempts = [a for a in ledger["attempts"] if a["index"] == args.after_attempt]
+                if len(attempts) != 1 or attempts[0]["name"] != "mdpf_source_trial":
+                    raise RuntimeError("Follow-up target is not the unique source trial")
+                target = attempts[0]
+                if target["status"] != "RUNNING" and target.get("outcome"):
+                    break
+                if time.monotonic() > deadline:
+                    raise RuntimeError("Follow-up wait exceeded the source-trial timeout plus cleanup")
+                time.sleep(30)
+            if target["status"] not in ("COMPLETED", "RECOVERED_ARTIFACTS") or target["outcome"].get("check") != "PASS":
+                raise RuntimeError("Source trial failed; evaluation must not use its checkpoint")
+            if target["status"] == "RECOVERED_ARTIFACTS":
+                recovered_source_artifacts(target["output"])
+            prior = json.loads((Path(target["output"]) / "result.json").read_text())
+            if prior.get("mode") != "source_trial" or not prior.get("source_training_protocol_complete"):
+                raise RuntimeError("Source trial did not complete its protocol")
+            time.sleep(5)  # Let the training supervisor finish its terminal report.
+            watch.update(status="EVALUATION_STARTING", training_output=target["output"], updated_at=now())
+            write_json(watch_path, watch)
+            command = [sys.executable, "-I", "-B", str(Path(__file__).resolve()), "run",
+                       "--stage", "stage0", "--output", str(output), "--evidence-root", str(evidence_root),
+                       "--resume", "--retry-incomplete", "--continuation-plan", str(args.continuation_plan),
+                       "--training-artifact", target["output"],
+                       "--repair-note", "Untouched source-trial evaluation after verified training completion",
+                       "--jobs", "mdpf_trial_evaluation"]
+            watch["command"] = command
+            write_json(watch_path, watch)
+            with (output / ("followup-after-attempt%02d.log" % args.after_attempt)).open("w") as log:
+                completed = subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=1200)
+            final_ledger = json.loads((output / "ledger.json").read_text())
+            final = final_ledger["attempts"][-1]
+            passed = final["name"] == "mdpf_trial_evaluation" and final["status"] == "COMPLETED" and final.get("outcome", {}).get("check") == "PASS"
+            watch.update(status="PASS" if passed else "FAILED", supervisor_returncode=completed.returncode,
+                         evaluation_attempt=final["index"], updated_at=now())
+            write_json(watch_path, watch)
+            print(json.dumps(watch), flush=True)
+            return 0 if passed else 2
+        except Exception as exc:
+            watch.update(status="BLOCKED", error=repr(exc), updated_at=now())
+            write_json(watch_path, watch)
+            raise
+    campaign = Campaign(output, resume=args.resume)
+    try:
+        if args.resume:
+            manifest = json.loads((output / campaign.state["active_manifest"]).read_text())
+            if manifest["evidence_root"] != str(evidence_root):
+                raise ValueError("Cannot change evidence root within a campaign")
+            if args.repair_note:
+                manifest = prepare(campaign, evidence_root, args.repair_note,
+                                   args.author_python or manifest.get("author_python", sys.executable),
+                                   args.configuration or manifest.get("training_configuration"),
+                                   args.continuation_plan or manifest.get("continuation_plan"),
+                                   args.training_artifact or manifest.get("training_artifact"))
+            else:
+                if args.training_artifact and str(args.training_artifact.resolve()) != manifest.get("training_artifact"):
+                    raise ValueError("Record a training checkpoint change with --repair-note")
+                if args.configuration and str(args.configuration.resolve()) != manifest.get("training_configuration"):
+                    raise ValueError("Record a configuration change with --repair-note")
+                if args.continuation_plan and str(args.continuation_plan.resolve()) != manifest.get("continuation_plan"):
+                    raise ValueError("Record a continuation plan change with --repair-note")
+                if args.author_python and os.path.abspath(args.author_python) != manifest["author_python"]:
+                    raise ValueError("Record a reference-environment change with --repair-note")
+                for relative, expected in manifest["source_sha256"].items():
+                    if digest(ROOT / relative) != expected or digest(Path(manifest["snapshot_root"]) / relative) != expected:
+                        raise ValueError("Source changed; document the localized repair with --repair-note")
+        else:
+            manifest = prepare(campaign, evidence_root, author_python=args.author_python,
+                               configuration=args.configuration, continuation_plan=args.continuation_plan, training_artifact=args.training_artifact)
+        fingerprints = job_fingerprints(dependency_inputs(manifest), manifest["author_python"])
+        if fingerprints != manifest.get("job_fingerprints"):
+            raise ValueError("Dependencies changed or legacy manifest; use --repair-note before reuse")
+        selected = selected_jobs(args.jobs)
+        campaign.state["last_selection"] = selected
+        campaign.save()
+        if set(selected) & {"mdpf_trial_evaluation", "mdpf_trial_smoke", "mdpf_source_trial", "mdpf_tg_cost", "mdpf_irg_cost", "mdpf_dis_cost", "mdpf_source_training", "mdpf_iwsg_matched_gradients", "mdpf_iwsg_expectation", "mdpf_source_cost", "mdpf_evaluation_cost", "mdpf_sequence_gradients"} and not manifest.get("training_configuration"):
+            raise ValueError("Run the source configuration check first, then snapshot its resolved configuration")
+        if set(selected) & {"mdpf_trial_evaluation", "mdpf_evaluation_cost", "mdpf_sequence_gradients"} and not manifest.get("training_artifact"):
+            raise ValueError("Evaluation/sequence checks require a preserved source-cost checkpoint")
+        builders = build_jobs(campaign, manifest)
+        for name, resource in JOBS:
+            if name not in selected:
+                continue
+            previous = [a for a in campaign.state["attempts"] if a["name"] == name]
+            if previous and reusable(previous[-1], fingerprints[name], args.retry_incomplete):
+                continue
+            attempt = campaign.launch(name, resource, builders[name], cwd=ROOT,
+                                      fingerprint=fingerprints[name], timeout=LONG_JOB_TIMEOUTS.get(name, 300.0),
+                                      environment=reference_environment(manifest, name))
+            try:
+                attempt["outcome"] = inspect_attempt(attempt)
+            except Exception as exc:
+                attempt["outcome"] = {"check": "FAILED", "detail": "Invalid child evidence: " + repr(exc)}
+            write_json(Path(attempt["output"]) / "outcome.json", attempt["outcome"])
+            campaign.save()
+            report(campaign)
+            print(json.dumps({"name": name, "process": attempt["status"],
+                              "check": attempt["outcome"]["check"],
+                              "seconds": attempt["charged_seconds"]}), flush=True)
+            if attempt["outcome"].get("classification") == "reference_environment_failure":
+                break  # A shared loader fault invalidates subsequent reference consumers.
+            # Independent diagnostics continue after a candidate or child failure.
+            # Budget exhaustion and invalid dependency provenance still fail closed.
+    finally:
+        result = report(campaign)
+    print(json.dumps({"output": str(output), "execution": result["execution"],
+                      "stage0": result["stage0"], "attempts": result["attempts_used"]}))
+    return 0 if result["prerequisite_checks"] == "PASS" else 2
+
+
+if __name__ == "__main__":
+    # SIGTERM follows the same cleanup path as Ctrl-C.
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(128 + signum))
+    raise SystemExit(main())

@@ -1,0 +1,50 @@
+2026-09-26 16:39:15.535845: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-26 16:39:15.543539: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790411955.551922 3062377 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790411955.554581 3062377 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790411955.561168 3062377 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790411955.561215 3062377 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790411955.561220 3062377 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790411955.561222 3062377 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-26 16:39:15.563388: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-09-26 16:39:17.052333: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_rwm_resume.py", line 102, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_rwm_resume.py", line 48, in main
+    report = run_resume(args.output, args.previous, args.reference, args.coverage)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_rwm_resume.py", line 135, in run_resume
+    chunk = retained(state, scale, factor,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/polymorphic_function/function_type_utils.py", line 446, in bind_function_inputs
+    raise TypeError(
+TypeError: Binding inputs to tf.function failed due to `Can not cast TensorSpec(shape=(256, 2, 2), dtype=tf.float64, name=None) to TensorSpec(shape=(2, 2), dtype=tf.float64, name=None)`. Received args: (<tf.Tensor: shape=(4, 2), dtype=float64, numpy=
+array([[-0.1434317 , -0.11248042],
+       [ 0.10917012, -0.00214769],
+       [-0.09382324, -0.27382916],
+       [ 0.01025425, -0.22393493]])>, <tf.Tensor: shape=(), dtype=float64, numpy=0.3879251026481228>, <tf.Tensor: shape=(256, 2, 2), dtype=float64, numpy=
+array([[[ 0.22230884,  0.        ],
+        [-0.00085306,  0.21959287]],
+
+       [[ 0.22123021,  0.        ],
+        [-0.00274988,  0.22045679]],
+
+       [[ 0.22123021,  0.        ],
+        [-0.00274988,  0.22045679]],
+
+       ...,
+
+       [[ 0.222125  ,  0.        ],
+        [ 0.00025487,  0.21931896]],
+
+       [[ 0.222125  ,  0.        ],
+        [ 0.00025487,  0.21931896]],
+
+       [[ 0.22155363,  0.        ],
+        [-0.00126725,  0.21983538]]])>, <tf.Tensor: shape=(2,), dtype=int32, numpy=array([-804096699,         11], dtype=int32)>) and kwargs: {} for signature: (initial: TensorSpec(shape=(4, 2), dtype=tf.float64, name=None), log_scale: TensorSpec(shape=(), dtype=tf.float64, name=None), factor: TensorSpec(shape=(2, 2), dtype=tf.float64, name=None), seed: TensorSpec(shape=(2,), dtype=tf.int32, name=None)).

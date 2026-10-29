@@ -273,22 +273,18 @@ def p76_stabilize_covariance(
 ) -> P76StabilizedCovariance:
     """Symmetrize and eigen-floor a covariance matrix."""
 
-    matrix = _symmetrize(tf.convert_to_tensor(covariance, dtype=tf.float64))
+    matrix = tf.convert_to_tensor(covariance, dtype=tf.float64)
     if matrix.shape.rank != 2 or matrix.shape[0] != matrix.shape[1]:
         raise ValueError(f"covariance: {HighDimStatus.INVALID_SHAPE.value}")
     _assert_finite("covariance", matrix)
     if float(abs_floor) <= 0.0 or float(rel_floor) <= 0.0:
         raise ValueError("covariance floors must be positive")
-    raw, eigenvectors = tf.linalg.eigh(matrix)
-    _assert_finite("raw_eigenvalues", raw)
-    max_abs = tf.reduce_max(tf.abs(raw))
-    floor = tf.maximum(
-        tf.constant(float(abs_floor), dtype=tf.float64),
-        tf.constant(float(rel_floor), dtype=tf.float64) * max_abs,
+    from bayesfilter.highdim.ukf_initializer_tf import stabilize_covariance
+
+    stabilized, eigenvectors, raw, floored, floor = stabilize_covariance(
+        matrix, tf.constant(float(abs_floor), tf.float64), tf.constant(float(rel_floor), tf.float64)
     )
-    floored = tf.maximum(raw, floor)
-    stabilized = eigenvectors @ tf.linalg.diag(floored) @ tf.transpose(eigenvectors)
-    stabilized = _symmetrize(stabilized)
+    _assert_finite("raw_eigenvalues", raw)
     return P76StabilizedCovariance(
         covariance=stabilized,
         eigenvectors=eigenvectors,
@@ -310,16 +306,14 @@ def p76_local_frame_from_moments(
         raise TypeError("config must be P76UKFInitializerConfig")
     if config.product_basis.dimension != int(moments.center.shape[0]):
         raise ValueError("product_basis dimension must match adjacent UKF dimension")
-    stabilized = p76_stabilize_covariance(
-        moments.covariance,
-        abs_floor=config.covariance_abs_floor,
-        rel_floor=config.covariance_rel_floor,
+    from bayesfilter.highdim.ukf_initializer_tf import local_frame
+
+    linear_map, stabilized_tensors = local_frame(
+        moments.covariance, tf.constant(config.gamma, tf.float64),
+        tf.constant(config.covariance_abs_floor, tf.float64),
+        tf.constant(config.covariance_rel_floor, tf.float64),
     )
-    linear_map = (
-        tf.constant(config.gamma, dtype=tf.float64)
-        * stabilized.eigenvectors
-        @ tf.linalg.diag(tf.sqrt(stabilized.floored_eigenvalues))
-    )
+    stabilized = P76StabilizedCovariance(*stabilized_tensors)
     _assert_finite("linear_map", linear_map)
     return moments.center, linear_map, stabilized
 
@@ -333,6 +327,7 @@ def p76_gaussian_sqrt_projection_coefficients(
     linear_map: tf.Tensor | None = None,
     reference_offset: tf.Tensor | None = None,
     reference_matrix: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> tuple[tf.Tensor, ...]:
     """Project the UKF Gaussian square root into the fixed reference basis.
 
@@ -369,47 +364,14 @@ def p76_gaussian_sqrt_projection_coefficients(
         raise ValueError("UKF frame shape does not match product basis")
     if reference_offset.shape != (dimension,) or reference_matrix.shape != (dimension, dimension):
         raise ValueError("reference map shape does not match product basis")
-    marginal_scale = tf.sqrt(tf.reduce_sum(tf.square(linear_map), axis=1))
-    marginal_scale = tf.maximum(marginal_scale, tf.constant(1e-15, dtype=tf.float64))
-    nodes, weights = _legendre_gauss_nodes_weights(int(quadrature_order))
-    coefficients = []
-    for basis in product_basis.bases:
-        half_length = 0.5 * basis.domain.length
-        midpoint = 0.5 * (basis.domain.left + basis.domain.right)
-        points = midpoint + half_length * nodes
-        axis = len(coefficients)
-        physical = reference_offset[axis] + reference_matrix[axis, axis] * points
-        standardized = (physical - center[axis]) / marginal_scale[axis]
-        values = tf.exp(
-            -0.25
-            * tf.constant(float(gamma) ** 2, dtype=tf.float64)
-            * tf.square(standardized)
-        )
-        active_weights = _active_1d_weights(
-            product_basis.convention.mass_measure,
-            half_length,
-            weights,
-        )
-        guide_normalizer = tf.reduce_sum(
-            active_weights
-            * tf.exp(
-                -0.5
-                * tf.constant(float(gamma) ** 2, dtype=tf.float64)
-                * tf.square(standardized)
-            )
-        )
-        tf.debugging.assert_positive(
-            guide_normalizer,
-            message="UKF guide normalizer must be positive",
-        )
-        values = values / tf.sqrt(guide_normalizer)
-        basis_values = basis.evaluate(points)
-        rhs = tf.reduce_sum(active_weights[:, tf.newaxis] * values[:, tf.newaxis] * basis_values, axis=0)
-        mass = basis.mass_matrix(product_basis.convention.mass_measure)
-        coefficient = tf.reshape(tf.linalg.solve(mass, rhs[:, tf.newaxis]), [-1])
-        _assert_finite("projection_coefficient", coefficient)
-        coefficients.append(coefficient)
-    return tuple(coefficients)
+    from bayesfilter.highdim.ukf_initializer_tf import projection_program
+
+    program = projection_program(product_basis, int(quadrature_order), jit_compile=jit_compile)
+    coefficients, valid = program(tf.constant(float(gamma), tf.float64), center,
+                                  linear_map, reference_offset, reference_matrix)
+    if not bool(valid.numpy()):
+        raise ValueError(f"projection_coefficient: {HighDimStatus.NONFINITE_VALUE.value}")
+    return tuple(coefficients[axis, :basis.basis_dim] for axis, basis in enumerate(product_basis.bases))
 
 
 def p76_rank_one_ukf_sqrt_cores(
@@ -433,6 +395,7 @@ def p76_embed_rank_one_with_seeded_channels(
     *,
     ranks: tuple[int, ...],
     seed_epsilon: float,
+    jit_compile: bool = True,
 ) -> tuple[TTCore, ...]:
     """Embed rank-one coefficient vectors into a uniform-rank seeded TT."""
 
@@ -448,49 +411,19 @@ def p76_embed_rank_one_with_seeded_channels(
         raise ValueError("P76 first implementation requires uniform internal rank")
     if float(seed_epsilon) <= 0.0:
         raise ValueError("seed_epsilon must be positive")
-    reference_scale = tf.maximum(
-        tf.abs(coefficients[0][0]),
-        tf.constant(1e-300, dtype=tf.float64),
-    )
-    max_rank = max(ranks)
-    extra_count = max(max_rank - 1, 0)
-    seeded_scale = (
-        reference_scale * tf.constant(float(seed_epsilon) / float(extra_count), dtype=tf.float64)
-        if extra_count > 0
-        else tf.constant(0.0, dtype=tf.float64)
-    )
-    cores = []
-    for axis, coefficient in enumerate(coefficients):
-        if coefficient.shape.rank != 1:
-            raise ValueError(f"coefficient: {HighDimStatus.INVALID_SHAPE.value}")
-        _assert_finite("rank_one_coefficient", coefficient)
-        left_rank = ranks[axis]
-        right_rank = ranks[axis + 1]
-        basis_dim = int(coefficient.shape[0])
-        values = tf.zeros([left_rank, basis_dim, right_rank], dtype=tf.float64)
-        indices = [[0, basis, 0] for basis in range(basis_dim)]
-        updates = [coefficient[basis] for basis in range(basis_dim)]
-        for channel in range(1, min(left_rank, right_rank)):
-            basis_index = _seeded_basis_index(axis=axis, channel=channel, basis_dim=basis_dim)
-            indices.append([channel, basis_index, channel])
-            updates.append(tf.constant(1.0, dtype=tf.float64))
-        if axis == 0:
-            for channel in range(1, right_rank):
-                basis_index = _seeded_basis_index(axis=axis, channel=channel, basis_dim=basis_dim)
-                indices.append([0, basis_index, channel])
-                updates.append(seeded_scale)
-        if axis == dim - 1:
-            for channel in range(1, left_rank):
-                basis_index = _seeded_basis_index(axis=axis, channel=channel, basis_dim=basis_dim)
-                indices.append([channel, basis_index, 0])
-                updates.append(tf.constant(1.0, dtype=tf.float64))
-        values = tf.tensor_scatter_nd_update(
-            values,
-            tf.constant(indices, dtype=tf.int64),
-            tf.stack(updates),
-        )
-        cores.append(TTCore(values))
-    return tuple(cores)
+    if any(coefficient.shape.rank != 1 for coefficient in coefficients):
+        raise ValueError(f"coefficient: {HighDimStatus.INVALID_SHAPE.value}")
+    from bayesfilter.highdim.ukf_initializer_tf import embedding_program
+
+    widths = tuple(int(coefficient.shape[0]) for coefficient in coefficients)
+    width = max(widths)
+    packed = tf.stack(tuple(tf.pad(coefficient, [[0, width - coefficient.shape[0]]]) for coefficient in coefficients))
+    _assert_finite("rank_one_coefficient", packed)
+    # Match the original host division before materializing the seeded scale.
+    epsilon_per_channel = float(seed_epsilon) / max(max(ranks) - 1, 1)
+    program = embedding_program(widths, ranks, jit_compile=jit_compile)
+    values = program(packed, tf.constant(epsilon_per_channel, tf.float64))
+    return tuple(TTCore(values[axis, :ranks[axis], :widths[axis], :ranks[axis + 1]]) for axis in range(dim))
 
 
 def p76_build_ukf_initializer(
@@ -499,6 +432,7 @@ def p76_build_ukf_initializer(
     *,
     reference_offset: tf.Tensor | None = None,
     reference_matrix: tf.Tensor | None = None,
+    jit_compile: bool = True,
 ) -> P76UKFInitializerResult:
     """Build UKF initializer cores and manifest for a fixed reference map."""
 
@@ -509,21 +443,28 @@ def p76_build_ukf_initializer(
         if int(config.time_index) == 0
         else p76_adjacent_moments_from_scout(scout, time_index=config.time_index)
     )
-    center, linear_map, stabilized = p76_local_frame_from_moments(moments, config)
-    coefficients = p76_gaussian_sqrt_projection_coefficients(
-        config.product_basis,
-        gamma=config.gamma,
-        quadrature_order=config.quadrature_order,
-        center=center,
-        linear_map=linear_map,
-        reference_offset=reference_offset,
-        reference_matrix=reference_matrix,
+    from bayesfilter.highdim.ukf_initializer_tf import initializer_program
+
+    dimension = config.product_basis.dimension
+    if dimension != int(moments.center.shape[0]):
+        raise ValueError("product_basis dimension must match adjacent UKF dimension")
+    offset = tf.zeros([dimension], tf.float64) if reference_offset is None else tf.convert_to_tensor(reference_offset, tf.float64)
+    reference = tf.eye(dimension, dtype=tf.float64) if reference_matrix is None else tf.convert_to_tensor(reference_matrix, tf.float64)
+    if offset.shape != (dimension,) or reference.shape != (dimension, dimension):
+        raise ValueError("reference map shape does not match product basis")
+    program = initializer_program(config.product_basis, config.ranks, config.quadrature_order, jit_compile=jit_compile)
+    coefficient_values, core_values, linear_map, stabilized_tensors, valid = program(
+        moments.center, moments.covariance, tf.constant(config.gamma, tf.float64),
+        tf.constant(config.covariance_abs_floor, tf.float64), tf.constant(config.covariance_rel_floor, tf.float64),
+        offset, reference, tf.constant(config.seed_epsilon / max(max(config.ranks) - 1, 1), tf.float64),
     )
-    cores = p76_embed_rank_one_with_seeded_channels(
-        coefficients,
-        ranks=config.ranks,
-        seed_epsilon=config.seed_epsilon,
-    )
+    if not bool(valid.numpy()):
+        raise ValueError(f"projection_coefficient: {HighDimStatus.NONFINITE_VALUE.value}")
+    center = moments.center
+    stabilized = P76StabilizedCovariance(*stabilized_tensors)
+    coefficients = tuple(coefficient_values[axis, :basis.basis_dim] for axis, basis in enumerate(config.product_basis.bases))
+    cores = tuple(TTCore(core_values[axis, :config.ranks[axis], :basis.basis_dim, :config.ranks[axis + 1]])
+                  for axis, basis in enumerate(config.product_basis.bases))
     manifest = p76_initializer_manifest_payload(
         config=config,
         moments=moments,

@@ -1,0 +1,65 @@
+{
+  "command": [
+    "docs/plans/artifacts/ledh-sir-guard-placement-repair-20261022/run_gpu_checks.py",
+    "docs/plans/artifacts/ledh-sir-guard-placement-repair-20261022/attempt-02-gpu-tests"
+  ],
+  "repository": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+  "git_commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+  "plan": "docs/plans/ledh-sir-guard-placement-repair-20261022.md",
+  "classification": "GPU/XLA diagnostic mechanics; no scientific promotion",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "XLA_FLAGS": "--xla_gpu_enable_command_buffer=",
+    "BAYESFILTER_TEST_DEVICE_SCOPE": "visible"
+  },
+  "seeds": "deterministic test fixtures",
+  "data_version": "test source fixtures",
+  "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guard-placement-repair-20261022/attempt-02-gpu-tests",
+  "status": "passed",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": false,
+  "devices": [
+    {
+      "name": "/physical_device:GPU:0",
+      "details": {
+        "compute_capability": [
+          8,
+          9
+        ],
+        "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+      }
+    }
+  ],
+  "jit_compile": true,
+  "pytest_exit_code": 0,
+  "allocator": {
+    "current": 21760,
+    "peak": 145408
+  },
+  "wall_seconds": 112.55250105797313
+}

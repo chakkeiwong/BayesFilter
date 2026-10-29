@@ -1,0 +1,224 @@
+{
+  "status": "FAILED",
+  "supervisor_pid": 1011577,
+  "plan_file": "docs/plans/controlled-smc-kdm-stage-isolation-plan-20261013.md",
+  "result_file": "docs/plans/controlled-smc-kdm-stage-isolation-result-20261013.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/run_kdm_stage_isolation.py"
+  ],
+  "start_utc": "2026-10-13T03:32:27.754954+00:00",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "git_dirty": " M bayesfilter/highdim/observation_robust_guide_tf.py\n M bayesfilter/highdim/sgqf_joint_consumer_tf.py\n M docs/benchmarks/reference_iapf_paper.R\n M docs/benchmarks/run_observation_aware_tt_complete.py\n M docs/plans/artifacts/ledh-graceful-failure-revised-program-20260917-01/checkpoint.md\n M docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md\n M docs/plans/artifacts/zhao-cui-observation-aware-tt-20260912-01/attempt05_observation_aware_tt_algorithm_note.tex\n M docs/plans/observation-aware-tt-active-checkpoint.md\n M docs/plans/observation-aware-tt-master-amendment-11-protected-fitting-20260917.md\n M docs/plans/observation-aware-tt-repair-complete-program-20260913.md\n M docs/plans/younis-kdm-score-master-program-2026-09-14.md\n",
+  "source_hashes": {
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "79aed1402ff3c0b3a3c4819e20bf97bdfacc2a61f859bc54565d182c96dcf0c9",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "9767a178b7705d7d40a9144973b9dc81c80d77984b9cfd483771ddb3947fffad",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "e0ddb0c488402d97791559a6197c9c00ee0fd7a87046c8a9e43f952bce5ed619",
+    "docs/benchmarks/diagnose_kdm_source_stages_tf.py": "e85f74255a0ad9ba109418d0d3b099120dcd0094d940c757b4fa29d14b149a6f",
+    "docs/benchmarks/diagnose_kdm_stage_isolation_tf.py": "152c50453362161767cac6ba72a598391528c268613ac69a9187aa2549dfdbb9",
+    "docs/benchmarks/reference_kdm_neural.py": "907fcf70d98c42ca393f301f5b0ef327ef8a90741af90ddeb93598f665af338d",
+    "docs/benchmarks/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe",
+    "docs/benchmarks/reference_kdm_source_stages.py": "7f8513ee19af87e6eca0c9b9c044a239fb0fe2b1835e2ab28f7f738825a9bf5d",
+    "docs/benchmarks/reference_kdm_stage_isolation.py": "34ce0582c2a26dbcb1c7cb6c18a34052e42a27d1909480ba3cd2ed24b9ef940e",
+    "docs/benchmarks/run_kdm_stage_isolation.py": "0b7b2df21d562fe4da2713c7cee4e2b03ebba185b1de96fd6608fb7d4efe3f64",
+    "docs/plans/controlled-smc-kdm-stage-isolation-plan-20261013.md": "04a1450f3c1e805ec1776a9180a5d45240b48d28c9acebafb2bb8842d5a37c1e"
+  },
+  "resource_wall_seconds": {
+    "cpu": 11120.923083496979,
+    "gpu": 11080.914222823922
+  },
+  "campaign_remaining_before": {
+    "cpu": 216883.26296676445,
+    "gpu": 201281.20656156476
+  },
+  "phase_remaining_before": {
+    "cpu": 16149.99211810506,
+    "gpu": 14389.996314703953
+  },
+  "attempt_cap": 3,
+  "phase_caps": {
+    "cpu": 16200.0,
+    "gpu": 14400.0
+  },
+  "stages": [
+    {
+      "name": "source-audit",
+      "status": "COMPLETED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_stage_isolation.py",
+        "--mode",
+        "audit",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/source-audit/diagnostic"
+      ],
+      "gpu": false,
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "timeout_seconds": 1800,
+      "interpreter": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": null,
+        "TF_NUM_INTEROP_THREADS": null,
+        "TF_NUM_INTRAOP_THREADS": null,
+        "OMP_NUM_THREADS": "1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+      },
+      "pid": 1011606,
+      "exit_code": 0,
+      "result_sha256": "c9e2a35322c3022fd85cf0d80241b89e2fd49e63534e8103956bc08b8a2e87d2",
+      "wall_seconds": 30.0029477130156
+    },
+    {
+      "name": "verification",
+      "status": "COMPLETED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py",
+        "--mode",
+        "verify",
+        "--reference",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/verification/diagnostic"
+      ],
+      "gpu": true,
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "timeout_seconds": 900,
+      "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tftwogpu/lib"
+      },
+      "pid": 1012655,
+      "exit_code": 0,
+      "result_sha256": "4d01a2286d5f15b7e753869fda066fcac088cce4deb30cde0c31e0be129bcf4b",
+      "wall_seconds": 170.01566846692003
+    },
+    {
+      "name": "control",
+      "status": "COMPLETED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_stage_isolation_tf.py",
+        "--mode",
+        "control",
+        "--verification",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/verification/diagnostic/result.json",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/control/diagnostic"
+      ],
+      "gpu": true,
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "timeout_seconds": 300,
+      "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tftwogpu/lib"
+      },
+      "pid": 1016105,
+      "exit_code": 0,
+      "result_sha256": "289cc8fe68b60fa654263f043bcb0420416c73c1d403d7f04a412b74121c77d7",
+      "wall_seconds": 100.00836433609948
+    },
+    {
+      "name": "training",
+      "status": "COMPLETED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_stage_isolation_tf.py",
+        "--mode",
+        "train",
+        "--verification",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/verification/diagnostic/result.json",
+        "--author-start",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/source-audit/diagnostic/unit01-author-start.json",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/training/diagnostic"
+      ],
+      "gpu": true,
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "timeout_seconds": 14119.972281900933,
+      "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+        "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+        "TF_NUM_INTEROP_THREADS": "1",
+        "TF_NUM_INTRAOP_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tftwogpu/lib"
+      },
+      "pid": 1017849,
+      "exit_code": 0,
+      "result_sha256": "60459ff98378e2e8b477e7db0c7503aee07f68c809bcecbe88572b5310bd770c",
+      "wall_seconds": 10810.890190020902
+    },
+    {
+      "name": "evaluation",
+      "status": "FAILED",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_stage_isolation.py",
+        "--mode",
+        "evaluate",
+        "--trained",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/training/diagnostic",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/evaluation/diagnostic"
+      ],
+      "gpu": false,
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "timeout_seconds": 1800,
+      "interpreter": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "-1",
+        "TF_FORCE_GPU_ALLOW_GROWTH": null,
+        "TF_NUM_INTEROP_THREADS": null,
+        "TF_NUM_INTRAOP_THREADS": null,
+        "OMP_NUM_THREADS": "1",
+        "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+      },
+      "pid": 1185715,
+      "exit_code": 1,
+      "wall_seconds": 10.005912960041314
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "data_version": "unit01/02 fixed source datasets and repaired saved checkpoints; input SHA256 in each stage",
+  "seed_policy": "original TF base1100000000; CPU draw seeds in stage artifacts",
+  "gpu_trust_basis": "escalated_local_gpu_access",
+  "current_stage": "evaluation",
+  "end_utc": "2026-10-13T06:46:09.856873+00:00"
+}

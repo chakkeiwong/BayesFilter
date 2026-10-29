@@ -1,0 +1,140 @@
+FF................................                                       [100%]
+=================================== FAILURES ===================================
+_ test_retained_cap_preserves_full_calibration_without_extra_look[750-expected_looks0] _
+
+tmp_path = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-development-01/pytest-temp-02/test_retained_cap_preserves_fu0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a019585c810>
+cap = 750, expected_looks = []
+
+    @pytest.mark.parametrize("cap,expected_looks", [(750, []),(1250,[1000])])
+    def test_retained_cap_preserves_full_calibration_without_extra_look(tmp_path, monkeypatch, cap, expected_looks):
+        calls, looks_seen = [], []
+        def run(config):
+            root = config.output_dir
+            root.mkdir()
+            calls.append(config)
+            raw = stage._write_tensor(root/"raw.tfbin", tf.zeros([250,4,2],tf.float64))
+            chunks = {}
+            for key, tensor in dict(force_fallback=tf.zeros([250,4],tf.bool),
+                                    is_accepted=tf.ones([250,4],tf.bool),
+                                    log_accept_ratio=tf.zeros([250,4],tf.float64),
+                                    delta_h=tf.zeros([250,4],tf.float64)).items():
+                chunks[key] = stage._write_tensor(root/(key+".tfbin"),tensor)
+            manifest = root/"manifest.json"
+            write_json(manifest,dict(raw_samples=raw, chunk=chunks,
+                checks=dict(finite=True,endpoint_valid=True),chunk_graph_trace_count=1))
+            return dict(archive_manifest_path=str(manifest),health_passed=True)
+        monkeypatch.setattr(retained,"build_retained_bound_hmc_archive_runner_from_tuning_result",
+                            lambda **kwargs:SimpleNamespace(run=run))
+        from bayesfilter.inference import hmc_sequential_verification as sequential
+        monkeypatch.setattr(sequential,"runtime_budget_guard",lambda:None)
+        def assess(points, reference, *, calibration, looks):
+            assert tuple(looks)==master.EXTENDED_LOOKS
+            looks_seen.append(int(points.shape[1]))
+            return dict(status="INCONCLUSIVE",rhat=[1.02,1.02])
+        monkeypatch.setattr(retained,"assess",assess)
+        tuning=SimpleNamespace(config=SimpleNamespace(nomination=SimpleNamespace(target_scope="mechanics")),
+            artifact_manifest_path="diagnostic-only")
+        calibration=dict(qualified=True,method=assessment_scope(master.EXTENDED_LOOKS),
+            looks=list(master.EXTENDED_LOOKS),reference_sha256="fixture")
+>       result=retained.consume_chunks(tuning,SimpleNamespace(binding_hash="fixture"),
+            tmp_path/"retained",dict(reference_sha256="fixture"),calibration,
+            looks=master.EXTENDED_LOOKS,max_results=cap)
+
+tests/test_surrogate_hmc_resume_program.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_retained.py:80: in consume_chunks
+    fallback = read_tensor(manifest_path.parent, manifest["chunk"]["force_fallback"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_m13_public_tuning.py:40: in read_tensor
+    return tf.io.parse_tensor(tf.io.read_file(str(path)), tf.as_dtype(record.get("dtype", "float64")))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/gen_parsing_ops.py:2159: in parse_tensor
+    _ops.raise_from_not_ok_status(e, name)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+e = _NotOkStatusException(), name = None
+
+    def raise_from_not_ok_status(e, name) -> NoReturn:
+      e.message += (" name: " + str(name if name is not None else ""))
+>     raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     tensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__ParseTensor_device_/job:localhost/replica:0/task:0/device:CPU:0}} Type mismatch between parsed tensor (bool) and dtype (double) [Op:ParseTensor] name:
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py:6027: InvalidArgumentError
+_ test_retained_cap_preserves_full_calibration_without_extra_look[1250-expected_looks1] _
+
+tmp_path = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-development-01/pytest-temp-02/test_retained_cap_preserves_fu1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a019036b3d0>
+cap = 1250, expected_looks = [1000]
+
+    @pytest.mark.parametrize("cap,expected_looks", [(750, []),(1250,[1000])])
+    def test_retained_cap_preserves_full_calibration_without_extra_look(tmp_path, monkeypatch, cap, expected_looks):
+        calls, looks_seen = [], []
+        def run(config):
+            root = config.output_dir
+            root.mkdir()
+            calls.append(config)
+            raw = stage._write_tensor(root/"raw.tfbin", tf.zeros([250,4,2],tf.float64))
+            chunks = {}
+            for key, tensor in dict(force_fallback=tf.zeros([250,4],tf.bool),
+                                    is_accepted=tf.ones([250,4],tf.bool),
+                                    log_accept_ratio=tf.zeros([250,4],tf.float64),
+                                    delta_h=tf.zeros([250,4],tf.float64)).items():
+                chunks[key] = stage._write_tensor(root/(key+".tfbin"),tensor)
+            manifest = root/"manifest.json"
+            write_json(manifest,dict(raw_samples=raw, chunk=chunks,
+                checks=dict(finite=True,endpoint_valid=True),chunk_graph_trace_count=1))
+            return dict(archive_manifest_path=str(manifest),health_passed=True)
+        monkeypatch.setattr(retained,"build_retained_bound_hmc_archive_runner_from_tuning_result",
+                            lambda **kwargs:SimpleNamespace(run=run))
+        from bayesfilter.inference import hmc_sequential_verification as sequential
+        monkeypatch.setattr(sequential,"runtime_budget_guard",lambda:None)
+        def assess(points, reference, *, calibration, looks):
+            assert tuple(looks)==master.EXTENDED_LOOKS
+            looks_seen.append(int(points.shape[1]))
+            return dict(status="INCONCLUSIVE",rhat=[1.02,1.02])
+        monkeypatch.setattr(retained,"assess",assess)
+        tuning=SimpleNamespace(config=SimpleNamespace(nomination=SimpleNamespace(target_scope="mechanics")),
+            artifact_manifest_path="diagnostic-only")
+        calibration=dict(qualified=True,method=assessment_scope(master.EXTENDED_LOOKS),
+            looks=list(master.EXTENDED_LOOKS),reference_sha256="fixture")
+>       result=retained.consume_chunks(tuning,SimpleNamespace(binding_hash="fixture"),
+            tmp_path/"retained",dict(reference_sha256="fixture"),calibration,
+            looks=master.EXTENDED_LOOKS,max_results=cap)
+
+tests/test_surrogate_hmc_resume_program.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_retained.py:80: in consume_chunks
+    fallback = read_tensor(manifest_path.parent, manifest["chunk"]["force_fallback"])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/testing/surrogate_hmc_m13_public_tuning.py:40: in read_tensor
+    return tf.io.parse_tensor(tf.io.read_file(str(path)), tf.as_dtype(record.get("dtype", "float64")))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/gen_parsing_ops.py:2159: in parse_tensor
+    _ops.raise_from_not_ok_status(e, name)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+e = _NotOkStatusException(), name = None
+
+    def raise_from_not_ok_status(e, name) -> NoReturn:
+      e.message += (" name: " + str(name if name is not None else ""))
+>     raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     tensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__ParseTensor_device_/job:localhost/replica:0/task:0/device:CPU:0}} Type mismatch between parsed tensor (bool) and dtype (double) [Op:ParseTensor] name:
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py:6027: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_resume_program.py::test_retained_cap_preserves_full_calibration_without_extra_look[750-expected_looks0]
+FAILED tests/test_surrogate_hmc_resume_program.py::test_retained_cap_preserves_full_calibration_without_extra_look[1250-expected_looks1]
+2 failed, 32 passed, 2 warnings in 6.00s

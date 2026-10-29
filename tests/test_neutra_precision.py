@@ -18,6 +18,20 @@ def config(kind, dtype="float32"):
         mixture_components=3, dtype=dtype, affine_center=(.2, -.1, .3), affine_scale=(.8, 1.2, 1.5))
 
 
+def test_log_domain_naf_does_not_reject_underflowed_linear_weights():
+    from bayesfilter.inference.neutra_transport_core import sigmoid_mixture
+    @tf.function(input_signature=[tf.TensorSpec([4],tf.float32)],jit_compile=True)
+    def evaluate(x):
+        return sigmoid_mixture(x,tf.zeros([4,2],tf.float32),tf.zeros([4,2],tf.float32),
+                               tf.broadcast_to(tf.constant([0.,-119.]),[4,2]))
+    x=tf.constant([-30.,-1.,2.,30.],tf.float32)
+    y,ld,score=evaluate(x)
+    # Identical sigmoid units give the identity for every positive weight.
+    np.testing.assert_allclose(y,x,atol=2e-6,rtol=2e-6)
+    np.testing.assert_allclose(ld,0.,atol=2e-6)
+    np.testing.assert_allclose(score,0.,atol=2e-6)
+
+
 def rows(dtype=tf.float32):
     return tf.constant([[.4, -.7, 1.1], [-1.3, .8, -.5], [2., 1.3, -.4], [.1, -.3, .6]], dtype)
 

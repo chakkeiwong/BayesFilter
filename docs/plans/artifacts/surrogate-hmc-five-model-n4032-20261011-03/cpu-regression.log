@@ -1,0 +1,39 @@
+..F......................                                                [100%]
+=================================== FAILURES ===================================
+______ test_public_config_adapts_and_allows_20000_initial_retained_draws _______
+
+    def test_public_config_adapts_and_allows_20000_initial_retained_draws():
+        case = SimpleNamespace(p=3)
+        cfg = run.make_tuning_config(case, "test-4032-scope")
+        assert cfg.warmup_results == 2000
+        assert cfg.warmup_max_results == 10000
+        assert cfg.verification_results == 1000
+        assert cfg.verification_max_results == 20000
+        assert cfg.resume_manifest is None
+        assert cfg.check_every_results == 1000
+>       assert type(cfg).from_payload(cfg.payload()) == cfg
+E       AssertionError: assert VerifiedTenso...manifest=None) == VerifiedTenso...manifest=None)
+E         
+E         Omitting 13 identical items, use -vv to show
+E         Differing attributes:
+E         ['nomination']
+E         
+E         Drill down into differing attribute nomination:
+E           nomination: TensorFlowHMCKernelTuningConfig(parameter_dimension=3, evidence_role='candidate', mass_window_results=(128, 256), step_adaptation_results=256, verification_results=128, max_leapfrog_steps=4, initial_step_size=0.01, budget_provenance='five-model N4032 master enforces the owner-selected wall budget', initial_step_size_provenance='small standardized-coordinate hypothesis, adapted on own target', geometry_provenance='identity prior cova...
+E         
+E         ...Full output truncated (8 lines hidden), use '-vv' to show
+
+tests/test_surrogate_hmc_five_model_master.py:56: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_five_model_master.py::test_public_config_adapts_and_allows_20000_initial_retained_draws
+1 failed, 24 passed, 2 warnings in 6.48s

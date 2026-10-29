@@ -1,0 +1,133 @@
+{
+  "schema": "bayesfilter_local_research_manifest_v1",
+  "status": "complete",
+  "created_utc": "2026-09-21T18:25:30.271422+00:00",
+  "question": "Diagnose failed R iAPF guide learning by primary-source derivation, saved-cloud replay and execution-path checks.",
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "git_branch": "surrogate-hmc",
+  "working_tree": "Existing uncommitted work preserved; attempt source hashes identify the executed code.",
+  "plan": "docs/plans/iapf-r-root-cause-audit-2026-09-22.md",
+  "result": "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/result.md",
+  "environment": {
+    "Rscript": "/usr/bin/Rscript",
+    "version": "R scripting front-end version 4.1.2 (2021-11-01)",
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "CPU_only": true,
+    "GPU_intentionally_hidden": true,
+    "role": "independent R reference diagnostics"
+  },
+  "data_version": "GJL first-study linear Gaussian model, T100, alpha0.42; saved d80 failures and F1/F2 diagnostics from the completed author-choice campaign.",
+  "random_seeds": {
+    "replayed_d80_data": 92100180,
+    "replayed_d80_filter": [
+      92201192,
+      92203210
+    ],
+    "exact_guide_oracle": 92100181,
+    "replayed_f2_data": 92100120,
+    "f2_replay": "saved deterministic fit inputs; no new stochastic filter run"
+  },
+  "attempts": [
+    {
+      "status": "complete",
+      "exit_code": 0,
+      "started_utc": "2026-09-21T18:05:41.890827+00:00",
+      "finished_utc": "2026-09-21T18:05:44.715464+00:00",
+      "wall_seconds": 2.8246423590462655,
+      "command": [
+        "Rscript",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/source/docs/benchmarks/diagnose_iapf_root_causes.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results"
+      ],
+      "manifest": "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/manifest.json",
+      "manifest_sha256": "b5e880cfe4ceb47cd15126af070933b5aefa21b0ffe0a73edc942e7a8f6d2a1e"
+    },
+    {
+      "status": "complete",
+      "exit_code": 0,
+      "started_utc": "2026-09-21T18:10:22.751123+00:00",
+      "finished_utc": "2026-09-21T18:10:23.320678+00:00",
+      "wall_seconds": 0.5695581239415333,
+      "command": [
+        "Rscript",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/source/docs/benchmarks/diagnose_iapf_warm_start_path.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/results"
+      ],
+      "manifest": "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/manifest.json",
+      "manifest_sha256": "33bc7c3d6d8a18db2df7686c1455484f96e19fcc2208856149b2592c3ad6d256"
+    },
+    {
+      "status": "complete",
+      "exit_code": 0,
+      "started_utc": "2026-09-21T18:12:30.673981+00:00",
+      "finished_utc": "2026-09-21T18:12:31.041431+00:00",
+      "wall_seconds": 0.3674556009937078,
+      "command": [
+        "Rscript",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/source/docs/benchmarks/diagnose_iapf_warm_start_path.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/results"
+      ],
+      "manifest": "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/manifest.json",
+      "manifest_sha256": "999e6af9ca0c7ffff6c595769549a88c8e13740cbbabab0c98a81eb67e452f02",
+      "repair": "Attempt02 read the missing diagnostic key value; use the actual profiled_loss field. Prior call-chain checks remain valid; only the report table is superseded."
+    }
+  ],
+  "checks": {
+    "distinct_passed": 24,
+    "by_authoritative_attempt": {
+      "attempt01": 21,
+      "attempt03": 3
+    },
+    "snapshot_hashes_verified": 12,
+    "input_hashes_verified_including_repeated_checks": 90,
+    "runtime_source_unchanged": true
+  },
+  "budget": {
+    "audit_worker_seconds_used": 3.7616560839815065,
+    "audit_worker_seconds_cap": 600,
+    "attempts_used": 3,
+    "attempts_cap": 3,
+    "prior_campaign_worker_seconds": 109578.42082369003,
+    "aggregate_campaign_worker_seconds": 109582.18247977401,
+    "aggregate_campaign_worker_seconds_cap": 172800,
+    "remaining_prior_allocation_seconds": 5007.613923305995,
+    "deadline_utc": "2026-09-21T20:04:26Z",
+    "authorization_renewed": false
+  },
+  "repair": "Attempt02 call-chain checks passed, but saved-loss reporting read value instead of profiled_loss. Attempt03 corrects that reporting field and supersedes only the saved optimizer summary. No runtime algorithm changed.",
+  "source_access": "Primary local arXiv v2 and public third-party comparator inspected. Prior version ledger retained. Two fresh web requests returned HTTP 502; original-author implementation and final published technical text remain unavailable.",
+  "evidence_sha256": {
+    "docs/plans/iapf-r-root-cause-audit-2026-09-22.md": "c6d21121f297e13ee153d50fead3b5c0b31ad5d668e46fd9f514109f3ae27ebc",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/result.md": "8fb4f4c417f830b977e64b5b795f85ebcea6ed6e629460dee1e3a773fad3edbd",
+    "docs/plans/artifacts/iapf-r-source-reconciliation-20260920-01/sources/arxiv-extracted/iapf_arxiv.tex": "b1ccea8cf5656dfd047ef4ce1254231d1a5774dff92371cd00f8ef364ef7cd4f",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/checks.csv": "bc77108a97848e1c79ea645ec793127403543d6b92eb6488cf97eec9d94c0761",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/conditioning.csv": "60ba764c5064ba8477b991378920bf2ac5244b3a4ea0700adda827ec7a16db6c",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/curvature-decomposition.csv": "5611e91e9443a8867b44b5da6c4a411cf6123f11130470bd8a8c6d9c65bba41e",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/environment.txt": "49c425b8b144b124249eb48744e8a6340f06ee320d45fac06073773746cbf4b8",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/equation15-profile.csv": "e1a0099df2cb68092fcfeedf104b6f1042c37c74c9bd36c15833cd5211247071",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/input-paths.txt": "2c0ed318e3ecbd8ce0491715d4466bcec4156fcf3a5610cea6df0de44abfd4b2",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/replay-1.csv": "94abcf01ba5dbe9c906a2f17a456fe600f3f23d081198a0c79cf4227a9873033",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/results/replay-3.csv": "006380e11e15a64f821523e787d4d0993c28c43a1a6805ee07d2797d5f34f2cc",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt01/command.log": "ac59946645ca80912ef511c1ccb7d70a86c6d90af59837a89077122536a38f60",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/results/call-chain.csv": "0bfd23f52b95a782ff808215fdccd7e61dfcc0279f106ed39f2d7b8eb8f37e29",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/results/checks.csv": "7f572f8a5a1c00180b057a40e02a28d9ab6abdef0958445285e18c7325859809",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/results/input-paths.txt": "dd03e7c2dc2e6b4e311c7f7db62726ae4c9d70a9320eefd9ba47537dc9993888",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/results/saved-optimizer-failures.csv": "cd3890f9982c779a60609c46f64d8d783554da63a4febc3875f2284d1d3971f7",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt02/command.log": "3e6b215218a9c294603ea35ab83cc7bb2160e42550048dbf7f433a6e09a94a6f",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/results/call-chain.csv": "0bfd23f52b95a782ff808215fdccd7e61dfcc0279f106ed39f2d7b8eb8f37e29",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/results/checks.csv": "7f572f8a5a1c00180b057a40e02a28d9ab6abdef0958445285e18c7325859809",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/results/input-paths.txt": "dd03e7c2dc2e6b4e311c7f7db62726ae4c9d70a9320eefd9ba47537dc9993888",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/results/saved-optimizer-failures.csv": "5cd33b248ff8537bc5ca2ca9aef4ba5bbd8c9d5ac77cfa5f97c242398d06159b",
+    "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/attempt03/command.log": "3e6b215218a9c294603ea35ab83cc7bb2160e42550048dbf7f433a6e09a94a6f"
+  },
+  "decision": "Accept the demonstrated local failure mechanisms; correct the interpretation of QR-dependent warm-start failures; plan focused fitting repairs before another full-filter campaign.",
+  "nonclaims": [
+    "No stochastic method ranking",
+    "No new numerical default",
+    "No full-paper replication",
+    "No conclusion that original authors used the same optimizer or experienced these failures",
+    "No LEDH, KDM, GPU, gradient or HMC promotion"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "taskset",
+    "-c",
+    "12-15",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_hmc_acceptance_numerical_envelope.py",
+    "tests/test_hmc_acceptance_release_validation.py",
+    "tests/test_hmc_acceptance_inventory.py",
+    "tests/test_hmc_acceptance_protocol.py",
+    "--junitxml=docs/plans/artifacts/hmc-v7-release-2026-10-02/checks-01/results.xml"
+  ],
+  "exit_code": 0,
+  "wall_seconds": 5.977496444946155,
+  "resource": "cpu_reference",
+  "gpu_intentionally_hidden": true,
+  "plan": "docs/plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md"
+}

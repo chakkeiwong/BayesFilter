@@ -140,3 +140,11 @@ def test_svd_cut_derivative_cpu_compiled_parity() -> None:
     np.testing.assert_allclose(graph_score.numpy(), eager.score.numpy(), atol=1e-12)
     np.testing.assert_allclose(graph_hessian.numpy(), eager.hessian.numpy(), atol=1e-12)
     assert len(compiled._list_all_concrete_functions_for_serialization()) == 1
+    # The graph Hessian must remain the total derivative of its score.
+    step = 1e-5
+    finite_difference = np.column_stack([
+        (compiled(params + step * direction)[1].numpy()
+         - compiled(params - step * direction)[1].numpy()) / (2.0 * step)
+        for direction in tf.eye(2, dtype=tf.float64)
+    ])
+    np.testing.assert_allclose(graph_hessian, finite_difference, rtol=1e-7, atol=1e-8)

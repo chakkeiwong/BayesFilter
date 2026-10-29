@@ -25,6 +25,7 @@ from bayesfilter.highdim.transport_chunk_policy import (
     select_transport_chunks,
     validate_transport_chunks,
 )
+from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
 
 
 DTYPE = tf.float64
@@ -308,25 +309,18 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
     batch_size = tf.shape(chol)[0]
     identity = tf.eye(dimension, batch_shape=[batch_size], dtype=chol.dtype)
     chol_inverse = tf.linalg.triangular_solve(chol, identity)
-    columns = []
-    for index in range(PARAMETER_COUNT):
-        tangent = matrix_tangent[..., index]
-        right_solved = tf.linalg.matmul(tangent, chol_inverse, transpose_b=True)
-        inner = tf.linalg.matmul(chol_inverse, right_solved)
-        lower = tf.linalg.band_part(inner, -1, 0)
-        phi = tf.linalg.set_diag(lower, 0.5 * tf.linalg.diag_part(lower))
-        columns.append(tf.linalg.matmul(chol, phi))
-    return tf.stack(columns, axis=-1)
+    tangent = tf.transpose(matrix_tangent, [0, 3, 1, 2])
+    right_solved = tf.linalg.matmul(tangent, chol_inverse[:, None], transpose_b=True)
+    inner = tf.linalg.matmul(chol_inverse[:, None], right_solved)
+    lower = tf.linalg.band_part(inner, -1, 0)
+    phi = tf.linalg.set_diag(lower, 0.5 * tf.linalg.diag_part(lower))
+    return tf.transpose(tf.linalg.matmul(chol[:, None], phi), [0, 2, 3, 1])
 
 
 def _inverse_jvp(inverse: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
-    return tf.stack(
-        [
-            -inverse @ matrix_tangent[..., index] @ inverse
-            for index in range(PARAMETER_COUNT)
-        ],
-        axis=-1,
-    )
+    tangent = tf.transpose(matrix_tangent, [0, 3, 1, 2])
+    result = -inverse[:, None] @ tangent @ inverse[:, None]
+    return tf.transpose(result, [0, 2, 3, 1])
 
 
 def _flow_forward_and_jvp(
@@ -1018,7 +1012,7 @@ _TWO_NODE_STATIC_SPEC = static_spec_from_model(
 )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"fixed_reset_mask": tf.bool})
 def latent_sir_contract_e_canonical_value_and_score_tf(
     theta: tf.Tensor,
     observations: tf.Tensor,
@@ -1057,7 +1051,7 @@ def latent_sir_contract_e_canonical_value_and_score_tf(
     )
 
 
-@tf.function(jit_compile=True, reduce_retracing=True)
+@fixed_signature_function(floating_dtype=tf.float64, tensor_dtypes={"fixed_reset_mask": tf.bool})
 def latent_sir_two_node_contract_e_value_and_score_tf(
     theta: tf.Tensor,
     observations: tf.Tensor,

@@ -1,0 +1,41 @@
+......F....                                                              [100%]
+=================================== FAILURES ===================================
+_____ test_binary_fold_policy_keeps_bulk_check_and_other_degeneracy_vetoes _____
+
+    def test_binary_fold_policy_keeps_bulk_check_and_other_degeneracy_vetoes():
+        from bayesfilter.inference.hmc_posterior_diagnostics import rank_normalized_split_rhat
+        from bayesfilter.testing.surrogate_hmc_mcse_randomization import binary_function_rhat
+    
+        @tf.function(input_signature=[tf.TensorSpec([4, 400, 1], tf.float64)],
+                     jit_compile=False, autograph=False)
+        def evaluate(values):
+            components = rank_normalized_split_rhat(values)
+            maximum, flag = binary_function_rhat(values, components)
+            return maximum, flag, components
+    
+        balanced = tf.tile(tf.constant([0., 1.], tf.float64)[None, :, None], [4, 200, 1])
+        maximum, flag, raw = evaluate(balanced)
+        assert bool(flag[0]) and float(maximum[0]) == 1.
+>       assert not bool(tf.math.is_finite(raw['folded'][0]))
+E       AssertionError: assert not True
+E        +  where True = bool(<tf.Tensor: shape=(), dtype=bool, numpy=True>)
+E        +    where <tf.Tensor: shape=(), dtype=bool, numpy=True> = <function is_finite at 0x70206fd3c4a0>(<tf.Tensor: shape=(), dtype=float64, numpy=0.9974968671630002>)
+E        +      where <function is_finite at 0x70206fd3c4a0> = <module 'tensorflow._api.v2.math' from '/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/_api/v2/math/__init__.py'>.is_finite
+E        +        where <module 'tensorflow._api.v2.math' from '/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/_api/v2/math/__init__.py'> = tf.math
+
+tests/test_surrogate_hmc_mcse_randomization.py:107: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-20 21:43:28.982607: E tensorflow/core/util/util.cc:131] oneDNN supports DT_BOOL only on platforms with AVX-512. Falling back to the default Eigen-based implementation if present.
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_mcse_randomization.py::test_undefined_statistics_are_identified_and_saved_without_false_values
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_mcse_randomization.py::test_undefined_statistics_are_identified_and_saved_without_false_values
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_mcse_randomization.py::test_binary_fold_policy_keeps_bulk_check_and_other_degeneracy_vetoes
+1 failed, 10 passed, 2 warnings in 7.46s

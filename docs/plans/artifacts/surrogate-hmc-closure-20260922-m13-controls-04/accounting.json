@@ -1,0 +1,63 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 172.17502599999995,
+    "gpu_seconds": 112.66337478300557
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 42952.321412291996,
+    "gpu_seconds": 33923.70577876581
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_controls.py",
+        "tests/test_surrogate_hmc_m13_consumer.py",
+        "tests/test_surrogate_hmc_ar2_consumer.py"
+      ],
+      "cpu_allowance_seconds": 180.0,
+      "cpu_worker_seconds": 28.855833999999998,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 20.02509430301143
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-controls-localize",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-04/m13-controls-localize/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 1200.0,
+      "cpu_worker_seconds": 143.13137299999997,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 112.66337478300557,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 1500.0,
+      "wall_seconds": 112.66337478300557
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 42780.146386292,
+    "gpu_seconds": 33811.04240398281
+  }
+}

@@ -1,0 +1,810 @@
+FFFFF
+=================================== FAILURES ===================================
+_______________ test_collapsing_trial_is_reduced_before_cholesky _______________
+
+    def test_collapsing_trial_is_reduced_before_cholesky():
+        q=fixture(1)[4]; dq=tf.zeros_like(q[:,:,None])
+>       q,dq=_standardize_uniform_jvp(q,dq)
+        ^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+tests/highdim/test_moment_safety_tf.py:36: ValueError
+__________ test_unacceptable_displacement_preserves_input_and_tangent __________
+
+    def test_unacceptable_displacement_preserves_input_and_tangent():
+        q=fixture(1)[4]; dq=tf.ones_like(q[:,:,None])*.03
+>       q,dq=_standardize_uniform_jvp(q,dq)
+        ^^^^
+E       ValueError: too many values to unpack (expected 2)
+
+tests/highdim/test_moment_safety_tf.py:46: ValueError
+____________________ test_healthy_nonzero_step_is_unchanged ____________________
+
+    def test_healthy_nonzero_step_is_unchanged():
+        args=fixture(1)
+        cfg=controls(correction_steps=1,strength=.03,pairwise_correction_steps=0)
+        old=higher_moment_shape_jvp(*args,**cfg)
+>       new=higher_moment_shape_jvp(*args,**cfg,moment_safety=True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_moment_safety_tf.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/higher_moment_contract_e.py:1420: in higher_moment_shape_jvp
+    ) = tf.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:241: in while_loop_v2
+    return while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:488: in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+bayesfilter/highdim/higher_moment_contract_e.py:1371: in body
+    ) = _shape_iteration_jvp(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+points = <tf.Tensor: shape=(48, 1), dtype=float64, numpy=
+array([[-0.02646148],
+       [ 0.02646148],
+       [-0.07945678],
+   ...62361],
+       [ 1.64662361],
+       [-1.88754133],
+       [ 1.88754133],
+       [-2.3417711 ],
+       [ 2.3417711 ]])>
+points_tangent = <tf.Tensor: shape=(48, 1, 1), dtype=float64, numpy=
+array([[[-0.00662254]],
+
+       [[-0.00303853]],
+
+       [[ 0.0059... [[-0.01167206]],
+
+       [[ 0.00312295]],
+
+       [[ 0.01504493]],
+
+       [[-0.00691788]],
+
+       [[-0.00408493]]])>
+target_skew = <tf.Tensor: shape=(1,), dtype=float64, numpy=array([0.68655715])>
+target_kurt = <tf.Tensor: shape=(1,), dtype=float64, numpy=array([2.98892529])>
+target_skew_tangent = <tf.Tensor: shape=(1, 1), dtype=float64, numpy=array([[-0.02168838]])>
+target_kurt_tangent = <tf.Tensor: shape=(1, 1), dtype=float64, numpy=array([[-0.08783632]])>
+
+    def _shape_iteration_jvp(
+        points: tf.Tensor,
+        points_tangent: tf.Tensor,
+        target_skew: tf.Tensor,
+        target_kurt: tf.Tensor,
+        target_skew_tangent: tf.Tensor,
+        target_kurt_tangent: tf.Tensor,
+        *,
+        strength: float,
+        floor: float,
+        lm_damping: float,
+        lm_scale_floor: float,
+        trust_radius: float,
+        safety_loss=None,
+    ) -> tuple[
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+    ]:
+        mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+            points, points_tangent
+        )
+        covariance, covariance_tangent = _relative_psd_covariance(
+            covariance, covariance_tangent
+        )
+        covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
+        chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+        centered = points - mean[None, :]
+        centered_tangent = points_tangent - mean_tangent[None, :, :]
+        u = _right_solve(chol, centered)
+        u_tangent = _right_solve_jvp(chol, chol_tangent, centered, centered_tangent)
+        m3 = tf.reduce_mean(tf.pow(u, 3.0), axis=0)
+        m4 = tf.reduce_mean(tf.pow(u, 4.0), axis=0)
+        m3_tangent = tf.reduce_mean(3.0 * tf.pow(u[:, :, None], 2.0) * u_tangent, axis=0)
+        m4_tangent = tf.reduce_mean(4.0 * tf.pow(u[:, :, None], 3.0) * u_tangent, axis=0)
+        d3 = target_skew - m3
+        d4 = target_kurt - m4
+        d3_tangent = target_skew_tangent - m3_tangent
+        d4_tangent = target_kurt_tangent - m4_tangent
+    
+        # Project the moment gradients away from the affine mean/scale tangent
+        # space.  Unlike odd/even Hermite updates, these directions can change
+        # skewness and kurtosis from a symmetric standardized cloud.
+        direction3 = tf.square(u) - 1.0 - m3[None, :] * u
+        direction4 = tf.pow(u, 3.0) - m3[None, :] - m4[None, :] * u
+        direction3_tangent = (
+            2.0 * u[:, :, None] * u_tangent
+            - m3_tangent[None, :, :] * u[:, :, None]
+            - m3[None, :, None] * u_tangent
+        )
+        direction4_tangent = (
+            3.0 * tf.square(u)[:, :, None] * u_tangent
+            - m3_tangent[None, :, :]
+            - m4_tangent[None, :, :] * u[:, :, None]
+            - m4[None, :, None] * u_tangent
+        )
+    
+        j33 = tf.reduce_mean(3.0 * tf.square(u) * direction3, axis=0)
+        j34 = tf.reduce_mean(3.0 * tf.square(u) * direction4, axis=0)
+        j43 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction3, axis=0)
+        j44 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction4, axis=0)
+        j33_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction3[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j34_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction4[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        j43_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction3[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j44_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction4[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        jacobian = tf.stack(
+            [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
+            axis=-2,
+        )
+        jacobian_tangent = tf.stack(
+            [
+                tf.stack([j33_tangent, j34_tangent], axis=-2),
+                tf.stack([j43_tangent, j44_tangent], axis=-2),
+            ],
+            axis=-3,
+        )
+        residual = tf.stack([d3, d4], axis=-1)
+        residual_tangent = tf.stack([d3_tangent, d4_tangent], axis=-2)
+        if lm_damping > 0.0:
+            lm = scaled_lm_coefficients_jvp(
+                jacobian,
+                residual,
+                jacobian_tangent,
+                residual_tangent,
+                strength=strength,
+                damping=lm_damping,
+                scale_floor=lm_scale_floor,
+            )
+            coefficient = lm["coefficient"]
+            coefficient_tangent = lm["coefficient_tangent"]
+            maximum_scaled_system_condition = tf.reduce_max(
+                lm["scaled_system_condition"]
+            )
+        else:
+            normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+            normal += tf.cast(floor, points.dtype) * tf.eye(
+                2, batch_shape=[tf.shape(points)[1]], dtype=points.dtype
+            )
+            rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
+            coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
+                normal, rhs[:, :, None]
+            )[:, :, 0]
+            normal_tangent = (
+                tf.einsum("daip,daj->dijp", jacobian_tangent, jacobian)
+                + tf.einsum("dai,dajp->dijp", jacobian, jacobian_tangent)
+            )
+            rhs_tangent = (
+                tf.einsum("daip,da->dip", jacobian_tangent, residual)
+                + tf.einsum("dai,dap->dip", jacobian, residual_tangent)
+            )
+            coefficient_rhs_tangent = (
+                rhs_tangent
+                - tf.einsum(
+                    "dijp,dj->dip",
+                    normal_tangent,
+                    coefficient / tf.cast(strength, points.dtype),
+                )
+                if strength > 0.0
+                else tf.zeros_like(rhs_tangent)
+            )
+            parameter_count = tf.shape(points_tangent)[-1]
+            normal_batch = tf.broadcast_to(
+                normal[None, :, :, :],
+                [parameter_count, tf.shape(normal)[0], 2, 2],
+            )
+            coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
+                tf.linalg.solve(
+                    normal_batch,
+                    tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],
+                )[:, :, :, 0],
+                [1, 2, 0],
+            )
+            maximum_scaled_system_condition = tf.zeros([], points.dtype)
+        coefficient3 = coefficient[:, 0]
+        coefficient4 = coefficient[:, 1]
+        coefficient3_tangent = coefficient_tangent[:, 0, :]
+        coefficient4_tangent = coefficient_tangent[:, 1, :]
+        displacement = (
+            direction3 * coefficient3[None, :]
+            + direction4 * coefficient4[None, :]
+        )
+        displacement_tangent = (
+            direction3_tangent * coefficient3[None, :, None]
+            + direction3[:, :, None] * coefficient3_tangent[None, :, :]
+            + direction4_tangent * coefficient4[None, :, None]
+            + direction4[:, :, None] * coefficient4_tangent[None, :, :]
+        )
+        pre_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(displacement), axis=1))
+        if trust_radius > 0.0:
+            capped = smooth_rms_cap_jvp(
+                displacement, displacement_tangent, radius=trust_radius
+            )
+            displacement = capped["displacement"]
+            displacement_tangent = capped["displacement_tangent"]
+            post_cap_rms = capped["post_rms"]
+        else:
+            post_cap_rms = pre_cap_rms
+        corrected = u + displacement
+        corrected_tangent = (
+            u_tangent
+            + displacement_tangent
+        )
+        corrected_mean, corrected_cov, corrected_mean_tangent, corrected_cov_tangent = _uniform_moments_jvp(
+            corrected, corrected_tangent
+        )
+        corrected_valid, corrected_chol = safe_cholesky(corrected_cov, "shape_corrected")
+        corrected_chol_tangent = _cholesky_jvp(corrected_chol, corrected_cov_tangent, corrected_valid)
+        output = _right_solve(corrected_chol, corrected - corrected_mean[None, :])
+        output_tangent = _right_solve_jvp(
+            corrected_chol,
+            corrected_chol_tangent,
+            corrected - corrected_mean[None, :],
+            corrected_tangent - corrected_mean_tangent[None, :, :],
+        )
+        safety_stats = empty_safety_stats(u.dtype)
+        if safety_loss is not None:
+>           output, output_tangent, safety_stats = guarded_moment_step(
+                u, u_tangent, corrected, corrected_tangent, safety_loss,
+                lambda value, tangent: _standardize_uniform_jvp(value, tangent, relative_ridge=False)[:2])
+E           TypeError: guarded_moment_step() takes 4 positional arguments but 6 were given
+
+bayesfilter/highdim/higher_moment_contract_e.py:984: TypeError
+______ test_complete_map_and_batch_agree_with_total_finite_difference[1] _______
+
+dimension = 1
+
+    @pytest.mark.parametrize("dimension",[1,2,3])
+    def test_complete_map_and_batch_agree_with_total_finite_difference(dimension):
+        args=fixture(dimension)
+        cfg=controls(moment_safety=True,return_stages=True)
+>       result=higher_moment_shape_jvp(*args,**cfg)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_moment_safety_tf.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/higher_moment_contract_e.py:1420: in higher_moment_shape_jvp
+    ) = tf.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:241: in while_loop_v2
+    return while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:488: in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+bayesfilter/highdim/higher_moment_contract_e.py:1371: in body
+    ) = _shape_iteration_jvp(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+points = <tf.Tensor: shape=(48, 1), dtype=float64, numpy=
+array([[-0.02646148],
+       [ 0.02646148],
+       [-0.07945678],
+   ...62361],
+       [ 1.64662361],
+       [-1.88754133],
+       [ 1.88754133],
+       [-2.3417711 ],
+       [ 2.3417711 ]])>
+points_tangent = <tf.Tensor: shape=(48, 1, 1), dtype=float64, numpy=
+array([[[-0.00662254]],
+
+       [[-0.00303853]],
+
+       [[ 0.0059... [[-0.01167206]],
+
+       [[ 0.00312295]],
+
+       [[ 0.01504493]],
+
+       [[-0.00691788]],
+
+       [[-0.00408493]]])>
+target_skew = <tf.Tensor: shape=(1,), dtype=float64, numpy=array([0.68655715])>
+target_kurt = <tf.Tensor: shape=(1,), dtype=float64, numpy=array([2.98892529])>
+target_skew_tangent = <tf.Tensor: shape=(1, 1), dtype=float64, numpy=array([[-0.02168838]])>
+target_kurt_tangent = <tf.Tensor: shape=(1, 1), dtype=float64, numpy=array([[-0.08783632]])>
+
+    def _shape_iteration_jvp(
+        points: tf.Tensor,
+        points_tangent: tf.Tensor,
+        target_skew: tf.Tensor,
+        target_kurt: tf.Tensor,
+        target_skew_tangent: tf.Tensor,
+        target_kurt_tangent: tf.Tensor,
+        *,
+        strength: float,
+        floor: float,
+        lm_damping: float,
+        lm_scale_floor: float,
+        trust_radius: float,
+        safety_loss=None,
+    ) -> tuple[
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+    ]:
+        mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+            points, points_tangent
+        )
+        covariance, covariance_tangent = _relative_psd_covariance(
+            covariance, covariance_tangent
+        )
+        covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
+        chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+        centered = points - mean[None, :]
+        centered_tangent = points_tangent - mean_tangent[None, :, :]
+        u = _right_solve(chol, centered)
+        u_tangent = _right_solve_jvp(chol, chol_tangent, centered, centered_tangent)
+        m3 = tf.reduce_mean(tf.pow(u, 3.0), axis=0)
+        m4 = tf.reduce_mean(tf.pow(u, 4.0), axis=0)
+        m3_tangent = tf.reduce_mean(3.0 * tf.pow(u[:, :, None], 2.0) * u_tangent, axis=0)
+        m4_tangent = tf.reduce_mean(4.0 * tf.pow(u[:, :, None], 3.0) * u_tangent, axis=0)
+        d3 = target_skew - m3
+        d4 = target_kurt - m4
+        d3_tangent = target_skew_tangent - m3_tangent
+        d4_tangent = target_kurt_tangent - m4_tangent
+    
+        # Project the moment gradients away from the affine mean/scale tangent
+        # space.  Unlike odd/even Hermite updates, these directions can change
+        # skewness and kurtosis from a symmetric standardized cloud.
+        direction3 = tf.square(u) - 1.0 - m3[None, :] * u
+        direction4 = tf.pow(u, 3.0) - m3[None, :] - m4[None, :] * u
+        direction3_tangent = (
+            2.0 * u[:, :, None] * u_tangent
+            - m3_tangent[None, :, :] * u[:, :, None]
+            - m3[None, :, None] * u_tangent
+        )
+        direction4_tangent = (
+            3.0 * tf.square(u)[:, :, None] * u_tangent
+            - m3_tangent[None, :, :]
+            - m4_tangent[None, :, :] * u[:, :, None]
+            - m4[None, :, None] * u_tangent
+        )
+    
+        j33 = tf.reduce_mean(3.0 * tf.square(u) * direction3, axis=0)
+        j34 = tf.reduce_mean(3.0 * tf.square(u) * direction4, axis=0)
+        j43 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction3, axis=0)
+        j44 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction4, axis=0)
+        j33_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction3[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j34_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction4[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        j43_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction3[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j44_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction4[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        jacobian = tf.stack(
+            [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
+            axis=-2,
+        )
+        jacobian_tangent = tf.stack(
+            [
+                tf.stack([j33_tangent, j34_tangent], axis=-2),
+                tf.stack([j43_tangent, j44_tangent], axis=-2),
+            ],
+            axis=-3,
+        )
+        residual = tf.stack([d3, d4], axis=-1)
+        residual_tangent = tf.stack([d3_tangent, d4_tangent], axis=-2)
+        if lm_damping > 0.0:
+            lm = scaled_lm_coefficients_jvp(
+                jacobian,
+                residual,
+                jacobian_tangent,
+                residual_tangent,
+                strength=strength,
+                damping=lm_damping,
+                scale_floor=lm_scale_floor,
+            )
+            coefficient = lm["coefficient"]
+            coefficient_tangent = lm["coefficient_tangent"]
+            maximum_scaled_system_condition = tf.reduce_max(
+                lm["scaled_system_condition"]
+            )
+        else:
+            normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+            normal += tf.cast(floor, points.dtype) * tf.eye(
+                2, batch_shape=[tf.shape(points)[1]], dtype=points.dtype
+            )
+            rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
+            coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
+                normal, rhs[:, :, None]
+            )[:, :, 0]
+            normal_tangent = (
+                tf.einsum("daip,daj->dijp", jacobian_tangent, jacobian)
+                + tf.einsum("dai,dajp->dijp", jacobian, jacobian_tangent)
+            )
+            rhs_tangent = (
+                tf.einsum("daip,da->dip", jacobian_tangent, residual)
+                + tf.einsum("dai,dap->dip", jacobian, residual_tangent)
+            )
+            coefficient_rhs_tangent = (
+                rhs_tangent
+                - tf.einsum(
+                    "dijp,dj->dip",
+                    normal_tangent,
+                    coefficient / tf.cast(strength, points.dtype),
+                )
+                if strength > 0.0
+                else tf.zeros_like(rhs_tangent)
+            )
+            parameter_count = tf.shape(points_tangent)[-1]
+            normal_batch = tf.broadcast_to(
+                normal[None, :, :, :],
+                [parameter_count, tf.shape(normal)[0], 2, 2],
+            )
+            coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
+                tf.linalg.solve(
+                    normal_batch,
+                    tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],
+                )[:, :, :, 0],
+                [1, 2, 0],
+            )
+            maximum_scaled_system_condition = tf.zeros([], points.dtype)
+        coefficient3 = coefficient[:, 0]
+        coefficient4 = coefficient[:, 1]
+        coefficient3_tangent = coefficient_tangent[:, 0, :]
+        coefficient4_tangent = coefficient_tangent[:, 1, :]
+        displacement = (
+            direction3 * coefficient3[None, :]
+            + direction4 * coefficient4[None, :]
+        )
+        displacement_tangent = (
+            direction3_tangent * coefficient3[None, :, None]
+            + direction3[:, :, None] * coefficient3_tangent[None, :, :]
+            + direction4_tangent * coefficient4[None, :, None]
+            + direction4[:, :, None] * coefficient4_tangent[None, :, :]
+        )
+        pre_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(displacement), axis=1))
+        if trust_radius > 0.0:
+            capped = smooth_rms_cap_jvp(
+                displacement, displacement_tangent, radius=trust_radius
+            )
+            displacement = capped["displacement"]
+            displacement_tangent = capped["displacement_tangent"]
+            post_cap_rms = capped["post_rms"]
+        else:
+            post_cap_rms = pre_cap_rms
+        corrected = u + displacement
+        corrected_tangent = (
+            u_tangent
+            + displacement_tangent
+        )
+        corrected_mean, corrected_cov, corrected_mean_tangent, corrected_cov_tangent = _uniform_moments_jvp(
+            corrected, corrected_tangent
+        )
+        corrected_valid, corrected_chol = safe_cholesky(corrected_cov, "shape_corrected")
+        corrected_chol_tangent = _cholesky_jvp(corrected_chol, corrected_cov_tangent, corrected_valid)
+        output = _right_solve(corrected_chol, corrected - corrected_mean[None, :])
+        output_tangent = _right_solve_jvp(
+            corrected_chol,
+            corrected_chol_tangent,
+            corrected - corrected_mean[None, :],
+            corrected_tangent - corrected_mean_tangent[None, :, :],
+        )
+        safety_stats = empty_safety_stats(u.dtype)
+        if safety_loss is not None:
+>           output, output_tangent, safety_stats = guarded_moment_step(
+                u, u_tangent, corrected, corrected_tangent, safety_loss,
+                lambda value, tangent: _standardize_uniform_jvp(value, tangent, relative_ridge=False)[:2])
+E           TypeError: guarded_moment_step() takes 4 positional arguments but 6 were given
+
+bayesfilter/highdim/higher_moment_contract_e.py:984: TypeError
+______ test_complete_map_and_batch_agree_with_total_finite_difference[2] _______
+
+dimension = 2
+
+    @pytest.mark.parametrize("dimension",[1,2,3])
+    def test_complete_map_and_batch_agree_with_total_finite_difference(dimension):
+        args=fixture(dimension)
+        cfg=controls(moment_safety=True,return_stages=True)
+>       result=higher_moment_shape_jvp(*args,**cfg)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_moment_safety_tf.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/higher_moment_contract_e.py:1420: in higher_moment_shape_jvp
+    ) = tf.while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py:660: in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:241: in while_loop_v2
+    return while_loop(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py:488: in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+bayesfilter/highdim/higher_moment_contract_e.py:1371: in body
+    ) = _shape_iteration_jvp(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+points = <tf.Tensor: shape=(96, 2), dtype=float64, numpy=
+array([[-0.01314283, -0.33980976],
+       [ 0.01314283, -0.28921426],...0.35838895],
+       [ 2.16824478,  0.16571126],
+       [-2.5787728 ,  0.97083503],
+       [ 2.5787728 , -0.47630441]])>
+points_tangent = <tf.Tensor: shape=(96, 2, 1), dtype=float64, numpy=
+array([[[-7.00408637e-03],
+        [-2.56750833e-03]],
+
+       [[ ...03]],
+
+       [[ 3.84327894e-03],
+        [ 6.89697124e-03]],
+
+       [[-2.33770482e-03],
+        [-2.10926169e-02]]])>
+target_skew = <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.73531434, 0.93328315])>
+target_kurt = <tf.Tensor: shape=(2,), dtype=float64, numpy=array([3.20857117, 4.06649059])>
+target_skew_tangent = <tf.Tensor: shape=(2, 1), dtype=float64, numpy=
+array([[-0.02939981],
+       [-0.00411607]])>
+target_kurt_tangent = <tf.Tensor: shape=(2, 1), dtype=float64, numpy=
+array([[-0.15542951],
+       [-0.01138636]])>
+
+    def _shape_iteration_jvp(
+        points: tf.Tensor,
+        points_tangent: tf.Tensor,
+        target_skew: tf.Tensor,
+        target_kurt: tf.Tensor,
+        target_skew_tangent: tf.Tensor,
+        target_kurt_tangent: tf.Tensor,
+        *,
+        strength: float,
+        floor: float,
+        lm_damping: float,
+        lm_scale_floor: float,
+        trust_radius: float,
+        safety_loss=None,
+    ) -> tuple[
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+        tf.Tensor,
+    ]:
+        mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+            points, points_tangent
+        )
+        covariance, covariance_tangent = _relative_psd_covariance(
+            covariance, covariance_tangent
+        )
+        covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
+        chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+        centered = points - mean[None, :]
+        centered_tangent = points_tangent - mean_tangent[None, :, :]
+        u = _right_solve(chol, centered)
+        u_tangent = _right_solve_jvp(chol, chol_tangent, centered, centered_tangent)
+        m3 = tf.reduce_mean(tf.pow(u, 3.0), axis=0)
+        m4 = tf.reduce_mean(tf.pow(u, 4.0), axis=0)
+        m3_tangent = tf.reduce_mean(3.0 * tf.pow(u[:, :, None], 2.0) * u_tangent, axis=0)
+        m4_tangent = tf.reduce_mean(4.0 * tf.pow(u[:, :, None], 3.0) * u_tangent, axis=0)
+        d3 = target_skew - m3
+        d4 = target_kurt - m4
+        d3_tangent = target_skew_tangent - m3_tangent
+        d4_tangent = target_kurt_tangent - m4_tangent
+    
+        # Project the moment gradients away from the affine mean/scale tangent
+        # space.  Unlike odd/even Hermite updates, these directions can change
+        # skewness and kurtosis from a symmetric standardized cloud.
+        direction3 = tf.square(u) - 1.0 - m3[None, :] * u
+        direction4 = tf.pow(u, 3.0) - m3[None, :] - m4[None, :] * u
+        direction3_tangent = (
+            2.0 * u[:, :, None] * u_tangent
+            - m3_tangent[None, :, :] * u[:, :, None]
+            - m3[None, :, None] * u_tangent
+        )
+        direction4_tangent = (
+            3.0 * tf.square(u)[:, :, None] * u_tangent
+            - m3_tangent[None, :, :]
+            - m4_tangent[None, :, :] * u[:, :, None]
+            - m4[None, :, None] * u_tangent
+        )
+    
+        j33 = tf.reduce_mean(3.0 * tf.square(u) * direction3, axis=0)
+        j34 = tf.reduce_mean(3.0 * tf.square(u) * direction4, axis=0)
+        j43 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction3, axis=0)
+        j44 = tf.reduce_mean(4.0 * tf.pow(u, 3.0) * direction4, axis=0)
+        j33_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction3[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j34_tangent = tf.reduce_mean(
+            6.0 * u[:, :, None] * u_tangent * direction4[:, :, None]
+            + 3.0 * tf.square(u)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        j43_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction3[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction3_tangent,
+            axis=0,
+        )
+        j44_tangent = tf.reduce_mean(
+            12.0 * tf.square(u)[:, :, None] * u_tangent * direction4[:, :, None]
+            + 4.0 * tf.pow(u, 3.0)[:, :, None] * direction4_tangent,
+            axis=0,
+        )
+        jacobian = tf.stack(
+            [tf.stack([j33, j34], axis=-1), tf.stack([j43, j44], axis=-1)],
+            axis=-2,
+        )
+        jacobian_tangent = tf.stack(
+            [
+                tf.stack([j33_tangent, j34_tangent], axis=-2),
+                tf.stack([j43_tangent, j44_tangent], axis=-2),
+            ],
+            axis=-3,
+        )
+        residual = tf.stack([d3, d4], axis=-1)
+        residual_tangent = tf.stack([d3_tangent, d4_tangent], axis=-2)
+        if lm_damping > 0.0:
+            lm = scaled_lm_coefficients_jvp(
+                jacobian,
+                residual,
+                jacobian_tangent,
+                residual_tangent,
+                strength=strength,
+                damping=lm_damping,
+                scale_floor=lm_scale_floor,
+            )
+            coefficient = lm["coefficient"]
+            coefficient_tangent = lm["coefficient_tangent"]
+            maximum_scaled_system_condition = tf.reduce_max(
+                lm["scaled_system_condition"]
+            )
+        else:
+            normal = tf.linalg.matmul(jacobian, jacobian, transpose_a=True)
+            normal += tf.cast(floor, points.dtype) * tf.eye(
+                2, batch_shape=[tf.shape(points)[1]], dtype=points.dtype
+            )
+            rhs = tf.linalg.matvec(jacobian, residual, transpose_a=True)
+            coefficient = tf.cast(strength, points.dtype) * tf.linalg.solve(
+                normal, rhs[:, :, None]
+            )[:, :, 0]
+            normal_tangent = (
+                tf.einsum("daip,daj->dijp", jacobian_tangent, jacobian)
+                + tf.einsum("dai,dajp->dijp", jacobian, jacobian_tangent)
+            )
+            rhs_tangent = (
+                tf.einsum("daip,da->dip", jacobian_tangent, residual)
+                + tf.einsum("dai,dap->dip", jacobian, residual_tangent)
+            )
+            coefficient_rhs_tangent = (
+                rhs_tangent
+                - tf.einsum(
+                    "dijp,dj->dip",
+                    normal_tangent,
+                    coefficient / tf.cast(strength, points.dtype),
+                )
+                if strength > 0.0
+                else tf.zeros_like(rhs_tangent)
+            )
+            parameter_count = tf.shape(points_tangent)[-1]
+            normal_batch = tf.broadcast_to(
+                normal[None, :, :, :],
+                [parameter_count, tf.shape(normal)[0], 2, 2],
+            )
+            coefficient_tangent = tf.cast(strength, points.dtype) * tf.transpose(
+                tf.linalg.solve(
+                    normal_batch,
+                    tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],
+                )[:, :, :, 0],
+                [1, 2, 0],
+            )
+            maximum_scaled_system_condition = tf.zeros([], points.dtype)
+        coefficient3 = coefficient[:, 0]
+        coefficient4 = coefficient[:, 1]
+        coefficient3_tangent = coefficient_tangent[:, 0, :]
+        coefficient4_tangent = coefficient_tangent[:, 1, :]
+        displacement = (
+            direction3 * coefficient3[None, :]
+            + direction4 * coefficient4[None, :]
+        )
+        displacement_tangent = (
+            direction3_tangent * coefficient3[None, :, None]
+            + direction3[:, :, None] * coefficient3_tangent[None, :, :]
+            + direction4_tangent * coefficient4[None, :, None]
+            + direction4[:, :, None] * coefficient4_tangent[None, :, :]
+        )
+        pre_cap_rms = tf.sqrt(tf.reduce_mean(tf.square(displacement), axis=1))
+        if trust_radius > 0.0:
+            capped = smooth_rms_cap_jvp(
+                displacement, displacement_tangent, radius=trust_radius
+            )
+            displacement = capped["displacement"]
+            displacement_tangent = capped["displacement_tangent"]
+            post_cap_rms = capped["post_rms"]
+        else:
+            post_cap_rms = pre_cap_rms
+        corrected = u + displacement
+        corrected_tangent = (
+            u_tangent
+            + displacement_tangent
+        )
+        corrected_mean, corrected_cov, corrected_mean_tangent, corrected_cov_tangent = _uniform_moments_jvp(
+            corrected, corrected_tangent
+        )
+        corrected_valid, corrected_chol = safe_cholesky(corrected_cov, "shape_corrected")
+        corrected_chol_tangent = _cholesky_jvp(corrected_chol, corrected_cov_tangent, corrected_valid)
+        output = _right_solve(corrected_chol, corrected - corrected_mean[None, :])
+        output_tangent = _right_solve_jvp(
+            corrected_chol,
+            corrected_chol_tangent,
+            corrected - corrected_mean[None, :],
+            corrected_tangent - corrected_mean_tangent[None, :, :],
+        )
+        safety_stats = empty_safety_stats(u.dtype)
+        if safety_loss is not None:
+>           output, output_tangent, safety_stats = guarded_moment_step(
+                u, u_tangent, corrected, corrected_tangent, safety_loss,
+                lambda value, tangent: _standardize_uniform_jvp(value, tangent, relative_ridge=False)[:2])
+E           TypeError: guarded_moment_step() takes 4 positional arguments but 6 were given
+
+bayesfilter/highdim/higher_moment_contract_e.py:984: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_moment_safety_tf.py::test_collapsing_trial_is_reduced_before_cholesky
+FAILED tests/highdim/test_moment_safety_tf.py::test_unacceptable_displacement_preserves_input_and_tangent
+FAILED tests/highdim/test_moment_safety_tf.py::test_healthy_nonzero_step_is_unchanged
+FAILED tests/highdim/test_moment_safety_tf.py::test_complete_map_and_batch_agree_with_total_finite_difference[1]
+FAILED tests/highdim/test_moment_safety_tf.py::test_complete_map_and_batch_agree_with_total_finite_difference[2]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 5 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+5 failed, 2 warnings in 5.80s

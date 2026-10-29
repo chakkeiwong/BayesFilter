@@ -1,0 +1,147 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_composite_integral_and_total_score_match_independent_state_grid _____
+
+    def test_composite_integral_and_total_score_match_independent_state_grid():
+        # These are the preserved calibration observations rounded to FP32 once.
+        observations = tf.constant([[.5424982309341431],[2.675233840942383]],tf.float64)
+        calculate = make_reference(20,128)
+        grid = grid_reference(513,9.)
+        for point in ((0.,0.),(.6,.2),(-.6,-.6)):
+            z = tf.constant(point,tf.float64)
+>           result,reference = calculate(z,observations),grid(z,observations)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_nonlinear_quadrature.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+op_name = '__inference_evaluate_2901', num_outputs = 5
+inputs = [<tf.Tensor: shape=(2,), dtype=float64, numpy=array([0., 0.])>, <tf.Tensor: shape=(2, 1), dtype=float64, numpy=
+array(... ])>, <tf.Tensor: shape=(9,), dtype=float64, numpy=array([-10.,  -6.,  -3.,  -1.,   0.,   1.,   3.,   6.,  10.])>, ...]
+attrs = ('executor_type', '', 'config_proto', b'\n\x07\n\x03CPU\x10\x01\n\x07\n\x03GPU\x10\x002\x02J\x008\x01\x82\x01\x00\x92\x01\x02J\x00')
+ctx = <tensorflow.python.eager.context.Context object at 0x7382fe4410d0>
+name = None
+
+    def quick_execute(op_name, num_outputs, inputs, attrs, ctx, name=None):
+      """Execute a TensorFlow operation.
+    
+      Args:
+        op_name: Name of the TensorFlow operation (see REGISTER_OP in C++ code) to
+          execute.
+        num_outputs: The number of outputs of the operation to fetch. (Explicitly
+          provided instead of being inferred for performance reasons).
+        inputs: A list of inputs to the operation. Each entry should be a Tensor, or
+          a value which can be passed to the Tensor constructor to create one.
+        attrs: A tuple with alternating string attr names and attr values for this
+          operation.
+        ctx: The value of context.context().
+        name: Customized name for the operation.
+    
+      Returns:
+        List of output Tensor objects. The list is empty if there are no outputs
+    
+      Raises:
+        An exception on error.
+      """
+      device_name = ctx.device_name
+      # pylint: disable=protected-access
+      try:
+        ctx.ensure_initialized()
+>       tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+                                            inputs, attrs, num_outputs)
+E                                           tensorflow.python.framework.errors_impl.InvalidArgumentError: Detected unsupported operations when trying to compile graph cond_true_774_rewritten[] on XLA_CPU_JIT: FakeParam (No registered 'FakeParam' OpKernel for XLA_CPU_JIT devices compatible with node {{node cond/FakeParam_22}}
+E                                           	 (OpKernel was found, but attributes didn't match) Requested Attributes: dtype=DT_VARIANT, shape=[]){{node cond/FakeParam_22}}
+E                                           The op is created at: 
+E                                           File "<frozen runpy>", line 198, in _run_module_as_main
+E                                           File "<frozen runpy>", line 88, in _run_code
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pytest/__main__.py", line 9, in <module>
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/config/__init__.py", line 223, in console_main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/config/__init__.py", line 199, in main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 365, in pytest_cmdline_main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 318, in wrap_session
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 372, in _main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 396, in pytest_runtestloop
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 118, in pytest_runtest_protocol
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 137, in runtestprotocol
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 244, in call_and_report
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 353, in from_call
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 245, in <lambda>
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 179, in pytest_runtest_call
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/python.py", line 1720, in runtest
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/python.py", line 166, in pytest_pyfunc_call
+E                                           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/tests/test_surrogate_hmc_nonlinear_quadrature.py", line 22, in test_composite_integral_and_total_score_match_independent_state_grid
+E                                           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_nonlinear_quadrature.py", line 106, in evaluate
+E                                           	tf2xla conversion failed while converting cond_true_774_rewritten[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+E                                           
+E                                           Stack trace for op definition: 
+E                                           File "<frozen runpy>", line 198, in _run_module_as_main
+E                                           File "<frozen runpy>", line 88, in _run_code
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pytest/__main__.py", line 9, in <module>
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/config/__init__.py", line 223, in console_main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/config/__init__.py", line 199, in main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 365, in pytest_cmdline_main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 318, in wrap_session
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 372, in _main
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/main.py", line 396, in pytest_runtestloop
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 118, in pytest_runtest_protocol
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 137, in runtestprotocol
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 244, in call_and_report
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 353, in from_call
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 245, in <lambda>
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/runner.py", line 179, in pytest_runtest_call
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/python.py", line 1720, in runtest
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_hooks.py", line 512, in __call__
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_manager.py", line 120, in _hookexec
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pluggy/_callers.py", line 121, in _multicall
+E                                           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/_pytest/python.py", line 166, in pytest_pyfunc_call
+E                                           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/tests/test_surrogate_hmc_nonlinear_quadrature.py", line 22, in test_composite_integral_and_total_score_match_independent_state_grid
+E                                           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_nonlinear_quadrature.py", line 105, in evaluate
+E                                           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_nonlinear_quadrature.py", line 91, in compute
+E                                           
+E                                           	 [[cond]]
+E                                           	tf2xla conversion failed while converting __inference_evaluate_2901[_XlaMustCompile=true,config_proto=13561319589895757934,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_evaluate_2901]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py:53: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_nonlinear_quadrature.py::test_composite_integral_and_total_score_match_independent_state_grid
+1 failed, 1 passed, 2 warnings in 4.55s

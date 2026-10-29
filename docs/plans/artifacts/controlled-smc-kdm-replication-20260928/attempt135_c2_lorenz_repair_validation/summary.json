@@ -1,0 +1,196 @@
+{
+  "status": "PASS",
+  "scope": "EXACT_SCOPE_ACCEPTANCE_BOOKKEEPING_REPAIR",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU/XLA plus CPU graph diagnostic",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "checks": [
+    {
+      "name": "full_healthy_valid",
+      "passed": true
+    },
+    {
+      "name": "four_successful_refits",
+      "passed": true
+    },
+    {
+      "name": "healthy_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_log_incremental_weight",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "healthy_ess",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejected_refit_not_success",
+      "passed": true
+    },
+    {
+      "name": "rejection_preserves_A",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejection_preserves_b",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejection_preserves_c",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejection_preserves_x",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejection_preserves_ancestors",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "rejection_preserves_logZ",
+      "passed": true,
+      "max_absolute": 0.0
+    },
+    {
+      "name": "one_controller_trace",
+      "passed": true
+    },
+    {
+      "name": "four_replica_scope",
+      "passed": true
+    },
+    {
+      "name": "four_replica_fits_valid",
+      "passed": true
+    }
+  ],
+  "recursion": [
+    {
+      "lane": "gpu",
+      "comparisons": {
+        "A": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "b": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "c": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "correction_log_integral": {
+          "passed": true,
+          "max_absolute": 0.0
+        },
+        "projection_added_A": {
+          "passed": true,
+          "max_absolute": 0.0
+        }
+      }
+    },
+    {
+      "lane": "cpu_graph",
+      "comparisons": {
+        "A": {
+          "passed": false,
+          "max_absolute": 0.5413837200030684
+        },
+        "b": {
+          "passed": false,
+          "max_absolute": 0.016562728764256462
+        },
+        "c": {
+          "passed": false,
+          "max_absolute": 0.08598955580964684
+        },
+        "correction_log_integral": {
+          "passed": false,
+          "max_absolute": 0.0922538295853883
+        },
+        "projection_added_A": {
+          "passed": false,
+          "max_absolute": 0.5421042123343796
+        }
+      }
+    }
+  ],
+  "replication": "INCOMPLETE",
+  "fail_fast_default": false,
+  "wall_seconds": 34.74753571499605,
+  "default_bookkeeping_repair_passed": true,
+  "full_recursive_admission": false,
+  "full_recursive_admission_reason": "Independent reference114/130 still fails unchanged tolerance; capture is localization only."
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "filter_remaining_svd_cost_receipt.v1",
+  "source_baseline": "9696666e4",
+  "candidate_commit": "ea94aac9611cfeda826b0088bcc7aef7353e4bc4",
+  "cpu_runs": "03712--03736 excluding harness failures03710/03711; 24 complete workers",
+  "gpu_runs": "03737--03760; 24 complete workers; interrupted03728 excluded",
+  "worker_count": 48,
+  "accepted_cost_cohort": true,
+  "artifacts": {
+    "remaining-svd-cost-cpu-03736.json": "6c3864fe302e83fb5bce39602c417fa1b68e9fa68a817ef11487e3b67491f4a6",
+    "remaining-svd-cost-gpu-03760.json": "4da1fe19bf96003508e57c6ccb82a7e9ab564c425f348a7f8d7c326a40d5ca4e",
+    "interrupted-cost-recovery-03728.json": "b202a95f1a7f400705b11a52df6f3b212c75929ca1082ef2df8dc109f18d87b6"
+  },
+  "analyzers": {
+    "cpu": "5ef71cc1192598bbc4f5398ff08d2a734ac007147addcf98eeedd7fdf0e8b2be",
+    "gpu": "5ef71cc1192598bbc4f5398ff08d2a734ac007147addcf98eeedd7fdf0e8b2be"
+  },
+  "physical_gpu_uuid": "GPU-541e1e19-2df4-9064-4db9-9d0d2abc3eba",
+  "numerical_disposition": "All accurate graph/candidate arms pass independent scale screen; prior XLA fails and is excluded from speed ratios.",
+  "cost_disposition": "Graph-to-graph parity is eligible. Candidate XLA cold/host triggers require lifecycle/capacity attribution; GPU allocator and process reservation are recorded separately.",
+  "ownership_disposition": "Caller program, graph, callback, owner and resource collect in every measured worker; reusable primitive graph retention is explicit and bounded by worker lifetime.",
+  "nonclaims": [
+    "No native executable eviction or broad capacity claim.",
+    "No default-readiness, posterior, HMC or scientific superiority claim.",
+    "No prior-XLA timing ratio because its numerical result is inaccurate."
+  ]
+}

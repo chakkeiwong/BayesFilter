@@ -1,0 +1,60 @@
+{
+  "passed": true,
+  "n": 4096,
+  "tile_size": 2048,
+  "value_error": 1.7763568394002505e-15,
+  "derivative_checks": [
+    {
+      "step": 0.0001,
+      "maximum_error": 1.6428458593509276e-10
+    },
+    {
+      "step": 3e-05,
+      "maximum_error": 3.004929638450449e-11
+    }
+  ],
+  "manifest": {
+    "command": [
+      "scripts/diagnose_marginal_weight_campaign.py",
+      "--phase",
+      "tile",
+      "--output",
+      "docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-supplement"
+    ],
+    "wall_seconds": 1.9829265769803897,
+    "gpu": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "gpu_memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "tf32": true,
+    "jit_compile": true,
+    "dtype": "float64 diagnostic reference",
+    "plan": "docs/plans/surrogate-hmc-marginal-weight-follow-through-2026-10-05.md",
+    "script_sha256": "b3009022a8aa6c6fc827bd3fb22b71ad51a04d9d215eebb04fcb7f346d56b85b",
+    "allocator": {
+      "current": 8448,
+      "peak": 134585600
+    }
+  }
+}

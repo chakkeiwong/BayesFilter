@@ -1,0 +1,93 @@
+........................................................F............    [100%]
+=================================== FAILURES ===================================
+____ test_actual_trajectory_graph_calls_extended_density_and_angular_score _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x73f238c9bc90>
+
+    def test_actual_trajectory_graph_calls_extended_density_and_angular_score(monkeypatch):
+        from experiments.dpf_implementation.tf_tfp.fixtures.range_bearing_tf import build_range_bearing_fixture_tf
+        from bayesfilter.testing import surrogate_hmc_m13_wrapped_reference as wrapped
+        from bayesfilter.testing import surrogate_hmc_m13_reference as old
+        from bayesfilter.testing.surrogate_hmc_m13_trajectory_reference import trajectory_importance_reference
+        fixture = build_range_bearing_fixture_tf()
+>       fixture = replace(fixture, horizon=2, observations=fixture.observations[:2])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_reference_extension.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+obj = RangeBearingTFFixture(name='range_bearing_gaussian_tf_tfp_moderate', A=<tf.Tensor: shape=(4, 4), dtype=float64, numpy=...dfa0f769b6579ce4b0b691752c92', observation_checksum='21a5c22a77895e3431db6004911854e5cbcddd65e3d460afc144a3dde59299e1')
+changes = {'A': <tf.Tensor: shape=(4, 4), dtype=float64, numpy=
+array([[1. , 0. , 0.1, 0. ],
+       [0. , 1. , 0. , 0.1],
+      ...008]])>, 'R': <tf.Tensor: shape=(2, 2), dtype=float64, numpy=
+array([[0.0144, 0.    ],
+       [0.    , 0.0016]])>, ...}
+f = Field(name='observation_checksum',type='str',default=<dataclasses._MISSING_TYPE object at 0x73f289c82490>,default_fact... 0x73f289c82490>,init=True,repr=True,hash=None,compare=True,metadata=mappingproxy({}),kw_only=False,_field_type=_FIELD)
+
+    def replace(obj, /, **changes):
+        """Return a new object replacing specified fields with new values.
+    
+        This is especially useful for frozen classes.  Example usage::
+    
+          @dataclass(frozen=True)
+          class C:
+              x: int
+              y: int
+    
+          c = C(1, 2)
+          c1 = replace(c, x=3)
+          assert c1.x == 3 and c1.y == 2
+        """
+    
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(obj, **my_changes)'.
+    
+        if not _is_dataclass_instance(obj):
+            raise TypeError("replace() should be called on dataclass instances")
+    
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided obj.
+    
+        for f in getattr(obj, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+    
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise ValueError(f'field {f.name} is declared with '
+                                     'init=False, it cannot be specified with '
+                                     'replace()')
+                continue
+    
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise ValueError(f"InitVar {f.name!r} "
+                                     'must be specified with replace()')
+                changes[f.name] = getattr(obj, f.name)
+    
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return obj.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: RangeBearingTFFixture.__init__() got an unexpected keyword argument 'horizon'
+
+../anaconda3/envs/tftwogpu/lib/python3.11/dataclasses.py:1503: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_reference_extension.py::test_actual_trajectory_graph_calls_extended_density_and_angular_score
+1 failed, 68 passed, 2 warnings in 4.39s

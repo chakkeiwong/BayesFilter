@@ -1,3 +1,16 @@
+> Current execution status, 2026-09-18: shared engineering repairs pass the
+> exercised checks; LG1 failed all three permitted calibration attempts.
+> Posterior/default validation and dependent model execution are blocked.
+> See [execution result](ledh-graceful-failure-execution-result-2026-09-18.md).
+> The earlier account below is preserved as history, not current completion evidence.
+
+> **Active status, 2026-09-17:** the completion claims below are historical.
+> Review found broken sentinel propagation, unsafe tangent arithmetic and
+> invalid integration fixtures. Repair and broader validation are in progress
+> under the [adopted program](ledh-graceful-failure-revised-program-2026-09-17.md).
+> See the [execution checkpoint](artifacts/ledh-graceful-failure-20260917T105313Z-01/checkpoint.md).
+> Historical counts below have not been reclassified as passing current evidence.
+
 # LEDH Graceful Failure Implementation - Completion Summary
 
 **Date:** 2026-09-16  

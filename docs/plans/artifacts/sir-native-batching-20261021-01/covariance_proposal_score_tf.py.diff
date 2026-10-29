@@ -1,0 +1,159 @@
+--- saved/bayesfilter/highdim/covariance_proposal_score_tf.py
++++ bayesfilter/highdim/covariance_proposal_score_tf.py
+@@ -11,7 +11,7 @@
+ from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
+ 
+ 
+-def checked_chol(a):
++def checked_chol(a, batch_ndims=0):
+     a = sym(a)
+     eig = tf.linalg.eigvalsh(a.v)
+     margin = tf.math.divide_no_nan(eig[...,0], tf.reduce_max(tf.abs(eig),-1))
+@@ -20,18 +20,19 @@
+     eye = tf.eye(a.v.shape[-1], batch_shape=a.v.shape[:-2], dtype=a.v.dtype)
+     value = tf.linalg.cholesky(tf.where(valid[...,None,None],a.v,eye))
+     tangent = cholesky_tangent(value,tf.where(valid[...,None,None],a.t,tf.zeros_like(a.t)))
+-    return Jet(value,tangent),tf.reduce_all(valid),tf.reduce_min(margin)
+-
+-
+-def safe_chol(a, name):
++    axes=list(range(batch_ndims,valid.shape.rank))
++    return Jet(value,tangent),tf.reduce_all(valid,axes),tf.reduce_min(margin,axes)
++
++
++def safe_chol(a, name, batch_ndims=0):
+     from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+     valid,value = safe_cholesky(a.v,name)
+-    return Jet(value,cholesky_tangent(value,a.t)),tf.reduce_all(valid)
+-
+-
+-def recolour(p,s):
+-    lp,vp,mp = checked_chol(p)
+-    ls,vs,ms = checked_chol(s)
++    return Jet(value,cholesky_tangent(value,a.t)),tf.reduce_all(valid,list(range(batch_ndims,valid.shape.rank)))
++
++
++def recolour(p,s,batch_ndims=0):
++    lp,vp,mp = checked_chol(p,batch_ndims)
++    ls,vs,ms = checked_chol(s,batch_ndims)
+     a = solve(ls.transpose(),lp.transpose()).transpose()
+     return a,vp & vs,tf.minimum(mp,ms)
+ 
+@@ -73,16 +74,16 @@
+ 
+ def quadrature(mean,p,r,models,observation):
+     from bayesfilter.highdim.ledh_ukf_lifecycle_tf import _unscented_weights
+-    d=mean.v.shape[0]
++    d=mean.v.shape[-1]; rank=mean.v.shape.rank-1
+     wm,wc,scale=_unscented_weights(d,mean.v.dtype,alpha=1.,beta=2.,kappa=0.)
+-    l,valid=safe_chol(scale*p,"sigma_points")
+-    points=concat([mean[None],mean[None]+l.transpose(),mean[None]-l.transpose()])
++    l,valid=safe_chol(scale*p,"sigma_points",rank)
++    points=concat([mean[...,None,:],mean[...,None,:]+l.transpose(),mean[...,None,:]-l.transpose()],-2)
+     observed=models.apply("observation_fn","observation_tangent_fn",points)
+-    om=(observed*wm[:,None]).sum(0)
+-    cx=points-mean; cy=observed-om
++    om=(observed*wm[:,None]).sum(-2)
++    cx=points-mean[...,None,:]; cy=observed-om[...,None,:]
+     innovation=sym(mm((cy*wc[:,None]).transpose(),cy)+r)
+     cross=mm((cx*wc[:,None]).transpose(),cy)
+-    il,iv=safe_chol(innovation,"innovation")
++    il,iv=safe_chol(innovation,"innovation",rank)
+     # Match the checked Cholesky authority, including its flagged substitute.
+     gain=solve(il.transpose(),solve(il,cross.transpose(),triangular=True)).transpose()
+     pm=mean+mv(gain,mean.constant(observation)-om)
+@@ -91,36 +92,37 @@
+ 
+ 
+ def build_maps(models,x,observation,controls):
+-    n,d=x.v.shape
++    n,d=x.v.shape[-2:]; batch=x.v.shape.as_list()[:-2]; rank=len(batch)
+     m=models.apply("transition_mean_fn","transition_mean_tangent_fn",x,theta=True)
+     q=models.covariance("process_covariance","process_covariance_tangent_fn")
+     r=models.covariance("observation_covariance","observation_covariance_tangent_fn")
+     mean,p=moments(m,x.constant(tf.fill([n],tf.constant(1./n,x.v.dtype))))
+     p=p+q
+     up,pc,vu=quadrature(mean,p,r,models,observation)
+-    ag,vg,guide_margin=recolour(pc,p)
++    ag,vg,guide_margin=recolour(pc,p,rank)
+     cg=up-mv(ag,mean)
+-    eye=x.constant(tf.eye(d,dtype=x.v.dtype)); eye_n=eye.broadcast([n,d,d])
++    eye=x.constant(tf.eye(d,batch_shape=batch,dtype=x.v.dtype))
+     shared_h=models.constant_observation_jacobian
+-    h=models.apply("observation_jacobian_fn","observation_jacobian_tangent_fn",m[:1] if shared_h else m)
++    h=models.apply("observation_jacobian_fn","observation_jacobian_tangent_fn",m[...,:1,:] if shared_h else m)
+     hm=models.apply("observation_fn","observation_tangent_fn",m)
+     offset=hm-mv(h,m)
+-    rh=solve(r[None],h)
++    rh=solve(r[...,None,:,:],h)
+     info=mm(h.transpose(),rh)
+-    rz=solve(r[None],(x.constant(observation)-offset)[...,None])
++    rz=solve(r[...,None,:,:],(x.constant(observation)-offset)[...,None])
+     a=mv(h.transpose(),rz[...,0])
+-    lq,vq,qmargin=checked_chol(q)
++    lq,vq,qmargin=checked_chol(q,rank)
+     # Same primal Cholesky solve, with every covariance partial together.
+     qi_value=tf.linalg.cholesky_solve(lq.v,eye.v)
+     qi=Jet(qi_value,-tf.linalg.matmul(tf.linalg.matmul(qi_value,q.t),qi_value))
+-    qm=mv(qi,m)
+-    flow_eye=eye.broadcast([1 if shared_h else n,d,d])
++    qm=mv(qi[...,None,:,:],m)
++    extent=1 if shared_h else n
++    flow_eye=eye[...,None,:,:].broadcast([*batch,extent,d,d])
+     af=flow_eye; cf=x.constant(tf.zeros_like(m.v))
+     step=tf.constant(1./controls.flow_steps,x.v.dtype)
+     def bridge(k,av,at,cv,ct):
+         af=Jet(av,at); cf=Jet(cv,ct)
+         lam=tf.cast(k,x.v.dtype)*step
+-        pp=solve(qi[None]+info*lam,flow_eye)
++        pp=solve(qi[...,None,:,:]+info*lam,flow_eye)
+         pm=mv(pp,qm+a*lam)
+         mdot=mv(pp,a-mv(info,pm))
+         f=-.5*mm(pp,info); b=mdot-mv(f,pm)
+@@ -128,31 +130,32 @@
+         af=mm(mat,af); cf=mv(mat,cf)+step*b
+         return k+1,af.v,af.t,cf.v,cf.t
+     _,av,at,cv,ct=tf.while_loop(lambda k,*_:k<controls.flow_steps,bridge,(0,af.v,af.t,cf.v,cf.t),parallel_iterations=1)
+-    aa=stack([eye_n,ag.broadcast([n,d,d]),Jet(av,at).broadcast([n,d,d])])
+-    cc=stack([x.constant(tf.zeros_like(m.v)),cg.broadcast([n,d]),Jet(cv,ct)])
+-    means=mv(aa,m[None])+cc
++    aa=stack([flow_eye,ag[...,None,:,:].broadcast([*batch,extent,d,d]),Jet(av,at)],rank)
++    cc=stack([x.constant(tf.zeros_like(m.v)),cg[...,None,:].broadcast([*batch,n,d]),Jet(cv,ct)],rank)
++    means=mv(aa,m[...,None,:,:])+cc
+     # Evaluate each distinct covariance before duplicating it over ancestors.
+     # Prior/guide maps are shared. The flow map retains its N matrices when
+     # the observation Jacobian varies by ancestor. Jet products preserve all
+     # three terms of d(A Q A') without replaying the filter by parameter.
+-    compact_maps=(eye[None],ag[None],Jet(av,at))
+-    covariances=[mm(mm(a,q),a.transpose()) for a in compact_maps]
+-    checks=[checked_chol(c) for c in covariances]
+-    cov=stack([c.broadcast([n,d,d]) for c in covariances])
+-    vm=tf.reduce_all(tf.stack([check[1] for check in checks]))
+-    map_margin=tf.reduce_min(tf.stack([check[2] for check in checks]))
++    compact_maps=(eye[...,None,:,:],ag[...,None,:,:],Jet(av,at))
++    covariances=[mm(mm(a,q[...,None,:,:]),a.transpose()) for a in compact_maps]
++    checks=[checked_chol(c,rank) for c in covariances]
++    cov=stack([c.broadcast([*batch,extent,d,d]) for c in covariances],rank)
++    vm=tf.reduce_all(tf.stack([check[1] for check in checks]),0)
++    map_margin=tf.reduce_min(tf.stack([check[2] for check in checks]),0)
+     return means,cov,aa,cc,m,lq,vu & vg & vq & vm,tf.minimum(guide_margin,qmargin),map_margin
+ 
+ 
+ def draw_from_maps(maps,beta,uniforms,normals,*,indices=None):
+     _,_,a,c,m,l,*_=maps
+-    n=normals.shape[0]
++    n=normals.shape[0]; batch=m.v.shape.as_list()[:-2]; rank=len(batch)
+     b,j=fixed_design_indices(beta,uniforms,n) if indices is None else indices
+     # Flatten only the component/ancestor axes; derivative axis is preserved.
+-    index=b*n+j
+-    ab=a.reshape([3*n,*a.v.shape[-2:]]).gather(index)
+-    cb=c.reshape([3*n,c.v.shape[-1]]).gather(index)
+-    u=m.gather(j)+mv(l,m.constant(normals))
++    extent=a.v.shape[-3]
++    index=b*extent+(j if extent!=1 else 0)
++    ab=a.reshape([*batch,3*extent,*a.v.shape[-2:]]).gather(index,axis=rank)
++    cb=c.reshape([*batch,3*n,c.v.shape[-1]]).gather(b*n+j,axis=rank)
++    u=m.gather(j,axis=rank)+mv(l[...,None,:,:],m.constant(normals))
+     return mv(ab,u)+cb
+ 
+ 

@@ -1,0 +1,138 @@
+{
+  "schema": "static_reviewed_call_chains.v1",
+  "chains": [
+    {
+      "id": "genut_score",
+      "start": "bayesfilter.highdim.cubature_genut_neutra_targets.GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+      "target": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value_score",
+      "static_resolved": true,
+      "edges": [
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_neutra_targets.GenUTNeuTraTargetAdapter.neutra_batch_log_prob_and_grad_status",
+          "line": 223,
+          "target": "bayesfilter.highdim.cubature_genut_neutra_targets._posterior_value_score_status",
+          "path": "bayesfilter/highdim/cubature_genut_neutra_targets.py"
+        },
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_neutra_targets._posterior_value_score_status",
+          "line": 394,
+          "target": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value_score",
+          "path": "bayesfilter/highdim/cubature_genut_neutra_targets.py"
+        }
+      ],
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "genut_sinkhorn",
+      "start": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value_score",
+      "target": "bayesfilter.highdim.cubature_genut_batch_tf._sinkhorn_barycentric_batch_value",
+      "static_resolved": true,
+      "edges": [
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value_score",
+          "line": 2133,
+          "target": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value",
+          "path": "bayesfilter/highdim/cubature_genut_batch_tf.py"
+        },
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value",
+          "line": 1726,
+          "target": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value.body",
+          "path": "bayesfilter/highdim/cubature_genut_batch_tf.py"
+        },
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_batch_tf.batch_finite_value.body",
+          "line": 1659,
+          "target": "bayesfilter.highdim.cubature_genut_batch_tf._restore_cloud_batch_value",
+          "path": "bayesfilter/highdim/cubature_genut_batch_tf.py"
+        },
+        {
+          "caller": "bayesfilter.highdim.cubature_genut_batch_tf._restore_cloud_batch_value",
+          "line": 367,
+          "target": "bayesfilter.highdim.cubature_genut_batch_tf._sinkhorn_barycentric_batch_value",
+          "path": "bayesfilter/highdim/cubature_genut_batch_tf.py"
+        }
+      ],
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "canonical_lgssm",
+      "start": "bayesfilter.highdim.ledh_contract_e_canonical_lgssm_tf.make_canonical_value_and_score_tf.value_and_score",
+      "target": "bayesfilter.highdim.ledh_contract_e_canonical_lgssm_tf._cholesky_jvp",
+      "static_resolved": false,
+      "edges": null,
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "tt_adjoint",
+      "start": "bayesfilter.highdim.squared_tt_adjoint_engine_tf.run_adjoint_score_filter",
+      "target": "bayesfilter.highdim.squared_tt_engine_v0_tf._fixed_als_fit_traced",
+      "static_resolved": true,
+      "edges": [
+        {
+          "caller": "bayesfilter.highdim.squared_tt_adjoint_engine_tf.run_adjoint_score_filter",
+          "line": 176,
+          "target": "bayesfilter.highdim.squared_tt_engine_v0_tf._fixed_als_fit_traced",
+          "path": "bayesfilter/highdim/squared_tt_adjoint_engine_tf.py"
+        }
+      ],
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "dns_numpy",
+      "start": "bayesfilter.hardbound.joint_target_tf.joint_log_prob_batched",
+      "target": "bayesfilter.hardbound.dns_curve_tf.gauss_legendre_unit",
+      "static_resolved": true,
+      "edges": [
+        {
+          "caller": "bayesfilter.hardbound.joint_target_tf.joint_log_prob_batched",
+          "line": 215,
+          "target": "bayesfilter.hardbound.model_tf.observation_mean",
+          "path": "bayesfilter/hardbound/joint_target_tf.py"
+        },
+        {
+          "caller": "bayesfilter.hardbound.model_tf.observation_mean",
+          "line": 75,
+          "target": "bayesfilter.hardbound.dns_curve_tf.yield_curve",
+          "path": "bayesfilter/hardbound/model_tf.py"
+        },
+        {
+          "caller": "bayesfilter.hardbound.dns_curve_tf.yield_curve",
+          "line": 68,
+          "target": "bayesfilter.hardbound.dns_curve_tf.gauss_legendre_unit",
+          "path": "bayesfilter/hardbound/dns_curve_tf.py"
+        }
+      ],
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "tt_moments",
+      "start": "bayesfilter.highdim.squared_tt_engine_adapted_tf.run_value_filter_branch_axis_adapted",
+      "target": "bayesfilter.highdim.retained_moments_tf._moment_mass_matrix",
+      "static_resolved": true,
+      "edges": [
+        {
+          "caller": "bayesfilter.highdim.squared_tt_engine_adapted_tf.run_value_filter_branch_axis_adapted",
+          "line": 216,
+          "target": "bayesfilter.highdim.retained_moments_tf.retained_reference_moments",
+          "path": "bayesfilter/highdim/squared_tt_engine_adapted_tf.py"
+        },
+        {
+          "caller": "bayesfilter.highdim.retained_moments_tf.retained_reference_moments",
+          "line": 82,
+          "target": "bayesfilter.highdim.retained_moments_tf._moment_mass_matrix",
+          "path": "bayesfilter/highdim/retained_moments_tf.py"
+        }
+      ],
+      "runtime_wiring": "not checked by this static traversal"
+    },
+    {
+      "id": "tt_apf",
+      "start": "bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf.FrozenProposalAPFEvaluator.compiled_value_and_score",
+      "target": "bayesfilter.highdim.zhao_cui_frozen_proposal_apf_tf._evaluate_fixed_branch",
+      "static_resolved": false,
+      "edges": null,
+      "runtime_wiring": "not checked by this static traversal"
+    }
+  ]
+}

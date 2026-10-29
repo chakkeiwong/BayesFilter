@@ -1,0 +1,1446 @@
+{
+  "schema": "surrogate_hmc_full_sequence_component_cost_v1",
+  "status": "COMPONENT_SEQUENCE_PARITY_PASS_COST_MEASURED",
+  "evidence_role": "diagnostic_only_materialized_sequence_attribution",
+  "scope": {
+    "model": "sir_d18",
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 18,
+    "parameter_dimension": 3,
+    "dtype": "float64",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "fp64_recursion_fp32_pairs",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 100,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scales": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "59587e6dd61a7da1b2645576d52646b2486f6ee158520fd6fddda26f0281c9d8",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "3bd4a904a41689cdf754f1ca2dc46ddfd91c539a1f2b2989f2bc6503ae04787d",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 5,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "beta": [
+    0.10000000149011612,
+    0.0666000247001648,
+    0.8333999514579773
+  ],
+  "parameter_positions": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0034999999217689036,
+      0.0034999999217689036,
+      0.0034999999217689036
+    ]
+  ],
+  "horizon": 50,
+  "batch_size": 2,
+  "cpu_only": false,
+  "jit_compile": true,
+  "host_observation_loop": "diagnostic instrumentation only; fused runtime has one TF loop",
+  "timing_interpretation": "descriptive; staging changes fusion and memory traffic",
+  "posterior_sampling_complete": false,
+  "first_call_seconds": {
+    "fused_sequence": 51.0615761629997,
+    "staged_sequence": 54.16729602800024
+  },
+  "per_time_warmed": [
+    [
+      {
+        "time": 0,
+        "proposal_and_observation": 0.29359584899975744,
+        "densities_and_weights": 0.09890647799966246,
+        "transport_and_moment_reset": 0.11909696099974099
+      },
+      {
+        "time": 1,
+        "proposal_and_observation": 0.17639236699960748,
+        "densities_and_weights": 0.10273491499992815,
+        "transport_and_moment_reset": 0.12115138100034528
+      },
+      {
+        "time": 2,
+        "proposal_and_observation": 0.21344352300002356,
+        "densities_and_weights": 0.10265543199966487,
+        "transport_and_moment_reset": 0.1189281380002285
+      },
+      {
+        "time": 3,
+        "proposal_and_observation": 0.1696297099997537,
+        "densities_and_weights": 0.10353928999938944,
+        "transport_and_moment_reset": 0.1217084200006866
+      },
+      {
+        "time": 4,
+        "proposal_and_observation": 0.16878527300013957,
+        "densities_and_weights": 0.10111540600064473,
+        "transport_and_moment_reset": 0.12092922699957853
+      },
+      {
+        "time": 5,
+        "proposal_and_observation": 0.18004517700046563,
+        "densities_and_weights": 0.1039613120001377,
+        "transport_and_moment_reset": 0.12117634399965027
+      },
+      {
+        "time": 6,
+        "proposal_and_observation": 0.17076216299938096,
+        "densities_and_weights": 0.10333229699972435,
+        "transport_and_moment_reset": 0.1183311569993748
+      },
+      {
+        "time": 7,
+        "proposal_and_observation": 0.2125828750004075,
+        "densities_and_weights": 0.10242190700046194,
+        "transport_and_moment_reset": 0.12596606399984012
+      },
+      {
+        "time": 8,
+        "proposal_and_observation": 0.21583791600005497,
+        "densities_and_weights": 0.09983729599935032,
+        "transport_and_moment_reset": 0.1322449190001862
+      },
+      {
+        "time": 9,
+        "proposal_and_observation": 0.2130800030008686,
+        "densities_and_weights": 0.10571397700005036,
+        "transport_and_moment_reset": 0.13509437599986995
+      },
+      {
+        "time": 10,
+        "proposal_and_observation": 0.21578474000034475,
+        "densities_and_weights": 0.10419617200022913,
+        "transport_and_moment_reset": 0.1393704619995333
+      },
+      {
+        "time": 11,
+        "proposal_and_observation": 0.25512664199959545,
+        "densities_and_weights": 0.10249765099979413,
+        "transport_and_moment_reset": 0.13450628500049788
+      },
+      {
+        "time": 12,
+        "proposal_and_observation": 0.22121429999970132,
+        "densities_and_weights": 0.10467178100043384,
+        "transport_and_moment_reset": 0.13878008000028785
+      },
+      {
+        "time": 13,
+        "proposal_and_observation": 0.20820832699973835,
+        "densities_and_weights": 0.10573669599943969,
+        "transport_and_moment_reset": 0.13450646599994798
+      },
+      {
+        "time": 14,
+        "proposal_and_observation": 0.18682828700002574,
+        "densities_and_weights": 0.10720808899986878,
+        "transport_and_moment_reset": 0.13387713199972495
+      },
+      {
+        "time": 15,
+        "proposal_and_observation": 0.21369563799999014,
+        "densities_and_weights": 0.10784255500038853,
+        "transport_and_moment_reset": 0.13313646499955212
+      },
+      {
+        "time": 16,
+        "proposal_and_observation": 0.2566623869997784,
+        "densities_and_weights": 0.10275484500016319,
+        "transport_and_moment_reset": 0.11480371899961028
+      },
+      {
+        "time": 17,
+        "proposal_and_observation": 0.16941666599996097,
+        "densities_and_weights": 0.10445592100040813,
+        "transport_and_moment_reset": 0.11806955900010507
+      },
+      {
+        "time": 18,
+        "proposal_and_observation": 0.20684855699983018,
+        "densities_and_weights": 0.10656537599970761,
+        "transport_and_moment_reset": 0.12676599899987195
+      },
+      {
+        "time": 19,
+        "proposal_and_observation": 0.21100969100007205,
+        "densities_and_weights": 0.10678201600057946,
+        "transport_and_moment_reset": 0.13209883800027455
+      },
+      {
+        "time": 20,
+        "proposal_and_observation": 0.26482014900011563,
+        "densities_and_weights": 0.10532939699987764,
+        "transport_and_moment_reset": 0.14217646199995215
+      },
+      {
+        "time": 21,
+        "proposal_and_observation": 0.16737621999982366,
+        "densities_and_weights": 0.09957964199929847,
+        "transport_and_moment_reset": 0.11850006700024096
+      },
+      {
+        "time": 22,
+        "proposal_and_observation": 0.17621958699965035,
+        "densities_and_weights": 0.10561221499938256,
+        "transport_and_moment_reset": 0.11757984300038515
+      },
+      {
+        "time": 23,
+        "proposal_and_observation": 0.16908427799990022,
+        "densities_and_weights": 0.10610043300039251,
+        "transport_and_moment_reset": 0.13459400199917582
+      },
+      {
+        "time": 24,
+        "proposal_and_observation": 0.21358627200061164,
+        "densities_and_weights": 0.10072773299998516,
+        "transport_and_moment_reset": 0.14656876499975624
+      },
+      {
+        "time": 25,
+        "proposal_and_observation": 0.3415894390000176,
+        "densities_and_weights": 0.10548546700010775,
+        "transport_and_moment_reset": 0.12241621500015754
+      },
+      {
+        "time": 26,
+        "proposal_and_observation": 0.19976150299953588,
+        "densities_and_weights": 0.10482499899990216,
+        "transport_and_moment_reset": 0.1261039829996662
+      },
+      {
+        "time": 27,
+        "proposal_and_observation": 0.21303024899953016,
+        "densities_and_weights": 0.10279291799997736,
+        "transport_and_moment_reset": 0.12799432100018748
+      },
+      {
+        "time": 28,
+        "proposal_and_observation": 0.2010937240002022,
+        "densities_and_weights": 0.11044484400008514,
+        "transport_and_moment_reset": 0.13624291099949914
+      },
+      {
+        "time": 29,
+        "proposal_and_observation": 0.3795786919999955,
+        "densities_and_weights": 0.11808341500000097,
+        "transport_and_moment_reset": 0.15673596800024825
+      },
+      {
+        "time": 30,
+        "proposal_and_observation": 0.20489222000014706,
+        "densities_and_weights": 0.1102097920002052,
+        "transport_and_moment_reset": 0.13066733200048475
+      },
+      {
+        "time": 31,
+        "proposal_and_observation": 0.2055081140006223,
+        "densities_and_weights": 0.1075188260001596,
+        "transport_and_moment_reset": 0.15359985499981121
+      },
+      {
+        "time": 32,
+        "proposal_and_observation": 0.24926098600008118,
+        "densities_and_weights": 0.10952564099989104,
+        "transport_and_moment_reset": 0.1383704210002179
+      },
+      {
+        "time": 33,
+        "proposal_and_observation": 0.267999411999881,
+        "densities_and_weights": 0.10927141600041068,
+        "transport_and_moment_reset": 0.13226568000027328
+      },
+      {
+        "time": 34,
+        "proposal_and_observation": 0.32179845800055773,
+        "densities_and_weights": 0.11233548499967583,
+        "transport_and_moment_reset": 0.15275911100070516
+      },
+      {
+        "time": 35,
+        "proposal_and_observation": 0.28399267500026326,
+        "densities_and_weights": 0.1065542739997909,
+        "transport_and_moment_reset": 0.14443185399977665
+      },
+      {
+        "time": 36,
+        "proposal_and_observation": 0.3048390099993412,
+        "densities_and_weights": 0.1004864060005275,
+        "transport_and_moment_reset": 0.1478708739996364
+      },
+      {
+        "time": 37,
+        "proposal_and_observation": 0.3101352579997183,
+        "densities_and_weights": 0.0998048210003617,
+        "transport_and_moment_reset": 0.13008081200041488
+      },
+      {
+        "time": 38,
+        "proposal_and_observation": 0.1979958350002562,
+        "densities_and_weights": 0.10584504700000252,
+        "transport_and_moment_reset": 0.12550396700044075
+      },
+      {
+        "time": 39,
+        "proposal_and_observation": 0.1977951729995766,
+        "densities_and_weights": 0.10493254700031684,
+        "transport_and_moment_reset": 0.1201357720001397
+      },
+      {
+        "time": 40,
+        "proposal_and_observation": 0.1665218170001026,
+        "densities_and_weights": 0.09885055999984615,
+        "transport_and_moment_reset": 0.11977214000035019
+      },
+      {
+        "time": 41,
+        "proposal_and_observation": 0.1896812509994561,
+        "densities_and_weights": 0.1028035599993018,
+        "transport_and_moment_reset": 0.11855140500028938
+      },
+      {
+        "time": 42,
+        "proposal_and_observation": 0.2336057949996757,
+        "densities_and_weights": 0.10229046099993866,
+        "transport_and_moment_reset": 0.1458828889999495
+      },
+      {
+        "time": 43,
+        "proposal_and_observation": 0.23566614299943467,
+        "densities_and_weights": 0.09755740000036894,
+        "transport_and_moment_reset": 0.1464207549997809
+      },
+      {
+        "time": 44,
+        "proposal_and_observation": 0.2248012549998748,
+        "densities_and_weights": 0.10451966599976004,
+        "transport_and_moment_reset": 0.1282019140007833
+      },
+      {
+        "time": 45,
+        "proposal_and_observation": 0.2056700559996898,
+        "densities_and_weights": 0.10385949000010442,
+        "transport_and_moment_reset": 0.12264224199952878
+      },
+      {
+        "time": 46,
+        "proposal_and_observation": 0.25752542300051573,
+        "densities_and_weights": 0.1030168950001098,
+        "transport_and_moment_reset": 0.1252017690003413
+      },
+      {
+        "time": 47,
+        "proposal_and_observation": 0.19628004999958648,
+        "densities_and_weights": 0.10367092199976469,
+        "transport_and_moment_reset": 0.12683169899992208
+      },
+      {
+        "time": 48,
+        "proposal_and_observation": 0.19342737599981774,
+        "densities_and_weights": 0.10120213099980901,
+        "transport_and_moment_reset": 0.11639849400035018
+      },
+      {
+        "time": 49,
+        "proposal_and_observation": 0.16226280700084317,
+        "densities_and_weights": 0.10038680100024067,
+        "transport_and_moment_reset": 0.15000411300025007
+      }
+    ],
+    [
+      {
+        "time": 0,
+        "proposal_and_observation": 0.2765326449998611,
+        "densities_and_weights": 0.10645253999973647,
+        "transport_and_moment_reset": 0.1492561579998437
+      },
+      {
+        "time": 1,
+        "proposal_and_observation": 0.2192317320004804,
+        "densities_and_weights": 0.10589448600057949,
+        "transport_and_moment_reset": 0.13496332799968513
+      },
+      {
+        "time": 2,
+        "proposal_and_observation": 0.29518001900032687,
+        "densities_and_weights": 0.1029552469999544,
+        "transport_and_moment_reset": 0.13533656100025837
+      },
+      {
+        "time": 3,
+        "proposal_and_observation": 0.20743938899977366,
+        "densities_and_weights": 0.09976301200003945,
+        "transport_and_moment_reset": 0.13191290299982938
+      },
+      {
+        "time": 4,
+        "proposal_and_observation": 0.21233753799970145,
+        "densities_and_weights": 0.10139725299995916,
+        "transport_and_moment_reset": 0.1338448039996365
+      },
+      {
+        "time": 5,
+        "proposal_and_observation": 0.2083026059999611,
+        "densities_and_weights": 0.10448748399994656,
+        "transport_and_moment_reset": 0.13763436099998216
+      },
+      {
+        "time": 6,
+        "proposal_and_observation": 0.2541918410006474,
+        "densities_and_weights": 0.09987247099979868,
+        "transport_and_moment_reset": 0.12078450599983626
+      },
+      {
+        "time": 7,
+        "proposal_and_observation": 0.2160504140001649,
+        "densities_and_weights": 0.09715492699979222,
+        "transport_and_moment_reset": 0.12005982299979223
+      },
+      {
+        "time": 8,
+        "proposal_and_observation": 0.1724627909998162,
+        "densities_and_weights": 0.0974950509998962,
+        "transport_and_moment_reset": 0.130271379000078
+      },
+      {
+        "time": 9,
+        "proposal_and_observation": 0.20871090499986167,
+        "densities_and_weights": 0.0986211009994804,
+        "transport_and_moment_reset": 0.11798140199971385
+      },
+      {
+        "time": 10,
+        "proposal_and_observation": 0.1781617449996702,
+        "densities_and_weights": 0.10361576799914474,
+        "transport_and_moment_reset": 0.1140069510001922
+      },
+      {
+        "time": 11,
+        "proposal_and_observation": 0.20889305099990452,
+        "densities_and_weights": 0.10528620799959754,
+        "transport_and_moment_reset": 0.15161016599995492
+      },
+      {
+        "time": 12,
+        "proposal_and_observation": 0.21196282599976257,
+        "densities_and_weights": 0.10374503200000618,
+        "transport_and_moment_reset": 0.12084792599944194
+      },
+      {
+        "time": 13,
+        "proposal_and_observation": 0.17159853700013628,
+        "densities_and_weights": 0.09912577500017505,
+        "transport_and_moment_reset": 0.12177347399938299
+      },
+      {
+        "time": 14,
+        "proposal_and_observation": 0.17213468299996748,
+        "densities_and_weights": 0.09906649399999878,
+        "transport_and_moment_reset": 0.11914277799951378
+      },
+      {
+        "time": 15,
+        "proposal_and_observation": 0.1648551279995445,
+        "densities_and_weights": 0.10392913699979545,
+        "transport_and_moment_reset": 0.12219568900036393
+      },
+      {
+        "time": 16,
+        "proposal_and_observation": 0.2018934879997687,
+        "densities_and_weights": 0.10359856199920614,
+        "transport_and_moment_reset": 0.12531973700060917
+      },
+      {
+        "time": 17,
+        "proposal_and_observation": 0.24983291599983204,
+        "densities_and_weights": 0.09940750300029322,
+        "transport_and_moment_reset": 0.12545432899969455
+      },
+      {
+        "time": 18,
+        "proposal_and_observation": 0.22867773399957514,
+        "densities_and_weights": 0.10515837299954,
+        "transport_and_moment_reset": 0.12770035700032167
+      },
+      {
+        "time": 19,
+        "proposal_and_observation": 0.20165121600075508,
+        "densities_and_weights": 0.10854256499987969,
+        "transport_and_moment_reset": 0.15037739600029454
+      },
+      {
+        "time": 20,
+        "proposal_and_observation": 0.2708978099999513,
+        "densities_and_weights": 0.10293863099923328,
+        "transport_and_moment_reset": 0.15440541400039365
+      },
+      {
+        "time": 21,
+        "proposal_and_observation": 0.27577656599987677,
+        "densities_and_weights": 0.10594284699982381,
+        "transport_and_moment_reset": 0.12355137299982744
+      },
+      {
+        "time": 22,
+        "proposal_and_observation": 0.2851349940001455,
+        "densities_and_weights": 0.10009541399995214,
+        "transport_and_moment_reset": 0.12031693500011897
+      },
+      {
+        "time": 23,
+        "proposal_and_observation": 0.16700562900041405,
+        "densities_and_weights": 0.10417866199986747,
+        "transport_and_moment_reset": 0.1207277810008236
+      },
+      {
+        "time": 24,
+        "proposal_and_observation": 0.1710586350000085,
+        "densities_and_weights": 0.10620938600004592,
+        "transport_and_moment_reset": 0.1177948810000089
+      },
+      {
+        "time": 25,
+        "proposal_and_observation": 0.16843040300045686,
+        "densities_and_weights": 0.10345204200075386,
+        "transport_and_moment_reset": 0.11718441099947086
+      },
+      {
+        "time": 26,
+        "proposal_and_observation": 0.20160220700017817,
+        "densities_and_weights": 0.10614369199993234,
+        "transport_and_moment_reset": 0.12909011200008536
+      },
+      {
+        "time": 27,
+        "proposal_and_observation": 0.20193599699996412,
+        "densities_and_weights": 0.09649721000005229,
+        "transport_and_moment_reset": 0.11935949100006837
+      },
+      {
+        "time": 28,
+        "proposal_and_observation": 0.1724139230000219,
+        "densities_and_weights": 0.09801566100031778,
+        "transport_and_moment_reset": 0.12066948399933608
+      },
+      {
+        "time": 29,
+        "proposal_and_observation": 0.18045540700040874,
+        "densities_and_weights": 0.10265974800040567,
+        "transport_and_moment_reset": 0.13531329599936726
+      },
+      {
+        "time": 30,
+        "proposal_and_observation": 0.24865790699914214,
+        "densities_and_weights": 0.10782885499975237,
+        "transport_and_moment_reset": 0.13125882599979377
+      },
+      {
+        "time": 31,
+        "proposal_and_observation": 0.20152248100021097,
+        "densities_and_weights": 0.10198350999962713,
+        "transport_and_moment_reset": 0.12545991899969522
+      },
+      {
+        "time": 32,
+        "proposal_and_observation": 0.20620695799971145,
+        "densities_and_weights": 0.10404190400004154,
+        "transport_and_moment_reset": 0.1332144750003863
+      },
+      {
+        "time": 33,
+        "proposal_and_observation": 0.19923120600014954,
+        "densities_and_weights": 0.09973019399967598,
+        "transport_and_moment_reset": 0.1294935539999642
+      },
+      {
+        "time": 34,
+        "proposal_and_observation": 0.21227931900011754,
+        "densities_and_weights": 0.10509624500082282,
+        "transport_and_moment_reset": 0.12492840200047794
+      },
+      {
+        "time": 35,
+        "proposal_and_observation": 0.2534916410004371,
+        "densities_and_weights": 0.10031708900078229,
+        "transport_and_moment_reset": 0.13761379799962015
+      },
+      {
+        "time": 36,
+        "proposal_and_observation": 0.2645834750001086,
+        "densities_and_weights": 0.10569064900028025,
+        "transport_and_moment_reset": 0.1274774069997875
+      },
+      {
+        "time": 37,
+        "proposal_and_observation": 0.19847421899976325,
+        "densities_and_weights": 0.10219513700030802,
+        "transport_and_moment_reset": 0.14185735000046407
+      },
+      {
+        "time": 38,
+        "proposal_and_observation": 0.20383026099989365,
+        "densities_and_weights": 0.10663729399948352,
+        "transport_and_moment_reset": 0.12977473199953238
+      },
+      {
+        "time": 39,
+        "proposal_and_observation": 0.2442368539996096,
+        "densities_and_weights": 0.0998475119995419,
+        "transport_and_moment_reset": 0.13169051700060663
+      },
+      {
+        "time": 40,
+        "proposal_and_observation": 0.20483476000026712,
+        "densities_and_weights": 0.10472009699969931,
+        "transport_and_moment_reset": 0.12508389599952352
+      },
+      {
+        "time": 41,
+        "proposal_and_observation": 0.19707449699944846,
+        "densities_and_weights": 0.10497905600004742,
+        "transport_and_moment_reset": 0.12254749200019432
+      },
+      {
+        "time": 42,
+        "proposal_and_observation": 0.19859062700015784,
+        "densities_and_weights": 0.10500250800032518,
+        "transport_and_moment_reset": 0.12667438900007255
+      },
+      {
+        "time": 43,
+        "proposal_and_observation": 0.2031044790001033,
+        "densities_and_weights": 0.10554791200047475,
+        "transport_and_moment_reset": 0.12433430300006876
+      },
+      {
+        "time": 44,
+        "proposal_and_observation": 0.24338807300046028,
+        "densities_and_weights": 0.10506881099991006,
+        "transport_and_moment_reset": 0.13709021199974813
+      },
+      {
+        "time": 45,
+        "proposal_and_observation": 0.20037618100013788,
+        "densities_and_weights": 0.1052912600007403,
+        "transport_and_moment_reset": 0.12541546300053596
+      },
+      {
+        "time": 46,
+        "proposal_and_observation": 0.20420159500008594,
+        "densities_and_weights": 0.10469842000020435,
+        "transport_and_moment_reset": 0.13269096000021818
+      },
+      {
+        "time": 47,
+        "proposal_and_observation": 0.2528350299999147,
+        "densities_and_weights": 0.10732386600011523,
+        "transport_and_moment_reset": 0.14205192099962005
+      },
+      {
+        "time": 48,
+        "proposal_and_observation": 0.25992217699968023,
+        "densities_and_weights": 0.10456841199993505,
+        "transport_and_moment_reset": 0.12424856000052387
+      },
+      {
+        "time": 49,
+        "proposal_and_observation": 0.18437914100013586,
+        "densities_and_weights": 0.10399203100041632,
+        "transport_and_moment_reset": 0.11927126499995211
+      }
+    ],
+    [
+      {
+        "time": 0,
+        "proposal_and_observation": 0.17562936199919932,
+        "densities_and_weights": 0.09985681600028329,
+        "transport_and_moment_reset": 0.1257555020001746
+      },
+      {
+        "time": 1,
+        "proposal_and_observation": 0.20586223600002995,
+        "densities_and_weights": 0.1150916619999407,
+        "transport_and_moment_reset": 0.15129036300004373
+      },
+      {
+        "time": 2,
+        "proposal_and_observation": 0.31062077000024146,
+        "densities_and_weights": 0.10391480900034367,
+        "transport_and_moment_reset": 0.12296138199963025
+      },
+      {
+        "time": 3,
+        "proposal_and_observation": 0.20109614000011788,
+        "densities_and_weights": 0.10332588199980819,
+        "transport_and_moment_reset": 0.1350520289997803
+      },
+      {
+        "time": 4,
+        "proposal_and_observation": 0.21349077000013494,
+        "densities_and_weights": 0.10568985700047051,
+        "transport_and_moment_reset": 0.1351451079999606
+      },
+      {
+        "time": 5,
+        "proposal_and_observation": 0.21034330899965425,
+        "densities_and_weights": 0.1014999329991042,
+        "transport_and_moment_reset": 0.12261028600005375
+      },
+      {
+        "time": 6,
+        "proposal_and_observation": 0.1709960329999376,
+        "densities_and_weights": 0.09903355500046018,
+        "transport_and_moment_reset": 0.12128306100021291
+      },
+      {
+        "time": 7,
+        "proposal_and_observation": 0.2046732750004594,
+        "densities_and_weights": 0.10061358500024653,
+        "transport_and_moment_reset": 0.12850519099993107
+      },
+      {
+        "time": 8,
+        "proposal_and_observation": 0.25307059700026,
+        "densities_and_weights": 0.10639811900000495,
+        "transport_and_moment_reset": 0.14966672100035794
+      },
+      {
+        "time": 9,
+        "proposal_and_observation": 0.22041057600017666,
+        "densities_and_weights": 0.10668038000039815,
+        "transport_and_moment_reset": 0.14717032499993365
+      },
+      {
+        "time": 10,
+        "proposal_and_observation": 0.3015846199996304,
+        "densities_and_weights": 0.10036750800009031,
+        "transport_and_moment_reset": 0.1525990689997343
+      },
+      {
+        "time": 11,
+        "proposal_and_observation": 0.40397437299998273,
+        "densities_and_weights": 0.09980626600008691,
+        "transport_and_moment_reset": 0.14486200400006055
+      },
+      {
+        "time": 12,
+        "proposal_and_observation": 0.2030190940004104,
+        "densities_and_weights": 0.10324963499988371,
+        "transport_and_moment_reset": 0.12990699000056338
+      },
+      {
+        "time": 13,
+        "proposal_and_observation": 0.2075129980003112,
+        "densities_and_weights": 0.10423275900029694,
+        "transport_and_moment_reset": 0.13629123600003368
+      },
+      {
+        "time": 14,
+        "proposal_and_observation": 0.20852172299964877,
+        "densities_and_weights": 0.10240142099974037,
+        "transport_and_moment_reset": 0.13241834499967808
+      },
+      {
+        "time": 15,
+        "proposal_and_observation": 0.25094697199983784,
+        "densities_and_weights": 0.10616332999961742,
+        "transport_and_moment_reset": 0.13111684099931153
+      },
+      {
+        "time": 16,
+        "proposal_and_observation": 0.20550592499967024,
+        "densities_and_weights": 0.10564789799991559,
+        "transport_and_moment_reset": 0.12946891499996127
+      },
+      {
+        "time": 17,
+        "proposal_and_observation": 0.19785377199968934,
+        "densities_and_weights": 0.0996034839999993,
+        "transport_and_moment_reset": 0.1283441360001234
+      },
+      {
+        "time": 18,
+        "proposal_and_observation": 0.20402795000063634,
+        "densities_and_weights": 0.1071325840002828,
+        "transport_and_moment_reset": 0.1295726870002909
+      },
+      {
+        "time": 19,
+        "proposal_and_observation": 0.20547434999934922,
+        "densities_and_weights": 0.102135547999751,
+        "transport_and_moment_reset": 0.13148403500053973
+      },
+      {
+        "time": 20,
+        "proposal_and_observation": 0.20473576299991691,
+        "densities_and_weights": 0.10282025200012868,
+        "transport_and_moment_reset": 0.11997852399963449
+      },
+      {
+        "time": 21,
+        "proposal_and_observation": 0.17559476899987203,
+        "densities_and_weights": 0.09834478100037813,
+        "transport_and_moment_reset": 0.12677006400008395
+      },
+      {
+        "time": 22,
+        "proposal_and_observation": 0.20620750699981727,
+        "densities_and_weights": 0.10561742699974275,
+        "transport_and_moment_reset": 0.12736947899975348
+      },
+      {
+        "time": 23,
+        "proposal_and_observation": 0.20576431500012404,
+        "densities_and_weights": 0.09836134899978788,
+        "transport_and_moment_reset": 0.13141962499958026
+      },
+      {
+        "time": 24,
+        "proposal_and_observation": 0.2114977950004686,
+        "densities_and_weights": 0.10423092999917571,
+        "transport_and_moment_reset": 0.12250326499997755
+      },
+      {
+        "time": 25,
+        "proposal_and_observation": 0.24614569499954086,
+        "densities_and_weights": 0.10046361100012291,
+        "transport_and_moment_reset": 0.12417259399990144
+      },
+      {
+        "time": 26,
+        "proposal_and_observation": 0.19755481199990754,
+        "densities_and_weights": 0.10107909700036544,
+        "transport_and_moment_reset": 0.12842348799949832
+      },
+      {
+        "time": 27,
+        "proposal_and_observation": 0.21657209399927524,
+        "densities_and_weights": 0.09854854700006399,
+        "transport_and_moment_reset": 0.13176089800072077
+      },
+      {
+        "time": 28,
+        "proposal_and_observation": 0.19966438400024344,
+        "densities_and_weights": 0.10597135199986951,
+        "transport_and_moment_reset": 0.12149154399958206
+      },
+      {
+        "time": 29,
+        "proposal_and_observation": 0.24401021900030173,
+        "densities_and_weights": 0.1010924160000286,
+        "transport_and_moment_reset": 0.1303430779998962
+      },
+      {
+        "time": 30,
+        "proposal_and_observation": 0.19834786299998086,
+        "densities_and_weights": 0.1066397100003087,
+        "transport_and_moment_reset": 0.13043851899965375
+      },
+      {
+        "time": 31,
+        "proposal_and_observation": 0.16878439899937803,
+        "densities_and_weights": 0.09916532399984135,
+        "transport_and_moment_reset": 0.1231862810000166
+      },
+      {
+        "time": 32,
+        "proposal_and_observation": 0.17309511700022995,
+        "densities_and_weights": 0.10407047100034106,
+        "transport_and_moment_reset": 0.11879744799989567
+      },
+      {
+        "time": 33,
+        "proposal_and_observation": 0.17114405399934185,
+        "densities_and_weights": 0.10609048599962989,
+        "transport_and_moment_reset": 0.12696858599974803
+      },
+      {
+        "time": 34,
+        "proposal_and_observation": 0.2473204120005903,
+        "densities_and_weights": 0.0998297090000051,
+        "transport_and_moment_reset": 0.1306531679992986
+      },
+      {
+        "time": 35,
+        "proposal_and_observation": 0.21117528000013408,
+        "densities_and_weights": 0.10177931700036424,
+        "transport_and_moment_reset": 0.1298341479996452
+      },
+      {
+        "time": 36,
+        "proposal_and_observation": 0.20369857300011063,
+        "densities_and_weights": 0.10484443399946031,
+        "transport_and_moment_reset": 0.12404201899971667
+      },
+      {
+        "time": 37,
+        "proposal_and_observation": 0.20335051999973075,
+        "densities_and_weights": 0.10281579500042426,
+        "transport_and_moment_reset": 0.13225159099965822
+      },
+      {
+        "time": 38,
+        "proposal_and_observation": 0.2011227550001422,
+        "densities_and_weights": 0.1059032399998614,
+        "transport_and_moment_reset": 0.12547932800043782
+      },
+      {
+        "time": 39,
+        "proposal_and_observation": 0.2300928249997014,
+        "densities_and_weights": 0.10628525399988575,
+        "transport_and_moment_reset": 0.1317391270004009
+      },
+      {
+        "time": 40,
+        "proposal_and_observation": 0.20900611900015065,
+        "densities_and_weights": 0.10177139799998258,
+        "transport_and_moment_reset": 0.12899755299986282
+      },
+      {
+        "time": 41,
+        "proposal_and_observation": 0.20037045200024295,
+        "densities_and_weights": 0.10558666199995059,
+        "transport_and_moment_reset": 0.129454504000023
+      },
+      {
+        "time": 42,
+        "proposal_and_observation": 0.2086380549999376,
+        "densities_and_weights": 0.10330625599999621,
+        "transport_and_moment_reset": 0.13125493000006827
+      },
+      {
+        "time": 43,
+        "proposal_and_observation": 0.24766828800056828,
+        "densities_and_weights": 0.10595613300029072,
+        "transport_and_moment_reset": 0.12310877300024003
+      },
+      {
+        "time": 44,
+        "proposal_and_observation": 0.19035460300074192,
+        "densities_and_weights": 0.1067220590002762,
+        "transport_and_moment_reset": 0.1296255569995992
+      },
+      {
+        "time": 45,
+        "proposal_and_observation": 0.20137502899979154,
+        "densities_and_weights": 0.10644450200015854,
+        "transport_and_moment_reset": 0.12592123600006744
+      },
+      {
+        "time": 46,
+        "proposal_and_observation": 0.1969287349993465,
+        "densities_and_weights": 0.10260535100042034,
+        "transport_and_moment_reset": 0.1149925070003519
+      },
+      {
+        "time": 47,
+        "proposal_and_observation": 0.16960235700025805,
+        "densities_and_weights": 0.10368983500029572,
+        "transport_and_moment_reset": 0.12059280600078637
+      },
+      {
+        "time": 48,
+        "proposal_and_observation": 0.24643343399930018,
+        "densities_and_weights": 0.1057400140007303,
+        "transport_and_moment_reset": 0.12482645100044465
+      },
+      {
+        "time": 49,
+        "proposal_and_observation": 0.20483215500007645,
+        "densities_and_weights": 0.10651781300020957,
+        "transport_and_moment_reset": 0.12453620100041007
+      }
+    ]
+  ],
+  "warmed_seconds": {
+    "staged_sequence": [
+      23.055524622999656,
+      22.520467919999646,
+      22.559736120000707
+    ],
+    "fused_sequence": [
+      17.85354893099975,
+      17.505675471999893,
+      17.333369377000054
+    ]
+  },
+  "input_sha256": [
+    "75b7eb422b67c564cc8cda99784ba00ea35e0941aea976619d4d76d5717e2b33",
+    "08fb0bc04fd57e4d74406d3a264008706fc349fdde24bdf216ddc622e4a65350",
+    "8645cfe5d19395b4f29e62a0b92b6466d2149b64cc4bf67d64b70f788dc69a30",
+    "acf8fd2d0c11f3a8a0652fa7dd051828277b694943e7fa86a12d3de437b221e1",
+    "4d536b4674cabaf2e5a781f6d046fa237499028ee01a7133ab75306085150737",
+    "f0a982f96da35f6a80a50514182be9522f853b6211ccf5c26bef6005c6128aae"
+  ],
+  "first_sequence_per_time_seconds": [
+    {
+      "time": 0,
+      "proposal_and_observation": 12.922824319000028,
+      "densities_and_weights": 2.135880023000027,
+      "transport_and_moment_reset": 3.928061933999743
+    },
+    {
+      "time": 1,
+      "proposal_and_observation": 11.89343603799989,
+      "densities_and_weights": 0.10750451299918495,
+      "transport_and_moment_reset": 0.15306770500046696
+    },
+    {
+      "time": 2,
+      "proposal_and_observation": 0.3183664669995778,
+      "densities_and_weights": 0.10829893900063325,
+      "transport_and_moment_reset": 0.1489255549995505
+    },
+    {
+      "time": 3,
+      "proposal_and_observation": 0.2095706779991815,
+      "densities_and_weights": 0.10185243399973842,
+      "transport_and_moment_reset": 0.12993097500020667
+    },
+    {
+      "time": 4,
+      "proposal_and_observation": 0.20444569699975546,
+      "densities_and_weights": 0.10461662799934857,
+      "transport_and_moment_reset": 0.12070684300033463
+    },
+    {
+      "time": 5,
+      "proposal_and_observation": 0.22027389999948355,
+      "densities_and_weights": 0.10317970600044646,
+      "transport_and_moment_reset": 0.11557747500046389
+    },
+    {
+      "time": 6,
+      "proposal_and_observation": 0.17741826299970853,
+      "densities_and_weights": 0.1028663979996054,
+      "transport_and_moment_reset": 0.11501280999982555
+    },
+    {
+      "time": 7,
+      "proposal_and_observation": 0.16896446900045703,
+      "densities_and_weights": 0.10444149800059677,
+      "transport_and_moment_reset": 0.1234517720004078
+    },
+    {
+      "time": 8,
+      "proposal_and_observation": 0.29510118999951374,
+      "densities_and_weights": 0.1071465579998403,
+      "transport_and_moment_reset": 0.15197835299932194
+    },
+    {
+      "time": 9,
+      "proposal_and_observation": 0.27648853299979237,
+      "densities_and_weights": 0.11206293299983372,
+      "transport_and_moment_reset": 0.15728840999963722
+    },
+    {
+      "time": 10,
+      "proposal_and_observation": 0.41252999100015586,
+      "densities_and_weights": 0.11667992200000299,
+      "transport_and_moment_reset": 0.14790475700010575
+    },
+    {
+      "time": 11,
+      "proposal_and_observation": 0.2612023770006999,
+      "densities_and_weights": 0.10389430499981245,
+      "transport_and_moment_reset": 0.13925455500066164
+    },
+    {
+      "time": 12,
+      "proposal_and_observation": 0.24122876499950507,
+      "densities_and_weights": 0.11022622300060902,
+      "transport_and_moment_reset": 0.15975201099990954
+    },
+    {
+      "time": 13,
+      "proposal_and_observation": 0.3427121109998552,
+      "densities_and_weights": 0.11234498700014228,
+      "transport_and_moment_reset": 0.15805213499970705
+    },
+    {
+      "time": 14,
+      "proposal_and_observation": 0.29036409499985893,
+      "densities_and_weights": 0.1061551969996799,
+      "transport_and_moment_reset": 0.15230221700039692
+    },
+    {
+      "time": 15,
+      "proposal_and_observation": 0.21523203499964438,
+      "densities_and_weights": 0.11021284399976139,
+      "transport_and_moment_reset": 0.13746518599964475
+    },
+    {
+      "time": 16,
+      "proposal_and_observation": 0.2167749449999974,
+      "densities_and_weights": 0.10498290600025939,
+      "transport_and_moment_reset": 0.1265058039998621
+    },
+    {
+      "time": 17,
+      "proposal_and_observation": 0.24754696499985585,
+      "densities_and_weights": 0.10607842700028414,
+      "transport_and_moment_reset": 0.12671734000014112
+    },
+    {
+      "time": 18,
+      "proposal_and_observation": 0.19859405900024285,
+      "densities_and_weights": 0.09966255299968907,
+      "transport_and_moment_reset": 0.12734505499975057
+    },
+    {
+      "time": 19,
+      "proposal_and_observation": 0.19903306200012594,
+      "densities_and_weights": 0.09944739200000186,
+      "transport_and_moment_reset": 0.12774318500032678
+    },
+    {
+      "time": 20,
+      "proposal_and_observation": 0.213837555000282,
+      "densities_and_weights": 0.10721577599997545,
+      "transport_and_moment_reset": 0.13132121599937818
+    },
+    {
+      "time": 21,
+      "proposal_and_observation": 0.2255973740002446,
+      "densities_and_weights": 0.09823569299987867,
+      "transport_and_moment_reset": 0.11873514200033242
+    },
+    {
+      "time": 22,
+      "proposal_and_observation": 0.2226778739996007,
+      "densities_and_weights": 0.105484145000446,
+      "transport_and_moment_reset": 0.11780954799996834
+    },
+    {
+      "time": 23,
+      "proposal_and_observation": 0.16932686400014063,
+      "densities_and_weights": 0.10651249500006088,
+      "transport_and_moment_reset": 0.13731586399990192
+    },
+    {
+      "time": 24,
+      "proposal_and_observation": 0.19946276100017712,
+      "densities_and_weights": 0.09929848899992066,
+      "transport_and_moment_reset": 0.11923939799999062
+    },
+    {
+      "time": 25,
+      "proposal_and_observation": 0.17082857900004456,
+      "densities_and_weights": 0.1025192760007485,
+      "transport_and_moment_reset": 0.11589134200039553
+    },
+    {
+      "time": 26,
+      "proposal_and_observation": 0.16513339299945073,
+      "densities_and_weights": 0.10327833700011979,
+      "transport_and_moment_reset": 0.12973591599984502
+    },
+    {
+      "time": 27,
+      "proposal_and_observation": 0.2583825899992007,
+      "densities_and_weights": 0.10561856999993324,
+      "transport_and_moment_reset": 0.13235610899937456
+    },
+    {
+      "time": 28,
+      "proposal_and_observation": 0.2105282040001839,
+      "densities_and_weights": 0.10604798199983634,
+      "transport_and_moment_reset": 0.130001909999919
+    },
+    {
+      "time": 29,
+      "proposal_and_observation": 0.21022219600035896,
+      "densities_and_weights": 0.10451183700024558,
+      "transport_and_moment_reset": 0.1317332440003156
+    },
+    {
+      "time": 30,
+      "proposal_and_observation": 0.2108368449999034,
+      "densities_and_weights": 0.10509768300016731,
+      "transport_and_moment_reset": 0.13395896800011542
+    },
+    {
+      "time": 31,
+      "proposal_and_observation": 0.22012579100010043,
+      "densities_and_weights": 0.10248351600057504,
+      "transport_and_moment_reset": 0.1585779659999389
+    },
+    {
+      "time": 32,
+      "proposal_and_observation": 0.17432394999923417,
+      "densities_and_weights": 0.10555926199958776,
+      "transport_and_moment_reset": 0.12542941399988194
+    },
+    {
+      "time": 33,
+      "proposal_and_observation": 0.18039454500012653,
+      "densities_and_weights": 0.1031072010000571,
+      "transport_and_moment_reset": 0.11628275100065366
+    },
+    {
+      "time": 34,
+      "proposal_and_observation": 0.16513578299964138,
+      "densities_and_weights": 0.1027707540006304,
+      "transport_and_moment_reset": 0.11766042900035245
+    },
+    {
+      "time": 35,
+      "proposal_and_observation": 0.17637047399966832,
+      "densities_and_weights": 0.10333435999928042,
+      "transport_and_moment_reset": 0.14617303900013212
+    },
+    {
+      "time": 36,
+      "proposal_and_observation": 0.4053168280006503,
+      "densities_and_weights": 0.10958431200015184,
+      "transport_and_moment_reset": 0.14867283700004919
+    },
+    {
+      "time": 37,
+      "proposal_and_observation": 0.21405160699941916,
+      "densities_and_weights": 0.09931408600004943,
+      "transport_and_moment_reset": 0.11827060999985406
+    },
+    {
+      "time": 38,
+      "proposal_and_observation": 0.16643029600072623,
+      "densities_and_weights": 0.09586376300012489,
+      "transport_and_moment_reset": 0.11918666699966707
+    },
+    {
+      "time": 39,
+      "proposal_and_observation": 0.16786940099973435,
+      "densities_and_weights": 0.10255060800045612,
+      "transport_and_moment_reset": 0.13335509999978967
+    },
+    {
+      "time": 40,
+      "proposal_and_observation": 0.3944701390000773,
+      "densities_and_weights": 0.1110722599996734,
+      "transport_and_moment_reset": 0.14838975100065
+    },
+    {
+      "time": 41,
+      "proposal_and_observation": 0.2986292850000609,
+      "densities_and_weights": 0.1099402519994328,
+      "transport_and_moment_reset": 0.1300469410007281
+    },
+    {
+      "time": 42,
+      "proposal_and_observation": 0.20709169299971109,
+      "densities_and_weights": 0.10591236599975673,
+      "transport_and_moment_reset": 0.13227079599982972
+    },
+    {
+      "time": 43,
+      "proposal_and_observation": 0.212335023000378,
+      "densities_and_weights": 0.1059549279998464,
+      "transport_and_moment_reset": 0.12895576400023856
+    },
+    {
+      "time": 44,
+      "proposal_and_observation": 0.2575944710006297,
+      "densities_and_weights": 0.10157869500017114,
+      "transport_and_moment_reset": 0.12566215500010003
+    },
+    {
+      "time": 45,
+      "proposal_and_observation": 0.2119606800006295,
+      "densities_and_weights": 0.10419927700058906,
+      "transport_and_moment_reset": 0.1312601170002381
+    },
+    {
+      "time": 46,
+      "proposal_and_observation": 0.20837003799988452,
+      "densities_and_weights": 0.10173896600008447,
+      "transport_and_moment_reset": 0.12645944700034306
+    },
+    {
+      "time": 47,
+      "proposal_and_observation": 0.2121304570000575,
+      "densities_and_weights": 0.10717671100064763,
+      "transport_and_moment_reset": 0.12988919999952486
+    },
+    {
+      "time": 48,
+      "proposal_and_observation": 0.28813298200020654,
+      "densities_and_weights": 0.10894948500026658,
+      "transport_and_moment_reset": 0.1488922789994831
+    },
+    {
+      "time": 49,
+      "proposal_and_observation": 0.3042077350000909,
+      "densities_and_weights": 0.10619683999993867,
+      "transport_and_moment_reset": 0.1481672650006658
+    }
+  ],
+  "comparison": {
+    "passed": true,
+    "healthy": true,
+    "tolerance": 0.01,
+    "differences": {
+      "value": {
+        "finite": true,
+        "maximum_absolute": 0.0,
+        "maximum_scaled": 0.0
+      },
+      "score": {
+        "finite": true,
+        "maximum_absolute": 1.1368683772161603e-13,
+        "maximum_scaled": 6.754051130379133e-16
+      },
+      "particles": {
+        "finite": true,
+        "maximum_absolute": 0.0,
+        "maximum_scaled": 0.0
+      },
+      "particle_tangent": {
+        "finite": true,
+        "maximum_absolute": 3.410605131648481e-13,
+        "maximum_scaled": 1.1546319456101628e-14
+      }
+    },
+    "primary_outputs": [
+      "value",
+      "score"
+    ],
+    "particle_errors_role": "explanatory"
+  },
+  "reference_health": [
+    true,
+    true
+  ],
+  "per_time_score_maximum_scaled": [
+    1.1102230246251565e-16,
+    2.220073200603659e-16,
+    4.403072097364443e-16,
+    2.220446049250313e-16,
+    3.904837692451598e-16,
+    3.69460692243297e-16,
+    1.041578296711443e-15,
+    1.1246659786786753e-14,
+    4.102376416421047e-15,
+    1.2949431334969675e-14,
+    8.345617755509969e-16,
+    3.5361242988875646e-16,
+    1.3992222074025438e-15,
+    5.240057245488121e-16,
+    1.0174933730207059e-15,
+    7.737183666332897e-16,
+    2.5617440533358874e-16,
+    3.6637359812630166e-15,
+    1.6232100093529666e-15,
+    2.2367465358297876e-16,
+    4.1312693222662497e-16,
+    4.2903692397610334e-16,
+    2.4683082670879895e-16,
+    1.4586291944366771e-16,
+    5.551115123125783e-16,
+    1.710501370386682e-16,
+    4.209354004857172e-16,
+    3.469446951953614e-16,
+    1.2663481374630692e-16,
+    4.150572630871393e-16,
+    3.151072190980644e-16,
+    1.6653345369377348e-16,
+    1.411708927653797e-16,
+    5.551115123125783e-17,
+    4.163336342344337e-17,
+    2.7755575615628914e-17,
+    4.163336342344337e-17,
+    1.9280231800898018e-16,
+    1.1102230246251565e-16,
+    1.403397873477211e-16,
+    1.273118238217363e-16,
+    1.4870903015629206e-16,
+    1.6633321671382667e-16,
+    1.5410915703837882e-16,
+    2.577676597671795e-16,
+    5.0306980803327406e-17,
+    2.1027062336368296e-16,
+    1.7683495841008065e-16,
+    5.551115123125783e-17,
+    1.47501797525497e-16
+  ],
+  "trace_counts": [
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "stage_mean_seconds": {
+    "proposal_and_observation": 10.858828732332464,
+    "densities_and_weights": 5.183984738667277,
+    "transport_and_moment_reset": 6.487516597333221
+  },
+  "staged_to_fused_ratio": 1.293079800692256,
+  "allocator": {
+    "current": 59519744,
+    "peak": 1948071424
+  }
+}

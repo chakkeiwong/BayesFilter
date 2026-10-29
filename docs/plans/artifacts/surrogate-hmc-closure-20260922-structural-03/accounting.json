@@ -1,0 +1,59 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 23.350688,
+    "gpu_seconds": 15.522782525978982
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 28949.505962,
+    "gpu_seconds": 26720.575158871925
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_ar2_reference.py"
+      ],
+      "cpu_allowance_seconds": 180.0,
+      "cpu_worker_seconds": 7.63467,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 7.0127640850842
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "ar2-reference",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-structural-03/ar2-reference/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 300.0,
+      "cpu_worker_seconds": 15.665576,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 15.522782525978982,
+      "status": "COMPLETED",
+      "timeout_seconds": 600.0,
+      "wall_seconds": 15.522782525978982
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 28926.155274,
+    "gpu_seconds": 26705.052376345946
+  }
+}

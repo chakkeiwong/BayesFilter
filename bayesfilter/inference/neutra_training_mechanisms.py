@@ -1,4 +1,9 @@
-"""Optional q20 training mechanisms; no HMC admission or production defaults.
+"""Historical q20 training mechanisms; no HMC admission or production defaults.
+
+The affine/scalar correction maps are HISTORICAL — UNFAITHFUL TO THE AUTHOR'S
+CODE as full NeuTra architectures (owner directive 2026-09-25). They are
+diagnostic mechanisms, not the canonical IAF or full conditional NAF. See
+docs/reference/neutra-implementation.md and the canonical-policy notice.
 
 The plan is docs/plans/bayesfilter-q20-three-mechanisms-plan-2026-09-23.md.
 Maps operate on independent leading-batch rows. The compiled trainer owns the

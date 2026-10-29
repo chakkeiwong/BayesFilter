@@ -1,0 +1,25 @@
+.........F................                                               [100%]
+=================================== FAILURES ===================================
+___________ test_zero_iteration_batch_trace_preserves_existing_noop ____________
+
+    def test_zero_iteration_batch_trace_preserves_existing_noop():
+        args=inputs()
+        config=dict(correction_steps=0,pairwise_correction_steps=0,return_stages=True)
+>       expected=higher_moment_shape_jvp(*args,**config)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: higher_moment_shape_jvp() missing 1 required keyword-only argument: 'strength'
+
+tests/highdim/test_sqmc_reset_repair.py:96: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_sqmc_reset_repair.py::test_zero_iteration_batch_trace_preserves_existing_noop
+1 failed, 25 passed, 2 warnings in 27.88s

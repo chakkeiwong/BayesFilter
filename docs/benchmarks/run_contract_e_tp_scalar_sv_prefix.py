@@ -101,7 +101,7 @@ def _result_value_score_and_increment_score(
         objective = result["objective"]
         increments = result["increment_history"]
     score = tape.gradient(objective, theta)
-    increment_score = tape.jacobian(increments, theta)
+    increment_score = tape.jacobian(increments, theta, experimental_use_pfor=False)
     del tape
     return result, score, increment_score
 

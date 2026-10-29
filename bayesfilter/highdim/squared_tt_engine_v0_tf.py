@@ -90,7 +90,7 @@ def _product_basis(dimension: int, degree: int) -> ProductBasis:
 
 def _frozen_rows(count: int, dimension: int, seed: tuple[int, int]) -> tf.Tensor:
     return tf.random.stateless_uniform(
-        [count, dimension], tf.constant(seed, tf.int32), minval=-1.0, maxval=1.0, dtype=DTYPE
+        [count, dimension], tf.cast(tf.stack(seed), tf.int32), minval=-1.0, maxval=1.0, dtype=DTYPE
     )
 
 
@@ -107,7 +107,7 @@ def _frozen_sobol_rows(count: int, dimension: int, seed: tuple[int, int]) -> tf.
 
     base = tf.math.sobol_sample(dimension, count, dtype=DTYPE)
     shift = tf.random.stateless_uniform(
-        [1, dimension], tf.constant(seed, tf.int32), dtype=DTYPE
+        [1, dimension], tf.cast(tf.stack(seed), tf.int32), dtype=DTYPE
     )
     return 2.0 * tf.math.floormod(base + shift, 1.0) - 1.0
 
@@ -122,30 +122,17 @@ def _design_rows(
     raise ValueError(f"unknown row_design {config.row_design!r}")
 
 
-def _gauss_rows(dimension: int, order: int) -> tuple[tf.Tensor, tf.Tensor]:
-    import numpy as _np
+def _gauss_rows(dimension: int, order: int, *, jit_compile=True) -> tuple[tf.Tensor, tf.Tensor]:
+    from bayesfilter.ops.quadrature_tf import gauss_legendre_product
 
-    nodes, weights = _np.polynomial.legendre.leggauss(order)
-    mesh = _np.meshgrid(*([nodes] * dimension), indexing="ij")
-    points = _np.stack([m.reshape(-1) for m in mesh], axis=1)
-    weight_mesh = _np.meshgrid(*([weights / 2.0] * dimension), indexing="ij")
-    row_weights = _np.prod(_np.stack([w.reshape(-1) for w in weight_mesh], axis=1), axis=1)
-    return tf.constant(points, DTYPE), tf.constant(row_weights, DTYPE)
+    return gauss_legendre_product(dimension, order, jit_compile=jit_compile)
 
 
 def _initial_tt_cores(dimension: int, basis_dim: int, rank: int) -> tuple[TTCore, ...]:
-    cores = []
-    for axis in range(dimension):
-        left = 1 if axis == 0 else rank
-        right = 1 if axis == dimension - 1 else rank
-        values = tf.zeros([left, basis_dim, right], DTYPE)
-        eye = tf.eye(left, right, batch_shape=[1], dtype=DTYPE)[0]
-        values = tf.tensor_scatter_nd_update(
-            values, [[l, 0, r] for l in range(left) for r in range(right)],
-            tf.reshape(eye, [-1]),
-        )
-        cores.append(TTCore(values))
-    return tuple(cores)
+    ranks = (1,) + (rank,) * (dimension - 1) + (1,)
+    values = tf.eye(rank, dtype=DTYPE)[:, None, :] * tf.one_hot(0, basis_dim, dtype=DTYPE)[None, :, None]
+    # Fixed heterogeneous schema slicing; the common numerical core is built once.
+    return tuple(TTCore(values[:ranks[axis], :, :ranks[axis + 1]]) for axis in range(dimension))
 
 
 def _fixed_als_fit(
@@ -156,6 +143,7 @@ def _fixed_als_fit(
     cores: tuple[TTCore, ...],
     config: EngineConfig,
 ) -> tuple[tuple[TTCore, ...], Mapping[str, float]]:
+    # Independent eager ALS authority for the explicitly named reference filters.
     fitter = FixedTTFitter()
     fit_config = FixedTTFitConfig(
         ranks=tuple([1] + [config.rank] * (len(cores) - 1) + [1])[: len(cores) + 1],
@@ -215,6 +203,7 @@ def _fixed_als_fit_traced(
     """Value ALS identical to `_fixed_als_fit`, recording per-update
     checkpoints for the manual adjoint reverse sweep (UB-1 Addendum A.3)."""
 
+    # Independent eager ALS authority for the explicitly named reference filters.
     fitter = FixedTTFitter()
     fit_config = FixedTTFitConfig(
         ranks=tuple([1] + [config.rank] * (len(cores) - 1) + [1])[: len(cores) + 1],
@@ -277,7 +266,11 @@ def run_value_filter(
     observations: tf.Tensor,
     config: EngineConfig,
 ) -> tuple[tf.Tensor, list[Mapping[str, object]]]:
-    """Run the value-only squared-TT filter; return (log-lik, per-step diags)."""
+    """Independent historical sqrt-refit diagnostic, retained for its rejection test.
+
+    This unbranched eager algorithm is not the default branch-axis runtime.
+    Repository caller discovery found only the explicit naive-route xfail.
+    """
 
     n = adapter.state_dim
     observations = tf.convert_to_tensor(observations, DTYPE)
@@ -400,7 +393,7 @@ class DiscreteIndicatorBasis1D:
         return {"family": "DiscreteIndicatorBasis1D", "cardinality": self.cardinality}
 
 
-def run_value_filter_branch_axis(
+def run_value_filter_branch_axis_reference(
     adapter: DensityKernelAdapter,
     observations: tf.Tensor,
     config: EngineConfig,
@@ -606,3 +599,9 @@ def _prefix_rows_for(retained: RetainedQuadraticForm, points: tf.Tensor) -> tf.T
     from bayesfilter.highdim.retained_quadratic_form_tf import prefix_row_vectors
 
     return prefix_row_vectors(retained.prefix_cores, retained.prefix_basis, points)
+
+
+def run_value_filter_branch_axis(adapter, observations, config, *, jit_compile=True):
+    """Public branch-axis filter; the complete recurrence defaults to XLA."""
+    from bayesfilter.highdim.squared_tt_engine_xla_tf import run_value_filter_branch_axis_xla
+    return run_value_filter_branch_axis_xla(adapter, observations, config, jit_compile=jit_compile)

@@ -1,0 +1,31 @@
+{
+  "attempt": 1,
+  "backend": "TensorFlow GPU canonical analytical DCTR",
+  "chart": "identity log-noise multipliers",
+  "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+  "chunk_size": 1024,
+  "dtype": "float32",
+  "fixed_input_seed_date": 20260920,
+  "horizon": 2,
+  "jit_compile": true,
+  "model": "M10",
+  "parameter_dimension": 2,
+  "particle_count": 1024,
+  "prepared_data_regimes": [
+    "nominal",
+    "stress"
+  ],
+  "prior": "independent Normal(0,log(2)^2)",
+  "replicate": 0,
+  "reset": "contract_e_chol_v1",
+  "state_dimension": 1,
+  "tf32": true,
+  "tuning_controls": [
+    "reset_ridge",
+    "correction_lm_damping",
+    "correction_lm_scale_floor",
+    "correction_trust_radius",
+    "pairwise_rms_cap",
+    "coordinate_cap"
+  ]
+}

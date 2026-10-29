@@ -19,6 +19,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 import bayesfilter.highdim as highdim
+from bayesfilter.testing.p91_complete_data_diagnostics_tf import complete_data_values_and_scores_tf
 
 
 DTYPE = tf.float64
@@ -85,17 +86,7 @@ def _batched_value_and_score_compiled():
         states: tf.Tensor,
         observations: tf.Tensor,
     ) -> tuple[tf.Tensor, tf.Tensor]:
-        with tf.GradientTape() as tape:
-            tape.watch(theta)
-            values = highdim.zhao_cui_sir_austria_batched_local_complete_data_log_density_xla(
-                theta,
-                states,
-                observations,
-            )
-        score = tape.jacobian(values, theta)
-        if score is None:
-            score = tf.fill([BATCH_SIZE, 3], tf.constant(float("nan"), dtype=DTYPE))
-        return values, score
+        return complete_data_values_and_scores_tf(theta, states, observations)
 
     return values_and_scores
 

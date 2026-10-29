@@ -1,0 +1,117 @@
+{
+  "schema": "bayesfilter.hmc_v7_full_search_prices.v1",
+  "cases": [
+    "nonlinear",
+    "funnel_residual"
+  ],
+  "source_manifest_sha256": "e174198d1163725f2fb2b635a76ccb1bfde999e5019c84418da80acb844db851",
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "budget_seconds": 6200,
+  "search_cap_seconds": 1800,
+  "closeout_cap_seconds": 1200,
+  "attempts": [
+    {
+      "case": "nonlinear",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-21/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/nonlinear",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/nonlinear-config.json"
+      ],
+      "exit_code": 2,
+      "wall_seconds": 2208.0069652118254,
+      "result": {
+        "status": "partial_delivery",
+        "full_search_delivered": false,
+        "positive_member_delivery": true,
+        "expectation_met": false,
+        "completion_status": "partial_budget",
+        "verified_members": 10,
+        "candidates": 30,
+        "repairs": 10,
+        "sample_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "allocator": {
+          "current": 1519872,
+          "peak": 10319104
+        },
+        "wall_seconds": 2203.6228856642265,
+        "evidence_accounting": {
+          "unique_complete_trials": 5536,
+          "valid_complete_trials": 5536,
+          "invalid_complete_trials": 0,
+          "completed_trial_transitions": 1505792,
+          "attempted_transitions": 1505792,
+          "gradient_work": 19462144,
+          "attempted_work_outside_complete_trials": 0,
+          "charged_chunks": 5536,
+          "independent_trial_streams": 5536
+        },
+        "default_promotion": false,
+        "release_ready": false
+      }
+    },
+    {
+      "case": "funnel_residual",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/runner.py",
+        "--source",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/source-21/source",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/funnel_residual",
+        "--gpu",
+        "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+        "--config",
+        "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-prices-scoped-closeout-01/funnel_residual-config.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 1381.2259486538824,
+      "result": {
+        "status": "complete",
+        "full_search_delivered": true,
+        "positive_member_delivery": true,
+        "expectation_met": true,
+        "completion_status": "complete",
+        "verified_members": 18,
+        "candidates": 35,
+        "repairs": 15,
+        "sample_devices": [
+          "/job:localhost/replica:0/task:0/device:GPU:0"
+        ],
+        "allocator": {
+          "current": 2560000,
+          "peak": 11725824
+        },
+        "wall_seconds": 1379.0335632499773,
+        "evidence_accounting": {
+          "unique_complete_trials": 9600,
+          "valid_complete_trials": 9600,
+          "invalid_complete_trials": 0,
+          "completed_trial_transitions": 2611200,
+          "attempted_transitions": 2611200,
+          "gradient_work": 28592640,
+          "attempted_work_outside_complete_trials": 0,
+          "charged_chunks": 9600,
+          "independent_trial_streams": 9600
+        },
+        "default_promotion": false,
+        "release_ready": false
+      }
+    }
+  ],
+  "status": "incomplete_prices",
+  "release_ready": false,
+  "confirmation_authorized_by_price": false,
+  "wall_seconds": 3589.2380140700843,
+  "unstarted_cases": [],
+  "point_forecast_32_per_family_seconds": null,
+  "forecast_scope": "descriptive single-price extrapolation; not a runtime guarantee or confirmation design"
+}

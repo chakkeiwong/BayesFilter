@@ -1,0 +1,65 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 86.20181000000001,
+    "gpu_seconds": 41.07001093200233
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 45263.767463291995,
+    "gpu_seconds": 35245.301898454854
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_correction_localize.py",
+        "tests/test_surrogate_hmc_m13_moment_repair.py",
+        "tests/highdim/test_higher_moment_contract_e.py::test_higher_moment_manual_jvp_matches_independent_forward_accumulator",
+        "tests/highdim/test_higher_moment_contract_e.py::test_pairwise_moment_manual_jvp_matches_independent_forward_accumulator",
+        "tests/highdim/test_higher_moment_contract_e.py::test_weighted_shape_target_score_jvp_matches_centered_difference"
+      ],
+      "cpu_allowance_seconds": 80.0,
+      "cpu_worker_seconds": 12.822723,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 90.0,
+      "wall_seconds": 12.018891999992775
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-moment-repair",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-11/m13-moment-repair/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 100.0,
+      "cpu_worker_seconds": 73.28599200000001,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 41.07001093200233,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 41.07001093200233
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 45177.565653292,
+    "gpu_seconds": 35204.23188752285
+  }
+}

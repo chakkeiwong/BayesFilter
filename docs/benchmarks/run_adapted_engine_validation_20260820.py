@@ -33,7 +33,10 @@ HORIZON = 8
 
 
 def kalman_hint_factory(n, seed):
-    """Companion Kalman filter supplying M2-JOINT hints (v2 triangular).
+    """Independent diagnostic NumPy companion for the eager reference engine.
+
+    Compiled consumers use prepare_lgssm_moment_hints with frozen fixture
+    matrices. This stateful callback cannot run inside a TensorFlow graph.
 
     Returns the joint filtered moments of (x_t, x_{t-1}) | y_{1:t} in
     (current, previous) order, including the lag-one cross-covariance

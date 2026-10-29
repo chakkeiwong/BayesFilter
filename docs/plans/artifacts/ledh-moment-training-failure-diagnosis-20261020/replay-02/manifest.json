@@ -1,0 +1,202 @@
+{
+  "command": [
+    "docs/plans/artifacts/ledh-moment-training-failure-diagnosis-20261020/replay_diagnostic.py",
+    "--output",
+    "docs/plans/artifacts/ledh-moment-training-failure-diagnosis-20261020/replay-02",
+    "--budget-seconds",
+    "1000"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_commit": "4d6915cc66e701c4c7b657e094306d298fdd3e76",
+  "branch": "ledh-refactor-with-policy-fix",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "gpu_devices": [
+    "/device:GPU:0"
+  ],
+  "cuda_visible_devices": "0",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "cpu_only": false,
+  "exception": "scoped diagnostic FP64 candidate; no canonical or default promotion",
+  "plan": "docs/plans/ledh-moment-training-failure-diagnosis-20261020.md",
+  "result": "docs/plans/artifacts/ledh-moment-training-failure-diagnosis-20261020/replay-02/result.json",
+  "mode": "failure_diagnosis",
+  "source_hashes": {
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/bayesfilter/score_study/physical_proposal_diagnostic_campaign.py": "6c29cbaaac46f183e766f6e0499fda6294cc8ba7238a09d8dd38b1bc01f7c180",
+    "bayesfilter/highdim/ledh_physical_proposal_tf.py": "643250b4f962123478ff3d63b6419c31d72c3560950f12e03746e540742d2b9c",
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "8cd8151695585fb62357b90d2348ba4b8507c46251aed319ed53b1c93a1ea12e",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "90b12bf190f90af57273037aff67ba6398e743dbd0758a6cec4b15642e9a5bb4",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "ce0f141a37363a6da196709bb90cac209cdbe06aa27dbc8d7519a26596e56aee",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "efe8a12bc63da9d3828b42d7a1aad4f8ed1c2d3a675df645a5c3496733ba2c8c",
+    "bayesfilter/score_study/moment_training_tf.py": "2ae4bd508306cade65ac712078c98329f8866b08402bc64dad2f776fcf8f3542",
+    "bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": "1286275934146193a2655fcb171e3d78296fa528b63af779fb195da4f31a44da"
+  },
+  "partitions": {
+    "training": [
+      263021001,
+      263021002,
+      263021003,
+      263021004,
+      263021005,
+      263021006,
+      263021007,
+      263021008,
+      263021009,
+      263021010,
+      263021011,
+      263021012,
+      263021013,
+      263021014,
+      263021015,
+      263021016,
+      263021017,
+      263021018,
+      263021019,
+      263021020,
+      263021021,
+      263021022,
+      263021023,
+      263021024,
+      263021025,
+      263021026,
+      263021027,
+      263021028,
+      263021029,
+      263021030,
+      263021031,
+      263021032
+    ],
+    "validation": [
+      263022001,
+      263022002,
+      263022003,
+      263022004,
+      263022005,
+      263022006,
+      263022007,
+      263022008
+    ],
+    "test": [
+      263023001,
+      263023002,
+      263023003,
+      263023004,
+      263023005,
+      263023006,
+      263023007,
+      263023008,
+      263023009,
+      263023010,
+      263023011,
+      263023012,
+      263023013,
+      263023014,
+      263023015,
+      263023016,
+      263023017,
+      263023018,
+      263023019,
+      263023020,
+      263023021,
+      263023022,
+      263023023,
+      263023024,
+      263023025,
+      263023026,
+      263023027,
+      263023028,
+      263023029,
+      263023030,
+      263023031,
+      263023032
+    ]
+  },
+  "calibration_seed": 263020001,
+  "particle_namespaces": {
+    "training": 275000000,
+    "validation": 276000000,
+    "test": 276100000
+  },
+  "reset_design_seed": 262029901,
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "chunk": 64,
+  "optimizer_seeds": [
+    263025001,
+    263025002
+  ],
+  "stepsizes": [
+    0.05,
+    0.15
+  ],
+  "data_version": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "target": "terminal first/raw-second filtering moments",
+  "training_objective": "simulated moment loss only",
+  "beta": 0.5,
+  "uniform_stream": "stateless uniform [particle_seed,2], separate from normal streams 0,1",
+  "budget_seconds": 1000.0,
+  "source_run": "docs/plans/artifacts/ledh-flow-aware-proposal-repair-20261020/train-01",
+  "source_hashes_verified": true,
+  "diagnostic_datasets": [
+    263021001,
+    263021002,
+    263021003,
+    263021004,
+    263022001,
+    263022002,
+    263022003,
+    263022004
+  ],
+  "diagnostic_particle_namespace": 277000000,
+  "diagnostic_only": true,
+  "diagnostic_script_sha256": "1caab74906921b2a62919848d5df194af0e3a98bc94f28bb34281ffcfb9c72c4",
+  "postrun_reductions": "eager TensorFlow diagnostic exception; shared filter remains XLA",
+  "wall_seconds": 359.1999608440092,
+  "calls": 255,
+  "allocator": {
+    "current": 12418816,
+    "peak": 86975488
+  }
+}

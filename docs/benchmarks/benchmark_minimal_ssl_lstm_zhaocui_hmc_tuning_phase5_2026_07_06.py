@@ -746,11 +746,12 @@ def score_jacobian(
     position: tf.Tensor,
 ) -> tf.Tensor:
     theta = tf.reshape(tf.convert_to_tensor(position, dtype=tf.float64), [-1])
-    with tf.GradientTape() as tape:
+    with tf.GradientTape(persistent=True) as tape:
         tape.watch(theta)
         _value, score = adapter.log_prob_and_grad(theta)
         score = tf.reshape(tf.convert_to_tensor(score, dtype=tf.float64), [-1])
-    jacobian = tape.jacobian(score, theta)
+    jacobian = tape.jacobian(score, theta, experimental_use_pfor=False)
+    del tape
     if jacobian is None:
         raise ValueError("score Jacobian unavailable for MAP-candidate geometry")
     return -tf.convert_to_tensor(jacobian, dtype=tf.float64)

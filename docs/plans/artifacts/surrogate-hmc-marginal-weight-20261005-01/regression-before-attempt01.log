@@ -1,0 +1,45 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791161121.627284 1575194 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791161121.630272 1575194 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791161121.637034 1575194 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791161121.637099 1575194 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791161121.637106 1575194 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791161121.637108 1575194 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791161124.162206 1575194 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/symmetric_sylvester_tf.py", line 15, in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/load_library.py", line 54, in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.NotFoundError: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_weight_campaign.py", line 253, in <module>
+    if __name__=="__main__":main()
+                            ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_weight_campaign.py", line 250, in main
+    if args.worker:run_worker(args)
+                   ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_weight_campaign.py", line 54, in run_worker
+    started=time.monotonic();tf,m,environment=setup(args)
+                                              ^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_weight_campaign.py", line 46, in setup
+    module=importlib.util.module_from_spec(module_spec);module_spec.loader.exec_module(module)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 16, in <module>
+    from bayesfilter.highdim.ledh_canonical_batch_fused_tf import canonical_batch_fused_value_score
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/highdim/__init__.py", line 76, in <module>
+    from bayesfilter.highdim.filtering import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/highdim/filtering.py", line 45, in <module>
+    from bayesfilter.ops.slogdet_tf import slogdet_tf
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/__init__.py", line 5, in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/symmetric_sylvester_tf.py", line 17, in <module>
+    raise ImportError(
+ImportError: Could not load BayesFilter symmetric Sylvester op at /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-marginal-weight-20261005-01/source_before/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory

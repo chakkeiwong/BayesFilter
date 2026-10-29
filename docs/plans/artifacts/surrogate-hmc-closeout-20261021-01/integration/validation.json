@@ -1,0 +1,54 @@
+{
+  "purpose": "CPU-only repository integration checks; no scientific promotion or new GPU campaign",
+  "branch_closeout_commit": "091ee89bc",
+  "main_merge_commit": "a32f00ccb078a2c804b1f40e62dd8f59ad00cb06",
+  "remote_merge_parent": "3eb9462d3bd35dfbf87867455fb0b3a216a2b293",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "device": "CPU only; CUDA_VISIBLE_DEVICES=-1 before framework import",
+  "seeds": "Test fixtures specify their own deterministic seeds; no sampling campaign",
+  "data_version": "Committed test fixtures from the listed merge parents",
+  "plan_and_result": "docs/plans/surrogate-hmc-git-integration-2026-10-21.md",
+  "remote_merge_command": "timeout 900 env CUDA_VISIBLE_DEVICES=-1 PYTHONDONTWRITEBYTECODE=1 TF_NUM_INTEROP_THREADS=1 TF_NUM_INTRAOP_THREADS=1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q -p no:cacheprovider tests/test_modern_hmc_pipeline.py tests/test_hmc_tuning_contract.py tests/test_hmc_tuning_dispatch.py tests/test_hmc_tensorflow_verified.py tests/test_hmc_acceptance_accounting.py",
+  "remote_merge_tests": {
+    "passed": 82,
+    "warnings": 2,
+    "pytest_wall_seconds": 140.76,
+    "exit_code": 0
+  },
+  "remote_merge_syntax": {
+    "files": 84,
+    "errors": 0
+  },
+  "first_merge_checks": {
+    "distinct_tests_passed": 103,
+    "new_failure_regressions": 2,
+    "parsed_python_files": 399
+  },
+  "first_merge_hook": {
+    "passed": 3,
+    "pytest_wall_seconds": 140.15
+  },
+  "branch_hook": {
+    "passed": 3,
+    "pytest_wall_seconds": 141.76
+  },
+  "preserved_logs": [
+    "main-merge.log",
+    "marginal-retry.log",
+    "remote-merge-tests.log",
+    "remote-syntax.json",
+    "tuner-merge.log"
+  ],
+  "delivery": {
+    "merge_commit": "e0ded648228fef93ab27e492b3d5292449b3c94d",
+    "normal_push": "success",
+    "remote_directly_verified": true,
+    "branch_main_origin_refs_equal": true,
+    "both_worktrees_clean_at_check": true,
+    "subsequent_change": "Documentation and evidence commit records this observed outcome; synchronize it afterward."
+  },
+  "remote_merge_hook": {
+    "passed": 3,
+    "pytest_wall_seconds": 138.16
+  }
+}

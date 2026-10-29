@@ -1,0 +1,51 @@
+........................................................................ [ 41%]
+.........F.............................................................. [ 83%]
+............................                                             [100%]
+=================================== FAILURES ===================================
+_____ test_real_saved_selection_and_decisions_survive_only_reviewed_change _____
+
+    def test_real_saved_selection_and_decisions_survive_only_reviewed_change():
+        saved, expected = inputs()
+>       loaded = compat.load_compatible_selection(SELECTION, expected_scope=saved["scope"],
+                                                  expected_source_hashes=expected)
+
+tests/test_surrogate_hmc_selection_compatibility.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json')
+
+    def load_compatible_selection(path, *, expected_scope, expected_source_hashes):
+        """Keep strict validation, with one checked historical-source exception."""
+        path = Path(path)
+        value = json.loads(path.read_text())
+        saved = value.get("source_hashes", {})
+        if saved == expected_source_hashes:
+            return selection.load_selection(path, expected_scope=expected_scope,
+                                            expected_source_hashes=expected_source_hashes)
+        changed = [name for name in saved if saved[name] != expected_source_hashes.get(name)]
+        if set(saved) != set(expected_source_hashes) or changed != [VERIFIER]:
+            raise ValueError("unreviewed materiality source change")
+        if (saved[VERIFIER], expected_source_hashes[VERIFIER]) != REVIEWED_CHANGE:
+            raise ValueError("unreviewed verifier revision")
+        historical = path.parents[1] / "source" / VERIFIER
+        if file_hash(historical) != saved[VERIFIER]:
+            raise ValueError("historical verifier snapshot mismatch")
+        for name, digest in expected_source_hashes.items():
+            if file_hash(ROOT / name) != digest:
+>               raise ValueError("current materiality source mismatch: " + name)
+E               ValueError: current materiality source mismatch: bayesfilter/inference/hmc_tensorflow_tuning.py
+
+bayesfilter/inference/surrogate_hmc_selection_compatibility.py:68: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_selection_compatibility.py::test_real_saved_selection_and_decisions_survive_only_reviewed_change
+1 failed, 171 passed, 2 warnings in 117.29s (0:01:57)

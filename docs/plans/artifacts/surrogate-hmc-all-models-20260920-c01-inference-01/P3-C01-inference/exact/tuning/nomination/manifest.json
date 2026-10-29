@@ -1,0 +1,389 @@
+{
+  "adapter_signature": "C01-anisotropic-gaussian-d3-attempt1:exact:f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+  "admission_supported": false,
+  "arrays_materialized_on_host": false,
+  "artifact_authority": false,
+  "artifact_role": "diagnostic_candidate_screen",
+  "candidate_summary_fields": [
+    "evaluated",
+    "num_leapfrog_steps",
+    "step_size",
+    "overall_acceptance_mean",
+    "divergence_count",
+    "force_fallback_count",
+    "health_passed"
+  ],
+  "config": {
+    "acceptance_policy": {
+      "boundaries": "inclusive",
+      "chain_count": 4,
+      "chain_weighting": "equal_chain_means",
+      "nan_or_positive_infinity_log_acceptance": "invalid",
+      "negative_infinity_log_acceptance": "probability_zero",
+      "overall_band": [
+        0.0,
+        1.0
+      ],
+      "per_chain_band": [
+        0.0,
+        1.0
+      ],
+      "schema": "bayesfilter.four_chain_mean_band_acceptance.v1"
+    },
+    "admission_supported": false,
+    "artifact_authority": false,
+    "budget_provenance": "docs/plans/surrogate-hmc-gaussian-controls-2026-09-20.md; bounded C01 mechanism control",
+    "candidate_selection": "first_passing_predeclared_candidate",
+    "chain_count": 4,
+    "chain_execution_mode": "tf_function",
+    "covariance_jitter": 1e-09,
+    "dtype": "float64",
+    "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+    "eigenvalue_floor": 1e-09,
+    "evidence_role": "diagnostic_candidate_screen",
+    "fresh_rhat_verification": "not_implemented",
+    "geometry_provenance": "exact marginal scales; own windowed full covariance adaptation",
+    "handoff_eligibility": "not_supported",
+    "initial_chain_state_policy": "four_identical_zero_states_in_current_affine_coordinates",
+    "initial_step_size": 0.2,
+    "initial_step_size_provenance": "0.2 target-scale hypothesis; own dual averaging follows",
+    "mass_shrinkage": 0.1,
+    "mass_window_leapfrog_steps": 1,
+    "mass_window_results": [
+      64,
+      128
+    ],
+    "max_condition_number": 100000000.0,
+    "max_leapfrog_steps": 4,
+    "metric_rank_eligible": true,
+    "metric_state_count_by_window": [
+      256,
+      512
+    ],
+    "nonclaims": [
+      "the diagnostic screen cannot issue a tuning handoff",
+      "fresh tuning R-hat and retained ESS are not computed",
+      "the route is not XLA qualified",
+      "no retained posterior convergence claim"
+    ],
+    "numerical_backend": "tensorflow_only",
+    "parameter_dimension": 3,
+    "ranking_claim": false,
+    "rhat_role": "not_computed",
+    "schema": "bayesfilter.tensorflow_hmc_tuning.v1",
+    "seed": [
+      20260920,
+      7000
+    ],
+    "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+    "step_adaptation_results": 128,
+    "step_repair_factor": 2.0,
+    "target_accept_prob": 0.7,
+    "target_scope": "C01-anisotropic-gaussian-d3-attempt1:exact",
+    "target_status_trace_policy": "none",
+    "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+    "trajectory_candidates": [
+      1,
+      2,
+      4
+    ],
+    "use_xla": true,
+    "verification_repair_rounds": 0,
+    "verification_results": 128,
+    "xla_mode": "diagnostic_xla",
+    "xla_qualification": "not_implemented"
+  },
+  "endpoint_status_trace_complete": true,
+  "endpoint_status_trace_fields": [
+    "value_valid",
+    "force_valid",
+    "outside_declared_support",
+    "value_failure_code",
+    "force_failure_code",
+    "first_failure_time",
+    "first_failure_stage",
+    "first_failure_particle",
+    "numerical_failure",
+    "force_fallback",
+    "coordinate_boundary_rounding",
+    "phase",
+    "trajectory_length",
+    "round"
+  ],
+  "endpoint_status_trace_phases": {
+    "0": "mass_adaptation",
+    "1": "step_adaptation",
+    "2": "verification"
+  },
+  "fresh_rhat_verification": "not_implemented",
+  "handoff_eligibility": "not_supported",
+  "health_summary_fields": [
+    "chain_0_acceptance_mean",
+    "chain_1_acceptance_mean",
+    "chain_2_acceptance_mean",
+    "chain_3_acceptance_mean",
+    "overall_acceptance_mean",
+    "log_acceptance_defined",
+    "overall_band_pass",
+    "all_per_chain_bands_pass",
+    "divergence_pass",
+    "health_passed",
+    "metric_rank_eligible",
+    "metric_update_valid",
+    "candidate_role",
+    "candidate_selected",
+    "heuristic_screen_passed",
+    "handoff_eligible",
+    "passed"
+  ],
+  "numerical_backend": "tensorflow_only",
+  "reports_posterior_convergence": false,
+  "reports_sampler_superiority": false,
+  "rhat_role": "not_computed",
+  "runner_binding": {
+    "affine_log_jacobian_convention": "constant_omitted",
+    "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+    "artifact_authority": false,
+    "backend": "tensorflow_probability",
+    "binding_hash": "e712e7b2a67ea8867b934ec681f7a03eea96382e9322195af15a7157e1ef8ac0",
+    "coordinate_scope": "raw",
+    "dtype": "float64",
+    "endpoint_target_coordinate_system": "raw",
+    "endpoint_target_identity": "C01-anisotropic-gaussian-d3-attempt1:endpoint:f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "endpoint_target_includes_chart_log_jacobian": false,
+    "force_identity": "C01-anisotropic-gaussian-d3-attempt1:exact:f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "force_semantics": "deterministic_position_only_proposal_field",
+    "required_diagnostic_fields": [
+      "finite_sample_count",
+      "nonfinite_sample_count",
+      "log_accept_ratio_finite_count",
+      "log_accept_ratio_nonfinite_count",
+      "maximum_absolute_delta_h",
+      "target_log_prob_finite_count",
+      "target_log_prob_nonfinite_count",
+      "divergence_count",
+      "force_fallback_count"
+    ],
+    "required_metadata_fields": [
+      "force_identity",
+      "force_semantics",
+      "target_identity",
+      "target_coordinate_system",
+      "target_includes_chart_log_jacobian",
+      "affine_log_jacobian_convention",
+      "coordinate_route",
+      "target_scope",
+      "chain_execution_mode"
+    ],
+    "requires_native_affine_mass": true,
+    "runner_identity": "bayesfilter.inference.neural_force_hmc.run_full_chain_neural_force_hmc",
+    "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+    "source_dependency_closure": {
+      "files": [
+        {
+          "path": "bayesfilter/inference/neural_force_hmc.py",
+          "sha256": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+          "sha256": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+          "sha256": "8eaa6ab82acdb615d4459f438d345653a1387d4557c61ee6bdebe1818c0e56dd"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+          "sha256": "2958593e966823c245e116f57d53f9d455e0b9ea67a60d75cbbd3bf0da8dddf7"
+        },
+        {
+          "path": "bayesfilter/inference/hmc.py",
+          "sha256": "8750c0ee3f8bed10aec8fd85b508087093a16ac4830e753259b30d840a69727a"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_tuning.py",
+          "sha256": "fbf6411288a36fc79ccc840b3f315260827a847a492beab5e729789279ae54c5"
+        },
+        {
+          "path": "bayesfilter/inference/hmc_coordinates.py",
+          "sha256": "59965bf5e1b8f5d0e00ced7ad69ca00b8cbc3147216e17f4749e5c2c208dca3f"
+        },
+        {
+          "path": "bayesfilter/inference/tuning_contract.py",
+          "sha256": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+        },
+        {
+          "path": "bayesfilter/inference/posterior_adapter.py",
+          "sha256": "9bd0e5d834f7a51ac9778dbbdb9c63c1b1ea435dff65bbf409a636220e28bd7e"
+        },
+        {
+          "path": "bayesfilter/inference/__init__.py",
+          "sha256": "ca0cbee95446550988a044173e76edbd4faf4ad56467f3236a0574118a918f20"
+        },
+        {
+          "path": "bayesfilter/__init__.py",
+          "sha256": "b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85"
+        }
+      ],
+      "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+    },
+    "supported_chain_execution_modes": [
+      "tf_function",
+      "eager"
+    ],
+    "supported_target_status_trace_policies": [
+      "none"
+    ],
+    "supports_arbitrary_fixed_leapfrog_count": true,
+    "supports_arbitrary_fixed_step_size": true,
+    "target_scope": "C01-anisotropic-gaussian-d3-attempt1:exact",
+    "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+    "tensor_kernel_factory_available": true,
+    "xla_capable": true
+  },
+  "schema": "bayesfilter.tensorflow_hmc_tuning.v1",
+  "tensors": {
+    "adaptation_divergence_count": {
+      "path": "adaptation_divergence_count.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "adaptation_force_fallback_count": {
+      "path": "adaptation_force_fallback_count.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "candidate_selected": {
+      "path": "candidate_selected.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6"
+    },
+    "candidate_summary": {
+      "path": "candidate_summary.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "324fc141265d1ffd2a9c43229b1a1147e4ae88a4887f8a57f103aa1edc29bc3c"
+    },
+    "center": {
+      "path": "center.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "fce1c4078d780ac2f3b7669160c475197058162dd89ede9978e8cefc509d1d9f"
+    },
+    "covariance": {
+      "path": "covariance.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "2ff06a7673d154a1086f9ecff69549c96cd7b8675d02a470f27d4b40c5cf4475"
+    },
+    "endpoint_status_trace": {
+      "path": "endpoint_status_trace.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "010d45d8be6a6496973b29bc25ee2d54ea785eb8d822361609cd0359fecdea66"
+    },
+    "factor": {
+      "path": "factor.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "f28374f1ddca1af4a931849dcab69987ea52e2053c9ed0be614f10f6e2e7b390"
+    },
+    "final_chain_state": {
+      "path": "final_chain_state.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "bfc6da559247c14753a15b7253fed29721cd5149e28619bce95e1dcad605d784"
+    },
+    "final_raw_state": {
+      "path": "final_raw_state.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "b597897dd1399e60b24480e0e54e14568c8bafb70a6937e26cc81a0daac5bbad"
+    },
+    "handoff_eligible": {
+      "path": "handoff_eligible.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "c7aea670897cc76784381135e621521fc06c3bfee105c1189f92e939dedf3745"
+    },
+    "health_passed": {
+      "path": "health_passed.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6"
+    },
+    "health_summary": {
+      "path": "health_summary.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "f44c614f6b298ac802e7cefb1d7af9909bce70d59f1b2c7635f25b7b4d0bce5b"
+    },
+    "heuristic_screen_passed": {
+      "path": "heuristic_screen_passed.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6"
+    },
+    "initial_position": {
+      "path": "initial_position.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "36a46833ac4a636ca4cb65ecf7f262dfa8e22504610b874a2fba350ab42bd641"
+    },
+    "metric_eigenvalues": {
+      "path": "metric_eigenvalues.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "e436105fe60fec95b5bb53b65c443197b31e0c2f4e8a0e58274114026256ac3e"
+    },
+    "metric_rank_eligible": {
+      "path": "metric_rank_eligible.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6"
+    },
+    "metric_update_count": {
+      "path": "metric_update_count.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "e81abaef7822f651dceacbb3d4d55ba8f2aa4089b7abdc5f8cacb10b1a993141"
+    },
+    "metric_update_valid": {
+      "path": "metric_update_valid.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6"
+    },
+    "num_leapfrog_steps": {
+      "path": "num_leapfrog_steps.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "ba70056c49cbab66a73a3d536c3d41950a73a013e1e98975bf199d3fd6f9356d"
+    },
+    "parameter_scales": {
+      "path": "parameter_scales.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "2f9e27dfa44ee873088023723ba328a840670ad76bc3ca4040b5c0b1cd3ee28d"
+    },
+    "passed": {
+      "path": "passed.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "c7aea670897cc76784381135e621521fc06c3bfee105c1189f92e939dedf3745"
+    },
+    "reported_candidate_index": {
+      "path": "reported_candidate_index.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "selected_candidate_index": {
+      "path": "selected_candidate_index.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "step_size": {
+      "path": "step_size.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "0a57a40eee880bd84265647a3fb88582e8e6ccb23c05036a668ad992193d8b86"
+    },
+    "verification_divergence_count": {
+      "path": "verification_divergence_count.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "verification_force_fallback_count": {
+      "path": "verification_force_fallback_count.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "67e5ee3b3a3ee5563bd2ac7dc15e76bfc38e53dd1e3326d4126e5ff7976d7a80"
+    },
+    "verification_log_accept_ratio": {
+      "path": "verification_log_accept_ratio.tfbin",
+      "serialization": "tf.io.serialize_tensor",
+      "sha256": "85f607216864e3caf3aebb7d40b2db0258aeeb89c18b0e09ef490e51b170fdf1"
+    }
+  },
+  "xla_mode": "diagnostic_xla",
+  "xla_qualification": "not_implemented"
+}

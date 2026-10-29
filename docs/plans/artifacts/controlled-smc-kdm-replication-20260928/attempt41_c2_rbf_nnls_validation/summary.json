@@ -1,0 +1,172 @@
+{
+  "status": "FAIL",
+  "scope": "RBF_FROZEN_NNLS_VALIDATION",
+  "replication": "INCOMPLETE",
+  "checks": [
+    {
+      "name": "nnls_controls_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "nnls_controls_solution",
+      "passed": true,
+      "max_absolute_error": 4.440892098500626e-16,
+      "atol": 1e-12,
+      "rtol": 1e-12,
+      "failures": 0
+    },
+    {
+      "name": "passive_removal_exercised",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "nnls_no_worse_than_zero",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "capacity_exhaustion_rejected",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "primitive_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "frozen_failure_nnls_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    },
+    {
+      "name": "frozen_failure_prediction",
+      "passed": false,
+      "max_absolute_error": 4.953122991202541e-07,
+      "atol": 1e-07,
+      "rtol": 1e-06,
+      "failures": 34
+    },
+    {
+      "name": "frozen_failure_objective",
+      "passed": true,
+      "max_absolute_error": 7.6673141278941e-11,
+      "atol": 1e-08,
+      "rtol": 1e-06,
+      "failures": 0
+    },
+    {
+      "name": "frozen_failure_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0,
+      "failures": 0
+    }
+  ],
+  "frozen_nnls": {
+    "valid": [
+      true
+    ],
+    "rss": [
+      0.00024330057109551566
+    ],
+    "gradient_tolerance": [
+      4.885161666507213e-11
+    ],
+    "dual_error": [
+      4.2407870205567084e-11
+    ],
+    "complementarity": [
+      1.6589585111222853e-15
+    ],
+    "iterations": 407,
+    "peak_active": [
+      65
+    ],
+    "removed": [
+      171
+    ],
+    "minimum_qr_margin": [
+      1.1499573344764226e-06
+    ]
+  },
+  "first_call_seconds": 16.92887311708182,
+  "seeds": [
+    20261006,
+    20261007
+  ],
+  "fresh_seed": 20261008,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "/device:GPU:0",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "numpy_runtime": false,
+  "pfor": false,
+  "python_time_loop": false,
+  "allocator": {
+    "current": 2125312,
+    "peak": 10513408
+  },
+  "wall_seconds": 19.244937077979557,
+  "nonclaims": [
+    "No Table2 repetitions",
+    "Only first refinement and R=1",
+    "No ranking, general NNLS admission, HMC or default readiness"
+  ]
+}

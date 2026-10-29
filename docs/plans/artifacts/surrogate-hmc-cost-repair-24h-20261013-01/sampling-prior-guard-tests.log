@@ -1,0 +1,54 @@
+.............F                                                           [100%]
+=================================== FAILURES ===================================
+_________ test_campaign_reserves_model_budgets_and_reports_incomplete __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7f2d482abf10>
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-1/test_campaign_reserves_model_b0')
+
+    def test_campaign_reserves_model_budgets_and_reports_incomplete(monkeypatch, tmp_path):
+        from scripts import run_surrogate_hmc_five_model_master as master
+        previous = {"models": {
+            m: {phase: {"status": next(iter(master.PASS_STATUS[phase])), "result": "prepared"}
+                for phase in ("endpoint-audit", "filter-tuning")}
+            for m in master.MODELS}}
+        monkeypatch.setattr(master, "prepared_selections",
+                            lambda root: (previous, {m: tmp_path/"selection.json" for m in master.MODELS}))
+        monkeypatch.setattr(master, "static_audit", lambda: {"status": "test_only"})
+        def worker(command, **kwargs):
+            phase = command[command.index("--phase")+1]
+            output = run.Path(command[command.index("--output")+1])
+            result = (dict(status="PASS_HMC_MECHANICS_ONLY", seconds_per_four_chain_transition=.01)
+                      if phase == "mechanics" else dict(status="HMC_TUNING_REPAIR_REQUIRED"))
+            master.write(output/master.RESULT_NAMES[phase], result)
+            return SimpleNamespace(returncode=0)
+        monkeypatch.setattr(master.subprocess, "run", worker)
+        args = SimpleNamespace(through="inference", priors="benchmark-normal-v1", budget_seconds=1000.,
+                               prepared_root=tmp_path/"prepared", output=tmp_path/"run", gpu="1")
+>       assert master.campaign(args) == 2
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_five_model_master.py:252: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = namespace(through='inference', priors='benchmark-normal-v1', budget_seconds=1000.0, prepared_root=PosixPath('/tmp/pyte...model_b0/prepared'), output=PosixPath('/tmp/pytest-of-chakwong/pytest-1/test_campaign_reserves_model_b0/run'), gpu='1')
+
+    def campaign(args):
+        if args.through == "inference":
+>           raise ValueError("Scientific posterior sampling awaits the owner's model-specific priors; "
+                             "benchmark-normal-v1 is mechanics-only")
+E           ValueError: Scientific posterior sampling awaits the owner's model-specific priors; benchmark-normal-v1 is mechanics-only
+
+scripts/run_surrogate_hmc_five_model_master.py:460: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_five_model_master.py::test_campaign_reserves_model_budgets_and_reports_incomplete
+1 failed, 13 passed, 2 warnings in 19.21s

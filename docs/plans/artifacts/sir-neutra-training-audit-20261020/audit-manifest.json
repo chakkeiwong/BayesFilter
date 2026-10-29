@@ -1,0 +1,76 @@
+{
+  "role": "Engineering and source audit; no SIR training or posterior experiment",
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "working_tree": "Existing dirty worktree preserved; exact inspected source hashes below.",
+  "source_sha256": {
+    "bayesfilter/inference/neutra_transport.py": "1cc039416abe34481f672a682ba49e402a64c48df51ece848dbdaed40d618e2b",
+    "bayesfilter/inference/neutra_transport_core.py": "9c11bedf3301d69df121cbfe677b9c7bef82111e9ab25fc0717fd5629d9294fc",
+    "bayesfilter/inference/neutra_post_training.py": "c605448c6c7d3617eb4c5e3c5f2402531d879cfd30fc4093e0452d955d08acea",
+    "bayesfilter/inference/neutra_shared_procedure.py": "d98df5f641d89bc7b7f8a16b21a63e35923683d76a9716f10e57df8aa4c43c9c",
+    "bayesfilter/inference/neutra_end_to_end.py": "55ba1f9dd7026e1749566f0864050135f0fbff857da222fd1f1f77bd4cc71dbf",
+    "bayesfilter/inference/neutra_artifacts.py": "26fa510a818f8975956d6255c2f690d250fc5c7fb7327fc7c59d9e24bcb0f538",
+    "bayesfilter/inference/batched_value_score.py": "7037ec2272e4bfb45b2ed20ff87374aa5a02266fb3289121e6b0cc3f4b19296c",
+    "bayesfilter/inference/neural_force_hmc.py": "255f83971d037254fe71f311e2ddb9e9fc3c29ff9f0d81e91a04c0f3fad6e087",
+    "bayesfilter/inference/neural_force_campaign.py": "6ddd4bf7ff72171ca05731a7cce4f5d304869b08dd0e5e29134fe01de80a26c8",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "6b59d2f6f087a3b168b77dbb942997917c3bf8d0cf4bb99ba4d3b085192cfa2e",
+    "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+    "scripts/run_surrogate_hmc_five_model_master.py": "ccbb11e2abaa68fabff8c1ff320d2afb158d14393fe9c9c6394edff1359a9881",
+    "tests/test_neutra_single_authority.py": "a1999e59f15e4fb80c7d4089d1be77ab9782685d2f065ae2fe22ff0e70d65e54",
+    "tests/test_neutra_batching.py": "e779b874715c9675a1f4b013ed6fea95d1efefb5e4b51299f10a39dc0fe47667",
+    "tests/test_neutra_precision.py": "e6fc332753e33686f63cb2b36964a4d699c46f7e6b96fc335d0d0c5bb2ba1918",
+    "tests/test_neutra_fixed_transport_hmc_mechanics_xla_tf.py": "898a6198f7c0a77295e1b084e99d592d2704b824977c70ac61e226931700a5e8",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6"
+  },
+  "plan_file": "docs/plans/surrogate-hmc-sir-neutra-training-audit-plan-2026-10-20.md",
+  "result_file": "docs/plans/surrogate-hmc-sir-neutra-training-audit-plan-2026-10-20.md",
+  "environment": {
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "tensorflow_probability": "0.25.0",
+    "cpu_only": true,
+    "gpu_intentionally_hidden": true,
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "gpu_hours": 0,
+    "diagnostic_gradient_jit_compile": true
+  },
+  "data_version": "N/A: synthetic analytic fixture and generic tests, no SIR dataset evaluated.",
+  "diagnostic_seed": [
+    20261020,
+    31
+  ],
+  "commands": [
+    "CUDA_VISIBLE_DEVICES=-1 TF_NUM_INTEROP_THREADS=1 TF_NUM_INTRAOP_THREADS=1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q -p no:cacheprovider tests/test_neutra_single_authority.py tests/test_neutra_batching.py tests/test_neutra_precision.py tests/test_neutra_fixed_transport_hmc_mechanics_xla_tf.py",
+    "PYTHONPATH=. /home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/sir-neutra-training-audit-20261020/diagnostic.py"
+  ],
+  "results": {
+    "pytest_passed": 57,
+    "pytest_skipped": 1,
+    "pytest_seconds": 81.95,
+    "diagnostic_seconds_after_framework_import": 0.857981852022931,
+    "diagnostic_total_process_seconds": null,
+    "timing_note": "Total diagnostic startup time was not separately measured."
+  },
+  "artifacts": {
+    "docs/plans/surrogate-hmc-sir-neutra-training-audit-plan-2026-10-20.md": {
+      "sha256": "561240d9f2d03592bea02ec1e1f67b9cad1b44cf899f943f36166004da0dd485"
+    },
+    "docs/plans/surrogate-hmc-sir-neutra-training-audit-tests-2026-10-20.log": {
+      "sha256": "5217d8049eeda5a57e405219ca89f228f89715813598a64aa63d20e29bd86fec"
+    },
+    "docs/papers/neutra-author-source-20261020/source-manifest.json": {
+      "sha256": "22312e7323456151044e85300eb2fed0d340aa4072af1a5ed8fcca4d0cfbc551"
+    },
+    "docs/plans/artifacts/sir-neutra-training-audit-20261020/diagnostic.py": {
+      "sha256": "ae54341b548efbd47fc94a36bbb77965da3ac21d518ce972352741a8eb042d96"
+    },
+    "docs/plans/artifacts/sir-neutra-training-audit-20261020/diagnostic.json": {
+      "sha256": "f7c8924267fa31d4ea5f35f6cc7aa3c2438e482ea6af439026be2d355aab80d5"
+    },
+    "docs/plans/artifacts/sir-neutra-training-audit-20261020/diagnostic.log": {
+      "sha256": "d8e5111264395e0c8783de17380b673b1383f99ac2337d169ac91c22de66414b"
+    }
+  }
+}

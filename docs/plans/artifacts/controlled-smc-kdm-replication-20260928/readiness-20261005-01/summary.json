@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "scientific_role": "CPU_INPUT_BINDING_SMOKE_ONLY",
+  "replication": "INCOMPLETE",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "cuda_visible_devices": "-1",
+  "plan": "docs/plans/controlled-smc-kdm-continuation-readiness-20261005.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/readiness-20261005-01/input_binding_smoke.py"
+  ],
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "started_utc": "2026-10-05T09:35:39.668183+00:00",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "seed": "N/A: deterministic preserved source inputs",
+  "kernel_jit_configured": true,
+  "kernel_executed": false,
+  "gpu_seconds": 0,
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/readiness-20261005-01",
+  "script_sha256": "c82a765489c229d7a89ae7cb3c7e1bdb2fd7830c64a2e41a71cffd67dad0b19a",
+  "nonclaims": [
+    "fitting parity",
+    "failed numerical trajectory parity",
+    "GPU/XLA numerical evidence",
+    "full P0/P1 acceptance"
+  ],
+  "input_path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt146_c1_source_failure_replay/observed/source-failure-matrices.mat",
+  "input_sha256": "6a78cef4903db499c66ffcfbd5f36369988b9f69036235d9e2cc04e2bd838580",
+  "source_manifest_sha256": "5a1a6f533a40a9cd6f9343b4bad7eee8e64542d9d79d6a398efac33e5a82414b",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "policy": {
+    "A": {
+      "shape": [
+        101,
+        8,
+        8
+      ],
+      "dtype": "complex128",
+      "finite": true,
+      "nonreal_count": 1216,
+      "max_abs_imag": 2.60646204154814e-05
+    },
+    "b": {
+      "shape": [
+        101,
+        8
+      ],
+      "dtype": "complex128",
+      "finite": true,
+      "nonreal_count": 152,
+      "max_abs_imag": 0.001000969464806227
+    },
+    "c": {
+      "shape": [
+        101,
+        1
+      ],
+      "dtype": "complex128",
+      "finite": true,
+      "nonreal_count": 19,
+      "max_abs_imag": 1.5626824795441672
+    }
+  },
+  "implementation_sha256": {
+    "bayesfilter/replication/multivariate_controlled_smc_tf.py": "7147061f4d1c3028c529ae620b9fc117799313fe37c8e57f0c42d5f72f357a12",
+    "bayesfilter/replication/controlled_smc_tf.py": "c5485c7d4e7e0c0088eb60adad6dc1ef044054ca40a35897337c0e6c45e9df1b"
+  },
+  "policy_tensors_preserved": true,
+  "endpoint": "MultivariateGaussianControlledSMC.forward",
+  "input_signature": [
+    "TensorSpec(shape=(101, 1, 8, 8), dtype=tf.float64, name=None)",
+    "TensorSpec(shape=(101, 1, 8), dtype=tf.float64, name=None)",
+    "TensorSpec(shape=(101, 1), dtype=tf.float64, name=None)",
+    "TensorSpec(shape=(101, 1, 6), dtype=tf.float64, name=None)",
+    "TensorSpec(shape=(101, 1, 512, 8), dtype=tf.float64, name=None)",
+    "TensorSpec(shape=(101, 1), dtype=tf.float64, name=None)"
+  ],
+  "traces_before": 0,
+  "exception_type": "TypeError",
+  "exception_identifies_dtype_mismatch": true,
+  "traces_after": 0,
+  "verdict": "EXACT_COMPLEX_POLICY_REJECTED_AT_REAL_ENDPOINT_BINDING",
+  "ended_utc": "2026-10-05T09:35:42.270072+00:00",
+  "wall_seconds": 2.603926088078879
+}

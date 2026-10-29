@@ -1,0 +1,998 @@
+{
+  "all_models_validated": false,
+  "allocator": {
+    "current": 60672,
+    "peak": 167834112
+  },
+  "control_status": "diagnostic_warm_start_not_scope_tuned",
+  "device": "gpu",
+  "engineering_derivative_parity": true,
+  "gpu_intentionally_hidden": false,
+  "inference_launched": false,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "next_action": "continue existing-master M13 scoped control and posterior prerequisites",
+  "nonclaims": [
+    "no posterior reference",
+    "no admitted HMC force or tuning artifact",
+    "no speed ranking",
+    "fixed-point likelihood errors are explanatory only"
+  ],
+  "plan": "docs/plans/surrogate-hmc-m13-consumer-2026-09-23.md",
+  "posterior_qualified": false,
+  "prior": null,
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "qualified": false,
+  "quantity": "finite_canonical_log_likelihood_only",
+  "reference_path": "docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-reference-03/m13-reference-trajectory/report.json",
+  "reference_sha256": "e39f7d6b15510d1ce38457ec0b18347c99fe283ebde53ea75f3330161eaf7116",
+  "scope_controls_qualified": false,
+  "stage": "m13-consumer",
+  "status": "M13_FULL_HORIZON_WARM_START_REQUIRES_REPAIR",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tests": {
+    "full_horizon": {
+      "compilation_and_first_call_seconds": 15.90459989900046,
+      "deterministic_on_valid_rows": true,
+      "identity": "92c446ae32505dad84302248a257f7b2cc492ed7463b1096bbf87dba515282b9",
+      "kernel_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "manifest": {
+        "alias_limit_role": "numerical_validity_not_parameter_support",
+        "alias_policy": {
+          "aliases_each_side": 4,
+          "maximum_conditional_sigma": 3.141592653589793,
+          "omitted_mass_upper_bound": 2.2571768119076845e-19,
+          "tail_mass_tolerance": 1e-14
+        },
+        "chunk_policy": {
+          "col_blocks": 1,
+          "col_chunk_size": 64,
+          "num_particles": 64,
+          "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+          "row_blocks": 1,
+          "row_chunk_size": 64
+        },
+        "control_status": "diagnostic_warm_start_not_scope_tuned",
+        "design_partition": 0,
+        "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+        "dtype": "float32",
+        "fixture": {
+          "A": [
+            [
+              1.0,
+              0.0,
+              0.1,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.1
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "P0": [
+            [
+              0.04,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.04,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.01,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ]
+          ],
+          "Q": [
+            [
+              0.0015,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0015,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0008,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0008
+            ]
+          ],
+          "R": [
+            [
+              0.0144,
+              0.0
+            ],
+            [
+              0.0,
+              0.0016
+            ]
+          ],
+          "backend": "tensorflow_tensorflow_probability",
+          "fixture_generation_seed": 701,
+          "horizon": 20,
+          "initial_distribution": "x_0 ~ Normal(m0, P0)",
+          "m0": [
+            1.2,
+            0.7,
+            0.18,
+            -0.06
+          ],
+          "model_checksum": "6c605b90aeab2ff4798857eae01e01113b21dfa0f769b6579ce4b0b691752c92",
+          "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+          "observation_checksum": "a9bc898606ac51f19663876763e8f980fde15cc24ed8d7caebae96b66bab6b67",
+          "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+          "reference_status": "UKF is approximate for this nonlinear fixture.",
+          "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+        },
+        "horizon": 20,
+        "innovation_dimension": 4,
+        "input_sha256": {
+          "initial_covariances": "3d9389f980aab47565e804e0ec22e1062851400b7bf32044cf04abbf28a4f713",
+          "initial_states": "91d04da287c4b58644054f32ca9925d9bd57b614c45336c13ea5e7abec09cb1d",
+          "noises": "33abbf3ed8833704b716f647dac24e9cf58e714bde29c8d04d98a8fb526b4608",
+          "observations": "12b9c7bec58c125cbf8079a9280e439c6e1b0fbd2213c19e42a10d1ae0bfa8d1",
+          "reset_design": "8c41f4cad3edf63d209fe2049d7f883842ceb3ac99a6a4efca09599bd82f4a6c"
+        },
+        "jit_compile": true,
+        "model_id": "M13",
+        "observation_dimension": 2,
+        "observation_law": "wrapped_correlated_gaussian",
+        "parameter_dimension": 2,
+        "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+        "particle_count": 64,
+        "prior": null,
+        "quantity": "finite_canonical_log_likelihood_only",
+        "reset_contract_id": "contract_e_chol_v1",
+        "route": "canonical_batch_fused_value_score",
+        "score_engine": "analytical_recursive_all_parameter_dependencies",
+        "seeds": {
+          "20": [
+            -1674088828,
+            20
+          ],
+          "22": [
+            -1674088828,
+            22
+          ]
+        },
+        "settings": {
+          "coordinate_cap": 16.0,
+          "coordinate_cap_power": 8,
+          "correction_lm_damping": 0.001,
+          "correction_lm_scale_floor": 1e-06,
+          "correction_steps": 2,
+          "correction_strength": 0.2,
+          "correction_trust_radius": 0.1,
+          "pairwise_rms_cap": 2.0,
+          "pairwise_steps": 2,
+          "pairwise_strength": 0.02,
+          "reset_balance_steps": 8,
+          "reset_epsilon": 2.0,
+          "reset_policy": "contract_e",
+          "reset_ridge": 1e-05,
+          "reset_sinkhorn_steps": 8,
+          "substeps": 10
+        },
+        "source_sha256": {
+          "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+          "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+          "bayesfilter/highdim/higher_moment_contract_e.py": "188c1f63f8a517f2b3babbbe8ab384b05f2720c5b94603e45907fb6f9e78dcab",
+          "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "330fca673b12727e6c9936f5b0720a907a7f7601c626b5e4e618adf7453a6232",
+          "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+          "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+          "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+          "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+          "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+          "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+          "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+          "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+          "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+          "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "b58901a78b63c398d7409ac4d1f18bfab5dedfe1885ec8d2df6838ca04caccd8",
+          "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+          "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+          "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+          "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+          "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+          "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+          "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+        },
+        "state_dimension": 4,
+        "tf32": true,
+        "transition_before_observation": true
+      },
+      "rows": [
+        {
+          "error_centered_at_nominal": null,
+          "error_role": "explanatory_only",
+          "index": 0,
+          "log_likelihood": null,
+          "log_likelihood_error": null,
+          "posterior_assessment": null,
+          "program_valid": false,
+          "reference_log_interval": [
+            -20.49283726898819,
+            -20.48509150495343
+          ],
+          "reference_log_mean": -20.488956887382,
+          "score": [
+            0.0,
+            0.0
+          ],
+          "theta": [
+            -0.6931471805599453,
+            -0.6931471805599453
+          ]
+        },
+        {
+          "error_centered_at_nominal": null,
+          "error_role": "explanatory_only",
+          "index": 1,
+          "log_likelihood": null,
+          "log_likelihood_error": null,
+          "posterior_assessment": null,
+          "program_valid": false,
+          "reference_log_interval": [
+            27.947490724292297,
+            27.955375468336516
+          ],
+          "reference_log_mean": 27.95144086744286,
+          "score": [
+            0.0,
+            0.0
+          ],
+          "theta": [
+            -0.6931471805599453,
+            0.0
+          ]
+        },
+        {
+          "error_centered_at_nominal": -12.78837855424895,
+          "error_role": "explanatory_only",
+          "index": 2,
+          "log_likelihood": 6.426332950592041,
+          "log_likelihood_error": -20.499172804117286,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            26.919967013279123,
+            26.931013987385434
+          ],
+          "reference_log_mean": 26.925505754709327,
+          "score": [
+            57.572261810302734,
+            23.13482093811035
+          ],
+          "theta": [
+            -0.6931471805599453,
+            0.6931471805599453
+          ]
+        },
+        {
+          "error_centered_at_nominal": -22.434846904766697,
+          "error_role": "explanatory_only",
+          "index": 3,
+          "log_likelihood": -28.60407066345215,
+          "log_likelihood_error": -30.145641154635033,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            1.5376078155998787,
+            1.5455175259272993
+          ],
+          "reference_log_mean": 1.5415704911828856,
+          "score": [
+            131.666748046875,
+            135.10549926757812
+          ],
+          "theta": [
+            0.0,
+            -0.6931471805599453
+          ]
+        },
+        {
+          "error_centered_at_nominal": 0.0,
+          "error_role": "explanatory_only",
+          "index": 4,
+          "log_likelihood": 22.81633758544922,
+          "log_likelihood_error": -7.710794249868336,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            30.52232348354725,
+            30.531917177435492
+          ],
+          "reference_log_mean": 30.527131835317554,
+          "score": [
+            35.8298454284668,
+            27.134199142456055
+          ],
+          "theta": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "error_centered_at_nominal": 6.127225826206136,
+          "error_role": "explanatory_only",
+          "index": 5,
+          "log_likelihood": 24.759658813476562,
+          "log_likelihood_error": -1.5835684236622,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            26.339223299583253,
+            26.34721520709037
+          ],
+          "reference_log_mean": 26.343227237138763,
+          "score": [
+            7.09014368057251,
+            -13.759530067443848
+          ],
+          "theta": [
+            0.0,
+            0.6931471805599453
+          ]
+        },
+        {
+          "error_centered_at_nominal": 5.111977412622103,
+          "error_role": "explanatory_only",
+          "index": 6,
+          "log_likelihood": 16.628009796142578,
+          "log_likelihood_error": -2.5988168372462326,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            19.222531155245136,
+            19.231103739289445
+          ],
+          "reference_log_mean": 19.22682663338881,
+          "score": [
+            26.590452194213867,
+            35.26837921142578
+          ],
+          "theta": [
+            0.6931471805599453,
+            -0.6931471805599453
+          ]
+        },
+        {
+          "error_centered_at_nominal": 7.792733808452844,
+          "error_role": "explanatory_only",
+          "index": 7,
+          "log_likelihood": 30.66419219970703,
+          "log_likelihood_error": 0.08193955858450863,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            30.57773351367466,
+            30.58675143789994
+          ],
+          "reference_log_mean": 30.582252641122523,
+          "score": [
+            -2.404773712158203,
+            3.7167811393737793
+          ],
+          "theta": [
+            0.6931471805599453,
+            0.0
+          ]
+        },
+        {
+          "error_centered_at_nominal": 8.182979553432947,
+          "error_role": "explanatory_only",
+          "index": 8,
+          "log_likelihood": 24.617897033691406,
+          "log_likelihood_error": 0.4721853035646113,
+          "posterior_assessment": null,
+          "program_valid": true,
+          "reference_log_interval": [
+            24.141644360746735,
+            24.14976262300657
+          ],
+          "reference_log_mean": 24.145711730126795,
+          "score": [
+            -5.2463579177856445,
+            -19.30824851989746
+          ],
+          "theta": [
+            0.6931471805599453,
+            0.6931471805599453
+          ]
+        }
+      ],
+      "status": {
+        "direction_force_failure_code": [
+          [
+            4,
+            4
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "direction_force_valid": [
+          [
+            false,
+            false
+          ],
+          [
+            false,
+            false
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "direction_value_valid": [
+          [
+            false,
+            false
+          ],
+          [
+            false,
+            false
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "first_failure_particle": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_stage": [
+          6,
+          6,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_time": [
+          0,
+          0,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_failure_code": [
+          4,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_valid": [
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "outside_declared_support": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "program_valid": [
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_failure_code": [
+          4,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "value_valid": [
+          false,
+          false,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "steady_call_seconds": 2.178476638000575
+    },
+    "small_total_derivative": {
+      "compilation_and_first_call_seconds": 9.483581573997071,
+      "derivative_pass": true,
+      "deterministic": true,
+      "finite_difference": [
+        [
+          13.070583106467025,
+          2.389866838248267
+        ],
+        [
+          9.305488111155391,
+          0.9801652980145902
+        ]
+      ],
+      "finite_difference_step": 1e-05,
+      "finite_difference_valid": true,
+      "identity": "6bbc1cb67550d82f66ce748dd835d78b173cdf8763c8330a9e787bce151b4693",
+      "kernel_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "manifest": {
+        "alias_limit_role": "numerical_validity_not_parameter_support",
+        "alias_policy": {
+          "aliases_each_side": 4,
+          "maximum_conditional_sigma": 3.141592653589793,
+          "omitted_mass_upper_bound": 2.2571768119076845e-19,
+          "tail_mass_tolerance": 1e-14
+        },
+        "chunk_policy": {
+          "col_blocks": 1,
+          "col_chunk_size": 16,
+          "num_particles": 16,
+          "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+          "row_blocks": 1,
+          "row_chunk_size": 16
+        },
+        "control_status": "diagnostic_warm_start_not_scope_tuned",
+        "design_partition": 0,
+        "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+        "dtype": "float64",
+        "fixture": {
+          "A": [
+            [
+              1.0,
+              0.0,
+              0.1,
+              0.0
+            ],
+            [
+              0.0,
+              1.0,
+              0.0,
+              0.1
+            ],
+            [
+              0.0,
+              0.0,
+              1.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "P0": [
+            [
+              0.04,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.04,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.01,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ]
+          ],
+          "Q": [
+            [
+              0.0015,
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0015,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0008,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              0.0008
+            ]
+          ],
+          "R": [
+            [
+              0.0144,
+              0.0
+            ],
+            [
+              0.0,
+              0.0016
+            ]
+          ],
+          "backend": "tensorflow_tensorflow_probability",
+          "fixture_generation_seed": 701,
+          "horizon": 2,
+          "initial_distribution": "x_0 ~ Normal(m0, P0)",
+          "m0": [
+            1.2,
+            0.7,
+            0.18,
+            -0.06
+          ],
+          "model_checksum": "6c605b90aeab2ff4798857eae01e01113b21dfa0f769b6579ce4b0b691752c92",
+          "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+          "observation_checksum": "a9bc898606ac51f19663876763e8f980fde15cc24ed8d7caebae96b66bab6b67",
+          "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+          "reference_status": "UKF is approximate for this nonlinear fixture.",
+          "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+        },
+        "horizon": 2,
+        "innovation_dimension": 4,
+        "input_sha256": {
+          "initial_covariances": "9599df80dbd1b8e27a96a99e576df9377b675a5fe083f489959d9163ccfaf5f4",
+          "initial_states": "6b027490085da0d7bbdedebcb6d61278f0b9b2cf9b0b90c104fec5ac85d2fdbb",
+          "noises": "7ca8a5681fdd2db74fc5f916fe94143c58217b483248c261432b9ac3579427ae",
+          "observations": "7bde059cefc5bf1e6735efb5c16ff25dbd3484633dc161ff940418545e29499c",
+          "reset_design": "ab95d6fd651c09aaa8a9075e1c46328209db35bdc07a955841715c6c77a7693a"
+        },
+        "jit_compile": true,
+        "model_id": "M13",
+        "observation_dimension": 2,
+        "observation_law": "wrapped_correlated_gaussian",
+        "parameter_dimension": 2,
+        "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+        "particle_count": 16,
+        "prior": null,
+        "quantity": "finite_canonical_log_likelihood_only",
+        "reset_contract_id": "contract_e_chol_v1",
+        "route": "canonical_batch_fused_value_score",
+        "score_engine": "analytical_recursive_all_parameter_dependencies",
+        "seeds": {
+          "20": [
+            -1050082376,
+            20
+          ],
+          "22": [
+            -1050082376,
+            22
+          ]
+        },
+        "settings": {
+          "coordinate_cap": 16.0,
+          "coordinate_cap_power": 8,
+          "correction_lm_damping": 0.001,
+          "correction_lm_scale_floor": 1e-06,
+          "correction_steps": 2,
+          "correction_strength": 0.2,
+          "correction_trust_radius": 0.1,
+          "pairwise_rms_cap": 2.0,
+          "pairwise_steps": 2,
+          "pairwise_strength": 0.02,
+          "reset_balance_steps": 8,
+          "reset_epsilon": 2.0,
+          "reset_policy": "contract_e",
+          "reset_ridge": 1e-05,
+          "reset_sinkhorn_steps": 8,
+          "substeps": 10
+        },
+        "source_sha256": {
+          "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+          "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+          "bayesfilter/highdim/higher_moment_contract_e.py": "188c1f63f8a517f2b3babbbe8ab384b05f2720c5b94603e45907fb6f9e78dcab",
+          "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "330fca673b12727e6c9936f5b0720a907a7f7601c626b5e4e618adf7453a6232",
+          "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+          "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+          "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+          "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+          "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+          "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+          "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+          "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+          "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+          "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "b58901a78b63c398d7409ac4d1f18bfab5dedfe1885ec8d2df6838ca04caccd8",
+          "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+          "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+          "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+          "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+          "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+          "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+          "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+        },
+        "state_dimension": 4,
+        "tf32": false,
+        "transition_before_observation": true
+      },
+      "maximum_scaled_error": 5.236829689299208e-10,
+      "scaled_error_threshold": 3e-05,
+      "score": [
+        [
+          13.070583104213096,
+          2.3898668400234824
+        ],
+        [
+          9.305488110217073,
+          0.9801652975307122
+        ]
+      ],
+      "status": {
+        "direction_force_failure_code": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "direction_force_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "direction_value_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "first_failure_particle": [
+          -1,
+          -1
+        ],
+        "first_failure_stage": [
+          -1,
+          -1
+        ],
+        "first_failure_time": [
+          -1,
+          -1
+        ],
+        "force_failure_code": [
+          0,
+          0
+        ],
+        "force_valid": [
+          true,
+          true
+        ],
+        "outside_declared_support": [
+          false,
+          false
+        ],
+        "program_valid": [
+          true,
+          true
+        ],
+        "value_failure_code": [
+          0,
+          0
+        ],
+        "value_valid": [
+          true,
+          true
+        ]
+      },
+      "value": [
+        -4.413986365048995,
+        -2.511686393230118
+      ]
+    }
+  },
+  "tf32": true,
+  "wall_seconds": 29.82270018700001
+}

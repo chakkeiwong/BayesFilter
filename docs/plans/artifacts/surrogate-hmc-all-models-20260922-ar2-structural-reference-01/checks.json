@@ -1,0 +1,49 @@
+{
+  "role": "CPU-only existing structural AR2 reference tests; no DCTR or HMC execution",
+  "started_utc": "2026-09-22T03:45:38.728977+00:00",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_structural_svd_sigma_point_tf.py::test_structural_svd_cubature_matches_linear_qr_on_affine_lgssm",
+    "tests/test_structural_svd_sigma_point_tf.py::test_structural_svd_ukf_matches_linear_qr_on_affine_lgssm",
+    "tests/test_structural_svd_sigma_point_tf.py::test_structural_svd_sigma_points_preserve_deterministic_completion_support"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "TF_CPP_MIN_LOG_LEVEL": "2",
+    "BAYESFILTER_PRELOAD_CUSTOM_OP": "0"
+  },
+  "gpu_status": "intentionally hidden before framework import",
+  "jit_compile": "not requested by this reference-test command; no GPU/XLA claim",
+  "data_version": "deterministic in-file affine AR2 fixtures, bound by test-file SHA256",
+  "random_seeds": "N/A: deterministic fixed fixtures",
+  "budget": {
+    "child_cpu_seconds": 110,
+    "parent_cpu_soft_seconds": 10,
+    "child_wall_seconds": 150
+  },
+  "plan_file": "docs/plans/surrogate-hmc-algorithm-code-literature-audit-2026-09-22.md",
+  "result_file": "docs/plans/surrogate-hmc-algorithm-code-literature-audit-2026-09-22.md",
+  "artifact_paths": [
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260922-ar2-structural-reference-01/checks.log",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260922-ar2-structural-reference-01/checks.json"
+  ],
+  "selected_source_sha256": {
+    "tests/test_structural_svd_sigma_point_tf.py": "fe193ff9f1120b24996a5a3afb80d64ee2285826e631f8f8bc42d65b38110e08",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "9c67f12935344bbc134548aec5e25f554b5b33d5b28856332bf3b8fe0c9d4f80",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501"
+  },
+  "exit_code": 0,
+  "wall_seconds": 5.527331101009622,
+  "cpu_seconds": 5.230534,
+  "gpu_wall_seconds": 0.0,
+  "selected_sources_unchanged": true
+}

@@ -25,9 +25,11 @@ class DualParameterLEDHTarget:
     parameters. The HMC chain targets exp(-U) where U is the exact executed
     potential, while using a cheaper (more damped) force for mixing.
 
-    Corollary 5.2 guarantees invariance: the θ-marginal π(θ) ∝ exp(-U(θ)) is
-    preserved regardless of force quality. Force affects only acceptance rate
-    and mixing efficiency.
+    Endpoint Metropolis correction can preserve the executed finite target
+    when the proposal map is deterministic, reversible, and volume preserving.
+    Those mechanics require independent checks. Numerical value exclusions
+    change the executed support and require a separate posterior-mass audit;
+    a finite sentinel alone proves neither invariance nor posterior accuracy.
 
     Parameters
     ----------
@@ -83,8 +85,9 @@ class DualParameterLEDHTarget:
         """Evaluate HMC target with custom gradient (Corollary 5.2).
 
         Returns exact value, but autodiff will get biased (surrogate) gradient.
-        This is correct per Corollary 5.2: HMC targets exp(-U_exact) while
-        using cheaper (damped) force for mixing.
+        The force is a deterministic position-only field. Correct sampling
+        additionally depends on the proposal and endpoint correction, and on
+        the numerical support and approximation checks described above.
 
         Parameters
         ----------
@@ -98,102 +101,66 @@ class DualParameterLEDHTarget:
         """
         @tf.custom_gradient
         def target_with_surrogate_gradient(theta_inner):
-            # Ensure rank-2 for batch API
-            theta_batch = theta_inner[None, :]  # [P] -> [1, P]
-            param_dim = theta_inner.shape[0]
-            full_directions = tf.eye(param_dim, dtype=theta_inner.dtype)[None, :, :]
-
-            # Compute exact value (for HMC acceptance).
-            #
-            # The engine evaluates directional derivatives ONE AT A TIME
-            # (tf.map_fn over K with parallel_iterations=1), so each extra
-            # direction costs a full T x substeps filter pass. This call needs
-            # only the primal value, and the engine asserts the primal value is
-            # direction-invariant to rtol=1e-12, so a single direction returns
-            # the identical value at 1/P the cost.
-            value_direction = full_directions[:, :1, :]  # [1, 1, P]
-            exact_value, _, _ = canonical_batch_fused_value_score(
-                self.model,
-                theta_batch,
-                value_direction,
-                self.initial_states,
-                self.initial_covariances,
-                self.noises,
-                self.observations,
-                **self.exact_params,
-            )
-            exact_value = exact_value[0]  # [1] -> []
-
-            # Compute biased score (for HMC force). This needs every coordinate
-            # direction, so K=P passes are required here.
-            _, biased_score, _ = canonical_batch_fused_value_score(
-                self.model,
-                theta_batch,
-                full_directions,
-                self.initial_states,
-                self.initial_covariances,
-                self.noises,
-                self.observations,
-                **self.biased_params,
-            )
-            biased_score = biased_score[0]  # [1, P] -> [P]
-
-            # Check for -inf (graceful failure from numerical instability)
-            # When exact_value is -inf, return -inf with zero gradient
-            is_invalid = tf.math.is_inf(exact_value) & (exact_value < 0.0)
-
+            value, force, status = self.value_score_and_status(theta_inner)
             def grad_fn(dy):
-                # Return biased gradient (surrogate force) when valid
-                # Return zero gradient when invalid (-inf)
-                # dy is upstream gradient (scalar for log-prob)
-                zero_grad = tf.zeros_like(biased_score)
-                return tf.where(is_invalid, zero_grad, dy * biased_score)
-
-            return exact_value, grad_fn
-
+                return tf.where(status['force_valid'], dy*force, tf.zeros_like(force))
+            return value,grad_fn
         return target_with_surrogate_gradient(theta)
 
-    def as_graph_callable(self, param_dim: int) -> Callable[[tf.Tensor], tf.Tensor]:
-        """Return this target compiled with a stable ``input_signature``.
+    def value_score_and_status(self, theta):
+        """Exact finite-program value and independent biased-force health.
 
-        The repo TensorFlow Graph policy requires repeated numerical kernels to
-        execute through ``tf.function`` with an explicit, stable signature.
-        Eager evaluation of this target dispatches every one of the
-        ``T x substeps`` sequential stages from Python, which measured 8.65x
-        slower than the compiled path at T=5 (see
-        ``docs/benchmarks/ledh_cost_structure_probe.py``).
-
-        Compile at THIS granularity - one value+gradient evaluation - not around
-        ``tfp.mcmc.sample_chain``. Wrapping the chain unrolls every HMC step into
-        a single graph and exhausts host memory; that failure is what led to the
-        eager workaround being adopted, and it was a granularity error, not
-        evidence against graph mode. Here the signature is fixed (one ``[P]``
-        vector), so the graph is traced once and reused for every leapfrog step.
-
-        The returned callable is cached, so repeated calls reuse one trace.
-
-        Parameters
-        ----------
-        param_dim : int
-            Static parameter dimension P. Required for the input signature;
-            passing the wrong value raises at call time rather than retracing.
-
-        Returns
-        -------
-        callable
-            ``theta[P] -> value[]``, carrying the same surrogate gradient as
-            ``__call__``. Verified against the eager path by
-            ``docs/benchmarks/ledh_graph_mode_gradient_verification.py``.
+        A finite exact value survives a biased-force failure. The declared force
+        extension is zero at such positions. Numerical exclusion of an exact
+        value remains a scientific veto even though a chain can reject it.
         """
-        if self._graph_callable is None:
-            dtype = self.observations.dtype
+        theta = tf.convert_to_tensor(theta,dtype=self.observations.dtype)
+        if theta.shape.rank != 1 or theta.shape[0] is None:
+            raise ValueError('theta must have a statically known shape [P]')
+        full_directions = tf.eye(theta.shape[0],dtype=theta.dtype)[None]
+        exact_value,_,exact_status = canonical_batch_fused_value_score(
+            self.model,theta[None],full_directions[:,:1],self.initial_states,
+            self.initial_covariances,self.noises,self.observations,**self.exact_params)
+        _,biased_score,biased_status = canonical_batch_fused_value_score(
+            self.model,theta[None],full_directions,self.initial_states,
+            self.initial_covariances,self.noises,self.observations,**self.biased_params)
+        status = {key:value[0] for key,value in exact_status.items()
+                  if not key.startswith('direction_') and key != 'program_valid'}
+        status['force_valid'] = (status['value_valid'] & biased_status['value_valid'][0]
+                                 & biased_status['force_valid'][0])
+        status['force_failure_code'] = tf.where(status['value_valid'],
+            biased_status['force_failure_code'][0],status['value_failure_code'])
+        for key in ('first_failure_time','first_failure_stage','first_failure_particle'):
+            # The exact pass computes an unused derivative; its derivative-only
+            # failure cannot invalidate either the value or the chosen force.
+            status[key] = tf.where(~status['value_valid'],exact_status[key][0],
+                tf.where(~status['force_valid'],biased_status[key][0],tf.constant(-1,tf.int32)))
+        status['program_valid'] = status['value_valid'] & status['force_valid']
+        force = tf.where(status['force_valid'],biased_score[0],tf.zeros_like(biased_score[0]))
+        return exact_value[0],force,status
 
-            @tf.function(input_signature=[tf.TensorSpec([param_dim], dtype)])
-            def graph_target(theta: tf.Tensor) -> tf.Tensor:
-                return self(theta)
+    def as_graph_callable(self, param_dim: int, *, jit_compile: bool = True):
+        """Stable compiled target. Non-XLA is an explicit debug/reference choice."""
+        if not hasattr(self,'_graph_callables'):
+            self._graph_callables = {}
+        key = (param_dim,jit_compile)
+        if key not in self._graph_callables:
+            self._graph_callables[key] = tf.function(
+                self.__call__,input_signature=[tf.TensorSpec([param_dim],self.observations.dtype)],
+                jit_compile=jit_compile,autograph=False)
+        return self._graph_callables[key]
 
-            self._graph_callable = graph_target
-        return self._graph_callable
+    def as_graph_value_score_callable(self, param_dim: int, *, jit_compile: bool = True):
+        """Compiled explicit value/force/status endpoint for real consumers."""
+        if not hasattr(self,'_graph_status_callables'):
+            self._graph_status_callables = {}
+        key = (param_dim,jit_compile)
+        if key not in self._graph_status_callables:
+            self._graph_status_callables[key] = tf.function(
+                self.value_score_and_status,
+                input_signature=[tf.TensorSpec([param_dim],self.observations.dtype)],
+                jit_compile=jit_compile,autograph=False)
+        return self._graph_status_callables[key]
 
     def value_only(self, theta: tf.Tensor) -> tf.Tensor:
         """Compute only exact value (for diagnostics)."""

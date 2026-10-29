@@ -1,0 +1,71 @@
+{
+  "status": "FAILED",
+  "stage": "CSMC_DOWNSTREAM_CALIBRATION",
+  "resource": "mixed",
+  "started_unix_seconds": 1791477397.4143114,
+  "supervisor_pid": 3982082,
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py",
+    "pilot",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637",
+  "plan": "docs/plans/controlled-smc-downstream-qualification-20261009.md",
+  "result_file": "docs/plans/controlled-smc-downstream-qualification-result-20261009.md",
+  "executions": [
+    {
+      "mode": "source",
+      "resource": "cpu",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py",
+        "source",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637"
+      ],
+      "pid": 3982085,
+      "started_unix_seconds": 1791477397.4844396,
+      "timeout_seconds": 3594.539060767973,
+      "status": "COMPLETE",
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "returncode": 0,
+      "wall_seconds": 193.44328933604993
+    },
+    {
+      "mode": "tf",
+      "resource": "gpu",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py",
+        "tf",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637"
+      ],
+      "pid": 3990172,
+      "started_unix_seconds": 1791477600.3844912,
+      "timeout_seconds": 3600.0,
+      "status": "FAILED",
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "returncode": 1,
+      "wall_seconds": 72.16941514797509
+    }
+  ],
+  "charged_seconds": {
+    "cpu": 193.44328933604993,
+    "gpu": 72.16941514797509
+  },
+  "spec_sha256": "8176809afa2b61c26015e5e2241b1443e88b0fd06b99cd8d418256da1fd656ac",
+  "error": "tf worker failed; see /home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637/tf.log",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/run_lorenz_downstream_qualification.py\", line 420, in pilot\n    raise RuntimeError(mode+' worker failed; see '+str(output/(mode+'.log')))\nRuntimeError: tf worker failed; see /home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/csmc-qualification-20261009-163637/tf.log\n",
+  "wall_seconds": 278.9987909793854,
+  "ended_unix_seconds": 1791477676.4131036
+}

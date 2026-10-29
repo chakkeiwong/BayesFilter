@@ -1,0 +1,101 @@
+{
+  "affine_log_jacobian_convention": "constant_omitted",
+  "algorithm_family": "endpoint_corrected_frozen_position_force_hmc",
+  "artifact_authority": false,
+  "backend": "tensorflow_probability",
+  "binding_hash": "ff98723471cb600a0b5bc1cea7c0f6fae6bd88d98b93c87de34bce93cffc11e5",
+  "coordinate_scope": "raw",
+  "dtype": "float64",
+  "endpoint_target_coordinate_system": "raw",
+  "endpoint_target_identity": "f036c14bf2fd673f06229b8fcbe1237267b1c0e436352e0aa21299d1d7256d5c:model-reference-log-quadrature-32-128-v1",
+  "endpoint_target_includes_chart_log_jacobian": false,
+  "force_identity": "f036c14bf2fd673f06229b8fcbe1237267b1c0e436352e0aa21299d1d7256d5c:FP32-DCTR",
+  "force_semantics": "deterministic_position_only_proposal_field",
+  "required_diagnostic_fields": [
+    "finite_sample_count",
+    "nonfinite_sample_count",
+    "log_accept_ratio_finite_count",
+    "log_accept_ratio_nonfinite_count",
+    "maximum_absolute_delta_h",
+    "target_log_prob_finite_count",
+    "target_log_prob_nonfinite_count",
+    "divergence_count",
+    "force_fallback_count"
+  ],
+  "required_metadata_fields": [
+    "force_identity",
+    "force_semantics",
+    "target_identity",
+    "target_coordinate_system",
+    "target_includes_chart_log_jacobian",
+    "affine_log_jacobian_convention",
+    "coordinate_route",
+    "target_scope",
+    "chain_execution_mode"
+  ],
+  "requires_native_affine_mass": true,
+  "runner_identity": "bayesfilter.inference.neural_force_hmc.run_full_chain_neural_force_hmc",
+  "schema": "bayesfilter.hmc_tuning_runner_binding.v2",
+  "source_dependency_closure": {
+    "files": [
+      {
+        "path": "bayesfilter/inference/neural_force_hmc.py",
+        "sha256": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e"
+      },
+      {
+        "path": "bayesfilter/inference/hmc_tuning_dispatch.py",
+        "sha256": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9"
+      },
+      {
+        "path": "bayesfilter/inference/hmc_tensorflow_tuning.py",
+        "sha256": "8eaa6ab82acdb615d4459f438d345653a1387d4557c61ee6bdebe1818c0e56dd"
+      },
+      {
+        "path": "bayesfilter/inference/hmc_kernel_tuning.py",
+        "sha256": "2958593e966823c245e116f57d53f9d455e0b9ea67a60d75cbbd3bf0da8dddf7"
+      },
+      {
+        "path": "bayesfilter/inference/hmc.py",
+        "sha256": "8750c0ee3f8bed10aec8fd85b508087093a16ac4830e753259b30d840a69727a"
+      },
+      {
+        "path": "bayesfilter/inference/hmc_tuning.py",
+        "sha256": "fbf6411288a36fc79ccc840b3f315260827a847a492beab5e729789279ae54c5"
+      },
+      {
+        "path": "bayesfilter/inference/hmc_coordinates.py",
+        "sha256": "59965bf5e1b8f5d0e00ced7ad69ca00b8cbc3147216e17f4749e5c2c208dca3f"
+      },
+      {
+        "path": "bayesfilter/inference/tuning_contract.py",
+        "sha256": "2b8166e3a87feb3d0cd72b86a3ca30f555e038a53988d7a8628ab2c137d71359"
+      },
+      {
+        "path": "bayesfilter/inference/posterior_adapter.py",
+        "sha256": "9bd0e5d834f7a51ac9778dbbdb9c63c1b1ea435dff65bbf409a636220e28bd7e"
+      },
+      {
+        "path": "bayesfilter/inference/__init__.py",
+        "sha256": "ca0cbee95446550988a044173e76edbd4faf4ad56467f3236a0574118a918f20"
+      },
+      {
+        "path": "bayesfilter/__init__.py",
+        "sha256": "b15cdf0cfcaacb925ee63223d5892d35b5c83eccfe254dd7cb9d14e07ce1cc85"
+      }
+    ],
+    "schema": "bayesfilter.neural_force_hmc_tuning_source_closure.v1"
+  },
+  "supported_chain_execution_modes": [
+    "tf_function",
+    "eager"
+  ],
+  "supported_target_status_trace_policies": [
+    "none"
+  ],
+  "supports_arbitrary_fixed_leapfrog_count": true,
+  "supports_arbitrary_fixed_step_size": true,
+  "target_scope": "M10-T2-N1024-claim-attempt1:B",
+  "target_status_evidence": "exact_endpoint_target_finite_health_and_transition_finite_status_fail_closed",
+  "tensor_kernel_factory_available": true,
+  "xla_capable": true
+}

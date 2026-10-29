@@ -193,7 +193,12 @@ def test_one_shot_wrapper_never_emits_covariance_at_a_moved_candidate() -> None:
     assert result.diagnostics["stale_centered_covariance_prevented"] is True
 
 
-def test_initializer_forwards_batched_design_callback_without_changing_result() -> None:
+def test_initializer_forwards_batched_design_callback_without_changing_result(monkeypatch) -> None:
+    # This acceptance fixture was selected with the old probe stream. Preserve
+    # its cloud under the owner-approved RNG migration, without changing gates.
+    from tests.filter_repair_geometry_reference import install_legacy_geometry_inputs
+
+    install_legacy_geometry_inputs(monkeypatch)
     precision = np.diag([2.0, 4.0])
     mode = np.array([0.18, -0.12])
     kwargs = {
@@ -235,7 +240,12 @@ def test_initializer_forwards_batched_design_callback_without_changing_result() 
     )
 
 
-def test_iterative_initializer_reaches_terminal_center_with_bounded_steps() -> None:
+def test_iterative_initializer_reaches_terminal_center_with_bounded_steps(monkeypatch) -> None:
+    # Keep the original finite-step acceptance fixture's exact probe cloud.
+    # Current-stream outcomes are compared against the pinned wrapper separately.
+    from tests.filter_repair_geometry_reference import install_legacy_geometry_inputs
+
+    install_legacy_geometry_inputs(monkeypatch)
     precision = np.diag([2.0, 4.0])
     mode = np.array([0.32, -0.24])
     callbacks = []
@@ -265,7 +275,7 @@ def test_iterative_initializer_reaches_terminal_center_with_bounded_steps() -> N
             terminal_score_max_abs=1.0e-8,
         ),
         fit_start_callback=lambda index, center: fit_starts.append(
-            (index, center.copy())
+            (index, np.array(center, copy=True))
         ),
         iteration_callback=callbacks.append,
     )

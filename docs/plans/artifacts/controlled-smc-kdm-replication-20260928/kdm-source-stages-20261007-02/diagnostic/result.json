@@ -1,0 +1,96 @@
+{
+  "schema": "kdm_source_stages_tf_diagnostic_v1",
+  "replication": "INCOMPLETE",
+  "mode": "verify",
+  "scope": "SOURCE_STAGE_MECHANICS_AND_COST_NOT_TRAINING_QUALIFICATION",
+  "checks": [
+    {
+      "name": "initial/mdpf/float64/valid",
+      "passed": true
+    },
+    {
+      "name": "initial/mdpf/float64/particles",
+      "passed": true,
+      "maximum_bound_ratio": 0.0
+    },
+    {
+      "name": "initial/mdpf/float64/particle_weights",
+      "passed": true,
+      "maximum_bound_ratio": 0.0
+    },
+    {
+      "name": "initial/mdpf/float64/bandwidths",
+      "passed": true,
+      "maximum_bound_ratio": 0.0
+    },
+    {
+      "name": "initial/mdpf/float64/resampling_particle_weights",
+      "passed": true,
+      "maximum_bound_ratio": 0.0
+    }
+  ],
+  "timings": [
+    {
+      "stage": "initial/mdpf/float64/source_replay",
+      "wall_seconds": 0.14569977298378944
+    }
+  ],
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/result.json",
+  "reference_sha256": "ea91c2f4ee222b47998eeddfdbe2c13b391a472aa81472425b54e7ce30f74eae",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "jit_compile": true,
+  "tf32": false,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "visible_device": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+  "initial_checkpoint_role": "development fixture, not completed stage training",
+  "random_backend": "TF stateless Philox, same law not Torch random bits",
+  "existing_float32_failures": "preserved; this diagnostic cannot erase prior failures",
+  "datasets": {
+    "training": {
+      "path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/training.json",
+      "sha256": "2a153f2923607faf9603d8c451cdc3e41b9c206be0e037cd06bed2a20684f7ec",
+      "source_sha256": "2a5d8bd29ba316575ef3188fe9d05bfe8febde1332779970d8da575ecdbda97a",
+      "rows": 5000
+    },
+    "validation": {
+      "path": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/validation.json",
+      "sha256": "157cb23791e112036e62e5083b465421a10439a8b45bfe2dd2ea67116f3f726d",
+      "source_sha256": "4db1ffb059a86e01d030c6fc0bce8a28d42171f6033b534fc2a88e406217c28e",
+      "rows": 1000
+    }
+  },
+  "checkpoint_sha256": "85cb07f3f46a2efe1b37b4469c1bafed57cf5440489cfadee9362865bddb3d1c",
+  "status": "ERROR",
+  "exception": "ValueError(\"Attempt to convert a value (None) with an unsupported type (<class 'NoneType'>) to a Tensor.\")",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py\", line 117, in main\n    compare(label+\"/\"+key, got[key], source.get(key, source[fallback]), model.dtype)\n  File \"/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py\", line 57, in compare\n    actual, expected = tf.convert_to_tensor(actual, dtype), tf.convert_to_tensor(expected, dtype)\n                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py\", line 153, in error_handler\n    raise e.with_traceback(filtered_tb) from None\n  File \"/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/constant_op.py\", line 108, in convert_to_eager_tensor\n    return ops.EagerTensor(value, ctx.device_name, dtype)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: Attempt to convert a value (None) with an unsupported type (<class 'NoneType'>) to a Tensor.\n",
+  "wall_seconds": 4.222058301093057,
+  "checks_total": 5,
+  "checks_failed": 0,
+  "not_concluded": [
+    "full training",
+    "no-worse trained performance",
+    "all float32 compatibility"
+  ]
+}

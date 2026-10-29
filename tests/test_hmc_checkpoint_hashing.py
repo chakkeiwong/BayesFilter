@@ -43,3 +43,85 @@ def test_actual_checkpoint_rechecks_mutation_after_cached_persistence(tmp_path):
     restored._spec["config"]["measurement_num_results"] += 1
     with pytest.raises(ValueError, match="corrupt execution specification"):
         write_numerical_tuning_checkpoint(restored, controller.result(), tmp_path)
+
+
+def test_internal_chunk_save_preserves_full_boundary_validation(tmp_path):
+    from bayesfilter.inference import run_typed_hmc_candidate_set, load_numerical_tuning_checkpoint
+    from tests.test_hmc_acceptance_trials import _replicated_setup
+    binding, search = _replicated_setup()
+    result = run_typed_hmc_candidate_set(binding.typed_adapter,search,output_dir=tmp_path).result
+    # The returned result can have a later elapsed-time field than the last
+    # controller callback. Compare two serializers of the same explicit state.
+    write_numerical_tuning_checkpoint(binding,result,tmp_path)
+    original = json.loads((tmp_path/'tuning_checkpoint.json').read_text())
+    write_numerical_tuning_checkpoint(binding,result,tmp_path,_incremental=True)
+    assert json.loads((tmp_path/'tuning_checkpoint.json').read_text()) == original
+    restored,controller = load_numerical_tuning_checkpoint(tmp_path/'tuning_checkpoint.json',
+                                                         adapter=binding._base_adapter)
+    assert controller.result().candidate_states == result.candidate_states
+    assert restored._evidence == binding._evidence
+    key = next(iter(binding._evidence))
+    binding._evidence[key]['analysis']['acceptance'] = .123
+    # The next stage/final boundary must still reject a live mutation even
+    # after its immutable file has been reused in a within-work save.
+    write_numerical_tuning_checkpoint(binding,result,tmp_path,_incremental=True)
+    with pytest.raises(ValueError,match='corrupt live numerical evidence'):
+        write_numerical_tuning_checkpoint(binding,result,tmp_path)
+
+
+@pytest.mark.parametrize('mutation',['deleted','changed'])
+def test_incremental_save_checks_changed_or_missing_immutable_file(tmp_path,mutation):
+    from bayesfilter.inference import run_typed_hmc_candidate_set
+    from tests.test_hmc_acceptance_trials import _replicated_setup
+    binding,search = _replicated_setup()
+    result = run_typed_hmc_candidate_set(binding.typed_adapter,search,output_dir=tmp_path).result
+    key = next(iter(binding._evidence))
+    path = tmp_path/'numerical_evidence'/(key+'.json')
+    if mutation == 'deleted':
+        path.unlink()
+        write_numerical_tuning_checkpoint(binding,result,tmp_path,_incremental=True)
+        assert json.loads(path.read_text()) == binding._evidence[key]
+    else:
+        path.write_text('{}')
+        with pytest.raises(ValueError,match='immutable numerical evidence collision'):
+            write_numerical_tuning_checkpoint(binding,result,tmp_path,_incremental=True)
+
+
+def test_incremental_scope_is_restored_after_error_and_nested_scope():
+    from types import SimpleNamespace
+    from bayesfilter.inference.hmc_candidate_runtime import incremental_chunk_checkpoint
+    runtime = SimpleNamespace()
+    with pytest.raises(RuntimeError):
+        with incremental_chunk_checkpoint(runtime):
+            assert runtime._incremental_checkpoint is True
+            with incremental_chunk_checkpoint(runtime):
+                assert runtime._incremental_checkpoint is True
+            assert runtime._incremental_checkpoint is True
+            raise RuntimeError('injected native failure')
+    assert runtime._incremental_checkpoint is False
+
+
+def test_member_recomputes_each_record_once_per_call_and_never_across_calls(monkeypatch):
+    from collections import Counter
+    from bayesfilter.inference import run_typed_hmc_candidate_set, build_retained_bound_hmc_archive_runner_from_candidate_set_result
+    from tests.test_hmc_candidate_set_execution import make_binding
+    from tests.test_hmc_candidate_set_tuning import _config
+    binding = make_binding()
+    result = run_typed_hmc_candidate_set(binding.typed_adapter,
+        _config(grid=(3,),epsilons=((3,(1.3,)),))).result
+    assert result.verified_candidate_ids
+    original = binding.evidence_analysis
+    calls = Counter()
+    def counted(row):
+        calls[row['work']['work_item_id']] += 1
+        return original(row)
+    monkeypatch.setattr(binding,'evidence_analysis',counted)
+    for count in (1,2):
+        build_retained_bound_hmc_archive_runner_from_candidate_set_result(
+            candidate_set_result=result,candidate_id=result.verified_candidate_ids[0],retained_binding=binding)
+        assert len(calls) == len(binding._evidence)
+        assert set(calls.values()) == {count}
+    next(iter(binding._evidence.values()))['analysis']['acceptance'] = .123
+    with pytest.raises(ValueError,match='corrupt numerical evidence'):
+        build_retained_bound_hmc_archive_runner_from_candidate_set_result(
+            candidate_set_result=result,candidate_id=result.verified_candidate_ids[0],retained_binding=binding)

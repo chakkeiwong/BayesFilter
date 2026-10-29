@@ -1,0 +1,267 @@
+{
+  "scope": "Bounded primary-literature support for explaining the existing surrogate-HMC experiment and candidate repairs; not an exhaustive review or method promotion.",
+  "date": "2026-09-22",
+  "source_support": [
+    {
+      "id": "neal2011",
+      "title": "MCMC using Hamiltonian dynamics",
+      "authors": [
+        "Radford M. Neal"
+      ],
+      "url": "https://arxiv.org/abs/1206.1901",
+      "file": "neal-2011-mcmc-using-hamiltonian-dynamics",
+      "version": "arXiv v1, 2012-06-09; PDF states Handbook of Markov Chain Monte Carlo chapter 5, 2011",
+      "sections_checked": [
+        "5.2 equations 5.12 onward: one-step Langevin/MH equivalence",
+        "5.5: approximate Hamiltonian trajectories and exact endpoint correction"
+      ],
+      "supports": [
+        "approximate trajectories with reversible volume-preserving map and declared endpoint correction",
+        "one-step gradient HMC equals Gaussian drift MH"
+      ],
+      "limits": [
+        "arbitrary nonconservative-field invariance is the local translation/involution derivation, not attributed to this chapter"
+      ],
+      "local_copies": {
+        "pdf": {
+          "path": ".localresources/papers/neal-2011-mcmc-using-hamiltonian-dynamics.pdf",
+          "sha256": "0582743db6913dd05ef7204a76fcd041fffdd86a7ca6c9580fb0fd5fdbf19f13"
+        },
+        "txt": {
+          "path": ".localresources/papers/neal-2011-mcmc-using-hamiltonian-dynamics.txt",
+          "sha256": "486ad9b865200531e74c4caf71fccf40677891fdd73d7a14c1659c7314f24e70"
+        }
+      }
+    },
+    {
+      "id": "strathmann2015",
+      "title": "Gradient-free Hamiltonian Monte Carlo with Efficient Kernel Exponential Families",
+      "authors": [
+        "Heiko Strathmann",
+        "Dino Sejdinovic",
+        "Samuel Livingstone",
+        "Zoltan Szabo",
+        "Arthur Gretton"
+      ],
+      "url": "https://arxiv.org/abs/1506.02564",
+      "file": "arxiv-1506.02564",
+      "version": "arXiv v2, 2015-11-24; published venue metadata not independently checked",
+      "sections_checked": [
+        "3 and equation 3",
+        "Algorithm 1",
+        "5 tail/ergodicity limitations"
+      ],
+      "supports": [
+        "learned kernel field can guide trajectories corrected against target endpoint"
+      ],
+      "limits": [
+        "optional future method, not current DCTR implementation",
+        "author code linked at https://github.com/karlnapf/kernel_hmc but not audited",
+        "no general ergodicity or runtime claim"
+      ],
+      "local_copies": {
+        "pdf": {
+          "path": ".localresources/papers/arxiv-1506.02564.pdf",
+          "sha256": "5fa6abac306b46273d9bc51f9a9c24becc7e599e18159321e304ff6af250423a"
+        },
+        "txt": {
+          "path": ".localresources/papers/arxiv-1506.02564.txt",
+          "sha256": "7e422d40a5624e1539384540722380417fa63b0606c3c01a7e7d4e74fa79264e"
+        }
+      }
+    },
+    {
+      "id": "vehtari2021",
+      "title": "Rank-normalization, folding, and localization: An improved R-hat for assessing convergence of MCMC",
+      "authors": [
+        "Aki Vehtari",
+        "Andrew Gelman",
+        "Daniel Simpson",
+        "Bob Carpenter",
+        "Paul-Christian Burkner"
+      ],
+      "url": "https://arxiv.org/abs/1903.08008",
+      "file": "vehtari-et-al-2021-rank-normalization-folding",
+      "version": "arXiv v5, 2021-06-22; venue metadata not independently checked",
+      "sections_checked": [
+        "practical recommendations, extracted text lines 169-225",
+        "sections 3-4, especially rank/fold and localized indicator diagnostics"
+      ],
+      "supports": [
+        "R-hat and rank ESS are useful screens but quantity-specific MCSE is necessary",
+        "ESS 400 is intended to stabilize uncertainty estimation, not guarantee .02 CDF equivalence"
+      ],
+      "limits": [
+        "Appendix A simulation suite not independently reproduced",
+        "no claim any diagnostic proves convergence"
+      ],
+      "local_copies": {
+        "pdf": {
+          "path": ".localresources/papers/vehtari-et-al-2021-rank-normalization-folding.pdf",
+          "sha256": "d67a38f7644d7fc77dff8f727c873372f1c43fbb2a507ee146cdc139ae15a24e"
+        },
+        "txt": {
+          "path": ".localresources/papers/vehtari-et-al-2021-rank-normalization-folding.txt",
+          "sha256": "92733ed30d4159cbab4f4c9945e451991cfab5615acdcaa4ee7c69f9639b75ca"
+        }
+      }
+    },
+    {
+      "id": "vatsflegal2021",
+      "title": "Lugsail lag windows for estimating time-average covariance matrices",
+      "authors": [
+        "Dootika Vats",
+        "James M. Flegal"
+      ],
+      "url": "https://arxiv.org/abs/1809.04541",
+      "file": "vats-flegal-lugsail-lag-windows",
+      "version": "arXiv v3, 2021-07-11; PDF manuscript date 2021-07-13; venue metadata not independently checked",
+      "sections_checked": [
+        "2: long-run covariance and lag windows",
+        "4.1-4.3 equations 5-7, Theorems 3-4 and assumptions",
+        "Appendix B initial covariance/bias derivation"
+      ],
+      "supports": [
+        "lugsail estimator as candidate to address downward covariance-estimation bias",
+        "batch consistency conditions require both batch length and number of batches to grow"
+      ],
+      "limits": [
+        "no choice of lugsail tuning or diagnostic cutoff promoted",
+        "not a solution to nonstationarity or missing modes"
+      ],
+      "local_copies": {
+        "pdf": {
+          "path": ".localresources/papers/vats-flegal-lugsail-lag-windows.pdf",
+          "sha256": "be0fbb7189b2417f3142c32280ef7fa9b12d48cab94c11c624b3bfa5797eef4e"
+        },
+        "txt": {
+          "path": ".localresources/papers/vats-flegal-lugsail-lag-windows.txt",
+          "sha256": "7c080e388cdd69f978cae67d8556fdcd35f688854ff2bbbb95d7d963ba62d8b8"
+        }
+      }
+    },
+    {
+      "id": "andrieuroberts2009",
+      "title": "The pseudo-marginal approach for efficient Monte Carlo computations",
+      "authors": [
+        "Christophe Andrieu",
+        "Gareth O. Roberts"
+      ],
+      "url": "https://arxiv.org/abs/0903.5480",
+      "file": "andrieu-roberts-2009-pseudo-marginal",
+      "version": "arXiv v1, 2009-03-31; Annals of Statistics 37(2):697-725; DOI 10.1214/07-AOS574 verified in PDF",
+      "sections_checked": [
+        "2.1 equations 2.1-2.4 and auxiliary-target construction"
+      ],
+      "supports": [
+        "nonnegative unbiased likelihood weight and augmented estimator state yield the intended parameter marginal"
+      ],
+      "limits": [
+        "DCTR unbiasedness not established",
+        "fixed-bank DCTR posterior is not the pseudo-marginal construction",
+        "no convergence-rate theorem invoked"
+      ],
+      "local_copies": {
+        "pdf": {
+          "path": ".localresources/papers/andrieu-roberts-2009-pseudo-marginal.pdf",
+          "sha256": "4650632179858d85bd745c262ff7c95a26ca9e4cdd25e3ba9c122132c68df484"
+        },
+        "txt": {
+          "path": ".localresources/papers/andrieu-roberts-2009-pseudo-marginal.txt",
+          "sha256": "21dcb4fd9147da1fbc8ba74b3de71e5c265705300df072a24a0bd259bab5d3f5"
+        }
+      }
+    }
+  ],
+  "citation_venue_metadata": {
+    "identity_check": "Titles, authors and versions checked against downloaded PDF front matter; publisher/venue recorded only where directly verified.",
+    "indexed_search_status": "Three indexed web requests failed with upstream HTTP 502/503; primary arXiv PDF retrieval succeeded.",
+    "correction_retraction_screen": "Not completed; no absence-of-corrections/retractions claim."
+  },
+  "backward_snowball": {
+    "performed": "Inspected relevant reference entries and methodological dependencies in the selected primary papers.",
+    "resolved": [
+      {
+        "from": "strathmann2015 reference 1",
+        "to": "neal2011",
+        "disposition": "read technical sections for the current mechanism"
+      }
+    ],
+    "identified_not_read": [
+      {
+        "reference": "Rasmussen, Gaussian Processes to Speed up Hybrid Monte Carlo for Expensive Bayesian Integrals",
+        "reason": "optional learned surrogate, no GP implementation being selected"
+      },
+      {
+        "reference": "Zhang, Shahbaba and Zhao, Hamiltonian Monte Carlo Acceleration Using Neural Networks",
+        "reason": "current field is analytical DCTR, not a neural surrogate"
+      }
+    ]
+  },
+  "forward_snowball": {
+    "status": "incomplete",
+    "reason": "indexed search unavailable; no citation counts or exhaustive coverage inferred",
+    "bounded_followup": "If choosing a new covariance estimator or learned-force implementation, check current author code, forward methodological developments and corrections before implementation."
+  },
+  "claim_support": [
+    {
+      "claim": "Corrected proposal may use imperfect deterministic position-only field",
+      "support": [
+        "neal2011",
+        "local kick/drift volume and involution derivation",
+        "13 focused CPU checks including nonconservative one-step Gaussian MH identity"
+      ]
+    },
+    {
+      "claim": "Existing uncertainty screen is poorly calibrated",
+      "support": [
+        "docs/plans/surrogate-hmc-mcse-diagnostic-result-2026-09-20.md",
+        "454/512 IID replications falsely vetoed under the checked scope"
+      ]
+    },
+    {
+      "claim": "Current joint interval schedule has poor nominal precision",
+      "support": [
+        "docs/plans/surrogate-hmc-inference-precision-result-2026-09-22.md",
+        "vehtari2021 for quantity-specific MCSE distinction"
+      ]
+    },
+    {
+      "claim": "Lugsail is a candidate uncertainty repair, not an adopted solution",
+      "support": [
+        "vatsflegal2021"
+      ]
+    },
+    {
+      "claim": "Pseudo-marginal exactness cannot be inferred from a frozen finite DCTR bank",
+      "support": [
+        "andrieuroberts2009",
+        "local code audit"
+      ]
+    },
+    {
+      "claim": "Kernel surrogate gradients are a distinct optional research direction",
+      "support": [
+        "strathmann2015"
+      ]
+    }
+  ],
+  "omitted_paper_risks": [
+    {
+      "topic": "Latest surrogate-HMC algorithms and cost benchmarks",
+      "risk": "No best-method or state-of-art claim can be supported by this bounded audit."
+    },
+    {
+      "topic": "Sequential fixed-width stopping and simultaneous equivalence inference for correlated functionals",
+      "risk": "A prospective design needs additional primary-source and author-code checking before selecting a new stopping rule."
+    },
+    {
+      "topic": "Rank-deficient transitions, nonadditive shared innovations and wrapped-normal numerical algorithms",
+      "risk": "Only mathematical repair directions identified; no library implementation or source-faithful algorithm selected."
+    },
+    {
+      "topic": "Lugsail hyperparameter selection, binary indicators and finite-sample joint coverage",
+      "risk": "Paper asymptotics do not validate the actual finite experiment; fresh calibration remains necessary."
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+...............................F........................................ [ 92%]
+......                                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_stage_binds_selection_and_never_evaluates_claim[True-True] ________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-34/test_stage_binds_selection_and2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x70335e330650>
+stable = True, refined = True
+
+    @pytest.mark.parametrize("stable", [True, False])
+    @pytest.mark.parametrize("refined", [False, True])
+    def test_stage_binds_selection_and_never_evaluates_claim(tmp_path, monkeypatch, stable, refined):
+        calls = []
+        def factory(fixture, **kwargs):
+            calls.append((fixture.fixture_generation_seed, kwargs))
+            multiplier = kwargs["controls"]["correction_lm_damping"]/1e-3
+            def compile(batch, **flags):
+                assert batch == 9 and flags == dict(filter_moments=True, all_correction_diagnostics=True)
+                value = 1.+(.01 if stable else 10.)*multiplier
+                return lambda theta: _output(value=value)
+            return SimpleNamespace(manifest={"source_sha256": {}, "dtype": "float32"}, compile=compile)
+        monkeypatch.setattr(m13, "make_range_bearing_target", factory)
+>       result = m13.controls_stage(tmp_path/"report.json", refined=refined)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_controls.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/testing/surrogate_hmc_m13_controls.py:151: in controls_stage
+    refined_selection(selection_path, scope=scope, sources=sources, curves=curves, data_paths=paths)
+bayesfilter/testing/surrogate_hmc_m13_controls.py:256: in refined_selection
+    scope=scope, source_hashes=sources, issuer_sha256=file_hash(__file__),
+                                                      ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_controls.py'
+
+    def file_hash(path: Path) -> str:
+>       return hashlib.sha256(path.read_bytes()).hexdigest()
+                              ^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'read_bytes'
+
+bayesfilter/inference/surrogate_hmc_program.py:61: AttributeError
+----------------------------- Captured stdout call -----------------------------
+calibration 1.0 {'nominal': True, 'stress': True} 0.0021986919891787693
+calibration 0.1 {'nominal': True, 'stress': True} 0.002038306003669277
+calibration 0.01 {'nominal': True, 'stress': True} 0.0018606819940032437
+calibration 0.001 {'nominal': True, 'stress': True} 0.0021100770100019872
+validation 1.0 {'nominal': True, 'stress': True} 0.0021414759976323694
+validation 0.1 {'nominal': True, 'stress': True} 0.0020764549990417436
+validation 0.01 {'nominal': True, 'stress': True} 0.0018888310005422682
+validation 0.001 {'nominal': True, 'stress': True} 0.002066371002001688
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_controls.py::test_stage_binds_selection_and_never_evaluates_claim[True-True]
+1 failed, 77 passed, 2 warnings in 21.48s

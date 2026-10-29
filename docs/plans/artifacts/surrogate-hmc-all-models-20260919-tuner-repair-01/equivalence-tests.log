@@ -1,0 +1,32 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+________ test_equivalence_can_pass_reject_shift_and_refuse_stuck_chains ________
+
+    def test_equivalence_can_pass_reject_shift_and_refuse_stuck_chains():
+        values=tf.constant(np.random.default_rng(83).normal(size=(4,2000,6)))
+        zero=tf.zeros([6],tf.float64)
+        margins=tf.fill([6],tf.constant(.15,tf.float64))
+        def assess(x):
+            return assess_equivalence(x[:,:,:1],x,zero,zero,margins)
+>       assert assess(values)['status']=='EQUIVALENT'
+E       AssertionError: assert 'INCONCLUSIVE' == 'EQUIVALENT'
+E         
+E         - EQUIVALENT
+E         + INCONCLUSIVE
+
+tests/test_surrogate_hmc_equivalence.py:27: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-09-19 18:49:18.085927: E tensorflow/core/util/util.cc:131] oneDNN supports DT_BOOL only on platforms with AVX-512. Falling back to the default Eigen-based implementation if present.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_equivalence.py::test_equivalence_can_pass_reject_shift_and_refuse_stuck_chains
+1 failed, 1 passed, 2 warnings in 5.69s

@@ -1,0 +1,66 @@
+{
+  "schema": "kdm_source_stages_manifest_v1",
+  "resource": "gpu",
+  "mode": "verify",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-03/diagnostic",
+    "--mode",
+    "verify",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/result.json"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_source_stages.py",
+    "--mode",
+    "verify",
+    "--reference",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/result.json",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-03"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-source-stages-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-source-stages-result-20261007.md",
+  "timeout_seconds": 3594,
+  "status": "FAILED",
+  "seeds": [
+    20261007,
+    20261008,
+    811,
+    731
+  ],
+  "data": "source saved train5000/validation1000",
+  "cpu_gpu_status": "trusted GPU/XLA",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "LD_LIBRARY_PATH": null,
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "hashes": {
+    "scripts/run_kdm_source_stages.py": "897e7ab8325a984cdcbe6a35929d66fa572456d5db1ff9c080c99ed02252fdaf",
+    "docs/benchmarks/diagnose_kdm_source_stages_tf.py": "62a30bdc3efca423774189f3f28dc67bdaad55ada4f10b50fc62878fae62fa90",
+    "docs/plans/controlled-smc-kdm-source-stages-20261007.md": "3111f08cea93085dc05cbfc5ce94943482ccb9cd8a9774b09b370853352f61e6",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/reference_kdm_neural.py": "907fcf70d98c42ca393f301f5b0ef327ef8a90741af90ddeb93598f665af338d"
+  },
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-01/diagnostic/result.json",
+  "reference_sha256": "ea91c2f4ee222b47998eeddfdbe2c13b391a472aa81472425b54e7ce30f74eae",
+  "returncode": 1,
+  "wall_seconds": 66.70695458981209,
+  "result_sha256": "bb08404b430b871cd32f54aab15bfc01981821d1aa499414f94c1157cbea5e2a"
+}

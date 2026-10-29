@@ -1,0 +1,50 @@
+{
+  "plan": "docs/plans/surrogate-hmc-closure-master-program-2026-09-22.md",
+  "reservation": {
+    "cpu_worker_seconds": 21500.0,
+    "gpu_seconds": 25000.0
+  },
+  "previous_charge": {
+    "cpu_worker_seconds": 32207.100328,
+    "gpu_seconds": 30236.2254351368
+  },
+  "jobs": [
+    {
+      "name": "review",
+      "dependencies": [],
+      "device": "cpu",
+      "timeout": 300.0,
+      "cpu": 200.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_ar2_inference.py",
+        "tests/test_hmc_tensorflow_verified.py",
+        "tests/test_surrogate_hmc_ar2_assessment.py",
+        "tests/test_surrogate_hmc_program.py"
+      ]
+    },
+    {
+      "name": "ar2-inference-b",
+      "dependencies": [
+        "review"
+      ],
+      "device": "gpu",
+      "timeout": 22500.0,
+      "cpu": 21000.0,
+      "max_timeout_seconds": 22500.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "ar2-inference-b"
+      ]
+    }
+  ],
+  "pass_kind": "ar2-inference",
+  "inference_launched": false
+}

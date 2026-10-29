@@ -1,0 +1,60 @@
+{
+  "schema": "kdm_author_terminal_audit_v1",
+  "verdict": "PASS",
+  "checks": 80186,
+  "failures": [],
+  "stages": [
+    {
+      "stage": "weights",
+      "epochs": 164,
+      "best_epoch": 122,
+      "best_validation_loss": 4.701443729400634,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 3,
+      "updates": 12956,
+      "wall_seconds": 784.4484838021453
+    },
+    {
+      "stage": "mdpf",
+      "epochs": 318,
+      "best_epoch": 272,
+      "best_validation_loss": 6.1127902603149415,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 6,
+      "updates": 25122,
+      "wall_seconds": 10296.434287470998
+    },
+    {
+      "stage": "am_dpf",
+      "epochs": 332,
+      "best_epoch": 306,
+      "best_validation_loss": 5.53140531539917,
+      "termination": "SOURCE_EARLY_STOP",
+      "optimizer_count": 8,
+      "updates": 26228,
+      "wall_seconds": 12607.424744161079
+    }
+  ],
+  "command": [
+    "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+    "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_author_terminal_audit.py",
+    "--run",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-audit/result.json"
+  ],
+  "run": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full",
+  "run_manifest_sha256": "3604d9b1fd9a05a77fff06a58880913f9d86cdb8452f2a9f31abaf4b03b07907",
+  "audit_sha256": "48c1d54551df19673b1c9e4d4e01b6daf0d7eeac98d56a3fdada9a56023dac69",
+  "controller_source_sha256": "af9d19e7860611224cac771458a6fda6e57da3993fe11f6f471da01795094b55",
+  "controller_api_compatibility": [
+    "omit_removed_verbose_argument",
+    "is_better_to__is_better_author_worker_compatibility"
+  ],
+  "torch_version": "2.11.0+cu130",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "wall_seconds": 5.135416967095807,
+  "replication": "INCOMPLETE",
+  "not_concluded": "Numerical compatibility, trained-model noninferiority or full replication"
+}

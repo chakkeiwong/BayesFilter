@@ -31,10 +31,8 @@ from bayesfilter.inference.hmc_convergence import (
     RankNormalizedHMCThresholds,
     rank_normalized_hmc_diagnostics,
 )
-from bayesfilter.inference.hmc_kernel_tuning import (
-    HMCKernelTuningConfig,
-    prepare_operational_windowed_mass_handoff,
-)
+from bayesfilter.inference.hmc_configuration import HMCKernelTuningConfig
+from bayesfilter.inference.hmc_preparation import prepare_operational_windowed_mass_handoff
 from bayesfilter.inference.hmc_tuning import HMCTuningPolicy
 from bayesfilter.inference.hmc_verification import (
     HMCAcceptancePolicy,

@@ -1,0 +1,78 @@
+{
+  "git_commit": "0b91a64f6d38009b5f081d7981f51fab958425c0",
+  "branch": "sqmc-development",
+  "dirty_source_sha256": {
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "5ac990da195fd94c3727b876803adfe9ff99789eb14cd74eeb57977328e0d241",
+    "tests/highdim/test_ledh_marginal_weights.py": "12636d41b19349068c985136f7438809af4b0429fafa14605811ec0c7fa8f354"
+  },
+  "reference_commit": "f5e69d716818ff9ecf28b732a8952f5ec7f87739",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only": true,
+  "gpus_intentionally_hidden": true,
+  "jit_compile": true,
+  "plan": "docs/plans/ledh-marginal-minimal-patch-2026-10-06.md",
+  "results": "docs/benchmarks/ledh-marginal-minimal-patch-results-2026-10-06.md",
+  "data": "Fixed diagnostic inputs; per-cell input hashes in before/source/after.json",
+  "seeds": [
+    20261006,
+    109,
+    23,
+    10
+  ],
+  "parity_script": "parity.py",
+  "commands": [
+    "python parity.py --checkout /home/chakwong/BayesFilter-SQMC --output before.json",
+    "python parity.py --checkout /tmp/ledh-marginal-source-f5e69d716 --output source.json --models m13 --policies ancestor marginal_mixture",
+    "python parity.py --checkout /home/chakwong/BayesFilter-SQMC --output after.json --policies ancestor marginal_mixture"
+  ],
+  "recorded_kernel_and_test_seconds": 454.67593223305886,
+  "wall_time_scope": "Parity timers start after TF import/input fixture creation; pytest subprocess timers include startup. Not whole-session elapsed time.",
+  "budget_seconds": 1800,
+  "conservative_job_seconds_charged": 900,
+  "remaining_engineering_budget_seconds": 900,
+  "scientific_campaign_seconds_charged": 0,
+  "attempts": [
+    {
+      "stage": "initial harness",
+      "failure": "missing Tensor alias; fixed before any outputs",
+      "logs": [
+        "before.log",
+        "source.log"
+      ]
+    },
+    {
+      "stage": "baseline and source comparison",
+      "status": "passed",
+      "logs": [
+        "before-retry.log",
+        "source-retry.log"
+      ]
+    },
+    {
+      "stage": "patched parity",
+      "status": "passed",
+      "log": "after.log"
+    },
+    {
+      "stage": "initial regression",
+      "status": "31 passed, 3 fixture failures",
+      "details": "N=1 disallowed by existing chunk selector; while-loop wrapper has different inherited controls. No algorithm change required.",
+      "log": "tests.log"
+    },
+    {
+      "stage": "corrected focused regression",
+      "status": "10 passed, 2 deselected",
+      "command": "python -m pytest -q tests/highdim/test_ledh_marginal_weights.py -k \"not whileloop\"",
+      "wall_seconds": 32.55
+    },
+    {
+      "stage": "corrected while-loop regression",
+      "status": "2 passed, 10 deselected",
+      "log": "whileloop-tests.log"
+    }
+  ],
+  "test_summary": "35 distinct tests pass after fixture repairs: 12 new focused plus 23 existing. No relaxed tolerances."
+}

@@ -1,0 +1,145 @@
+{
+  "status": "PASS",
+  "model": "lgssm",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "lgssm",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-repair-20261012-01/lgssm",
+    "--gpu",
+    "GPU-68251639-fe82-8f81-3ccc-2953c32e805b"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-11T16:02:13.561154+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "8ed9bb0e7ae9950e23b683671889d2fe92f86b768045096f8c62060581c67ae9",
+    "covariance_proposal_score_tf.py": "2533249d698328a070e8e875de8d694786b7f763aa5e6db4ba82ea2accf81b5e",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "baseline_selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/lgssm/filter-tuning/filter-selection.json",
+  "particles": 4032,
+  "horizon": 50,
+  "parameter_count": 4,
+  "state_dimension": 3,
+  "observation_dimension": 3,
+  "dtype": "float32",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 32,
+    "reset_steps": 80,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.21928751468658447,
+    0.6807126998901367
+  ],
+  "offset": 0.0,
+  "data_sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+  "gpu_devices": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "new_first_call_seconds": 34.063772480003536,
+  "candidate": {
+    "value": -138.3411102294922,
+    "score": [
+      5.858035087585449,
+      7.320244789123535,
+      4.138413906097412,
+      0.10006546229124069
+    ],
+    "valid": true,
+    "steps_completed": 50
+  },
+  "old_first_call_seconds": 55.62211982998997,
+  "baseline": {
+    "value": -138.3411102294922,
+    "score": [
+      5.85803747177124,
+      7.320242881774902,
+      4.138412952423096,
+      0.10006546974182129
+    ],
+    "valid": true
+  },
+  "score_absolute_error": [
+    2.384185791015625e-06,
+    1.9073486328125e-06,
+    9.5367431640625e-07,
+    7.450580596923828e-09
+  ],
+  "value_absolute_error": 0.0,
+  "tolerance": {
+    "rtol": 0.001,
+    "atol": 0.001
+  },
+  "parity_pass": true,
+  "paired_warmed_seconds": [
+    {
+      "new": 21.192981546046212,
+      "old": 45.09840662498027
+    },
+    {
+      "old": 44.62984581710771,
+      "new": 21.03478915290907
+    }
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "median_speedup": 2.124863589929171,
+  "allocator": {
+    "current": 4088832,
+    "peak": 336046848
+  },
+  "wall_seconds": 225.760999588063
+}

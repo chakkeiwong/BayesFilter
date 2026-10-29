@@ -9,7 +9,7 @@ from typing import Any, Mapping
 
 import tensorflow as tf
 
-from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+from bayesfilter.highdim.sealed_sir_dataset_tf import sealed_sir_tensors
 from bayesfilter.inference.posterior_adapter import ValueScoreCapability
 from bayesfilter.nonlinear.batched_svd_sigma_point_tf import (
     tf_batched_svd_sigma_point_value_and_score_custom_gradient,
@@ -108,13 +108,14 @@ _MIN_VARIANCE = tf.constant(1.0e-12, tf.float64)
 
 
 def generate_frozen_sir_dataset_tf() -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
-    """Replay x0:x20 and freeze the paper-consistent y1:y20 observations."""
+    """Read the original x0:x20 input and paper-consistent y1:y20 data.
+
+    General simulator compilation can change rounding. The existing sealed
+    input preserves this target's exact data; all original hashes remain checks.
+    """
 
     with tf.device("/CPU:0"):
-        states, all_observations = zhao_cui_sir_austria_model().simulate(
-            final_time=SIR_HORIZON,
-            seed=SIR_DATASET_SEED,
-        )
+        states, all_observations = sealed_sir_tensors()
         states = tf.convert_to_tensor(states, tf.float64)
         all_observations = tf.convert_to_tensor(all_observations, tf.float64)
         observations = all_observations[1 : SIR_HORIZON + 1]

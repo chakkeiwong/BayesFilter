@@ -1,0 +1,68 @@
+{
+  "command": [
+    "docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/check.py"
+  ],
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "environment": "R4.1.2; one BLAS/OpenMP thread; independent reference",
+  "data_seed": 75000005,
+  "dimension": 5,
+  "repeats": 2,
+  "role": "reporting_parity_only_no_scientific_promotion",
+  "plan_file": "docs/plans/iapf-r-log-fit-validation-2026-09-20.md",
+  "attempts": [
+    {
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/before.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/sources",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/before",
+        "5",
+        "2",
+        "1",
+        "75000005",
+        "pilot",
+        "log_quadratic",
+        "2",
+        "first_full_window",
+        "200"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/sources/docs/benchmarks/replicate_iapf_paper_linear.R",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/sources",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-validation-20260920-01/mechanics01-append-parity/after",
+        "5",
+        "2",
+        "1",
+        "75000005",
+        "pilot",
+        "log_quadratic",
+        "2",
+        "first_full_window",
+        "200"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "source_sha256": {
+    "docs/benchmarks/reference_iapf_paper.R": "c7152fea96d917bf90218bbbbc2bb31c01b0831b439625ff922454b01d748fd0",
+    "docs/benchmarks/replicate_iapf_paper_linear.R": "993e6c56b86bef39f4e79895b57f2887327a23fc64d00e0f7436dd9a97fbb907"
+  },
+  "status": "pass",
+  "row_counts": {
+    "observations.csv": 100,
+    "kalman.csv": 100,
+    "replicates.csv": 8,
+    "fits.csv": 1200,
+    "prefixes.csv": 800
+  },
+  "wall_seconds": 12.051142928015906,
+  "result": "All numerical CSV fields/rows identical; only measured wall times excluded"
+}

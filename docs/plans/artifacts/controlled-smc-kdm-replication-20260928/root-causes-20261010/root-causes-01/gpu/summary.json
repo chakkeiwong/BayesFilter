@@ -1,0 +1,53 @@
+{
+  "status": "COMPLETED",
+  "replication": "INCOMPLETE",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": false,
+  "jit_compile": true,
+  "traces": {
+    "regression/source_normal_equations": 1,
+    "regression/centered_qr": 1,
+    "mdpf/float32/update": 1,
+    "mdpf/float32/isolated": 1,
+    "mdpf/float32/candidate": 1,
+    "mdpf/float64/update": 1,
+    "mdpf/float64/isolated": 1,
+    "mdpf/float64/candidate": 1,
+    "am_dpf/float32/update": 1,
+    "am_dpf/float32/isolated": 1,
+    "am_dpf/float32/candidate": 1,
+    "am_dpf/float64/update": 1,
+    "am_dpf/float64/isolated": 1,
+    "am_dpf/float64/candidate": 1,
+    "angle/float32": 1,
+    "angle/float64": 1
+  },
+  "devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "scope": "matched-input root causes, no qualification",
+  "numpy_role": "MATLAB reference loading/prediction only"
+}

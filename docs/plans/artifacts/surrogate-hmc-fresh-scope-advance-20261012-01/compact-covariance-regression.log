@@ -1,0 +1,88 @@
+.........F.............................................................. [ 54%]
+...........................................................              [100%]
+=================================== FAILURES ===================================
+_ test_compact_covariances_equal_full_broadcast_product_rule[dtype1-range_bearing] _
+
+name = 'range_bearing', dtype = tf.float64
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x71c5e43b6bd0>
+
+    @pytest.mark.parametrize("name",["lgssm","ksc","predator_prey","sir_d18","range_bearing"])
+    @pytest.mark.parametrize("dtype",[tf.float32,tf.float64])
+    def test_compact_covariances_equal_full_broadcast_product_rule(name,dtype,monkeypatch):
+        monkeypatch.setattr(runtime,"N",32)
+        case=runtime.load_case(name)
+        theta=tf.cast(case.theta0,dtype)
+        directions=tf.eye(case.p,dtype=dtype)
+        initial=[case.spec.initial_cloud(theta,tf.cast(case.fixed[0],dtype),directions[k])
+                 for k in range(case.p)]
+        x=Jet(initial[0][0],tf.stack([row[2] for row in initial]))
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        sizes=[]
+        checked=score.checked_chol
+        def tracked(matrix):
+            sizes.append(tuple(matrix.v.shape))
+            return checked(matrix)
+        monkeypatch.setattr(score,"checked_chol",tracked)
+        @tf.function(input_signature=[tf.TensorSpec(theta.shape,dtype)],jit_compile=True,autograph=False)
+        def compare(theta):
+            models=score.Models(case.spec,theta,directions)
+            maps=score.build_maps(models,x,tf.cast(case.observations[0],dtype),controls)
+            cov,a=maps[1],maps[2]
+            q=models.covariance("process_covariance","process_covariance_tangent_fn")
+            av,at,qv,qt=a.v,a.t,q.v,q.t[:,None,None]
+            # Independent expansion of every product-rule term, after broadcasting.
+            mm=tf.linalg.matmul
+            full=mm(mm(av,qv),av,transpose_b=True)
+            tangent=(mm(mm(at,qv),av,transpose_b=True)
+                     +mm(mm(av,qt),av,transpose_b=True)
+                     +mm(mm(av,qv),at,transpose_b=True))
+            _,valid,margin=checked(Jet(full,tangent))
+            return cov.v,cov.t,full,tangent,maps[-1],margin,valid
+>       av,at,bv,bt,am,bm,valid=compare(theta)
+                                ^^^^^^^^^^^^^^
+
+tests/highdim/test_covariance_proposal_compact_maps.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+tests/highdim/test_covariance_proposal_compact_maps.py:35: in compare
+    models=score.Models(case.spec,theta,directions)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/covariance_proposal_score_tf.py:48: in __init__
+    self.models=[spec.model(theta,directions[k])[0] for k in range(directions.shape[0])]
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/covariance_proposal_score_tf.py:48: in <listcomp>
+    self.models=[spec.model(theta,directions[k])[0] for k in range(directions.shape[0])]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/run_range_bearing_covariance_comparison.py:137: in model
+    return _single_cloud_model(self.spec["model"], theta, direction), None
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_batch_fused_tf.py:168: in _single_cloud_model
+    q = model.process_covariance if model.process_covariance_fn is None else model.process_covariance_fn(theta)
+                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+theta = <tf.Tensor 'theta:0' shape=(2,) dtype=float64>
+
+>   process_covariance=q, process_covariance_fn=lambda theta: q*tf.exp(2*theta[0]),
+                                                              ^^^^^^^^^^^^^^^^^^^^
+    process_covariance_tangent_fn=lambda theta, direction: 2*q*tf.exp(2*theta[0])*direction[0],
+    observation_covariance=r, observation_covariance_fn=lambda theta: r*tf.exp(2*theta[1]),
+    observation_covariance_tangent_fn=lambda theta, direction: 2*r*tf.exp(2*theta[1])*direction[1],
+    observation_log_density_fn=density, observation_log_density_tangent_fn=density_tangent)
+E   TypeError: Input 'y' of 'Mul' Op has type float64 that does not match type float32 of argument 'x'.
+
+bayesfilter/highdim/ledh_range_bearing_target_tf.py:95: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_compact_maps.py::test_compact_covariances_equal_full_broadcast_product_rule[dtype1-range_bearing]
+1 failed, 130 passed, 2 warnings in 438.33s (0:07:18)

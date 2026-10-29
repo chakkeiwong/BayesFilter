@@ -1,0 +1,111 @@
+.......F....                                                             [100%]
+=================================== FAILURES ===================================
+________________ test_dry_run_has_no_framework_import_or_files _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-60/test_dry_run_has_no_framework_0')
+
+    def test_dry_run_has_no_framework_import_or_files(tmp_path):
+        output=tmp_path/"uncreated"
+        code="""import sys
+    from bayesfilter.inference.surrogate_hmc_program import main
+    main(['--output',sys.argv[1],'--dry-run'])
+    assert 'tensorflow' not in sys.modules
+    assert 'numpy' not in sys.modules
+    """
+>       result=subprocess.run([sys.executable,"-c",code,str(output)],cwd=ROOT,text=True,capture_output=True,check=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_program.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', "import sys\nfrom bayesfilter.inference.surrogate_hmc_pro...nassert 'numpy' not in sys.modules\n", '/tmp/pytest-of-chakwong/pytest-60/test_dry_run_has_no_framework_0/uncreated'],)
+kwargs = {'cwd': PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917'), 'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['/home/chakwong/anaconda3/envs/tftwogpu/bin/pyt...>
+stdout = '{\n  "schema": "bayesfilter.surrogate_hmc_master.v1",\n  "stage": "all",\n  "scope": "all",\n  "command": [\n    "/ho...maining_budget": {\n    "gpu_seconds": 226800,\n    "cpu_worker_seconds": 54000\n  },\n  "inference_ready": false\n}\n'
+stderr = 'WARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nI0000 00:00:1789747844.195560...e target more than once.\nTraceback (most recent call last):\n  File "<string>", line 4, in <module>\nAssertionError\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', "import sys\nfrom bayesfilter.inference.surrogate_hmc_program import main\nmain(['--output',sys.argv[1],'--dry-run'])\nassert 'tensorflow' not in sys.modules\nassert 'numpy' not in sys.modules\n", '/tmp/pytest-of-chakwong/pytest-60/test_dry_run_has_no_framework_0/uncreated']' returned non-zero exit status 1.
+
+../anaconda3/envs/tftwogpu/lib/python3.11/subprocess.py:571: CalledProcessError
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_program.py::test_dry_run_has_no_framework_import_or_files
+1 failed, 11 passed, 2 warnings in 9.14s

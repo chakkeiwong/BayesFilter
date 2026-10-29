@@ -1,0 +1,280 @@
+{
+  "schema": "sir_neutra_campaign_v1",
+  "status": "FROZEN_MAP_REPAIR_REQUIRED",
+  "plan": "docs/plans/sir-neutra-training-execution-2026-10-21.md",
+  "source_sha256": {
+    "scripts/run_sir_neutra_training.py": "5e336e0da1901185201fc960a8c5a538ee4713f683ea4f3a6ea15f878f8d1a04",
+    "bayesfilter/testing/surrogate_hmc_sir_neutra.py": "1c6116a6f5b8b6d672825c3db12cfcd225bcc4d71af86d1747c87636a793773d",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "167db5fb6835008b3200097da3bd3fc4d51d9ed2c89a257d58720b12f2dc6a64",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "a27b6aa17b16796dfc53a28d751276f2ccb114b5902bb905f56c35abe87e5a84",
+    "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "f159b7a4a032bcc74057a84d5ed8576b7f1b5fa13e85fd2751cc2b2496c89b8f",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+    "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py": "4f86288b7246ba60f6630d8e660717f9f302096eb2fec69ffd2bc0764fcc35c2",
+    "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "8947515c408475e46749497482727e8daff6e3e4a9528d8dcac089f3d92660ca",
+    "bayesfilter/inference/neutra_transport.py": "895132e622d4a1cc22a8b3b03055416f386f8a25595b4d5fb895884b10ca8b79",
+    "bayesfilter/inference/neutra_transport_core.py": "e2ee81730484383a4e29c4d27bb20012961e4281fa09dfa396e602955dab8cc3",
+    "bayesfilter/inference/neutra_hmc.py": "b23c11900bca09221d2c9d7140acdf64d025b3205c04d3a868a191b340ac13a1",
+    "bayesfilter/inference/hmc_tensorflow_verified.py": "1078e3bbe37b4b4e5d0f175b1fb2dc47b4eba3a0d13f57b08cbf0fac7a4fbb31",
+    "bayesfilter/inference/hmc_tensorflow_resume.py": "262eea79821f025179fa4f282e86c4f5659ae245dc8a018211984d24692a13ba",
+    "bayesfilter/inference/hmc_sequential_verification.py": "994699798263d02bfdf579267c301192cbb471a277298e51052f75fb6449e8b3"
+  },
+  "budgets_seconds": {
+    "training": 57600,
+    "hmc": 86400
+  },
+  "attempts": [
+    {
+      "key": "tuning",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/001-tuning",
+      "pid": 2645533,
+      "status": "FINISHED",
+      "started": 1792589846.9595866,
+      "cap_seconds": 7200,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/001-tuning/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 218.54395862901583
+    },
+    {
+      "key": "preflight",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/002-preflight",
+      "pid": 2649441,
+      "status": "FINISHED",
+      "started": 1792590081.170576,
+      "cap_seconds": 7200,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/002-preflight/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 480.33567967102863
+    },
+    {
+      "key": "w3-lr0.001-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/003-w3-lr0.001-s100-r64",
+      "pid": 2656064,
+      "status": "FINISHED",
+      "started": 1792590594.5524514,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/003-w3-lr0.001-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 736.5187028020155
+    },
+    {
+      "key": "w3-lr0.01-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/004-w3-lr0.01-s100-r64",
+      "pid": 2666050,
+      "status": "FINISHED",
+      "started": 1792591383.0936553,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/004-w3-lr0.01-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 764.6021509879502
+    },
+    {
+      "key": "w6-lr0.001-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/005-w6-lr0.001-s100-r64",
+      "pid": 2676629,
+      "status": "FINISHED",
+      "started": 1792592189.2094412,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/005-w6-lr0.001-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 742.6030364420731
+    },
+    {
+      "key": "w6-lr0.01-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/006-w6-lr0.01-s100-r64",
+      "pid": 2685983,
+      "status": "FINISHED",
+      "started": 1792592986.5042922,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/006-w6-lr0.01-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 738.2056784159504
+    },
+    {
+      "key": "w9-lr0.001-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/007-w9-lr0.001-s100-r64",
+      "pid": 2693425,
+      "status": "FINISHED",
+      "started": 1792593780.7917688,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/007-w9-lr0.001-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 720.0174413289642
+    },
+    {
+      "key": "w9-lr0.01-s100-r64",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/008-w9-lr0.01-s100-r64",
+      "pid": 2700557,
+      "status": "FINISHED",
+      "started": 1792594552.5625868,
+      "cap_seconds": 2400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/008-w9-lr0.01-s100-r64/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 685.3220366099849
+    },
+    {
+      "key": "w6-lr0.01-s100-r256",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/009-w6-lr0.01-s100-r256",
+      "pid": 2710629,
+      "status": "FINISHED",
+      "started": 1792595288.622808,
+      "cap_seconds": 5400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/009-w6-lr0.01-s100-r256/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 2626.160585909034
+    },
+    {
+      "key": "w9-lr0.01-s100-r256",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/010-w9-lr0.01-s100-r256",
+      "pid": 2743800,
+      "status": "FINISHED",
+      "started": 1792597971.7403958,
+      "cap_seconds": 5400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/010-w9-lr0.01-s100-r256/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 2220.8628825240303
+    },
+    {
+      "key": "replica-s201",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/011-replica-s201",
+      "pid": 2772939,
+      "status": "FINISHED",
+      "started": 1792600192.6112216,
+      "cap_seconds": 10800,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/011-replica-s201/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5762.862038074061
+    },
+    {
+      "key": "replica-s202",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/012-replica-s202",
+      "pid": 2852920,
+      "status": "FINISHED",
+      "started": 1792605956.3955781,
+      "cap_seconds": 10800,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/012-replica-s202/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5605.462885002955
+    },
+    {
+      "key": "replica-s203",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/013-replica-s203",
+      "pid": 2929914,
+      "status": "FINISHED",
+      "started": 1792611561.8806148,
+      "cap_seconds": 10800,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/013-replica-s203/job.json"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5246.072007791954
+    },
+    {
+      "key": "freeze",
+      "budget": "training",
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/014-freeze",
+      "pid": 2989422,
+      "status": "FINISHED",
+      "started": 1792616844.831201,
+      "cap_seconds": 5400,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_neutra_training.py",
+        "worker",
+        "--job",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-neutra-training-20261021-01/014-freeze/job.json"
+      ],
+      "exit_code": 1,
+      "wall_seconds": 58.428470141021535
+    }
+  ]
+}

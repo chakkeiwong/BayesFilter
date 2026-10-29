@@ -1,112 +1,138 @@
-"""Numerical safety utilities for LEDH computations.
+"""Fail-closed numerical guards for the canonical LEDH recursion.
 
-This module provides graceful failure handling for numerically unstable
-operations that can occur during HMC parameter space exploration.
-
-The key insight: instead of crashing on ill-conditioned matrices, we detect
-failures and return sentinel values (-inf log probability, zero gradient) that
-allow Metropolis-Hastings rejection to work as designed.
+Invalid factors are identity placeholders under a false validity mask. They
+keep subsequent analytical solves defined; they are never accepted covariances.
+These checks establish arithmetic validity, not conditioning or posterior validity.
 """
+from __future__ import annotations
 
 import tensorflow as tf
 
+import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
 
-def safe_cholesky(
-    matrix: tf.Tensor,
-    name: str = "cholesky"
-) -> tuple[tf.Tensor, tf.Tensor]:
-    """Safe Cholesky decomposition with NaN detection.
 
-    TensorFlow's tf.linalg.cholesky returns NaN when the input matrix is not
-    positive definite (e.g., due to numerical errors, ill-conditioning, or
-    actual indefiniteness). This wrapper detects the NaN result and returns
-    a validity flag instead of propagating NaN through the computation.
+def all_finite(*values: tf.Tensor) -> tf.Tensor:
+    """Scalar finite check without converting a scientific tensor to NumPy."""
+    checks = [tf.reduce_all(tf.math.is_finite(value)) for value in values if value is not None]
+    return tf.reduce_all(tf.stack(checks)) if checks else tf.constant(True)
 
-    This enables graceful failure handling: when LEDH encounters a pathological
-    parameter configuration during HMC exploration, we can return -inf log
-    probability and let Metropolis-Hastings reject the proposal naturally,
-    rather than crashing the entire chain.
 
-    Parameters
-    ----------
-    matrix : tf.Tensor
-        Symmetric positive-definite matrix to factorize, shape [..., n, n].
-    name : str, optional
-        Name for the operation (used in error messages and profiling).
+def finite_or_zero(value: tf.Tensor) -> tf.Tensor:
+    """Arithmetic placeholder; callers must retain the original validity."""
+    return tf.where(tf.math.is_finite(value), value, tf.zeros_like(value))
 
-    Returns
-    -------
-    valid : tf.Tensor
-        Boolean scalar. True if decomposition succeeded (no NaN), False otherwise.
-    chol : tf.Tensor
-        Cholesky factor L such that matrix = L @ L^T when valid=True.
-        Returns zeros when valid=False for clean propagation through graph.
 
-    Notes
-    -----
-    **Why NaN detection instead of eigenvalue pre-check:**
+def checked_log_abs_det_tangent(matrix: tf.Tensor, tangent: tf.Tensor):
+    """Log absolute determinant and tr(matrix^{-1} tangent) by shared elimination.
 
-    - **Performance**: O(n²) NaN scan vs O(n³) eigenvalue decomposition
-    - **XLA-compatible**: Pure TensorFlow ops, no Python control flow
-    - **Equally reliable**: Cholesky already produces NaN on ill-conditioned
-      matrices; we're just detecting it rather than letting it propagate
-    - **Empirically validated**: Phase 4a logs show Cholesky returning NaN
-      with warning messages, not crashing
-
-    **Failure modes detected:**
-
-    - Negative eigenvalues (indefinite matrices)
-    - Zero eigenvalues (singular matrices)
-    - Ill-conditioned matrices (κ > 10^12 for ridge=1e-5)
-    - Numerical errors accumulating to non-positive-definite result
-
-    **Example usage:**
-
-    ```python
-    # In Contract E reset policy:
-    gap = target_cov - plus_cov + ridge * I
-    valid_gap, gap_chol = safe_cholesky(gap, "gap")
-
-    if not valid_gap:
-        # Return sentinel values for -inf log probability
-        return zeros, zeros, ..., False
-    ```
-
-    References
-    ----------
-    Phase 4a diagnostic failure (2026-09-16): Cholesky decomposition failed
-    during HMC exploration with message "Cholesky decomposition was not
-    successful for batch 0. The input might not be valid. Filling lower-
-    triangular output with NaNs."
+    Partial pivoting and row operations act on the same matrix and right-hand
+    side. One native TensorFlow loop supports fixed square matrices with any
+    leading batch axes under XLA. No inverse, ridge, or pivot clipping is used.
+    Invalid factors return placeholders with false value and force masks;
+    nonfinite tangents reject force independently of a healthy value.
     """
+    matrix = tf.convert_to_tensor(matrix)
+    tangent = tf.convert_to_tensor(tangent, dtype=matrix.dtype)
+    rank = matrix.shape.rank
+    order = matrix.shape[-1]
+    if (matrix.dtype not in (tf.float32, tf.float64) or rank is None
+            or rank < 2 or order is None or matrix.shape[-2] != order):
+        raise ValueError("checked determinant requires fixed square real matrices")
+    if tangent.shape != matrix.shape:
+        raise ValueError("determinant tangent must have the matrix shape")
+    identity = tf.eye(order, batch_shape=tf.shape(matrix)[:-2], dtype=matrix.dtype)
+    value_valid = tf.reduce_all(tf.math.is_finite(matrix), axis=[-2, -1])
+    force_valid = tf.reduce_all(tf.math.is_finite(tangent), axis=[-2, -1])
+    work = tf.where(value_valid[..., None, None], matrix, identity)
+    rhs = tf.where(force_valid[..., None, None], tangent, tf.zeros_like(tangent))
+    indices = tf.range(order)
+
+    def eliminate(column, work, rhs, valid):
+        magnitudes = tf.where(indices >= column, tf.abs(work[..., :, column]),
+                              tf.cast(-1., matrix.dtype))
+        pivot = tf.argmax(magnitudes, axis=-1, output_type=tf.int32)
+        permutation = tf.where(indices == column, pivot[..., None],
+                               tf.where(indices == pivot[..., None], column, indices))
+        work = tf.gather(work, permutation, axis=-2, batch_dims=rank - 2)
+        rhs = tf.gather(rhs, permutation, axis=-2, batch_dims=rank - 2)
+        diagonal = work[..., column, column]
+        pivot_valid = tf.math.is_finite(diagonal) & (diagonal != 0)
+        divisor = tf.where(pivot_valid, diagonal, tf.ones_like(diagonal))
+        multiplier = tf.where(indices > column, work[..., :, column] / divisor[..., None],
+                              tf.zeros([order], matrix.dtype))
+        updated = work - multiplier[..., :, None] * work[..., column, None, :]
+        work = tf.where((indices[:, None] > column) & (indices[None, :] >= column),
+                        updated, work)
+        rhs = rhs - multiplier[..., :, None] * rhs[..., column, None, :]
+        return column + 1, work, rhs, valid & pivot_valid
+
+    _, factor, rhs, value_valid = tf.while_loop(
+        lambda column, *_: column < order, eliminate,
+        (tf.constant(0), work, rhs, value_valid), maximum_iterations=order,
+        parallel_iterations=1)
+    value_valid &= tf.reduce_all(tf.math.is_finite(factor), axis=[-2, -1])
+    factor = tf.where(value_valid[..., None, None], factor, identity)
+    log_abs_det = tf.reduce_sum(tf.math.log(tf.abs(tf.linalg.diag_part(factor))), axis=-1)
+    value_valid &= tf.math.is_finite(log_abs_det)
+    force_valid &= value_valid & tf.reduce_all(tf.math.is_finite(rhs), axis=[-2, -1])
+    rhs = tf.where(force_valid[..., None, None], rhs, tf.zeros_like(rhs))
+    solution = small_matrix.triangular_solve(factor, rhs, lower=False)
+    derivative = tf.linalg.trace(solution)
+    force_valid &= tf.math.is_finite(derivative)
+    return (tf.where(value_valid, log_abs_det, tf.zeros_like(log_abs_det)),
+            tf.where(force_valid, derivative, tf.zeros_like(derivative)),
+            value_valid, force_valid)
+
+
+def safe_cholesky(matrix: tf.Tensor, name: str = 'cholesky') -> tuple[tf.Tensor, tf.Tensor]:
+    """Factor a full symmetric covariance [..., n, n], preserving batch shape.
+
+    Both triangles must be finite and agree within 8*n machine epsilons after
+    scaling by the largest entry. This permits ordinary accumulation roundoff
+    without accepting a corrupted unused triangle. No symmetrization, ridge or
+    clipping changes an accepted input. A successful factor must be finite and
+    have strictly positive diagonal. No condition-number guarantee is implied.
+
+    Returns a boolean of shape [...] and a factor of shape [..., n, n]. An
+    invalid input returns an identity factor, safe for downstream solves only
+    when its false mask is propagated. Callers must never interpret that factor
+    as a repaired covariance.
+    """
+    matrix = tf.convert_to_tensor(matrix)
+    if matrix.dtype not in (tf.float32, tf.float64):
+        raise TypeError('safe_cholesky requires float32 or float64')
+    if matrix.shape.rank is not None and matrix.shape.rank < 2:
+        raise ValueError('covariance must have rank at least two')
+    if matrix.shape[-1] is not None and matrix.shape[-2] is not None and matrix.shape[-1] != matrix.shape[-2]:
+        raise ValueError('covariance must be square')
     with tf.name_scope(name):
-        # Attempt Cholesky decomposition
-        # On failure, TensorFlow returns NaN in the output tensor
-        chol_attempt = tf.linalg.cholesky(matrix)
+        identity = tf.eye(tf.shape(matrix)[-1], batch_shape=tf.shape(matrix)[:-2], dtype=matrix.dtype)
+        finite = tf.reduce_all(tf.math.is_finite(matrix), axis=[-2, -1])
+        clean = tf.where(finite[..., None, None], matrix, identity)
+        scale = tf.reduce_max(tf.abs(clean), axis=[-2, -1], keepdims=True)
+        normalized = clean / tf.where(scale > 0, scale, tf.ones_like(scale))
+        epsilon = 2.0 ** (-52 if matrix.dtype == tf.float64 else -23)
+        tolerance = tf.cast(8 * tf.shape(matrix)[-1], matrix.dtype) * tf.constant(epsilon, matrix.dtype)
+        symmetric = tf.reduce_max(tf.abs(normalized-tf.linalg.matrix_transpose(normalized)), axis=[-2,-1]) <= tolerance
+        input_valid = finite & symmetric
+        attempt = small_matrix.cholesky(tf.where(input_valid[...,None,None], matrix, identity))
+        valid = input_valid & tf.reduce_all(tf.math.is_finite(attempt), axis=[-2,-1])
+        valid &= tf.reduce_all(tf.linalg.diag_part(attempt) > 0, axis=-1)
+        return valid, tf.where(valid[...,None,None], attempt, identity)
 
-        # Check for NaN in each batch element
-        # For shape [..., n, n], reduce over last two dimensions only
-        # This gives per-batch validity flags for batched inputs
-        has_nan = tf.reduce_any(
-            tf.math.is_nan(chol_attempt),
-            axis=[-2, -1]
-        )
-        is_valid = tf.logical_not(has_nan)
 
-        # Expand is_valid for broadcasting if needed
-        # For batched inputs, we need [..., 1, 1] shape for tf.where
-        while len(is_valid.shape) < len(chol_attempt.shape):
-            is_valid = tf.expand_dims(is_valid, axis=-1)
+def cholesky_differential(chol: tf.Tensor, d_matrix: tf.Tensor,
+                          valid: tf.Tensor | None = None) -> tf.Tensor:
+    """Analytical Cholesky differential; suppress tangents of rejected factors.
 
-        # Return zeros when invalid (for clean propagation)
-        # This prevents NaN from contaminating downstream computations
-        chol = tf.where(
-            is_valid,
-            chol_attempt,
-            tf.zeros_like(chol_attempt)
-        )
-
-        # Squeeze back to scalar for non-batched case
-        is_valid = tf.squeeze(is_valid)
-
-        return is_valid, chol
+    A nonfinite tangent on an otherwise valid factor is left detectable by the
+    consumer's independent force check. A rejected factor's tangent is zero.
+    Leading direction dimensions may broadcast over factor batch dimensions.
+    """
+    if valid is not None:
+        d_matrix = tf.where(valid[...,None,None], d_matrix, tf.zeros_like(d_matrix))
+    left = small_matrix.triangular_solve(chol, d_matrix)
+    middle = tf.linalg.matrix_transpose(small_matrix.triangular_solve(chol, tf.linalg.matrix_transpose(left)))
+    phi = tf.linalg.band_part(middle,-1,0) - 0.5*tf.linalg.diag(tf.linalg.diag_part(middle))
+    result = tf.linalg.matmul(chol,phi)
+    return result if valid is None else tf.where(valid[...,None,None], result, tf.zeros_like(result))

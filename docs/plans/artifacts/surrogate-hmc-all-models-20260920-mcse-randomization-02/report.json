@@ -1,0 +1,540 @@
+{
+  "status": "CANDIDATE_NOT_CALIBRATED",
+  "plan": "docs/plans/surrogate-hmc-mcse-randomization-2026-09-20.md",
+  "cpu_only": true,
+  "default_promoted": false,
+  "closed_results_reinterpreted": false,
+  "source_hashes": {
+    "docs/plans/surrogate-hmc-mcse-randomization-2026-09-20.md": "17ad1eaae6e4fd1694864215799cda3553f735ccde9fa2c392bf278d888fac5e",
+    "scripts/calibrate_surrogate_hmc_mcse_randomization.py": "212957b799eb98e87ec29a66cea1a66d9d986ff9ded211d8418f73b90d73cf3b",
+    "scripts/diagnose_surrogate_hmc_mcse.py": "e3b769b2cdf71ab1ad0296fa1ec6e8b41f452520fe52640b694bdc4ce6fd995a",
+    "bayesfilter/testing/surrogate_hmc_mcse_randomization.py": "5c34b8571d7bf5d5f6297db9a8ea86001ea67e28c8010c17bcc0cc7649d63499",
+    "bayesfilter/inference/surrogate_hmc_equivalence.py": "a03d78b250f53c0fb8c4f950ae6e5551d8cc5b1dba8070b1b02ff658231c3b18",
+    "bayesfilter/inference/hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+    "bayesfilter/testing/surrogate_hmc_gaussian_control.py": "f7cc855166cfd696e4593223e2875ba2dc037a384aa7985ccc6fc169631c857d",
+    "tests/test_surrogate_hmc_mcse_randomization.py": "e520f532a9cf2f50779b8bc1eac14bfc21c82f8b7e055af94910c34b24e158bf"
+  },
+  "reference": {
+    "names": [
+      "mean_w0",
+      "mean_w1",
+      "mean_w2",
+      "second_w0",
+      "second_w1",
+      "second_w2",
+      "cdf_10_w0",
+      "cdf_10_w1",
+      "cdf_10_w2",
+      "cdf_50_w0",
+      "cdf_50_w1",
+      "cdf_50_w2",
+      "cdf_90_w0",
+      "cdf_90_w1",
+      "cdf_90_w2"
+    ],
+    "thresholds": [
+      -1.2815515655446004,
+      0.0,
+      1.2815515655446004
+    ],
+    "expectations": [
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      1.0,
+      0.1,
+      0.1,
+      0.1,
+      0.5,
+      0.5,
+      0.5,
+      0.9,
+      0.9,
+      0.9
+    ],
+    "margins": [
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.1,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02,
+      0.02
+    ],
+    "allowance": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "reference": "analytic Gaussian moments and marginal CDFs",
+    "independent_seed": [
+      20260920,
+      7999
+    ]
+  },
+  "critical_value": 3.3989386395887475,
+  "groups": {
+    "iid": {
+      "completed_replications": 512,
+      "candidate_any_look_veto": {
+        "count": 512,
+        "events": 52,
+        "rate": 0.1015625,
+        "wilson95": [
+          0.07829375610514352,
+          0.13076555267402867
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 512,
+        "events": 3,
+        "rate": 0.005859375,
+        "wilson95": [
+          0.0019946757921860923,
+          0.017083780683944113
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 512,
+        "events": 456,
+        "rate": 0.890625,
+        "wilson95": [
+          0.86062566245746,
+          0.9148063877590378
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 512,
+        "events": 5,
+        "rate": 0.009765625,
+        "wilson95": [
+          0.004178301706740295,
+          0.02265447527155489
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 509,
+        "events": 5,
+        "rate": 0.009823182711198428,
+        "wilson95": [
+          0.004202969958283001,
+          0.02278677235413317
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.0412601024008283,
+          1.0428576201873294,
+          1.0432645031806533
+        ],
+        "2000": [
+          1.0397211838458131,
+          1.0449266817742275,
+          1.0463992574648857
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.9992112023034498,
+          0.9995982862567148,
+          0.9998294353347905
+        ],
+        "2000": [
+          1.000010355695718,
+          0.9999988532092299,
+          0.9995732988446108
+        ]
+      }
+    },
+    "ar_positive": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 21,
+        "rate": 0.08203125,
+        "wilson95": [
+          0.05427759190690546,
+          0.12214328807409647
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.01478385642587143
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 217,
+        "rate": 0.84765625,
+        "wilson95": [
+          0.7985218710820212,
+          0.886511228746865
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.0405868184776155,
+          1.0364489106275288,
+          1.0286176249543297
+        ],
+        "2000": [
+          1.0375582751466739,
+          1.0437879353086001,
+          1.03552235354085
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.5775528809482539,
+          0.577984874667945,
+          0.5771779094946452
+        ],
+        "2000": [
+          0.5766340638188004,
+          0.5774138838597054,
+          0.5767628282557807
+        ]
+      }
+    },
+    "ar_negative": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 22,
+        "rate": 0.0859375,
+        "wilson95": [
+          0.05743557903626671,
+          0.12668230206640807
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 1,
+        "rate": 0.00390625,
+        "wilson95": [
+          0.0006898821669617927,
+          0.021790975380582514
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 229,
+        "rate": 0.89453125,
+        "wilson95": [
+          0.850899024665532,
+          0.9264980886234288
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 4,
+        "rate": 0.015625,
+        "wilson95": [
+          0.006092598203366294,
+          0.039479262709196654
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 255,
+        "events": 4,
+        "rate": 0.01568627450980392,
+        "wilson95": [
+          0.006116555458024146,
+          0.03963136635730219
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          1.0662012653854995,
+          1.0576210038282643,
+          1.0563377753827263
+        ],
+        "2000": [
+          1.056833136224951,
+          1.0498310476510266,
+          1.055231994619768
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          1.7306329075208902,
+          1.7305143501872888,
+          1.7284949215154617
+        ],
+        "2000": [
+          1.731318792025234,
+          1.7323904107844614,
+          1.7303524807971822
+        ]
+      }
+    },
+    "ar_borderline": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 230,
+        "rate": 0.8984375,
+        "wilson95": [
+          0.8553490986352725,
+          0.9297450157753611
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 1,
+        "rate": 0.00390625,
+        "wilson95": [
+          0.0006898821669617927,
+          0.021790975380582514
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 26,
+        "events": 1,
+        "rate": 0.038461538461538464,
+        "wilson95": [
+          0.006821984993543487,
+          0.18892778903034757
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          0.9679775528350822,
+          0.9526880280196375,
+          0.9568365764569007
+        ],
+        "2000": [
+          1.0022228992978064,
+          0.9833562476753582,
+          0.9910383819092237
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.23057207047353728,
+          0.22971069812267367,
+          0.22978679671187432
+        ],
+        "2000": [
+          0.2301392403643121,
+          0.2291484835228444,
+          0.22975467524103313
+        ]
+      }
+    },
+    "ar_slow": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "admitted_interval_failure": {
+        "count": 256,
+        "events": 0,
+        "rate": 0.0,
+        "wilson95": [
+          0.0,
+          0.01478385642587143
+        ]
+      },
+      "conditional_interval_failure": {
+        "count": 0,
+        "events": 0,
+        "rate": null,
+        "wilson95": [
+          null,
+          null
+        ]
+      },
+      "mean_mcse_oracle_ratio": {
+        "1000": [
+          0.5778614678223256,
+          0.5788413392988482,
+          0.5836473863531134
+        ],
+        "2000": [
+          0.7387900129284186,
+          0.7477364306612688,
+          0.7424255027344288
+        ]
+      },
+      "naive_mcse_oracle_ratio": {
+        "1000": [
+          0.07268575149694839,
+          0.07219474657170158,
+          0.0730309175932041
+        ],
+        "2000": [
+          0.0718920633969379,
+          0.07208584551821394,
+          0.07179901165166049
+        ]
+      }
+    },
+    "chain_offset": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      }
+    },
+    "linear_drift": {
+      "completed_replications": 256,
+      "candidate_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "candidate_both_looks_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      },
+      "original_any_look_veto": {
+        "count": 256,
+        "events": 256,
+        "rate": 1.0,
+        "wilson95": [
+          0.9852161435741286,
+          0.9999999999999999
+        ]
+      }
+    }
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "planned_replications": 2048,
+  "cost_forecast_after_eight": {
+    "wall_seconds": 324.71153740858426,
+    "cpu_worker_seconds": 369.65947499999965
+  },
+  "completed_replications": 2048,
+  "checks": {
+    "iid_false_veto": false,
+    "iid_coverage": true,
+    "ar_positive_coverage": true,
+    "ar_negative_coverage": true,
+    "ar_borderline_coverage": false,
+    "ar_slow_veto": true,
+    "chain_offset_veto": true,
+    "linear_drift_veto": true
+  },
+  "general_mcmc_validity": false,
+  "wall_seconds": 228.41602801001864,
+  "cpu_worker_seconds": 260.277849
+}

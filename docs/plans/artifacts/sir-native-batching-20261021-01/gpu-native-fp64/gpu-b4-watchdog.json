@@ -1,0 +1,50 @@
+{
+  "arm": "gpu-b4",
+  "device": "gpu",
+  "batch_size": 4,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/benchmark_sir_fp32_batch_capacity.py",
+    "worker",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-native-fp64/gpu-b4",
+    "--device",
+    "gpu",
+    "--batch",
+    "4",
+    "--gpu",
+    "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "--gpu-limit-mib",
+    "12288",
+    "--plan",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/sir-native-batching-execution-2026-10-21.md",
+    "--diagnostic-kernel-variant",
+    "current",
+    "--repetitions",
+    "1",
+    "--reference-fp64"
+  ],
+  "exit_code": 0,
+  "stop_reason": null,
+  "wall_seconds": 154.89246430597268,
+  "peak_rss_bytes_sampled": 2191491072,
+  "realtime_wall_seconds": 154.89246559143066,
+  "peak_hwm_bytes_sampled": 2191491072,
+  "minimum_available_host_bytes": 22703022080,
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-native-fp64/gpu-b4/result.json",
+  "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-native-fp64/gpu-b4.log",
+  "gpu_before": {
+    "utc": "2026-10-20T18:51:25.176307+00:00",
+    "returncode": 0,
+    "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6974 MiB, 43 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2510 MiB, 48 %",
+    "stderr": ""
+  },
+  "gpu_after": {
+    "utc": "2026-10-20T18:54:00.138265+00:00",
+    "returncode": 0,
+    "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6891 MiB, 57 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2574 MiB, 93 %",
+    "stderr": ""
+  },
+  "worker_status": "COMPLETED_REFERENCE",
+  "last_phase": "complete"
+}

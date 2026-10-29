@@ -1,0 +1,429 @@
+{
+  "status": "PASS",
+  "scope": "LORENZ_PRECISION_NONHARM_DIAGNOSTIC",
+  "replication": "INCOMPLETE",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "candidates": [
+    {
+      "policy": "nearest_covariance",
+      "floor": 0.001,
+      "folder": "covariance_floor_0.001",
+      "eligible": true,
+      "healthy_checks": [
+        {
+          "name": "valid_without_activation",
+          "passed": true
+        },
+        {
+          "name": "A",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "b",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "c",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "x",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ancestors",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "log_incremental_weight",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "logZ",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ess",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "stopping",
+          "passed": true
+        }
+      ],
+      "healthy_valid": true,
+      "healthy_protections": 0.0,
+      "rejected_design_valid": true,
+      "iterations": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "safety": {
+        "minimum_qr_rcond": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.01656797263030825,
+            0.014511982211132866,
+            0.016568257657206084,
+            0.012716872664948479
+          ],
+          [
+            0.01685973660444556,
+            0.017092099430430583,
+            0.016691282997503738,
+            0.0171291981305791
+          ],
+          [
+            0.015676792564014348,
+            0.01648538325261044,
+            0.01659867067186965,
+            0.01642142299742598
+          ],
+          [
+            0.00037538144923814147,
+            0.01634838235334866,
+            0.01678113157621364,
+            0.016655747020831647
+          ]
+        ],
+        "protection_count": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            2.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "minimum_fraction": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "minimum_raw_margin": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.010046784712195644,
+            0.00994920204277861,
+            0.009727832389177684,
+            0.009589236889154647
+          ],
+          [
+            0.010747550472256433,
+            0.009952049948364104,
+            0.01035297197519672,
+            0.009593150406809954
+          ],
+          [
+            -0.13250911073213004,
+            0.008659270688385678,
+            0.008693529329959388,
+            0.008535840140537614
+          ],
+          [
+            -0.4432784546209255,
+            0.00825068589798435,
+            0.008228726029943024,
+            0.008260585026564357
+          ]
+        ],
+        "maximum_relative_change": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            58.54421265191798,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            118.67916755151185,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "maximum_eigen_residual": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.9861253718815818e-15,
+            1.9913422994035684e-15,
+            1.906856903000032e-15,
+            1.871931083753098e-15
+          ],
+          [
+            1.8923329532871096e-15,
+            1.9871553255417e-15,
+            2.060666986329178e-15,
+            1.9216558051448022e-15
+          ],
+          [
+            1.9543133063154403e-15,
+            1.954478532735067e-15,
+            2.1363014280858027e-15,
+            1.9591187478609725e-15
+          ],
+          [
+            2.0698377561506788e-15,
+            1.898412571132329e-15,
+            1.9865885460435487e-15,
+            2.1163042242528447e-15
+          ]
+        ],
+        "maximum_eigen_orthogonality": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.7763568394002505e-15
+          ],
+          [
+            1.7763568394002505e-15,
+            1.7763568394002505e-15,
+            1.9984014443252818e-15,
+            1.887379141862766e-15
+          ],
+          [
+            1.6653345369377348e-15,
+            1.6653345369377348e-15,
+            1.887379141862766e-15,
+            1.9984014443252818e-15
+          ],
+          [
+            1.887379141862766e-15,
+            1.7763568394002505e-15,
+            2.1094237467877974e-15,
+            1.9984014443252818e-15
+          ]
+        ],
+        "maximum_eigen_rotations": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            51.0,
+            51.0,
+            51.0,
+            51.0
+          ],
+          [
+            55.0,
+            55.0,
+            55.0,
+            55.0
+          ],
+          [
+            53.0,
+            53.0,
+            53.0,
+            53.0
+          ],
+          [
+            53.0,
+            53.0,
+            53.0,
+            53.0
+          ]
+        ]
+      },
+      "minimum_forward_precision_margin": 0.0009999999999999985,
+      "rejected_design_finite": true,
+      "trace_counts": {
+        "healthy_controller": 1,
+        "healthy_fit": 1,
+        "healthy_forward": 1,
+        "rejected_controller": 1,
+        "rejected_fit": 1,
+        "rejected_forward": 1
+      },
+      "verdict": "VIABLE_FOR_CORRECTNESS_VALIDATION",
+      "saved_history": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt103_c2_lorenz_bounded_safety/covariance_floor_0.001",
+      "seconds": 54.68445073894691
+    }
+  ],
+  "checks": [
+    {
+      "name": "shared_kernel_snapshot",
+      "passed": true
+    },
+    {
+      "name": "hash_normal.bin",
+      "passed": true
+    },
+    {
+      "name": "hash_uniform.bin",
+      "passed": true
+    },
+    {
+      "name": "unprotected_healthy_valid",
+      "passed": true
+    },
+    {
+      "name": "nonempty_calibration_survivors",
+      "passed": true
+    },
+    {
+      "name": "all_predeclared_candidates_evaluated",
+      "passed": true
+    }
+  ],
+  "heuristic_dominance_verdict": "NOT_ASSESSED_SAFETY_ONLY",
+  "eigen_tolerance": 1.7763568394002505e-15,
+  "eigen_refinement": true,
+  "wall_seconds": 75.0968879389111,
+  "eligible_policies": [
+    "nearest_covariance"
+  ],
+  "next_validation_policy": "nearest_covariance",
+  "interpretation": "Completed safety evaluation only. Candidate eligibility does not certify correctness, variance reduction, source-code replication, or default readiness.",
+  "allocator": {
+    "current": 104317184,
+    "peak": 307890688
+  }
+}

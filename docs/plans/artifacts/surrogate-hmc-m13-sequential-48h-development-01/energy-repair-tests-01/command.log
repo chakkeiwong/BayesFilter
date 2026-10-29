@@ -1,0 +1,129 @@
+..........F...................................F.                         [100%]
+=================================== FAILURES ===================================
+_____ test_candidate_repairs_energy_with_smaller_step_after_adaptation_cap _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7c979c690d10>
+
+    def test_candidate_repairs_energy_with_smaller_step_after_adaptation_cap(monkeypatch):
+        """Exercise the actual candidate consumer, including the bounded repair loop."""
+        calls=[]
+        monkeypatch.setattr(native,"_adaptive_kernel",lambda **kw:SimpleNamespace(adaptive=True))
+        monkeypatch.setattr(native,"_fixed_kernel",lambda **kw:SimpleNamespace(adaptive=False,step=float(kw["step_size"])))
+        def run(**kw):
+            if kw["adaptive"]:
+                return chunk(2.)
+            step=kw["kernel"].step
+            calls.append(step)
+            return chunk(step,extreme=1201. if len(calls)==1 else None)
+        monkeypatch.setattr(native,"_run_tensor_steps",run)
+>       result,decision,trace=native._candidate_verification(binding=None,adapter=None,
+            initial_state=tf.zeros([4,2],tf.float64),initial_step=tf.constant(.2,tf.float64),
+            leapfrog_steps=1,config=config(max_step_size=.5,energy_error_max=1000.),
+            seed=tf.constant([14,15],tf.int32))
+
+tests/test_hmc_nomination_energy_guard.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/hmc_tensorflow_tuning.py:969: in _candidate_verification
+    return verified, decision, tf.concat(endpoint_traces, axis=0)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+e = _NotOkStatusException(), name = 'concat'
+
+    def raise_from_not_ok_status(e, name) -> NoReturn:
+      e.message += (" name: " + str(name if name is not None else ""))
+>     raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     tensorflow.python.framework.errors_impl.InvalidArgumentError: {{function_node __wrapped__ConcatV2_N_4_device_/job:localhost/replica:0/task:0/device:CPU:0}} ConcatOp : Dimension 2 in both shapes must be equal: shape[0] = [16,4,13] vs. shape[3] = [0,4,14] [Op:ConcatV2] name: concat
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py:6027: InvalidArgumentError
+_____ test_consumer_uses_public_authority_and_fresh_archive[True-2-False] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-132/test_consumer_uses_public_auth4')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7c9770231b50>
+repair = True, mixing_attempt = 2, screen_valid = False
+
+    @pytest.mark.parametrize("repair,mixing_attempt,screen_valid", [(False,None,True), (True,None,True), (True,1,True), (True,2,True), (True,2,False)])
+    def test_consumer_uses_public_authority_and_fresh_archive(tmp_path, monkeypatch, repair, mixing_attempt, screen_valid):
+        """Exercise the consumer -> public tuner -> native kernel call chain."""
+        variance = math.log(2.)**2
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def force(x):
+            return PositionOnlyForceEvaluation(x / variance, tf.ones(tf.shape(x)[:-1], tf.bool))
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def endpoint(x):
+            valid = tf.ones(tf.shape(x)[:-1], tf.bool)
+            return TargetPotentialEvaluation(tf.reduce_sum(x*x, -1)/(2*variance),
+                dict(value_valid=valid, force_valid=valid, numerical_failure=~valid,
+                     outside_declared_support=~valid))
+    
+        scope = "M13-consumer-Gaussian-mechanics-only"
+        binding = bind_components(force, endpoint, scope)
+        adapter = SimpleNamespace(target_scope=scope, adapter_signature=lambda: scope+":"+binding.binding_hash)
+        fixture = SimpleNamespace(observation_checksum="diagnostic", observations=tf.zeros([2, 2]),
+                                  model_definition=lambda: {"role": "Gaussian consumer test only"})
+        selection_path = tmp_path / "selection.json"
+        selection = {"multiplier": .1, "controls": {}}
+        selection_path.write_text(json.dumps(selection))
+        issued = []
+        def components(**kwargs):
+            from bayesfilter.testing.surrogate_hmc_m13_step_mixture import bind_step_mixture
+            actual = bind_step_mixture(binding, kwargs.get("step_multipliers", (1.,)))
+            current = SimpleNamespace(target_scope=scope,
+                adapter_signature=lambda: scope+":"+actual.binding_hash)
+            issued.append(actual)
+            return current, actual, SimpleNamespace(manifest=MappingProxyType({"diagnostic": True})), fixture, selection, selection_path
+        monkeypatch.setattr(consumer, "selected_components", components)
+        config = consumer.tuning_config(scope)
+        config = dataclasses.replace(config, nomination=dataclasses.replace(config.nomination,
+            mass_window_results=(16, 32), step_adaptation_results=64, verification_results=64),
+            warmup_results=2000)
+        monkeypatch.setattr(consumer, "tuning_config", lambda _: config)
+        monkeypatch.setattr(tf.config.experimental, "tensor_float_32_execution_enabled", lambda: True)
+        if repair:
+            from bayesfilter.testing import surrogate_hmc_m13_initialization_repair as repaired
+            monkeypatch.setattr(repaired, "initialization_config", lambda c: (dataclasses.replace(c, fresh_seed=(20260927, 1102)), {"plan": "Gaussian-repair-test"}))
+        if mixing_attempt == 2:
+            from bayesfilter.testing import surrogate_hmc_m13_energy_repair as repair_evidence
+            def checked_probe(actual, config):
+                if not screen_valid:
+                    raise ValueError("energy repair health screen incomplete")
+                assert config.nomination.max_step_size == repair_evidence.STEP_CAP
+                assert config.nomination.energy_error_max == config.energy_error_max == 1000.
+                assert actual.binding_hash == issued[-1].binding_hash
+                return dict(passed=True, role="synthetic mechanics fixture")
+            monkeypatch.setattr(repair_evidence, "checked_energy_repair_probe", checked_probe)
+        if not screen_valid:
+            def forbidden_sampler(**kwargs):
+                pytest.fail("sampler launched before completed repair evidence")
+            monkeypatch.setattr(consumer, "tune_hmc_kernel", forbidden_sampler)
+            with pytest.raises(ValueError, match="health screen incomplete"):
+                consumer.public_tuning_stage(tmp_path / "result" / "report.json",
+                    initialization_repair=repair, sequential_recovery=True,
+                    mixing_repair_attempt=mixing_attempt)
+>           assert not (tmp_path / "result/sampling-state.json").exists()
+E           AssertionError: assert not True
+E            +  where True = exists()
+E            +    where exists = (PosixPath('/tmp/pytest-of-chakwong/pytest-132/test_consumer_uses_public_auth4') / 'result/sampling-state.json').exists
+
+tests/test_surrogate_hmc_m13_public_tuning.py:89: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_nomination_energy_guard.py::test_candidate_repairs_energy_with_smaller_step_after_adaptation_cap
+FAILED tests/test_surrogate_hmc_m13_public_tuning.py::test_consumer_uses_public_authority_and_fresh_archive[True-2-False]
+2 failed, 46 passed, 2 warnings in 90.73s (0:01:30)

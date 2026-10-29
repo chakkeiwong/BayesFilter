@@ -1,0 +1,14 @@
+# Completed diagnostic commands (cwd: /tmp/BayesFilter-structural-score-diagnostic-20261026)
+# Existing script commands are preserved in each original manifest.
+/home/chakwong/anaconda3/envs/tf-gpu/bin/python scripts/run_structural_score_diagnostics.py --cpu --reset-only --source-root /tmp/BayesFilter-structural-model-ab-20261023 --output-root docs/plans/artifacts/structural-score-diagnostic-20261026-01/attempts/diagnostic-10-reset-cpu-graph
+/home/chakwong/anaconda3/envs/tf-gpu/bin/python scripts/run_structural_score_diagnostics.py --source-root /tmp/BayesFilter-structural-model-ab-20261023 --output-root docs/plans/artifacts/structural-score-diagnostic-20261026-01/attempts/diagnostic-11-final
+/home/chakwong/anaconda3/envs/tf-gpu/bin/python scripts/run_structural_score_diagnostics.py --cpu --fp64-only --source-root /tmp/BayesFilter-structural-model-ab-20261023 --output-root docs/plans/artifacts/structural-score-diagnostic-20261026-01/attempts/diagnostic-13-fp64-cpu
+/home/chakwong/anaconda3/envs/tf-gpu/bin/python scripts/run_structural_score_diagnostics.py --t50-only --source-root /tmp/BayesFilter-structural-model-ab-20261023 --output-root docs/plans/artifacts/structural-score-diagnostic-20261026-01/attempts/diagnostic-14-t50
+/home/chakwong/anaconda3/envs/tf-gpu/bin/python scripts/run_structural_score_diagnostics.py --cpu --reset-only --reset-order 64 --source-root /tmp/BayesFilter-structural-model-ab-20261023 --output-root docs/plans/artifacts/structural-score-diagnostic-20261026-01/attempts/diagnostic-15-reset-gh64
+
+# Focused validation (deliberate CPU-only):
+CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/highdim/test_structural_completion_proposal.py tests/highdim/test_structural_references.py tests/highdim/test_structural_tanh_confirmation.py
+
+# Build of the existing local custom op:
+cmake -S . -B /tmp/BayesFilter-sylvester-build-20261026-tfgpu -DPython3_EXECUTABLE=/home/chakwong/anaconda3/envs/tf-gpu/bin/python -DCMAKE_BUILD_TYPE=Release -DBAYESFILTER_OP_OUTPUT_DIR=/tmp/BayesFilter-structural-score-diagnostic-20261026/bayesfilter/ops
+cmake --build /tmp/BayesFilter-sylvester-build-20261026-tfgpu --parallel 4

@@ -1,0 +1,399 @@
+{
+  "active_manifest": "manifest-repair08.json",
+  "attempts_remaining": 0,
+  "attempts_used": 12,
+  "checks": {
+    "iapf_eq15_local_solver": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 11,
+      "manifest": "manifest-repair07.json",
+      "outcome": {
+        "all_clouds_usable": false,
+        "candidate_clouds": 6,
+        "check": "PASS",
+        "equation15_identity": "PASS",
+        "full_filter": "NOT_RUN",
+        "jacobian_and_exact_controls": "PASS",
+        "role": "CPU independent reference diagnostic",
+        "saved_clouds": 32,
+        "scientific_replication": "INCOMPLETE",
+        "solver_status": "RECONSTRUCTION_HYPOTHESIS"
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt11",
+      "process": "COMPLETED"
+    },
+    "iapf_equation15_algebra": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 1,
+      "manifest": "manifest.json",
+      "outcome": {
+        "check": "PASS",
+        "detail": "Equation identities, gradients and short controller mechanics only",
+        "scientific_replication": "INCOMPLETE"
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt01",
+      "process": "COMPLETED"
+    },
+    "iapf_saved_failures": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 2,
+      "manifest": "manifest.json",
+      "outcome": {
+        "check": "PASS",
+        "detail": "Historical candidate failures preserved; no new full-filter attempts",
+        "failure_reasons": {
+          "Eq15 local optimizer did not converge": 25,
+          "density loss underflow": 2,
+          "floating-point domain boundary": 5
+        },
+        "saved_failed_attempts": 32,
+        "scientific_replication": "INCOMPLETE"
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt02",
+      "process": "COMPLETED"
+    },
+    "mdpf_source_configuration": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 9,
+      "manifest": "manifest-repair05.json",
+      "outcome": {
+        "active_experiments": [
+          "full_dpf_evaluation_fixed_bands_mse_000",
+          "full_dpf_evaluation_fixed_bands_mse_001",
+          "full_dpf_evaluation_fixed_bands_mse_002",
+          "full_dpf_evaluation_fixed_bands_mse_003",
+          "full_dpf_evaluation_fixed_bands_mse_004",
+          "full_dpf_evaluation_fixed_bands_mse_005",
+          "full_dpf_evaluation_fixed_bands_mse_006",
+          "full_dpf_evaluation_fixed_bands_mse_007",
+          "full_dpf_evaluation_fixed_bands_mse_008",
+          "full_dpf_evaluation_fixed_bands_mse_009",
+          "full_dpf_evaluation_fixed_bands_mse_010"
+        ],
+        "active_training": [],
+        "author_root": "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023",
+        "backend_role": "Original author PyTorch/NumPy independent reference",
+        "blockers": [
+          "Full training is disabled in the source configuration",
+          "Referenced pretrained / full-model checkpoints are absent",
+          "Full forward/loss/backward/optimizer endpoint NOT_CHECKED",
+          "Appendix B learning and paper bearings experiments NOT_RUN",
+          "Full training and comparison budget NOT_MEASURED"
+        ],
+        "check": "INCOMPLETE",
+        "configuration_resolution": "PASS",
+        "dataset_paths": [
+          {
+            "exists": false,
+            "path": "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/datasets/evaluation_dataset.pt",
+            "split": "evaluation"
+          },
+          {
+            "exists": false,
+            "path": "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/datasets/training_dataset.pt",
+            "split": "training"
+          },
+          {
+            "exists": false,
+            "path": "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/datasets/validation_dataset.pt",
+            "split": "validation"
+          }
+        ],
+        "dependencies": {
+          "PIL": true,
+          "matplotlib": true,
+          "numpy": true,
+          "pynvml": true,
+          "scipy": true,
+          "torch": true,
+          "torchviz": true,
+          "tqdm": true,
+          "yaml": true
+        },
+        "expanded_experiments": 55,
+        "full_training_call_chain": "NOT_CHECKED",
+        "gpu_intentionally_hidden": true,
+        "interpreter": "/home/chakwong/BayesFilter/.localresources/envs/mdpf-reference-20260924/bin/python",
+        "isolated_python": true,
+        "missing_checkpoint_count": 14,
+        "missing_checkpoints": [
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_000/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_001/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_002/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_003/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_004/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_005/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_006/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_007/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_008/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_009/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/saves/run_010/full_dpf_fixed_bands/models/full_dpf_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/individual_training/saves/weights_fixed_bands/models/observation_encoder_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/individual_training/saves/weights_fixed_bands/models/particle_encoder_for_weights_model_best.pt",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/individual_training/saves/weights_fixed_bands/models/weight_model_best.pt"
+        ],
+        "model_construction": {
+          "class": "KDEParticleFilter",
+          "full_training_forward_backward": "NOT_CHECKED",
+          "sequence_loss_backward_fixture": {
+            "fixture": "Synthetic wiring-only: B=2,T=9,N=25",
+            "full_training_cost": "NOT_ESTIMATED from this fixture",
+            "gradient_estimator_correctness": "NOT_ESTABLISHED by finite gradients",
+            "gradient_l1_descriptive_only": 9.954648244427517,
+            "kernel_families": [
+              "Normal",
+              "Normal",
+              "Von_Mises"
+            ],
+            "loss": 3.4013218879699707,
+            "model_seed": 924001,
+            "optimizer_epoch": "NOT_CHECKED",
+            "parameters_with_gradients": 31,
+            "pretrained_weights": "NOT_USED: random initialization for wiring only",
+            "sampling_seed": 924002,
+            "scientific_replication": "INCOMPLETE",
+            "sparse_labels_modulo": 4,
+            "status": "PASS",
+            "trainer_constructor": "NOT_CHECKED",
+            "truncated_bptt_modulo": 4,
+            "wall_seconds": 0.14897432099678554
+          },
+          "status": "PASS"
+        },
+        "models_package_paths": [
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/models"
+        ],
+        "real_module_imports": {
+          "main": {
+            "status": "PASS"
+          },
+          "models.kde_particle_filter.kde_particle_filter": {
+            "status": "PASS"
+          }
+        },
+        "scientific_replication": "INCOMPLETE",
+        "source_sha256": {
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/common_parameters_evaluation.yaml": "2925ffa528c5167cacfb1ebcc2e05e93193cfb2d3723f017b37574448271a519",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/common_parameters_training.yaml": "9e75339408c24dadc50d679be92acc8754d896bc73be93d0fd1e85e75648503e",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/dataset_params_evaluation.yaml": "521093608d5cec2886f08146cf43ed2b643dfa105dfd9ee2398474a234a35099",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/dataset_params_training.yaml": "a5da0deb86abb5785eb8eb4eb5406581b970d84e9dd3e2ff243b32cd393eaeec",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/models.yaml": "b9d3bacb28157bf3b3bf6cf56f71a53b75012094d4157d265f5ef4df30809271",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/configs/our_experiments.yaml": "78454da88e70a3ee7343a29ff54fd83d845a29b65dd066c53698674acfd468a2",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/experiment0002_importance/config.yaml": "748365464bff4f269a02b2659d01dfc27c0ce9275e4d65406232db0fc08a14f1",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/individual_training/config.yaml": "0a0fbf51aae2c36ab2f47778e4e93a8d4f1baa34442e0011f3ae67c3389d9539",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/experiments/bearings_only_experiments_methodical_25_particles_multiple_runs/scripts/generate_multiple_runs_config_files.py": "46342d6e2cc1e927e1cd0dbfbfd18e242c0d5f3121ec57a6c85368faaca8ae02",
+          "/home/chakwong/BayesFilter/.localresources/code/younis-mdpf-neurips-2023/src/main.py": "efa042f88f3ff6224b28026eea10383c630a09076617f0c394ee23482f256b5a"
+        },
+        "trials": 11
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt09",
+      "process": "COMPLETED"
+    },
+    "mdpf_source_training": {
+      "current_check": "PASS",
+      "freshness": "CURRENT_MANIFEST",
+      "index": 12,
+      "manifest": "manifest-repair08.json",
+      "outcome": {
+        "actual_interpreter_cuda_probe": "PASS",
+        "backend_role": "Independent author PyTorch/NumPy reference; eager, no XLA",
+        "check": "PASS",
+        "checkpoints_reloaded": 11,
+        "full_budget": "NOT_MEASURED",
+        "full_source_training_call_chain": "PASS_ON_SHORT_REFERENCE",
+        "gradient_estimator_correctness": "NOT_ESTABLISHED",
+        "learning_quality": "NOT_ESTABLISHED",
+        "optimizer_gradient_checks": 30,
+        "peak_allocated_bytes": 75619328,
+        "phases": {
+          "full_training": {
+            "changed_parameter_tensors": 31,
+            "changed_parameters": [
+              "particle_encoder_for_particles_model.encoder.0.weight",
+              "particle_encoder_for_particles_model.encoder.0.bias",
+              "particle_encoder_for_particles_model.encoder.2.weight",
+              "particle_encoder_for_particles_model.encoder.2.bias",
+              "particle_encoder_for_particles_model.encoder.4.weight",
+              "particle_encoder_for_particles_model.encoder.4.bias",
+              "particle_encoder_for_weights_model.encoder.0.weight",
+              "particle_encoder_for_weights_model.encoder.0.bias",
+              "particle_encoder_for_weights_model.encoder.2.weight",
+              "particle_encoder_for_weights_model.encoder.2.bias",
+              "particle_encoder_for_weights_model.encoder.4.weight",
+              "particle_encoder_for_weights_model.encoder.4.bias",
+              "proposal_model.proposal_model.0.weight",
+              "proposal_model.proposal_model.0.bias",
+              "proposal_model.proposal_model.2.weight",
+              "proposal_model.proposal_model.2.bias",
+              "proposal_model.proposal_model.4.weight",
+              "proposal_model.proposal_model.4.bias",
+              "observation_encoder.encoder.0.weight",
+              "observation_encoder.encoder.0.bias",
+              "observation_encoder.encoder.2.weight",
+              "observation_encoder.encoder.2.bias",
+              "observation_encoder.encoder.4.weight",
+              "observation_encoder.encoder.4.bias",
+              "weight_model.encoder.0.weight",
+              "weight_model.encoder.0.bias",
+              "weight_model.encoder.2.weight",
+              "weight_model.encoder.2.bias",
+              "weight_model.encoder.4.weight",
+              "weight_model.encoder.4.bias",
+              "weighted_bandwidth_predictor.log_bandwidths"
+            ],
+            "epochs": 2,
+            "optimizer_count": 6,
+            "status": "PASS",
+            "train_batches": 2,
+            "training_batch_size": 64,
+            "validation_batch_size": 256,
+            "validation_batches": 1,
+            "wall_seconds": 89.92512595900916
+          },
+          "pretraining": {
+            "changed_parameter_tensors": 18,
+            "changed_parameters": [
+              "particle_encoder_for_weights_model.encoder.0.weight",
+              "particle_encoder_for_weights_model.encoder.0.bias",
+              "particle_encoder_for_weights_model.encoder.2.weight",
+              "particle_encoder_for_weights_model.encoder.2.bias",
+              "particle_encoder_for_weights_model.encoder.4.weight",
+              "particle_encoder_for_weights_model.encoder.4.bias",
+              "observation_encoder.encoder.0.weight",
+              "observation_encoder.encoder.0.bias",
+              "observation_encoder.encoder.2.weight",
+              "observation_encoder.encoder.2.bias",
+              "observation_encoder.encoder.4.weight",
+              "observation_encoder.encoder.4.bias",
+              "weight_model.encoder.0.weight",
+              "weight_model.encoder.0.bias",
+              "weight_model.encoder.2.weight",
+              "weight_model.encoder.2.bias",
+              "weight_model.encoder.4.weight",
+              "weight_model.encoder.4.bias"
+            ],
+            "epochs": 1,
+            "optimizer_count": 3,
+            "status": "PASS",
+            "train_batches": 2,
+            "training_batch_size": 64,
+            "validation_batch_size": 256,
+            "validation_batches": 1,
+            "wall_seconds": 27.148922655993374
+          }
+        },
+        "scheduler_compatibility": "PASS",
+        "scientific_replication": "INCOMPLETE",
+        "source_dataset_round_trip": "PASS"
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt12",
+      "process": "COMPLETED"
+    },
+    "pytorch_author_gpu_environment": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 7,
+      "manifest": "manifest-repair03.json",
+      "outcome": {
+        "backend_role": "Independent author reference",
+        "check": "PASS",
+        "compiled_cuda_version": "13.0",
+        "device": "NVIDIA GeForce RTX 4080 SUPER",
+        "full_training_call_chain": "NOT_CHECKED",
+        "gpu_available": true,
+        "interpreter": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "peak_allocated_bytes": 1536,
+        "scientific_replication": "INCOMPLETE",
+        "torch_version": "2.11.0+cu130",
+        "trust_basis": "Escalated supervisor and child process",
+        "value": 4.0
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt07",
+      "process": "COMPLETED"
+    },
+    "tensorflow_gpu_xla_environment": {
+      "current_check": "NOT_CHECKED",
+      "freshness": "LEGACY_OR_STALE",
+      "index": 4,
+      "manifest": "manifest.json",
+      "outcome": {
+        "allocator": {
+          "current": 2560,
+          "peak": 3328
+        },
+        "check": "PASS",
+        "compile_and_first_seconds": 0.12386319600045681,
+        "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+        "full_step_cost": "NOT_MEASURED",
+        "hlo_sha256": "7078041cb7159ecc7dd93c41b490581d38d1d53d5be7cc1fc76e71705fb1cb06",
+        "input_signature": "[2,2] float32",
+        "jit_compile": true,
+        "memory_policy": {
+          "logical_device_memory_limit": null,
+          "mode": "memory_growth",
+          "physical_devices": [
+            {
+              "memory_growth": true,
+              "name": "/physical_device:GPU:0"
+            },
+            {
+              "memory_growth": true,
+              "name": "/physical_device:GPU:1"
+            }
+          ]
+        },
+        "method_level_xla": "NOT_CHECKED",
+        "reference": "TensorFlow CPU matrix product on exact small-integer inputs",
+        "scientific_replication": "INCOMPLETE",
+        "tensorflow_version": "2.20.0-dev0+selfbuilt",
+        "tf32": false,
+        "tf32_role": "Tiny diagnostic reference exception",
+        "trace_count": 1,
+        "trust_basis": "Escalated supervisor and child process",
+        "values": [
+          [
+            7.0,
+            10.0
+          ],
+          [
+            15.0,
+            22.0
+          ]
+        ],
+        "warm_seconds_descriptive_only": [
+          0.000656489995890297,
+          0.0003526739965309389,
+          0.0005003920014132746
+        ]
+      },
+      "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/stage0/attempt04",
+      "process": "COMPLETED"
+    }
+  },
+  "execution": "FINISHED",
+  "freshness_basis": "Recorded manifest dependencies; run revalidates live dependencies before reuse.",
+  "full_replication_budget": "NOT_BUDGETED",
+  "iapf_replication": "INCOMPLETE",
+  "mdpf_replication": "INCOMPLETE",
+  "next": "Review new training/solver diagnostics, resolve fit and estimator parity, then budget paper experiments.",
+  "phase_handlers": {
+    "0M": "IMPLEMENTED_DIAGNOSTIC",
+    "0R": "IMPLEMENTED",
+    "I2a": "IMPLEMENTED_DIAGNOSTIC",
+    "remaining_phases": "SPECIFIED_NOT_IMPLEMENTED_OR_BUDGETED"
+  },
+  "prerequisite_checks": "INCOMPLETE",
+  "remaining": {
+    "cpu_seconds": 1781.674667425992,
+    "gpu_seconds": 769.7370131200005
+  },
+  "selected_execution": "FINISHED",
+  "selected_jobs": [
+    "mdpf_source_training"
+  ],
+  "stage0": "INCOMPLETE"
+}

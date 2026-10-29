@@ -1,0 +1,59 @@
+{
+  "classification": "diagnostic_only_deterministic_counterexamples",
+  "historical_program": "September 7 manual Gaussian toy HMC, not DCTR",
+  "tuning_status": "historical fixed controls; no tuning authority",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "CUDA_VISIBLE_DEVICES": "-1",
+  "jit_compile": false,
+  "execution_exception": "tiny CPU eager reference arithmetic; no chain",
+  "source_path": "scripts/phase2_toy_potential_test.py",
+  "source_sha256": "6947847749f6bf89f9d1a9baa4182a6a3ce198b231bf18774df3fad2b42209d4",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "target": "independent N(0, diag(1, 1/4, 1/9)) chains",
+  "energy_check": {
+    "current_expected_per_chain": [
+      0.5,
+      2.0
+    ],
+    "current_actual_scalar": 2.5,
+    "proposal_expected_per_chain": [
+      2.0,
+      0.0
+    ],
+    "proposal_actual_scalar": 2.0,
+    "expected_log_acceptance_ratios": [
+      -1.5,
+      2.0
+    ],
+    "actual_log_acceptance_ratios": [
+      0.5,
+      0.5
+    ],
+    "log_uniforms": [
+      -1.0,
+      -1.0
+    ],
+    "expected_accept": [
+      false,
+      true
+    ],
+    "actual_accept": [
+      true,
+      true
+    ],
+    "verdict": "wrong relative to independent per-chain MH acceptance"
+  },
+  "distance_check": {
+    "reported_frobenius_moment_statistic": 0.030000000000000006,
+    "exact_gaussian_wasserstein_distance": 0.1,
+    "verdict": "neither exact W2 nor the asserted upper bound"
+  },
+  "historical_claim_status": "recorded PASS cannot establish valid sampling",
+  "research_direction_status": "not rejected; endpoint-corrected mechanism remains viable",
+  "random_seeds": "N/A: deterministic arithmetic, no sampling",
+  "wall_seconds": 3.178057101002196,
+  "process_cpu_seconds": 3.1584809810000003,
+  "plan": "docs/plans/ledh-surrogate-hmc-recovery-plan-2026-09-18.md"
+}

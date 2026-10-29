@@ -1,0 +1,159 @@
+{
+  "schema": "sir_n1008_runtime_campaign_v1",
+  "status": "complete",
+  "git_commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+  "branch": "ledh-refactor-with-policy-fix",
+  "working_directory": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+  "command": [
+    "scripts/benchmark_sir_n1008_runtime.py",
+    "--root",
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/attempt-01",
+    "--particles",
+    "1008",
+    "--blocks",
+    "16",
+    "--budget-seconds",
+    "2600"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only_preparation": true,
+  "gpu_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "gpu_uuid": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "gpu_memory_policies": {
+    "premerge": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "checked": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "current": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    }
+  },
+  "data_version": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "seeds": {
+    "calibration": 263103010,
+    "reset": 263103020,
+    "data": [
+      263103001,
+      263103002
+    ],
+    "particle": [
+      263103031,
+      263103032
+    ]
+  },
+  "particles": 1008,
+  "horizon": 5,
+  "parameter_batch_size": 1,
+  "guide": null,
+  "input_sha256": {
+    "263103001": "392aaf9f98d4f5ef26bc06beb146e4dfa3dfbf55db48b5b622fbc7632e5f22ec",
+    "263103002": "7eaf97c8627ffdcd0ef816ef452b9befc0c519678dc571e53d8352099801a90f"
+  },
+  "executed_driver_sha256": "f12eed3b094a21d69194d1673e63cf632fa09d335f5a1a1e6e05ad5072d49597",
+  "sources": {
+    "premerge": {
+      "commit": "4d6915cc66e701c4c7b657e094306d298fdd3e76",
+      "source": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-postmerge-replay-20261021/attempt-01/before-source",
+      "index_sha256": "a3cc63a5711557905d42a1b3aa470af9d5bed3c920bdc6281ebed6024bc8c532"
+    },
+    "checked": {
+      "commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+      "source": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-merge-repair-20261022/candidate-02-final-source",
+      "index_sha256": "1f9749e982e80596fbd686d3b6395b1a8b82e08f0cf3ca845e529aa168a48c99"
+    },
+    "current": {
+      "commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+      "source": "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/current-source",
+      "index_sha256": "eca930de03e8c978467e1dec45d40719f66a11c564a3a678b16030db1fa9c65d"
+    }
+  },
+  "wall_seconds": 509.35235878592357,
+  "resident_worker_seconds": 1327.7882482159184,
+  "cpu_preparation_seconds": 6.675453974981792,
+  "plan": "docs/plans/ledh-sir-n1008-runtime-20261023.md",
+  "result": "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/result.md",
+  "outputs": [
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/attempt-01/result.json",
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/attempt-01/analysis.json",
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/inputs.json"
+  ],
+  "completed_timed_calls": 576,
+  "warm_calls": 36,
+  "parity_checks": 24,
+  "heuristic_dominance_verdict": "not_a_scientific_efficacy_comparison",
+  "no_uniform_speed_recovery": true,
+  "prior_N64_results_disqualified": true,
+  "device_idle_at_run_boundaries": true,
+  "concurrent_process_ownership_during_run_not_polled": true,
+  "current_runtime_source_edits_in_this_task": false
+}

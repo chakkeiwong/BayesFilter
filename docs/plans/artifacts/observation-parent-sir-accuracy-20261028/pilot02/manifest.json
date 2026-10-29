@@ -1,0 +1,82 @@
+{
+  "command": [
+    "scripts/run_observation_parent_sir_campaign.py",
+    "--out",
+    "docs/plans/artifacts/observation-parent-sir-accuracy-20261028/pilot02",
+    "--pilot",
+    "--seeds",
+    "1",
+    "--limit",
+    "600"
+  ],
+  "git_commit": "b543565bed052016086059c929d0648e205fb4a0",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "GPU:0",
+  "visible_gpu": "1",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": true,
+  "n": 1008,
+  "horizon": 50,
+  "chunk": 1008,
+  "seeds": [
+    281201
+  ],
+  "data_seed": 26100611,
+  "data_sha256": "75ca53c6354d5ac1a20458944df6a9c60801971064081aff2f41c3568c4c2bdd",
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "global_guide_conditioning": "positive_information",
+    "shared_gaussian_contraction": "direct",
+    "proposal_policy": "conditional_observation_weighted"
+  },
+  "plan": "docs/plans/observation-parent-default-and-sir-accuracy-20261028.md",
+  "result": "docs/plans/observation-parent-sir-accuracy-result-20261028.md",
+  "source_sha256": {
+    "scripts/run_observation_parent_sir_campaign.py": "85f83c34af2324995f339f9c891c9240e4f4160dca67cd0251abcd4c92807837",
+    "bayesfilter/highdim/observation_parent_proposal_tf.py": "052b940cf2289e58983218defd9a03f35094220119c6ddcea09bc82b48b20f6f",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "7cdedc422dd8d24b539f8e808b7677fcdb322bbdab8d1f370183c9688322401d",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "25b3992cf08baaa30a6902659c5793007827ab3779b50a9372b12504e71358e3",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "b60f4377527b0ddcf3a46051cc52b53d7549ffee9700b7d57e6581a1b9b25e69",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91"
+  },
+  "limit": 600.0,
+  "scope": "untuned FP64 diagnostic; not canonical LEDH admission",
+  "status": "complete",
+  "wall_seconds": 226.18919918499887,
+  "row_count": 18,
+  "allocator": {
+    "current": 9385216,
+    "peak": 77303040
+  }
+}

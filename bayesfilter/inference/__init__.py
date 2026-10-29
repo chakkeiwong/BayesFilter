@@ -12,6 +12,8 @@ __all__ = [
     "HMCTransitionProfile", "FrozenTransitionSpec",
     "TrajectoryPilotConfig", "propose_trajectory_candidates",
     "MAMSPilotConfig", "propose_mams_trajectory_candidates",
+    'HMCChainTarget', 'HMCChainKernel', 'HMCChainLayout', 'HMCChainExecutor',
+    'HMCChainResult', 'HMCChainExecutionError', 'benchmark_hmc_chain_execution',
     'NeuTraTransportConfig',
     'NeuTraTransport',
     'NeuTraOptimizerConfig',
@@ -210,6 +212,9 @@ __all__ = [
     "FourChainAcceptanceDecision",
     "FourChainMeanBandAcceptancePolicy",
     "TensorFlowHMCKernelTuningConfig",
+    "VerifiedTensorFlowHMCConfig",
+    "VerifiedTensorFlowHMCResult",
+    "load_verified_tensorflow_hmc_result",
     "TensorFlowHMCKernelTuningResult",
     "BoundRetainedHMCArchiveConfig",
     "BoundRetainedHMCArchiveResult",
@@ -769,6 +774,9 @@ _DIRECT_EXPORTS = {
     "FourChainAcceptanceDecision": "bayesfilter.inference.hmc_tuning_dispatch",
     "FourChainMeanBandAcceptancePolicy": "bayesfilter.inference.hmc_tuning_dispatch",
     "TensorFlowHMCKernelTuningConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "VerifiedTensorFlowHMCConfig": "bayesfilter.inference.hmc_tuning_dispatch",
+    "VerifiedTensorFlowHMCResult": "bayesfilter.inference.hmc_tuning_dispatch",
+    "load_verified_tensorflow_hmc_result": "bayesfilter.inference.hmc_tuning_dispatch",
     "TensorFlowHMCKernelTuningResult": "bayesfilter.inference.hmc_tuning_dispatch",
     "build_retained_bound_hmc_archive_runner_from_tuning_result": (
         "bayesfilter.inference.hmc_tuning_dispatch"
@@ -798,6 +806,15 @@ _DIRECT_EXPORTS['NeuTraTransportConfig'] = "bayesfilter.inference.neutra_transpo
 _DIRECT_EXPORTS['NeuTraTransport'] = "bayesfilter.inference.neutra_transport"
 _DIRECT_EXPORTS['NeuTraOptimizerConfig'] = "bayesfilter.inference.neutra_transport"
 _DIRECT_EXPORTS['NeuTraTransportTrainer'] = "bayesfilter.inference.neutra_transport"
+_DIRECT_EXPORTS.update({
+    'HMCChainTarget': 'bayesfilter.inference.chain_execution',
+    'HMCChainKernel': 'bayesfilter.inference.chain_execution',
+    'HMCChainLayout': 'bayesfilter.inference.chain_execution',
+    'HMCChainExecutor': 'bayesfilter.inference.chain_execution',
+    'HMCChainResult': 'bayesfilter.inference.chain_execution',
+    'HMCChainExecutionError': 'bayesfilter.inference.chain_execution',
+    'benchmark_hmc_chain_execution': 'bayesfilter.inference.chain_benchmark',
+})
 
 
 def __getattr__(name: str):

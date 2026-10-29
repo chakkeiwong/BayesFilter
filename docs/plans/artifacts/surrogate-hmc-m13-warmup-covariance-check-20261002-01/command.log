@@ -1,0 +1,19 @@
+Command: /home/chakwong/anaconda3/envs/tftwogpu/bin/python /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-warmup-covariance-check-20261002-01/analyze.py
+CPU-only: CUDA_VISIBLE_DEVICES=-1; saved data only; no new sampling.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790953462.366485 2359543 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790953462.369421 2359543 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790953462.377390 2359543 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790953462.377451 2359543 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790953462.377457 2359543 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790953462.377459 2359543 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-10-02 23:04:24.171794: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-warmup-covariance-check-20261002-01/analyze.py", line 103, in <module>
+    welford_mean, welford_covariance = welford(tf.reshape(warmup, [-1, 2]))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/inference/hmc_tensorflow_tuning.py", line 730, in _welford_covariance
+    raise ValueError("Welford states must have static shape [state, dimension]")
+ValueError: Welford states must have static shape [state, dimension]

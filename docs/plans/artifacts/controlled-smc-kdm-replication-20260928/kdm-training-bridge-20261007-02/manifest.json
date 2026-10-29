@@ -1,0 +1,51 @@
+{
+  "schema": "kdm_training_bridge_manifest_v1",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_training_controller.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-training-bridge-20261007-02/diagnostic"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_training_bridge.py",
+    "--mode",
+    "controller",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-training-bridge-20261007-02"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "mode": "controller",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "branch": "surrogate-hmc",
+  "plan": "docs/plans/controlled-smc-kdm-training-bridge-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-training-bridge-result-20261007.md",
+  "timeout_seconds": 1800,
+  "device": "CPU deliberately hidden GPU",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "LD_LIBRARY_PATH": "/home/chakwong/anaconda3/envs/tf-gpu2/lib"
+  },
+  "hashes": {
+    "scripts/run_kdm_training_bridge.py": "35f1b80b7387d5ac1ce184f987458538df70435412dbf86b18131a157c28f40d",
+    "docs/plans/controlled-smc-kdm-training-bridge-20261007.md": "3fe2d099f24196ccdb7d798383467cc4b320158902678fd017a901c146185dc2",
+    "docs/benchmarks/diagnose_kdm_training_controller.py": "5792ef50b6c97a53b9fd1358074563ed205b95d21e17aafb799ac37b798679fd",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "bf4a32d1180e1c43f07cbcce302a485420179d0a90031f8938941fd751f64d57",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "217a3f250bf8a1628c9d42a2b68e1aaf689c1c1ff0153dce46a42f2fb184b6f8",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a"
+  },
+  "data": "author source loss streams",
+  "seeds": "N/A deterministic loss streams",
+  "status": "COMPLETED",
+  "returncode": 0,
+  "wall_seconds": 2.1190525400452316,
+  "result_sha256": "2007edcbed0e711c99897cf298a472a911f79b1cd8d50c13c5d497c483491e40"
+}

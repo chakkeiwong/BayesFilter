@@ -1,0 +1,93 @@
+2026-10-24 06:45:48.363580: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792795548.371069  913420 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792795548.374060  913420 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792795548.380806  913420 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792795548.380832  913420 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792795548.380834  913420 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792795548.380835  913420 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792795552.196932  913420 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792795552.603534  913420 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792795552.696231  913420 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792795561.921155  913420 service.cc:152] XLA service 0x6785d760 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792795561.921196  913420 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792795600.661860  913420 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-24 06:48:08.597204: E external/local_xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %reduce.15581 = f32[4,4032]{1,0} reduce(f32[1,4,4032]{2,1,0} %broadcast.257666, f32[] %constant.175656), dimensions={0}, to_apply=%while_Min_6-reduction.278298, metadata={op_type="Min" op_name="while/Min_6" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-24 06:48:08.725884: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2.097059521s
+Constant folding an instruction is taking > 1s:
+
+  %reduce.15581 = f32[4,4032]{1,0} reduce(f32[1,4,4032]{2,1,0} %broadcast.257666, f32[] %constant.175656), dimensions={0}, to_apply=%while_Min_6-reduction.278298, metadata={op_type="Min" op_name="while/Min_6" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-24 06:54:42.301981: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_46487__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1034829] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-24 07:27:47.986031: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 35m5.684157615s
+
+********************************
+[Compiling module a_inference_run_46487__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1034829] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792798067.990672  913420 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 760, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 749, in main
+    if args.command=='worker': return worker(args.job)
+                                      ^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 259, in worker
+    result=WORKERS[job['kind']](tf,job,out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 416, in hmc
+    result=tune_hmc_kernel(adapter=parts['adapter'],initial_position=config.initial_chain_positions,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_tuning_dispatch.py", line 144, in tune_hmc_kernel
+    return _run_verified_tensorflow_tuning(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_tensorflow_verified.py", line 426, in _run_verified_tensorflow_tuning
+    sequence = _fresh_sequence(config, nomination, runner_binding, root)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_tensorflow_verified.py", line 393, in _fresh_sequence
+    result = run_sequential_neutra_hmc(config=config, initial_state=initial,
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/neutra_hmc.py", line 1885, in run_sequential_neutra_hmc
+    return run_sequential_verification(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_sequential_verification.py", line 121, in run_sequential_verification
+    persist(progress)
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_tensorflow_verified.py", line 388, in persist
+    stage._write_json(temporary, value)
+  File "/tmp/BayesFilter-structural-model-ab-20261023/bayesfilter/inference/hmc_tensorflow_tuning.py", line 1430, in _write_json
+    text = json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 398, in _iterencode_dict
+    yield _floatstr(value)
+          ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/json/encoder.py", line 240, in floatstr
+    raise ValueError(
+ValueError: Out of range float values are not JSON compliant: inf
