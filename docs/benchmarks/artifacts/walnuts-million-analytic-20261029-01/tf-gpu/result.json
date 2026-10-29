@@ -1,0 +1,72 @@
+{
+  "arm": "tf-gpu",
+  "dimension": 11,
+  "chains": 4,
+  "draws": 1000000,
+  "step": 0.3228754012018425,
+  "delta": 0.15442326531457057,
+  "tuning_evaluator": "normalized analytic funnel_reference.target(11)",
+  "tuning_evaluator_kind": "analytic",
+  "evaluator": "TF/XLA analytic funnel; state-independent normalization omitted",
+  "jit_compile": true,
+  "concurrent_timing": true,
+  "seeds": [
+    104729,
+    104730,
+    104731,
+    104732
+  ],
+  "python": "3.13.13",
+  "tensorflow": "2.20.0",
+  "device": "gpu",
+  "gpus": [
+    {
+      "name": "/physical_device:GPU:0",
+      "growth": true,
+      "details": {
+        "compute_capability": [
+          8,
+          9
+        ],
+        "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+      }
+    }
+  ],
+  "gpu_hidden": false,
+  "tf32": false,
+  "xla_flags": " --xla_gpu_enable_command_buffer=FUSION,CUBLAS,CUBLASLT,CUDNN,WHILE,CONDITIONAL",
+  "trust_basis": "trusted_escalated_execution",
+  "memory_policy": "memory_growth_before_initialization",
+  "first_call_seconds": 20.501381937996484,
+  "graph": {
+    "sha256": "f6546d04b018708aa2ed6438df274ce58a68e1c85a3a9e4131f2fbd13efda4b3",
+    "bytes": 2954537,
+    "custom_calls": [],
+    "trace_count": 1,
+    "nodes": 3028,
+    "hlo": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-million-analytic-20261029-01/tf-gpu/sample.hlo.txt",
+    "while_count": 9,
+    "fusion_count": 116,
+    "model_gradient_inside_loop": true
+  },
+  "sampling_seconds": 15667.88603182428,
+  "chunk_size": 64,
+  "timing_barrier": "materialize_result_state_q",
+  "files": {
+    "draws.f64": {
+      "bytes": 352000000,
+      "sha256": "7825ff9e11de8ca06207fb58f83ae7e956e49a41f2d73c6b9fd7338acdaecb2c"
+    },
+    "telemetry.jsonl": {
+      "bytes": 1707314,
+      "sha256": "a5aa8a4281787ffb1785c0cc0d8b54184f23dd0450b349aeca6c2f719f84d02f"
+    }
+  },
+  "allocator": {
+    "current": 77312,
+    "peak": 194304
+  },
+  "status": "completed",
+  "wall_seconds": 15733.23997933208,
+  "peak_host_rss_kib": 1228632
+}

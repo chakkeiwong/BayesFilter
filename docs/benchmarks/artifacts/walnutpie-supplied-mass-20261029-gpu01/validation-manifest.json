@@ -1,0 +1,51 @@
+{
+  "plan": "docs/plans/bayesfilter-walnutpie-supplied-mass-2026-10-29.md",
+  "git_commit": "0a1bcd26b6d752c13849435ed78d664745687a8f",
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "source_hashes": {
+    "docs/benchmarks/walnutpie_gpu_tf/api.py": "43b184079497ff2841159fdd46b73c3716aab8413bb0d9923a704699703f762b",
+    "docs/benchmarks/walnutpie_gpu_tf/initialization.py": "9578b9063d1d1b469f7cd8dd181dedf61840b0fb6264e080e24e0a93f9674d76",
+    "docs/benchmarks/walnutpie_gpu_tf/mass_coordinates.py": "343220cdbff819bacc2920c0970b65d8c682517d1367d0eca56102cf77bf788d",
+    "docs/benchmarks/walnutpie_gpu_tf/mass_validation.py": "9087cdb5a60656bdd02c413ce848a3f0a958a49ced96c0a5dd4543f377fe2f4b",
+    "tests/test_walnutpie_supplied_mass.py": "5da800d6ae11f443bac1748b42436c5f92cf128041e7af0b1b39c77d7e69e592",
+    "docs/plans/bayesfilter-walnutpie-supplied-mass-2026-10-29.md": "8f98bd78b82d3149bede504e0fe6bced3942bbc1750580168a4d6d1fb30645f8"
+  },
+  "gpu_command": "TF_FORCE_GPU_ALLOW_GROWTH=true CUDA_VISIBLE_DEVICES=2 BAYESFILTER_PRELOAD_CUSTOM_OP=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 timeout 600 /home/ubuntu/anaconda3/envs/tfgpu/bin/python -m docs.benchmarks.walnutpie_gpu_tf.mass_validation --device gpu --output docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01",
+  "gpu_result": "result.json",
+  "cpu_tests": [
+    {
+      "files": [
+        "tests/test_walnutpie_supplied_mass.py",
+        "tests/test_walnutpie_gap_closure.py",
+        "tests/test_walnuts_author_funnel.py"
+      ],
+      "passed": 34,
+      "seconds": 175.0
+    },
+    {
+      "files": [
+        "tests/test_walnutpie_supplied_mass.py"
+      ],
+      "selection": "leapfrog or runtime_model",
+      "passed": 2,
+      "seconds": 10.97
+    },
+    {
+      "files": [
+        "tests/test_walnutpie_supplied_mass.py"
+      ],
+      "selection": "dense_diagonal",
+      "passed": 2,
+      "seconds": 28.37
+    }
+  ],
+  "gpu_growth_verified": true,
+  "seeds": [
+    17,
+    29
+  ],
+  "fixture": "2D isotropic Gaussian with nonidentity diagonal/dense kinetic mass; mechanics only",
+  "created_utc": "2026-10-29T02:25:50.323268+00:00",
+  "posterior_claim": false,
+  "performance_claim": false
+}

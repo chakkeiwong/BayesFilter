@@ -1,0 +1,128 @@
+{
+  "arm": "author-corrected",
+  "dimension": 11,
+  "chains": 4,
+  "draws": 64,
+  "step": 0.3228754012018425,
+  "delta": 0.15442326531457057,
+  "tuning_evaluator": "normalized analytic funnel_reference.target(11)",
+  "tuning_evaluator_kind": "analytic",
+  "evaluator": "normalized analytic funnel_reference.target(11)",
+  "jit_compile": false,
+  "concurrent_timing": true,
+  "seeds": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "chains_report": [
+    {
+      "chain": 0,
+      "draws": 64,
+      "seconds": 1.8003932230640203,
+      "sampling_seconds": 1.7996279780054465,
+      "source_patch": "--- author/WALNUTS.py\n+++ corrected/WALNUTS.py\n@@ -1,5 +1,5 @@\n import math\n-import matplotlib.pyplot as plt\n+# Unused plotting import omitted by headless adapter\n import numpy as np\n from numpy import random\n import sys\n@@ -459,6 +459,7 @@\n                                 break\n                             \n                             # online categorical sampling\n+                            lwtSumb += intOut.lwt\n                             Wnew = np.exp(-Hs[I0+i2]+multinomialLscale + lwtSumb)\n                             WnewSum += Wnew\n                             if(WnewSum > __wtSumThresh and random.uniform()<Wnew/WnewSum):\n",
+      "files": {
+        "chain-0-draws.f64": {
+          "bytes": 5632,
+          "sha256": "db365866e582d79f708d9438f3f4f2e660125a55b9c63bfd8a76477456067e4c"
+        },
+        "chain-0-diagnostics.f64": {
+          "bytes": 12288,
+          "sha256": "f6a45d423bd38d04c6991869ad15597f202ee9ae5deb49543c56000b8107877b"
+        },
+        "chain-0-orbit-min.f64": {
+          "bytes": 5632,
+          "sha256": "bead89a5f0e220b75efe6bd1a08ace395a4b87eb884e5e5c0936f00f1efb8c1f"
+        },
+        "chain-0-orbit-max.f64": {
+          "bytes": 5632,
+          "sha256": "4a35b79cf45f8b14cf0a4e7b01b77961f939de371fe665c26fe457ed4830345f"
+        }
+      }
+    },
+    {
+      "chain": 1,
+      "draws": 64,
+      "seconds": 4.773351582000032,
+      "sampling_seconds": 4.7726822450058535,
+      "source_patch": "--- author/WALNUTS.py\n+++ corrected/WALNUTS.py\n@@ -1,5 +1,5 @@\n import math\n-import matplotlib.pyplot as plt\n+# Unused plotting import omitted by headless adapter\n import numpy as np\n from numpy import random\n import sys\n@@ -459,6 +459,7 @@\n                                 break\n                             \n                             # online categorical sampling\n+                            lwtSumb += intOut.lwt\n                             Wnew = np.exp(-Hs[I0+i2]+multinomialLscale + lwtSumb)\n                             WnewSum += Wnew\n                             if(WnewSum > __wtSumThresh and random.uniform()<Wnew/WnewSum):\n",
+      "files": {
+        "chain-1-draws.f64": {
+          "bytes": 5632,
+          "sha256": "b88e08d42c15ded2b4365a04ff03e827f7bfdc72bda483496636884537be5b69"
+        },
+        "chain-1-diagnostics.f64": {
+          "bytes": 12288,
+          "sha256": "3264c11c3f359dd70ba727bedc9125eafd7d713889d6714ce021452bdc6fc026"
+        },
+        "chain-1-orbit-min.f64": {
+          "bytes": 5632,
+          "sha256": "b6ce7a243e94c993ad5aaf3d0c4b43bb7ab78872b05b2ee39cd45f038acb27df"
+        },
+        "chain-1-orbit-max.f64": {
+          "bytes": 5632,
+          "sha256": "609c8362976a1d50924319cce3390cfce7fbf91d8d97c4db7604c0b01be5150e"
+        }
+      }
+    },
+    {
+      "chain": 2,
+      "draws": 64,
+      "seconds": 0.49322047096211463,
+      "sampling_seconds": 0.4924527360126376,
+      "source_patch": "--- author/WALNUTS.py\n+++ corrected/WALNUTS.py\n@@ -1,5 +1,5 @@\n import math\n-import matplotlib.pyplot as plt\n+# Unused plotting import omitted by headless adapter\n import numpy as np\n from numpy import random\n import sys\n@@ -459,6 +459,7 @@\n                                 break\n                             \n                             # online categorical sampling\n+                            lwtSumb += intOut.lwt\n                             Wnew = np.exp(-Hs[I0+i2]+multinomialLscale + lwtSumb)\n                             WnewSum += Wnew\n                             if(WnewSum > __wtSumThresh and random.uniform()<Wnew/WnewSum):\n",
+      "files": {
+        "chain-2-draws.f64": {
+          "bytes": 5632,
+          "sha256": "14f0ac07b99256c9be4c74d0552e4a6ddf72d17a183bdc823328726556b891c5"
+        },
+        "chain-2-diagnostics.f64": {
+          "bytes": 12288,
+          "sha256": "18f739b7e8767275771b8b97a682e460049f17fb7b90a4f3260ecdfcbe30c804"
+        },
+        "chain-2-orbit-min.f64": {
+          "bytes": 5632,
+          "sha256": "618d50f2db9568b919f3f23a26c1aa9661572bdd5d3ea5e3ee093c31dbb6f366"
+        },
+        "chain-2-orbit-max.f64": {
+          "bytes": 5632,
+          "sha256": "f38dbd7f874fa48884a0985e7b52aca4641648d9b439bde7f50bb57bab368230"
+        }
+      }
+    },
+    {
+      "chain": 3,
+      "draws": 64,
+      "seconds": 1.091865674010478,
+      "sampling_seconds": 1.0912712760036811,
+      "source_patch": "--- author/WALNUTS.py\n+++ corrected/WALNUTS.py\n@@ -1,5 +1,5 @@\n import math\n-import matplotlib.pyplot as plt\n+# Unused plotting import omitted by headless adapter\n import numpy as np\n from numpy import random\n import sys\n@@ -459,6 +459,7 @@\n                                 break\n                             \n                             # online categorical sampling\n+                            lwtSumb += intOut.lwt\n                             Wnew = np.exp(-Hs[I0+i2]+multinomialLscale + lwtSumb)\n                             WnewSum += Wnew\n                             if(WnewSum > __wtSumThresh and random.uniform()<Wnew/WnewSum):\n",
+      "files": {
+        "chain-3-draws.f64": {
+          "bytes": 5632,
+          "sha256": "817178d9f7c11d2ca62c2d2c2817fa50d587162535f0677fe53041d89d1e3a3d"
+        },
+        "chain-3-diagnostics.f64": {
+          "bytes": 12288,
+          "sha256": "eb77ebc66a013ca39a79e0bffe26ba1bbeebb2fe69f7122799e14f42b0e775ef"
+        },
+        "chain-3-orbit-min.f64": {
+          "bytes": 5632,
+          "sha256": "f4bffe8167852efedbbd8bcae8ccae7a5b2924933a28f4dbc223d62ff3c767cf"
+        },
+        "chain-3-orbit-max.f64": {
+          "bytes": 5632,
+          "sha256": "b6958657dfcd2d7a1c673a6d6edaca394fa6d4b3d971425ee08981b6c15bdb91"
+        }
+      }
+    }
+  ],
+  "cpu_workers": 4,
+  "numpy_role": "independent unmodified/corrected author reference",
+  "gpu_intentionally_hidden": true,
+  "sampling_seconds": 4.7726822450058535,
+  "status": "completed",
+  "wall_seconds": 5.503107808995992,
+  "peak_host_rss_kib": 20480
+}

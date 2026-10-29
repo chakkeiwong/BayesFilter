@@ -1,0 +1,3345 @@
+{
+  "plan": "docs/plans/bayesfilter-walnuts-author-funnel-2026-10-29.md",
+  "result": "docs/plans/bayesfilter-walnuts-author-funnel-result-2026-10-29.md",
+  "author_commit": "895a9b7a595b1bf15e9bcd7267bf1fa4fc36789a",
+  "budget_seconds": 3600,
+  "used_seconds": 943.2165154962568,
+  "attempts": [
+    {
+      "attempt": "attempt-01-tests",
+      "status": "failed",
+      "seconds": 17.391018174006604,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-01-tests/manifest.json",
+      "sha256": "3aa39acdd0fa3449aef373e0d5c1df0a766218a04c0896f1dead4d585ba065ad",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_walnuts_author_funnel.py"
+      ],
+      "failure_class": "worker_failure"
+    },
+    {
+      "attempt": "attempt-02-tests",
+      "status": "passed",
+      "seconds": 16.242350433953106,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-02-tests/manifest.json",
+      "sha256": "248ae1a75a76d349c872957f7c3f54630c0e32f6ba17f3f7c9446328a7cf6c8b",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_walnuts_author_funnel.py"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-03-tune11",
+      "status": "passed",
+      "seconds": 9.006948992027901,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/manifest.json",
+      "sha256": "d39d086e392e861c54d30c13b5c29341d209f25919cf03ef6656c52381d30744",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "tune",
+        "--engine",
+        "author-original",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-04-author11",
+      "status": "passed",
+      "seconds": 21.351794805028476,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-04-author11/manifest.json",
+      "sha256": "8b227d682967a684d66b3e294d262400a2e5d5ee39445490ee2e1d945dc22b0c",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "author-original",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "2048",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-04-author11",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-05-gpu11",
+      "status": "passed",
+      "seconds": 90.44840648805257,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-05-gpu11/manifest.json",
+      "sha256": "194c41dcc35be6d31263629b9ea97422caf4c27531a032fd6c7a8a1f0cff8f44",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "tf",
+        "--device",
+        "gpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "2048",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-05-gpu11",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-06-corrected11",
+      "status": "passed",
+      "seconds": 74.84915953699965,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11/manifest.json",
+      "sha256": "6f4c567cdc35b8abba9922cdb63c2af87639c67a67738e9c43bb3158914dd4e2",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "author-corrected",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-07-gpu11",
+      "status": "passed",
+      "seconds": 184.4825459959684,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11/manifest.json",
+      "sha256": "d5a5d88a6cea93868ceb928d6b6ee2ab5de0bd39865cafb7f551821b67e7a922",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "tf",
+        "--device",
+        "gpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-08-diagnostics11",
+      "status": "passed",
+      "seconds": 13.981777806999162,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-08-diagnostics11/manifest.json",
+      "sha256": "40ffd91eb02357512110f82af13b635d6eaae03dcf9f7d44fddf4556ec0b7756",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "analyze",
+        "--engine",
+        "tf",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-08-diagnostics11",
+        "--runs",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-04-author11",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-09-tune10",
+      "status": "passed",
+      "seconds": 11.255433261976577,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-09-tune10/manifest.json",
+      "sha256": "b076256933eae1ce1ea097ea475af370224ebac053867a3700a2529493662dfb",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "tune",
+        "--engine",
+        "author-original",
+        "--device",
+        "cpu",
+        "--dimension",
+        "10",
+        "--draws",
+        "512",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-09-tune10"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-10-corrected10",
+      "status": "passed",
+      "seconds": 71.10255116398912,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-10-corrected10/manifest.json",
+      "sha256": "64f79441a53008d7e523ca989aa6df0175f55b101dff2399c144962dd96a59ba",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "author-corrected",
+        "--device",
+        "cpu",
+        "--dimension",
+        "10",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-10-corrected10",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-09-tune10/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-11-gpu10",
+      "status": "passed",
+      "seconds": 190.497030897066,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-11-gpu10/manifest.json",
+      "sha256": "8817b302e41e70820f0ad5e640842f5a4a09ae04f550eebfe9f5403c648b79a8",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "tf",
+        "--device",
+        "gpu",
+        "--dimension",
+        "10",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-11-gpu10",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-09-tune10/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-12-cpu11",
+      "status": "passed",
+      "seconds": 35.22949776798487,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11/manifest.json",
+      "sha256": "c68aefbdaff0704d1497e20d09cf442359aa1f6e3d22dd982ce194c7e18e64b7",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "tf",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-13-original11-long",
+      "status": "passed",
+      "seconds": 64.08211295306683,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-13-original11-long/manifest.json",
+      "sha256": "f85270955a476a026cc43cecb80a4a7695edeab3a588268dd12b809e07bda631",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "sample",
+        "--engine",
+        "author-original",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "8192",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-13-original11-long",
+        "--tuning",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-03-tune11/tuning.json"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-14-tests-final",
+      "status": "passed",
+      "seconds": 18.21999609807972,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-14-tests-final/manifest.json",
+      "sha256": "67f621991cab2feb91ccf6b43092a6cef07a0480e069545797003286e4e0c92c",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_walnuts_author_funnel.py"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-15-transient-author",
+      "status": "passed",
+      "seconds": 4.389508133055642,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-15-transient-author/manifest.json",
+      "sha256": "049e2ba19222b03e930240ec8e52fc347c259a61aa60a83d6bfd82cbf8dfaa48",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "transient",
+        "--engine",
+        "author-corrected",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "0",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-15-transient-author"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-16-transient-gpu",
+      "status": "passed",
+      "seconds": 39.0208812400233,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-16-transient-gpu/manifest.json",
+      "sha256": "ce8385b5ce2b2aa5189df4e24761ceab1f7fb53b9026552b1efcbdc2bdd449ee",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "transient",
+        "--engine",
+        "tf",
+        "--device",
+        "gpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "0",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-16-transient-gpu"
+      ],
+      "failure_class": null
+    },
+    {
+      "attempt": "attempt-17-extreme-cost",
+      "status": "timeout",
+      "seconds": 60.032591543975286,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-17-extreme-cost/manifest.json",
+      "sha256": "713e7088c33c5e4359858a4c56c7148dc3bedf86229a72f99160323289220e66",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "extreme",
+        "--engine",
+        "author-original",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-17-extreme-cost"
+      ],
+      "failure_class": "bounded_cost_limit"
+    },
+    {
+      "attempt": "attempt-18-final-analysis",
+      "status": "passed",
+      "seconds": 21.632910204003565,
+      "manifest": "docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-18-final-analysis/manifest.json",
+      "sha256": "5111edfc85e83581e27859431271bbf52967087de78657f2566ed20dc620d0dd",
+      "command": [
+        "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+        "-m",
+        "docs.benchmarks.walnutpie_gpu_tf.funnel_worker",
+        "--phase",
+        "analyze",
+        "--engine",
+        "tf",
+        "--device",
+        "cpu",
+        "--dimension",
+        "11",
+        "--draws",
+        "512",
+        "--settle",
+        "512",
+        "--output",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-18-final-analysis",
+        "--runs",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-13-original11-long",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-10-corrected10",
+        "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-11-gpu10"
+      ],
+      "failure_class": null
+    }
+  ],
+  "cases": [
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-13-original11-long",
+      "engine": "author-original",
+      "device": "cpu",
+      "dimension": 11,
+      "step": 0.3228754012018425,
+      "delta": 0.15442326531457057,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 63.86267575901002,
+      "gradient_evaluations": 4248647.0,
+      "nonfinite_trajectory_flags": null,
+      "diagnostics": {
+        "max_rhat": 1.0191767286614988,
+        "min_bulk_ess": 308.5897617045056,
+        "min_tail_ess": 501.49376310147284,
+        "mean": [
+          -0.13820749250468486,
+          0.00352401697132345,
+          0.04083946925335019,
+          0.0628125266801232,
+          0.022241026763992318,
+          -0.10554595917048094,
+          -0.20814397170407048,
+          -0.11357424390785896,
+          -0.09325509154996112,
+          0.11417763265767411,
+          0.18309211970795175
+        ],
+        "v_rhat": 1.0191767286614988,
+        "v_bulk_ess": 308.5897617045056,
+        "v_tail_ess": 501.49376310147284,
+        "transformed": {
+          "max_rhat": 1.0191767286614988,
+          "min_bulk_ess": 308.5897617045056,
+          "min_tail_ess": 501.49376310147284,
+          "mean": [
+            -0.04606916416822845,
+            0.0055416372500891285,
+            0.006028276096456905,
+            0.00367450797244842,
+            -0.0037385388873531714,
+            0.013372959837156669,
+            -0.0035701478753680997,
+            0.006137795880243059,
+            0.004503451775752572,
+            -0.002124322082074467,
+            0.009441488297129971
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": -0.13820749250468498,
+        "v_sd": 3.043409874109154,
+        "v_range": [
+          -10.461795448257856,
+          11.57288970370596
+        ],
+        "transformed_mean": [
+          -0.046069164168228496,
+          0.0055416372500891615,
+          0.006028276096456888,
+          0.003674507972448432,
+          -0.0037385388873531424,
+          0.013372959837156645,
+          -0.0035701478753680984,
+          0.006137795880243049,
+          0.0045034517757525675,
+          -0.0021243220820744676,
+          0.009441488297130008
+        ],
+        "transformed_variance": [
+          1.0291492957583463,
+          0.9861540984771278,
+          1.005873343884711,
+          1.001057972191699,
+          0.9969076015554218,
+          1.0096989555079463,
+          0.9893578752613164,
+          0.9918390310407458,
+          1.002525505702328,
+          0.9899207058229632,
+          0.999525844469717
+        ],
+        "transformed_mean_batch_se": [
+          0.05370749087966448,
+          0.005054578139966234,
+          0.004676936829847814,
+          0.00517705790041721,
+          0.0051697529614430715,
+          0.006007085338680269,
+          0.004978003515206078,
+          0.00530662947869013,
+          0.005547613738709234,
+          0.004733327503757068,
+          0.005830884131257418
+        ],
+        "tail_-3": {
+          "observed": 0.1766357421875,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.01587011685937611,
+          "chain_rates": [
+            0.13671875,
+            0.2274169921875,
+            0.1414794921875,
+            0.200927734375
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.021942138671875,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.0053450916948825965,
+          "chain_rates": [
+            0.018310546875,
+            0.0323486328125,
+            0.0194091796875,
+            0.0177001953125
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.3095934763843495,
+            "min_bulk_ess": 11.032408271737932,
+            "min_tail_ess": 13.82884703164827,
+            "mean": [
+              -0.24984658758410558,
+              -0.3169224590671367,
+              0.51857194255904,
+              0.12159810968914204,
+              -0.0765888795959857,
+              -0.449053106833058,
+              0.0169922459283596,
+              -0.0949328662510822,
+              0.17266288523052903,
+              0.22102051950042476,
+              -0.10928737037502967
+            ],
+            "v_rhat": 1.3095934763843495,
+            "v_bulk_ess": 11.032408271737932,
+            "v_tail_ess": 13.82884703164827,
+            "transformed": {
+              "max_rhat": 1.3095934763843495,
+              "min_bulk_ess": 11.032408271737932,
+              "min_tail_ess": 13.82884703164827,
+              "mean": [
+                -0.0832821958613685,
+                -0.006511091945445706,
+                0.03502080938879929,
+                -0.026066233681334924,
+                -0.016193090272451735,
+                0.02884453888515412,
+                -0.022851216263059235,
+                -0.0059142667607742835,
+                -0.007467089804905456,
+                0.010302281218570158,
+                -0.026088086329447126
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.24984658758410527,
+            "v_sd": 2.9156744168851443,
+            "v_range": [
+              -6.340338289640844,
+              9.037125178985198
+            ],
+            "transformed_mean": [
+              -0.08328219586136851,
+              -0.006511091945445698,
+              0.035020809388799305,
+              -0.026066233681334913,
+              -0.01619309027245172,
+              0.028844538885154144,
+              -0.02285121626305922,
+              -0.0059142667607742705,
+              -0.007467089804905472,
+              0.010302281218570176,
+              -0.026088086329447042
+            ],
+            "transformed_variance": [
+              0.9445730339198358,
+              0.9131269242055421,
+              1.063549096544942,
+              0.9532266299135765,
+              0.9726447241766613,
+              1.082050134109667,
+              0.9524643192158588,
+              0.990449286217628,
+              1.0990096180378361,
+              1.0433446025894173,
+              1.070914977645287
+            ],
+            "transformed_mean_batch_se": [
+              0.11192765163479446,
+              0.021418596967169756,
+              0.02008358975362243,
+              0.02392771426283593,
+              0.018487849290464722,
+              0.023193903150260778,
+              0.01733634607977148,
+              0.01707666288836718,
+              0.022660749380393273,
+              0.01944084284394818,
+              0.018527180664926087
+            ],
+            "tail_-3": {
+              "observed": 0.16064453125,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.032673636057238525,
+              "chain_rates": [
+                0.01953125,
+                0.224609375,
+                0.2109375,
+                0.1875
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0009765625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.0009765625,
+              "chain_rates": [
+                0.0,
+                0.00390625,
+                0.0,
+                0.0
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.0332241719957502,
+            "min_bulk_ess": 84.08731255626208,
+            "min_tail_ess": 117.07777989143719,
+            "mean": [
+              -0.38517078417683376,
+              -0.0004303333434182918,
+              0.15112135933347998,
+              0.05129234056172249,
+              0.0005276303715370193,
+              -0.0908332700283251,
+              -0.014850369120934591,
+              -0.07770338752804307,
+              0.026013101085959472,
+              0.09376659155824264,
+              0.04909914403460634
+            ],
+            "v_rhat": 1.0332241719957502,
+            "v_bulk_ess": 84.08731255626208,
+            "v_tail_ess": 117.07777989143719,
+            "transformed": {
+              "max_rhat": 1.0332241719957502,
+              "min_bulk_ess": 84.08731255626208,
+              "min_tail_ess": 117.07777989143719,
+              "mean": [
+                -0.1283902613922781,
+                -0.002643059369611099,
+                0.01498706854100313,
+                -0.005605274776319659,
+                -0.005198595638232064,
+                0.007992879485663608,
+                -0.013441074436760424,
+                -0.004132819059416027,
+                0.008588381203698524,
+                0.014471736244586508,
+                -0.015514219027847314
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.38517078417683404,
+            "v_sd": 3.0876647286821584,
+            "v_range": [
+              -10.461795448257856,
+              9.037125178985198
+            ],
+            "transformed_mean": [
+              -0.1283902613922781,
+              -0.0026430593696110645,
+              0.014987068541003115,
+              -0.005605274776319663,
+              -0.005198595638232053,
+              0.007992879485663582,
+              -0.013441074436760436,
+              -0.004132819059416047,
+              0.008588381203698522,
+              0.014471736244586487,
+              -0.015514219027847252
+            ],
+            "transformed_variance": [
+              1.0592970529719854,
+              0.9970032216226995,
+              1.0384014818356309,
+              0.9931374801771409,
+              0.9722842391191225,
+              0.9944319656020821,
+              0.9591717922506497,
+              1.0122840767038404,
+              0.981615712386684,
+              0.9890151824481734,
+              1.0340332653883662
+            ],
+            "transformed_mean_batch_se": [
+              0.09091949847963383,
+              0.011594747093343535,
+              0.009827010313794814,
+              0.010129498485877873,
+              0.010757130162330705,
+              0.01250736082174046,
+              0.01037411562437883,
+              0.009497794071478795,
+              0.011329152734870855,
+              0.011155724904900702,
+              0.010203529001467489
+            ],
+            "tail_-3": {
+              "observed": 0.20068359375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.02924509467981483,
+              "chain_rates": [
+                0.23193359375,
+                0.17431640625,
+                0.173828125,
+                0.22265625
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.035888671875,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.013692584971207135,
+              "chain_rates": [
+                0.05126953125,
+                0.0009765625,
+                0.03759765625,
+                0.0537109375
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0191767286614988,
+            "min_bulk_ess": 308.5897617045056,
+            "min_tail_ess": 501.49376310147284,
+            "mean": [
+              -0.13820749250468486,
+              0.00352401697132345,
+              0.04083946925335019,
+              0.0628125266801232,
+              0.022241026763992318,
+              -0.10554595917048094,
+              -0.20814397170407048,
+              -0.11357424390785896,
+              -0.09325509154996112,
+              0.11417763265767411,
+              0.18309211970795175
+            ],
+            "v_rhat": 1.0191767286614988,
+            "v_bulk_ess": 308.5897617045056,
+            "v_tail_ess": 501.49376310147284,
+            "transformed": {
+              "max_rhat": 1.0191767286614988,
+              "min_bulk_ess": 308.5897617045056,
+              "min_tail_ess": 501.49376310147284,
+              "mean": [
+                -0.04606916416822845,
+                0.0055416372500891285,
+                0.006028276096456905,
+                0.00367450797244842,
+                -0.0037385388873531714,
+                0.013372959837156669,
+                -0.0035701478753680997,
+                0.006137795880243059,
+                0.004503451775752572,
+                -0.002124322082074467,
+                0.009441488297129971
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.13820749250468498,
+            "v_sd": 3.043409874109154,
+            "v_range": [
+              -10.461795448257856,
+              11.57288970370596
+            ],
+            "transformed_mean": [
+              -0.046069164168228496,
+              0.0055416372500891615,
+              0.006028276096456888,
+              0.003674507972448432,
+              -0.0037385388873531424,
+              0.013372959837156645,
+              -0.0035701478753680984,
+              0.006137795880243049,
+              0.0045034517757525675,
+              -0.0021243220820744676,
+              0.009441488297130008
+            ],
+            "transformed_variance": [
+              1.0291492957583463,
+              0.9861540984771278,
+              1.005873343884711,
+              1.001057972191699,
+              0.9969076015554218,
+              1.0096989555079463,
+              0.9893578752613164,
+              0.9918390310407458,
+              1.002525505702328,
+              0.9899207058229632,
+              0.999525844469717
+            ],
+            "transformed_mean_batch_se": [
+              0.05370749087966448,
+              0.005054578139966234,
+              0.004676936829847814,
+              0.00517705790041721,
+              0.0051697529614430715,
+              0.006007085338680269,
+              0.004978003515206078,
+              0.00530662947869013,
+              0.005547613738709234,
+              0.004733327503757068,
+              0.005830884131257418
+            ],
+            "tail_-3": {
+              "observed": 0.1766357421875,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.01587011685937611,
+              "chain_rates": [
+                0.13671875,
+                0.2274169921875,
+                0.1414794921875,
+                0.200927734375
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.021942138671875,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.0053450916948825965,
+              "chain_rates": [
+                0.018310546875,
+                0.0323486328125,
+                0.0194091796875,
+                0.0177001953125
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ],
+      "author_telemetry": {
+        "max_forward_exponent": 8.0,
+        "cap_reached_iterations": 0,
+        "max_sampled_doublings": 12.0,
+        "max_computed_doublings": 12.0
+      }
+    },
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+      "engine": "author-corrected",
+      "device": "cpu",
+      "dimension": 11,
+      "step": 0.3228754012018425,
+      "delta": 0.15442326531457057,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 74.62546469899826,
+      "gradient_evaluations": 4995945.0,
+      "nonfinite_trajectory_flags": null,
+      "diagnostics": {
+        "max_rhat": 1.0118959534363603,
+        "min_bulk_ess": 287.5812418554322,
+        "min_tail_ess": 261.94491673239287,
+        "mean": [
+          -0.03726613370029838,
+          0.23302985815884678,
+          -0.4564574153873974,
+          0.05031650957006225,
+          0.07943048368767627,
+          0.6838436136200895,
+          -0.6214268602158977,
+          -0.11508868879054358,
+          0.27905403028596876,
+          -0.16515940685804198,
+          0.982399204229275
+        ],
+        "v_rhat": 1.0118959534363603,
+        "v_bulk_ess": 287.5812418554322,
+        "v_tail_ess": 261.94491673239287,
+        "transformed": {
+          "max_rhat": 1.0118959534363603,
+          "min_bulk_ess": 287.5812418554322,
+          "min_tail_ess": 261.94491673239287,
+          "mean": [
+            -0.012422044566766106,
+            -0.004924987412254734,
+            -0.0015693488120389803,
+            -0.0026809349285371745,
+            -0.0011702426250890094,
+            0.0052357244720983775,
+            -0.00010050807740269343,
+            -0.009409410040036878,
+            -0.006372596001062093,
+            0.001760567034625323,
+            0.009330793824680116
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": -0.03726613370029812,
+        "v_sd": 3.1930403879928537,
+        "v_range": [
+          -10.080766563345371,
+          12.859368001471143
+        ],
+        "transformed_mean": [
+          -0.012422044566766306,
+          -0.00492498741225472,
+          -0.0015693488120389978,
+          -0.002680934928537142,
+          -0.0011702426250890248,
+          0.005235724472098407,
+          -0.00010050807740270449,
+          -0.009409410040036871,
+          -0.006372596001062081,
+          0.0017605670346253644,
+          0.009330793824680144
+        ],
+        "transformed_variance": [
+          1.132834102150394,
+          1.005209344512111,
+          1.0071669419689149,
+          0.9942663376949601,
+          1.0109236316758257,
+          1.0030306827384525,
+          0.9953420178008083,
+          1.002878114282612,
+          1.0106625516607841,
+          0.9891392436573433,
+          0.9818410863253642
+        ],
+        "transformed_mean_batch_se": [
+          0.06052517004550742,
+          0.0055636287957154225,
+          0.004626220992295565,
+          0.006559396596811939,
+          0.00459018996988417,
+          0.006123460202973447,
+          0.004994501926246395,
+          0.006689902149540542,
+          0.0062422459965027965,
+          0.005045673664678484,
+          0.006902462948328396
+        ],
+        "tail_-3": {
+          "observed": 0.17352294921875,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.016621167586175066,
+          "chain_rates": [
+            0.172607421875,
+            0.2081298828125,
+            0.1298828125,
+            0.1834716796875
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.02545166015625,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.005833802098947425,
+          "chain_rates": [
+            0.029541015625,
+            0.03515625,
+            0.0059814453125,
+            0.0311279296875
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.2105446487672586,
+            "min_bulk_ess": 13.203387375064008,
+            "min_tail_ess": 17.50385483737877,
+            "mean": [
+              0.13847970761549613,
+              -0.26794527213294694,
+              0.049573535524599276,
+              0.38398543933301055,
+              0.6874973740808612,
+              -0.11066068926174805,
+              0.09711804397552579,
+              -0.1704600857171255,
+              0.1802606442094858,
+              -0.08955158360596928,
+              0.6154072999871625
+            ],
+            "v_rhat": 1.2105446487672586,
+            "v_bulk_ess": 13.203387375064008,
+            "v_tail_ess": 17.50385483737877,
+            "transformed": {
+              "max_rhat": 1.2105446487672586,
+              "min_bulk_ess": 13.203387375064008,
+              "min_tail_ess": 17.50385483737877,
+              "mean": [
+                0.04615990253849859,
+                0.014016670223839702,
+                0.021878605154741455,
+                0.0588130318440622,
+                0.01649453608060429,
+                -0.02472892281996814,
+                0.005954273795071417,
+                -0.025020245620857796,
+                -0.011647034363640974,
+                -0.020422294469072164,
+                0.01517982014916549
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": 0.13847970761549627,
+            "v_sd": 3.0486246282894838,
+            "v_range": [
+              -9.477738296823146,
+              9.802340663352338
+            ],
+            "transformed_mean": [
+              0.046159902538499,
+              0.014016670223839739,
+              0.02187860515474143,
+              0.05881303184406221,
+              0.016494536080604295,
+              -0.024728922819968135,
+              0.005954273795071405,
+              -0.025020245620857796,
+              -0.011647034363640965,
+              -0.020422294469072157,
+              0.015179820149165486
+            ],
+            "transformed_variance": [
+              1.0326791249125766,
+              1.1216893333816755,
+              0.9617870925268021,
+              1.0141778907798846,
+              1.099962567507857,
+              1.0087703008560922,
+              1.0273244655484175,
+              0.9347268622269636,
+              1.0475603536222415,
+              0.9883851051623987,
+              0.9780534761985584
+            ],
+            "transformed_mean_batch_se": [
+              0.11413961210438413,
+              0.022907850283341788,
+              0.02395041797576361,
+              0.022059896989597358,
+              0.024448875953554865,
+              0.019364912555281152,
+              0.023205033957621597,
+              0.0211434843648534,
+              0.02170112144082303,
+              0.026813270188845505,
+              0.024628966228907437
+            ],
+            "tail_-3": {
+              "observed": 0.11865234375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.029685376186139336,
+              "chain_rates": [
+                0.08203125,
+                0.009765625,
+                0.109375,
+                0.2734375
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.025390625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.016643908266530207,
+              "chain_rates": [
+                0.0,
+                0.0,
+                0.0,
+                0.1015625
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.0370842470447645,
+            "min_bulk_ess": 92.66403670007654,
+            "min_tail_ess": 101.44578502309389,
+            "mean": [
+              -0.20100516964763726,
+              -0.19851035931566594,
+              0.007045736088896911,
+              0.10214914458618808,
+              0.1924849342042816,
+              -0.00829880019349756,
+              0.15537987209393037,
+              0.07122767743050584,
+              -0.0006070651546083508,
+              0.0014654397522172423,
+              0.23038421316606159
+            ],
+            "v_rhat": 1.0370842470447645,
+            "v_bulk_ess": 92.66403670007654,
+            "v_tail_ess": 101.44578502309389,
+            "transformed": {
+              "max_rhat": 1.0370842470447645,
+              "min_bulk_ess": 92.66403670007654,
+              "min_tail_ess": 101.44578502309389,
+              "mean": [
+                -0.06700172321587915,
+                -0.005671198183251159,
+                0.01092932887986335,
+                0.0061806184862189,
+                0.005317912220588645,
+                -0.011617606112538014,
+                0.008928301108747441,
+                -0.0020107875356611734,
+                -0.02418850794116321,
+                -0.0007666532288141941,
+                0.012708604754368656
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.2010051696476372,
+            "v_sd": 3.09999808672866,
+            "v_range": [
+              -10.080766563345371,
+              9.802340663352338
+            ],
+            "transformed_mean": [
+              -0.0670017232158792,
+              -0.005671198183251175,
+              0.010929328879863346,
+              0.006180618486218892,
+              0.005317912220588652,
+              -0.011617606112538016,
+              0.00892830110874742,
+              -0.0020107875356610936,
+              -0.024188507941163215,
+              -0.0007666532288142435,
+              0.01270860475436871
+            ],
+            "transformed_variance": [
+              1.067776459746817,
+              1.0488303338013463,
+              0.9934786385210239,
+              1.012041536300244,
+              1.0192282400034882,
+              0.9934236970109526,
+              1.0199343577688063,
+              0.9600601105769221,
+              1.0348391329888786,
+              0.9790392974393207,
+              0.9372137684927955
+            ],
+            "transformed_mean_batch_se": [
+              0.09490814460428063,
+              0.011061872746717548,
+              0.007959190253418064,
+              0.012176882024110441,
+              0.01038127448776206,
+              0.009724439650571935,
+              0.010896890750364782,
+              0.010405438420905785,
+              0.010999879280759104,
+              0.010731560902191257,
+              0.011201871050013544
+            ],
+            "tail_-3": {
+              "observed": 0.17578125,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.030695768838870527,
+              "chain_rates": [
+                0.0927734375,
+                0.14453125,
+                0.1298828125,
+                0.3359375
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0345458984375,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.014497094224418187,
+              "chain_rates": [
+                0.0,
+                0.03857421875,
+                0.0,
+                0.099609375
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0118959534363603,
+            "min_bulk_ess": 287.5812418554322,
+            "min_tail_ess": 261.94491673239287,
+            "mean": [
+              -0.03726613370029838,
+              0.23302985815884678,
+              -0.4564574153873974,
+              0.05031650957006225,
+              0.07943048368767627,
+              0.6838436136200895,
+              -0.6214268602158977,
+              -0.11508868879054358,
+              0.27905403028596876,
+              -0.16515940685804198,
+              0.982399204229275
+            ],
+            "v_rhat": 1.0118959534363603,
+            "v_bulk_ess": 287.5812418554322,
+            "v_tail_ess": 261.94491673239287,
+            "transformed": {
+              "max_rhat": 1.0118959534363603,
+              "min_bulk_ess": 287.5812418554322,
+              "min_tail_ess": 261.94491673239287,
+              "mean": [
+                -0.012422044566766106,
+                -0.004924987412254734,
+                -0.0015693488120389803,
+                -0.0026809349285371745,
+                -0.0011702426250890094,
+                0.0052357244720983775,
+                -0.00010050807740269343,
+                -0.009409410040036878,
+                -0.006372596001062093,
+                0.001760567034625323,
+                0.009330793824680116
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.03726613370029812,
+            "v_sd": 3.1930403879928537,
+            "v_range": [
+              -10.080766563345371,
+              12.859368001471143
+            ],
+            "transformed_mean": [
+              -0.012422044566766306,
+              -0.00492498741225472,
+              -0.0015693488120389978,
+              -0.002680934928537142,
+              -0.0011702426250890248,
+              0.005235724472098407,
+              -0.00010050807740270449,
+              -0.009409410040036871,
+              -0.006372596001062081,
+              0.0017605670346253644,
+              0.009330793824680144
+            ],
+            "transformed_variance": [
+              1.132834102150394,
+              1.005209344512111,
+              1.0071669419689149,
+              0.9942663376949601,
+              1.0109236316758257,
+              1.0030306827384525,
+              0.9953420178008083,
+              1.002878114282612,
+              1.0106625516607841,
+              0.9891392436573433,
+              0.9818410863253642
+            ],
+            "transformed_mean_batch_se": [
+              0.06052517004550742,
+              0.0055636287957154225,
+              0.004626220992295565,
+              0.006559396596811939,
+              0.00459018996988417,
+              0.006123460202973447,
+              0.004994501926246395,
+              0.006689902149540542,
+              0.0062422459965027965,
+              0.005045673664678484,
+              0.006902462948328396
+            ],
+            "tail_-3": {
+              "observed": 0.17352294921875,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.016621167586175066,
+              "chain_rates": [
+                0.172607421875,
+                0.2081298828125,
+                0.1298828125,
+                0.1834716796875
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.02545166015625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.005833802098947425,
+              "chain_rates": [
+                0.029541015625,
+                0.03515625,
+                0.0059814453125,
+                0.0311279296875
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ],
+      "author_telemetry": {
+        "max_forward_exponent": 8.0,
+        "cap_reached_iterations": 0,
+        "max_sampled_doublings": 12.0,
+        "max_computed_doublings": 12.0
+      }
+    },
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11",
+      "engine": "tf",
+      "device": "gpu",
+      "dimension": 11,
+      "step": 0.3228754012018425,
+      "delta": 0.15442326531457057,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 148.81512485537678,
+      "gradient_evaluations": 4420073.0,
+      "nonfinite_trajectory_flags": 0,
+      "diagnostics": {
+        "max_rhat": 1.0079506456229357,
+        "min_bulk_ess": 368.8256252757089,
+        "min_tail_ess": 540.2027554086227,
+        "mean": [
+          0.18281387500874852,
+          0.16153502797763522,
+          -0.07205472082626521,
+          -0.10286089196266072,
+          0.12627335493304132,
+          -0.056937617096537704,
+          0.05174574827460337,
+          -0.23988705580060482,
+          -0.040738998512390934,
+          -0.014071594203286644,
+          -0.013631899158119493
+        ],
+        "v_rhat": 1.0079506456229357,
+        "v_bulk_ess": 368.8256252757089,
+        "v_tail_ess": 540.2027554086227,
+        "transformed": {
+          "max_rhat": 1.0079506456229357,
+          "min_bulk_ess": 368.8256252757089,
+          "min_tail_ess": 540.2027554086227,
+          "mean": [
+            0.06093795833624933,
+            0.006264631268384233,
+            -0.005397572347741892,
+            -0.005112888207279467,
+            0.0035734212673295875,
+            -0.0022598188006770384,
+            0.012268614061813721,
+            -0.0017640708882838431,
+            -0.006275849593331356,
+            -0.00443457474385129,
+            -0.002520202287745067
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": 0.18281387500874852,
+        "v_sd": 2.9168171125079647,
+        "v_range": [
+          -9.125557362362585,
+          10.0966618032614
+        ],
+        "transformed_mean": [
+          0.060937958336249765,
+          0.006264631268384271,
+          -0.005397572347741881,
+          -0.005112888207279467,
+          0.003573421267329638,
+          -0.0022598188006770553,
+          0.012268614061813673,
+          -0.0017640708882838648,
+          -0.006275849593331398,
+          -0.004434574743851303,
+          -0.002520202287745072
+        ],
+        "transformed_variance": [
+          0.9453135630910349,
+          0.99810791314904,
+          0.9913278225323479,
+          0.9875887295781047,
+          0.9933332859815871,
+          1.0039524389291972,
+          1.014513058228993,
+          1.0091827889701108,
+          1.0063372499412235,
+          1.0004323234812553,
+          0.991150939816846
+        ],
+        "transformed_mean_batch_se": [
+          0.0495391744018262,
+          0.00555297453046653,
+          0.005757405128098154,
+          0.0058960637241997045,
+          0.005653277333653746,
+          0.004755307444343136,
+          0.0054797439420629,
+          0.005755322047245351,
+          0.0053090555926241035,
+          0.0048170679498010915,
+          0.005588130889825615
+        ],
+        "tail_-3": {
+          "observed": 0.138336181640625,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.014388462360711635,
+          "chain_rates": [
+            0.111328125,
+            0.170166015625,
+            0.1326904296875,
+            0.13916015625
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.013427734375,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.00397836630434501,
+          "chain_rates": [
+            0.010009765625,
+            0.021240234375,
+            0.0146484375,
+            0.0078125
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.1977992043550303,
+            "min_bulk_ess": 16.926638446870353,
+            "min_tail_ess": 50.022550483737156,
+            "mean": [
+              -0.3928344736856172,
+              0.9077579821239844,
+              0.04177523672212986,
+              -0.5508645647802726,
+              0.11234551064610922,
+              0.5564677053554031,
+              0.022898461457479452,
+              -0.6618594866545288,
+              0.14207116019064128,
+              -0.328948351091117,
+              0.6444882076132015
+            ],
+            "v_rhat": 1.1977992043550305,
+            "v_bulk_ess": 16.926638446870353,
+            "v_tail_ess": 50.022550483737156,
+            "transformed": {
+              "max_rhat": 1.1977992043550303,
+              "min_bulk_ess": 16.926638446870353,
+              "min_tail_ess": 50.022550483737156,
+              "mean": [
+                -0.13094482456187245,
+                0.01590406744960665,
+                -0.01184440008361533,
+                0.0254715268466477,
+                0.007254384815261908,
+                -0.0017800761736406143,
+                0.02376074676813728,
+                -0.009636549280868323,
+                -0.03841760105332139,
+                -0.02250142138370173,
+                0.032937436479019276
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.3928344736856172,
+            "v_sd": 3.9513151127159825,
+            "v_range": [
+              -9.125557362362585,
+              9.198687957111485
+            ],
+            "transformed_mean": [
+              -0.13094482456187245,
+              0.01590406744960667,
+              -0.011844400083615338,
+              0.02547152684664771,
+              0.007254384815261888,
+              -0.001780076173640606,
+              0.023760746768137293,
+              -0.009636549280868358,
+              -0.03841760105332138,
+              -0.02250142138370175,
+              0.032937436479019325
+            ],
+            "transformed_variance": [
+              1.7347656799975248,
+              0.9570645480443012,
+              0.9905568101379665,
+              0.9991505937596434,
+              0.9485011871524978,
+              1.0275047384389515,
+              1.0367969389470955,
+              1.0669928739229388,
+              0.9295809495578322,
+              1.0039322104005983,
+              0.9751583153005196
+            ],
+            "transformed_mean_batch_se": [
+              0.1569353459086548,
+              0.019649463886276072,
+              0.02488308568237148,
+              0.027771983381525634,
+              0.02157134444237971,
+              0.022323923171521244,
+              0.02809161926180843,
+              0.023307139977561658,
+              0.025321503844810953,
+              0.023583902166599287,
+              0.025775638309371535
+            ],
+            "tail_-3": {
+              "observed": 0.294921875,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.052504228463443,
+              "chain_rates": [
+                0.2109375,
+                0.34765625,
+                0.478515625,
+                0.142578125
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0703125,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.02285146975883365,
+              "chain_rates": [
+                0.013671875,
+                0.123046875,
+                0.130859375,
+                0.013671875
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.0406702543284647,
+            "min_bulk_ess": 81.19035439913569,
+            "min_tail_ess": 134.03870424506619,
+            "mean": [
+              0.150067273282227,
+              0.3188802093555672,
+              -0.07285679352439481,
+              -0.20539106156555675,
+              0.15343204816725908,
+              0.11942294898698397,
+              -0.0006428643504263511,
+              -0.2683151488324357,
+              0.061706655690394636,
+              0.06194633339209141,
+              0.10667375992241251
+            ],
+            "v_rhat": 1.0406702543284647,
+            "v_bulk_ess": 81.19035439913569,
+            "v_tail_ess": 134.03870424506619,
+            "transformed": {
+              "max_rhat": 1.0406702543284647,
+              "min_bulk_ess": 81.19035439913569,
+              "min_tail_ess": 134.03870424506619,
+              "mean": [
+                0.050022424427408986,
+                0.022638201846642118,
+                -0.018662852436725393,
+                0.0035342689624116566,
+                0.008668167406576539,
+                -0.0157219860736989,
+                0.015368337184394324,
+                0.0016619947998450797,
+                -0.020947214098538884,
+                -0.007398994004982047,
+                0.0052495505182440895
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": 0.15006727328222697,
+            "v_sd": 3.0814054265190673,
+            "v_range": [
+              -9.125557362362585,
+              9.198687957111485
+            ],
+            "transformed_mean": [
+              0.050022424427409166,
+              0.02263820184664217,
+              -0.01866285243672538,
+              0.0035342689624116718,
+              0.008668167406576537,
+              -0.015721986073698888,
+              0.015368337184394312,
+              0.0016619947998450734,
+              -0.020947214098538874,
+              -0.007398994004982048,
+              0.005249550518244111
+            ],
+            "transformed_variance": [
+              1.0550066002867964,
+              0.983556566742255,
+              1.000087142732232,
+              0.9703252801028832,
+              0.9611802556270606,
+              1.029537756721877,
+              1.0168679050628286,
+              0.9968290394315482,
+              1.00575130203045,
+              0.9935880971408759,
+              0.9536082659173047
+            ],
+            "transformed_mean_batch_se": [
+              0.0960564244754787,
+              0.011991069981619662,
+              0.010472646177896262,
+              0.011107578651815874,
+              0.011606698035731704,
+              0.011587051170812667,
+              0.01233865728546069,
+              0.011437131742811404,
+              0.009374237691884718,
+              0.010870032305844532,
+              0.009765863311531555
+            ],
+            "tail_-3": {
+              "observed": 0.1484375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.029670648086213128,
+              "chain_rates": [
+                0.103515625,
+                0.25830078125,
+                0.16259765625,
+                0.0693359375
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.02197265625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.00787786357982453,
+              "chain_rates": [
+                0.00341796875,
+                0.04052734375,
+                0.04052734375,
+                0.00341796875
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0079506456229357,
+            "min_bulk_ess": 368.8256252757089,
+            "min_tail_ess": 540.2027554086227,
+            "mean": [
+              0.18281387500874852,
+              0.16153502797763522,
+              -0.07205472082626521,
+              -0.10286089196266072,
+              0.12627335493304132,
+              -0.056937617096537704,
+              0.05174574827460337,
+              -0.23988705580060482,
+              -0.040738998512390934,
+              -0.014071594203286644,
+              -0.013631899158119493
+            ],
+            "v_rhat": 1.0079506456229357,
+            "v_bulk_ess": 368.8256252757089,
+            "v_tail_ess": 540.2027554086227,
+            "transformed": {
+              "max_rhat": 1.0079506456229357,
+              "min_bulk_ess": 368.8256252757089,
+              "min_tail_ess": 540.2027554086227,
+              "mean": [
+                0.06093795833624933,
+                0.006264631268384233,
+                -0.005397572347741892,
+                -0.005112888207279467,
+                0.0035734212673295875,
+                -0.0022598188006770384,
+                0.012268614061813721,
+                -0.0017640708882838431,
+                -0.006275849593331356,
+                -0.00443457474385129,
+                -0.002520202287745067
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": 0.18281387500874852,
+            "v_sd": 2.9168171125079647,
+            "v_range": [
+              -9.125557362362585,
+              10.0966618032614
+            ],
+            "transformed_mean": [
+              0.060937958336249765,
+              0.006264631268384271,
+              -0.005397572347741881,
+              -0.005112888207279467,
+              0.003573421267329638,
+              -0.0022598188006770553,
+              0.012268614061813673,
+              -0.0017640708882838648,
+              -0.006275849593331398,
+              -0.004434574743851303,
+              -0.002520202287745072
+            ],
+            "transformed_variance": [
+              0.9453135630910349,
+              0.99810791314904,
+              0.9913278225323479,
+              0.9875887295781047,
+              0.9933332859815871,
+              1.0039524389291972,
+              1.014513058228993,
+              1.0091827889701108,
+              1.0063372499412235,
+              1.0004323234812553,
+              0.991150939816846
+            ],
+            "transformed_mean_batch_se": [
+              0.0495391744018262,
+              0.00555297453046653,
+              0.005757405128098154,
+              0.0058960637241997045,
+              0.005653277333653746,
+              0.004755307444343136,
+              0.0054797439420629,
+              0.005755322047245351,
+              0.0053090555926241035,
+              0.0048170679498010915,
+              0.005588130889825615
+            ],
+            "tail_-3": {
+              "observed": 0.138336181640625,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.014388462360711635,
+              "chain_rates": [
+                0.111328125,
+                0.170166015625,
+                0.1326904296875,
+                0.13916015625
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.013427734375,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.00397836630434501,
+              "chain_rates": [
+                0.010009765625,
+                0.021240234375,
+                0.0146484375,
+                0.0078125
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ]
+    },
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11",
+      "engine": "tf",
+      "device": "cpu",
+      "dimension": 11,
+      "step": 0.3228754012018425,
+      "delta": 0.15442326531457057,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 16.744304505409673,
+      "gradient_evaluations": 4420072.0,
+      "nonfinite_trajectory_flags": 0,
+      "diagnostics": {
+        "max_rhat": 1.0079506583982984,
+        "min_bulk_ess": 368.82557998232477,
+        "min_tail_ess": 540.2027554086227,
+        "mean": [
+          0.182813560911073,
+          0.16153544759359362,
+          -0.07205473487878294,
+          -0.10286094140991175,
+          0.12627355731060708,
+          -0.05693728838943011,
+          0.05174612806637083,
+          -0.23988713728988803,
+          -0.040738993681725726,
+          -0.014072026112697516,
+          -0.013631977061283343
+        ],
+        "v_rhat": 1.0079506583982984,
+        "v_bulk_ess": 368.82557998232477,
+        "v_tail_ess": 540.2027554086227,
+        "transformed": {
+          "max_rhat": 1.0079506583982984,
+          "min_bulk_ess": 368.82557998232477,
+          "min_tail_ess": 540.2027554086227,
+          "mean": [
+            0.060937853637024184,
+            0.006264708185449417,
+            -0.005397703756797274,
+            -0.005113094745821832,
+            0.003573404698174359,
+            -0.002259879411171939,
+            0.012268628913276416,
+            -0.0017641692101083833,
+            -0.00627583840381009,
+            -0.004434643134023478,
+            -0.0025202520985652594
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": 0.18281356091107281,
+        "v_sd": 2.916817357218852,
+        "v_range": [
+          -9.125557362351222,
+          10.096661803264947
+        ],
+        "transformed_mean": [
+          0.06093785363702429,
+          0.006264708185449431,
+          -0.005397703756797263,
+          -0.0051130947458218196,
+          0.0035734046981743704,
+          -0.0022598794111719335,
+          0.012268628913276413,
+          -0.0017641692101083837,
+          -0.00627583840381013,
+          -0.004434643134023466,
+          -0.0025202520985652707
+        ],
+        "transformed_variance": [
+          0.9453137217081276,
+          0.9981082061897686,
+          0.9913278009388893,
+          0.9875880996736381,
+          0.9933332965520922,
+          1.0039524288003565,
+          1.0145130927133992,
+          1.0091825867134991,
+          1.0063376549113654,
+          1.00043237497407,
+          0.9911508278505439
+        ],
+        "transformed_mean_batch_se": [
+          0.049539183214979195,
+          0.00555297852013954,
+          0.005757420120875538,
+          0.005896052485278925,
+          0.005653281085871099,
+          0.004755293228743306,
+          0.005479741303906171,
+          0.005755313794125107,
+          0.005309053619535813,
+          0.004817076554343828,
+          0.005588134311615634
+        ],
+        "tail_-3": {
+          "observed": 0.138336181640625,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.014388462360711635,
+          "chain_rates": [
+            0.111328125,
+            0.170166015625,
+            0.1326904296875,
+            0.13916015625
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.013427734375,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.00397836630434501,
+          "chain_rates": [
+            0.010009765625,
+            0.021240234375,
+            0.0146484375,
+            0.0078125
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.197797789807607,
+            "min_bulk_ess": 16.92678695222179,
+            "min_tail_ess": 50.022550483737156,
+            "mean": [
+              -0.3928396377653929,
+              0.9077644854262215,
+              0.04177482116254319,
+              -0.5508649969703956,
+              0.1123491295055781,
+              0.5564730505801933,
+              0.022904554125111207,
+              -0.6618605530973821,
+              0.14207080889505533,
+              -0.328954986278594,
+              0.6444867925560328
+            ],
+            "v_rhat": 1.197797789807607,
+            "v_bulk_ess": 16.92678695222179,
+            "v_tail_ess": 50.022550483737156,
+            "transformed": {
+              "max_rhat": 1.197797789807607,
+              "min_bulk_ess": 16.92678695222179,
+              "min_tail_ess": 50.022550483737156,
+              "mean": [
+                -0.13094654592179755,
+                0.015905190738261334,
+                -0.01184657983614591,
+                0.0254685648060392,
+                0.007254712949983563,
+                -0.0017813065109926777,
+                0.023761039404855286,
+                -0.009637892144277392,
+                -0.03841721733059609,
+                -0.022502600028572566,
+                0.03293686944575783
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.39283963776539244,
+            "v_sd": 3.9513173331993485,
+            "v_range": [
+              -9.125557362351222,
+              9.198701301740428
+            ],
+            "transformed_mean": [
+              -0.13094654592179725,
+              0.015905190738261327,
+              -0.01184657983614589,
+              0.025468564806039193,
+              0.007254712949983564,
+              -0.0017813065109926634,
+              0.023761039404855286,
+              -0.009637892144277405,
+              -0.038417217330596096,
+              -0.022502600028572566,
+              0.03293686944575777
+            ],
+            "transformed_variance": [
+              1.734767629737957,
+              0.9570695351124539,
+              0.990557067060674,
+              0.9991419247739997,
+              0.9485008572969155,
+              1.0275075746013669,
+              1.036796661362342,
+              1.0669897189964863,
+              0.9295834356004349,
+              1.0039337942789373,
+              0.975156779282335
+            ],
+            "transformed_mean_batch_se": [
+              0.15693540617682813,
+              0.01964937102223352,
+              0.02488282371372248,
+              0.027771804192421694,
+              0.021571267064377016,
+              0.022323813011954134,
+              0.028091687356866343,
+              0.0233071957989591,
+              0.0253214937667873,
+              0.02358380384011691,
+              0.0257757291128942
+            ],
+            "tail_-3": {
+              "observed": 0.294921875,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.052504228463443,
+              "chain_rates": [
+                0.2109375,
+                0.34765625,
+                0.478515625,
+                0.142578125
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0703125,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.02285146975883365,
+              "chain_rates": [
+                0.013671875,
+                0.123046875,
+                0.130859375,
+                0.013671875
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.0406701952568662,
+            "min_bulk_ess": 81.190504927351,
+            "min_tail_ess": 134.03870424506619,
+            "mean": [
+              0.15006598226170476,
+              0.3188818351819572,
+              -0.07285689741386578,
+              -0.20539116961506132,
+              0.1534329528806458,
+              0.11942428529350751,
+              -0.0006413411834286353,
+              -0.2683154154449377,
+              0.0617065678703425,
+              0.06194467459865122,
+              0.1066734061658681
+            ],
+            "v_rhat": 1.040670195256866,
+            "v_bulk_ess": 81.190504927351,
+            "v_tail_ess": 134.03870424506619,
+            "transformed": {
+              "max_rhat": 1.0406701952568662,
+              "min_bulk_ess": 81.190504927351,
+              "min_tail_ess": 134.03870424506619,
+              "mean": [
+                0.05002199408723497,
+                0.02263848266878655,
+                -0.01866339737427741,
+                0.003533528451873316,
+                0.008668249439356337,
+                -0.015722293658185848,
+                0.015368410343449318,
+                0.0016616590833973246,
+                -0.02094711816718465,
+                -0.007399288666164317,
+                0.005249408761141253
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": 0.15006598226170478,
+            "v_sd": 3.0814063658162913,
+            "v_range": [
+              -9.125557362351222,
+              9.198701301740428
+            ],
+            "transformed_mean": [
+              0.050021994087235094,
+              0.022638482668786528,
+              -0.018663397374277413,
+              0.0035335284518732877,
+              0.00866824943935634,
+              -0.01572229365818586,
+              0.015368410343449304,
+              0.0016616590833973272,
+              -0.020947118167184607,
+              -0.0073992886661643255,
+              0.00524940876114125
+            ],
+            "transformed_variance": [
+              1.0550072434770175,
+              0.9835578097269111,
+              1.0000871995325344,
+              0.9703230803687812,
+              0.9611801729315681,
+              1.029538457186253,
+              1.0168678368952386,
+              0.9968282582865651,
+              1.0057519201890552,
+              0.9935885020104831,
+              0.9536078740638815
+            ],
+            "transformed_mean_batch_se": [
+              0.09605652904819373,
+              0.011991059180507673,
+              0.010472611988812839,
+              0.011107671055780479,
+              0.011606701941382788,
+              0.011587018251533505,
+              0.012338651582531907,
+              0.011437146045364424,
+              0.0093742397348272,
+              0.010870007647239605,
+              0.009765876156436839
+            ],
+            "tail_-3": {
+              "observed": 0.1484375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.029670648086213128,
+              "chain_rates": [
+                0.103515625,
+                0.25830078125,
+                0.16259765625,
+                0.0693359375
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.02197265625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.00787786357982453,
+              "chain_rates": [
+                0.00341796875,
+                0.04052734375,
+                0.04052734375,
+                0.00341796875
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0079506583982984,
+            "min_bulk_ess": 368.82557998232477,
+            "min_tail_ess": 540.2027554086227,
+            "mean": [
+              0.182813560911073,
+              0.16153544759359362,
+              -0.07205473487878294,
+              -0.10286094140991175,
+              0.12627355731060708,
+              -0.05693728838943011,
+              0.05174612806637083,
+              -0.23988713728988803,
+              -0.040738993681725726,
+              -0.014072026112697516,
+              -0.013631977061283343
+            ],
+            "v_rhat": 1.0079506583982984,
+            "v_bulk_ess": 368.82557998232477,
+            "v_tail_ess": 540.2027554086227,
+            "transformed": {
+              "max_rhat": 1.0079506583982984,
+              "min_bulk_ess": 368.82557998232477,
+              "min_tail_ess": 540.2027554086227,
+              "mean": [
+                0.060937853637024184,
+                0.006264708185449417,
+                -0.005397703756797274,
+                -0.005113094745821832,
+                0.003573404698174359,
+                -0.002259879411171939,
+                0.012268628913276416,
+                -0.0017641692101083833,
+                -0.00627583840381009,
+                -0.004434643134023478,
+                -0.0025202520985652594
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": 0.18281356091107281,
+            "v_sd": 2.916817357218852,
+            "v_range": [
+              -9.125557362351222,
+              10.096661803264947
+            ],
+            "transformed_mean": [
+              0.06093785363702429,
+              0.006264708185449431,
+              -0.005397703756797263,
+              -0.0051130947458218196,
+              0.0035734046981743704,
+              -0.0022598794111719335,
+              0.012268628913276413,
+              -0.0017641692101083837,
+              -0.00627583840381013,
+              -0.004434643134023466,
+              -0.0025202520985652707
+            ],
+            "transformed_variance": [
+              0.9453137217081276,
+              0.9981082061897686,
+              0.9913278009388893,
+              0.9875880996736381,
+              0.9933332965520922,
+              1.0039524288003565,
+              1.0145130927133992,
+              1.0091825867134991,
+              1.0063376549113654,
+              1.00043237497407,
+              0.9911508278505439
+            ],
+            "transformed_mean_batch_se": [
+              0.049539183214979195,
+              0.00555297852013954,
+              0.005757420120875538,
+              0.005896052485278925,
+              0.005653281085871099,
+              0.004755293228743306,
+              0.005479741303906171,
+              0.005755313794125107,
+              0.005309053619535813,
+              0.004817076554343828,
+              0.005588134311615634
+            ],
+            "tail_-3": {
+              "observed": 0.138336181640625,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.014388462360711635,
+              "chain_rates": [
+                0.111328125,
+                0.170166015625,
+                0.1326904296875,
+                0.13916015625
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.013427734375,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.00397836630434501,
+              "chain_rates": [
+                0.010009765625,
+                0.021240234375,
+                0.0146484375,
+                0.0078125
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ]
+    },
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-10-corrected10",
+      "engine": "author-corrected",
+      "device": "cpu",
+      "dimension": 10,
+      "step": 0.3335953196940466,
+      "delta": 0.15317847203265936,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 70.89322986302432,
+      "gradient_evaluations": 4496555.0,
+      "nonfinite_trajectory_flags": null,
+      "diagnostics": {
+        "max_rhat": 1.0164046088462892,
+        "min_bulk_ess": 329.74036636328,
+        "min_tail_ess": 503.50669644600055,
+        "mean": [
+          -0.3335908153185082,
+          -0.013128274191124209,
+          0.014078089723687112,
+          -0.011642797544208178,
+          0.13109175478918497,
+          -0.04589998852393641,
+          -0.0548242086761076,
+          -0.0002371801805030587,
+          -0.016418781391301276,
+          0.11479595379948576
+        ],
+        "v_rhat": 1.0164046088462892,
+        "v_bulk_ess": 329.74036636328,
+        "v_tail_ess": 503.50669644600055,
+        "transformed": {
+          "max_rhat": 1.0164046088462892,
+          "min_bulk_ess": 329.74036636328,
+          "min_tail_ess": 503.50669644600055,
+          "mean": [
+            -0.11119693843950258,
+            0.00031448759410433096,
+            -0.0033459582935751984,
+            -0.001842862993983549,
+            0.002500252523728475,
+            -0.007549459740512993,
+            0.007217120944387817,
+            -0.004067973859295945,
+            0.00806829736320392,
+            -0.004201277665428655
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": -0.3335908153185084,
+        "v_sd": 3.1258033767985283,
+        "v_range": [
+          -11.741875880965033,
+          10.079161841449848
+        ],
+        "transformed_mean": [
+          -0.11119693843950289,
+          0.0003144875941043326,
+          -0.003345958293575193,
+          -0.001842862993983575,
+          0.0025002525237284635,
+          -0.007549459740512962,
+          0.007217120944387818,
+          -0.004067973859295956,
+          0.008068297363203926,
+          -0.004201277665428663
+        ],
+        "transformed_variance": [
+          1.0856274167116777,
+          0.9954706828224557,
+          0.9888431786070827,
+          1.0047106652507227,
+          1.0016653231994472,
+          1.0053512629522974,
+          1.0027046651200315,
+          1.0044770651724697,
+          0.9908406210789082,
+          0.984607736161043
+        ],
+        "transformed_mean_batch_se": [
+          0.05146544982919456,
+          0.00535172962589078,
+          0.005278540233649858,
+          0.005454324136909221,
+          0.005618918425613908,
+          0.004663463405772647,
+          0.006465999463561223,
+          0.005305322726858558,
+          0.006154150250900493,
+          0.005654612675715168
+        ],
+        "tail_-3": {
+          "observed": 0.19720458984375,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.018716637572128526,
+          "chain_rates": [
+            0.16064453125,
+            0.1572265625,
+            0.2738037109375,
+            0.1971435546875
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.0379638671875,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.00731735311375535,
+          "chain_rates": [
+            0.0279541015625,
+            0.0223388671875,
+            0.058837890625,
+            0.042724609375
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.0728424062126172,
+            "min_bulk_ess": 39.21940369267481,
+            "min_tail_ess": 84.07381207594982,
+            "mean": [
+              -0.5093369064204784,
+              0.008583515829423738,
+              0.07587434233852738,
+              -0.11329411865615337,
+              -0.05640667400851872,
+              -0.04797819276403528,
+              -0.2051720310876937,
+              -0.025823542963744926,
+              -0.0003611421555849009,
+              0.0033248538689689966
+            ],
+            "v_rhat": 1.0728424062126172,
+            "v_bulk_ess": 39.21940369267481,
+            "v_tail_ess": 84.07381207594982,
+            "transformed": {
+              "max_rhat": 1.0728424062126172,
+              "min_bulk_ess": 39.21940369267481,
+              "min_tail_ess": 84.07381207594982,
+              "mean": [
+                -0.16977896880682602,
+                0.024331784093188206,
+                0.020798525174358456,
+                -0.023915728080666124,
+                0.00992889853567628,
+                -0.02383138391157861,
+                0.008478599692232105,
+                -0.0037645208850668743,
+                0.016792305620056677,
+                -0.012242861371117353
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.5093369064204782,
+            "v_sd": 2.654776353790646,
+            "v_range": [
+              -7.345978229370896,
+              7.02311260211031
+            ],
+            "transformed_mean": [
+              -0.1697789688068261,
+              0.024331784093188223,
+              0.020798525174358456,
+              -0.02391572808066608,
+              0.009928898535676293,
+              -0.023831383911578602,
+              0.008478599692232096,
+              -0.0037645208850668414,
+              0.016792305620056635,
+              -0.012242861371117311
+            ],
+            "transformed_variance": [
+              0.7830930542939953,
+              0.8956228987497034,
+              0.8789597051834206,
+              0.9477590259504578,
+              0.9698490984413768,
+              0.9747848844580587,
+              1.0193336920381222,
+              1.005820827579142,
+              0.9864329005559167,
+              1.0036618904862007
+            ],
+            "transformed_mean_batch_se": [
+              0.09635780524937701,
+              0.017368994776607468,
+              0.019286629800653543,
+              0.018796836932366105,
+              0.01835439567819725,
+              0.01896766027593398,
+              0.022061934114978796,
+              0.02105928989608166,
+              0.024072826750806388,
+              0.025384454887461296
+            ],
+            "tail_-3": {
+              "observed": 0.17822265625,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.034285539306214294,
+              "chain_rates": [
+                0.21875,
+                0.107421875,
+                0.1640625,
+                0.22265625
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.01025390625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.005570320913575593,
+              "chain_rates": [
+                0.005859375,
+                0.0,
+                0.017578125,
+                0.017578125
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.037814227857075,
+            "min_bulk_ess": 114.00761191721537,
+            "min_tail_ess": 204.6886023115185,
+            "mean": [
+              -0.4633304896845138,
+              -0.1352616290838885,
+              -0.25656859855288405,
+              -0.08403507970171081,
+              0.21808756875978574,
+              0.0021352353868183717,
+              -0.017265741069752014,
+              0.04486634565525631,
+              -0.13454442415132836,
+              0.23851077021156686
+            ],
+            "v_rhat": 1.037814227857075,
+            "v_bulk_ess": 114.00761191721537,
+            "v_tail_ess": 204.6886023115185,
+            "transformed": {
+              "max_rhat": 1.037814227857075,
+              "min_bulk_ess": 114.00761191721537,
+              "min_tail_ess": 204.6886023115185,
+              "mean": [
+                -0.15444349656150472,
+                0.008971053698928411,
+                -0.014646472422205256,
+                0.002102116944213115,
+                -0.0010404937661187556,
+                -0.01310869873854654,
+                0.00382599021380168,
+                -0.012048505180594134,
+                0.004930261226552248,
+                0.0059604990933113285
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.46333048968451396,
+            "v_sd": 2.834716490629036,
+            "v_range": [
+              -8.665867814092675,
+              10.079161841449848
+            ],
+            "transformed_mean": [
+              -0.1544434965615049,
+              0.008971053698928389,
+              -0.014646472422205264,
+              0.0021021169442131294,
+              -0.0010404937661187396,
+              -0.013108698738546505,
+              0.0038259902138017025,
+              -0.012048505180594131,
+              0.004930261226552227,
+              0.005960499093311355
+            ],
+            "transformed_variance": [
+              0.8928463980271323,
+              0.9696719212266418,
+              0.9519449805354199,
+              0.9959749896627184,
+              0.978688601761075,
+              0.9937593390567323,
+              0.9986451767492673,
+              1.0200782771285826,
+              0.9834310015225687,
+              0.9575270863723273
+            ],
+            "transformed_mean_batch_se": [
+              0.07819164837617532,
+              0.007994947007837662,
+              0.008994206837775071,
+              0.009645777044487451,
+              0.010952677672796141,
+              0.011469180003609606,
+              0.010839020382666155,
+              0.012180382419974349,
+              0.010300117250524663,
+              0.01127551227153918
+            ],
+            "tail_-3": {
+              "observed": 0.1912841796875,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.025114271907265978,
+              "chain_rates": [
+                0.169921875,
+                0.1640625,
+                0.2548828125,
+                0.17626953125
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0181884765625,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.006723302071506302,
+              "chain_rates": [
+                0.00146484375,
+                0.01611328125,
+                0.0263671875,
+                0.02880859375
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0164046088462892,
+            "min_bulk_ess": 329.74036636328,
+            "min_tail_ess": 503.50669644600055,
+            "mean": [
+              -0.3335908153185082,
+              -0.013128274191124209,
+              0.014078089723687112,
+              -0.011642797544208178,
+              0.13109175478918497,
+              -0.04589998852393641,
+              -0.0548242086761076,
+              -0.0002371801805030587,
+              -0.016418781391301276,
+              0.11479595379948576
+            ],
+            "v_rhat": 1.0164046088462892,
+            "v_bulk_ess": 329.74036636328,
+            "v_tail_ess": 503.50669644600055,
+            "transformed": {
+              "max_rhat": 1.0164046088462892,
+              "min_bulk_ess": 329.74036636328,
+              "min_tail_ess": 503.50669644600055,
+              "mean": [
+                -0.11119693843950258,
+                0.00031448759410433096,
+                -0.0033459582935751984,
+                -0.001842862993983549,
+                0.002500252523728475,
+                -0.007549459740512993,
+                0.007217120944387817,
+                -0.004067973859295945,
+                0.00806829736320392,
+                -0.004201277665428655
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.3335908153185084,
+            "v_sd": 3.1258033767985283,
+            "v_range": [
+              -11.741875880965033,
+              10.079161841449848
+            ],
+            "transformed_mean": [
+              -0.11119693843950289,
+              0.0003144875941043326,
+              -0.003345958293575193,
+              -0.001842862993983575,
+              0.0025002525237284635,
+              -0.007549459740512962,
+              0.007217120944387818,
+              -0.004067973859295956,
+              0.008068297363203926,
+              -0.004201277665428663
+            ],
+            "transformed_variance": [
+              1.0856274167116777,
+              0.9954706828224557,
+              0.9888431786070827,
+              1.0047106652507227,
+              1.0016653231994472,
+              1.0053512629522974,
+              1.0027046651200315,
+              1.0044770651724697,
+              0.9908406210789082,
+              0.984607736161043
+            ],
+            "transformed_mean_batch_se": [
+              0.05146544982919456,
+              0.00535172962589078,
+              0.005278540233649858,
+              0.005454324136909221,
+              0.005618918425613908,
+              0.004663463405772647,
+              0.006465999463561223,
+              0.005305322726858558,
+              0.006154150250900493,
+              0.005654612675715168
+            ],
+            "tail_-3": {
+              "observed": 0.19720458984375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.018716637572128526,
+              "chain_rates": [
+                0.16064453125,
+                0.1572265625,
+                0.2738037109375,
+                0.1971435546875
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0379638671875,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.00731735311375535,
+              "chain_rates": [
+                0.0279541015625,
+                0.0223388671875,
+                0.058837890625,
+                0.042724609375
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ],
+      "author_telemetry": {
+        "max_forward_exponent": 9.0,
+        "cap_reached_iterations": 0,
+        "max_sampled_doublings": 12.0,
+        "max_computed_doublings": 12.0
+      }
+    },
+    {
+      "run": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-11-gpu10",
+      "engine": "tf",
+      "device": "gpu",
+      "dimension": 10,
+      "step": 0.3335953196940466,
+      "delta": 0.15317847203265936,
+      "draws": 8192,
+      "settle": 512,
+      "sampling_group_seconds": 142.16658296517562,
+      "gradient_evaluations": 4365458.0,
+      "nonfinite_trajectory_flags": 0,
+      "diagnostics": {
+        "max_rhat": 1.0033451615997173,
+        "min_bulk_ess": 319.5988186170975,
+        "min_tail_ess": 449.7533840386249,
+        "mean": [
+          -0.16004929822307817,
+          -0.07508900746599292,
+          -0.03584100397998421,
+          0.09007044750035535,
+          0.014885114620829597,
+          -0.012350520652645674,
+          0.10204364990732155,
+          -0.13877270211699727,
+          0.05005681531946998,
+          -0.06705188162155465
+        ],
+        "v_rhat": 1.003345161599717,
+        "v_bulk_ess": 319.5988186170975,
+        "v_tail_ess": 449.7533840386249,
+        "transformed": {
+          "max_rhat": 1.0033451615997173,
+          "min_bulk_ess": 319.5988186170975,
+          "min_tail_ess": 449.7533840386249,
+          "mean": [
+            -0.05334976607435939,
+            0.008838273004208695,
+            -0.004307784868431511,
+            0.0021507028186699712,
+            -0.001893952788788813,
+            -0.005728057016421371,
+            0.01601092009925132,
+            -0.013610151204603703,
+            0.005051211299460418,
+            -0.00595393868274836
+          ]
+        },
+        "finite": true,
+        "movement": true,
+        "v_mean": -0.16004929822307778,
+        "v_sd": 3.0152270642700953,
+        "v_range": [
+          -10.867714899010801,
+          10.804682715887475
+        ],
+        "transformed_mean": [
+          -0.053349766074359393,
+          0.008838273004208677,
+          -0.004307784868431509,
+          0.0021507028186700055,
+          -0.001893952788788822,
+          -0.005728057016421387,
+          0.016010920099251282,
+          -0.013610151204603734,
+          0.005051211299460431,
+          -0.00595393868274836
+        ],
+        "transformed_variance": [
+          1.0101771387896488,
+          0.9854743224048927,
+          1.0083455674784045,
+          1.013160212929279,
+          0.996312892136763,
+          0.9898541317667948,
+          1.0075348147135892,
+          0.9935645009318886,
+          0.9944492891069365,
+          1.0072521637588674
+        ],
+        "transformed_mean_batch_se": [
+          0.0525177443562966,
+          0.005804842785948131,
+          0.005448005834379775,
+          0.0054661389236186205,
+          0.005189281487737903,
+          0.005329132898471083,
+          0.005850597440102889,
+          0.005197545900870012,
+          0.004897839187384279,
+          0.005343450556769903
+        ],
+        "tail_-3": {
+          "observed": 0.176666259765625,
+          "analytic": 0.15865525393145707,
+          "batch_se": 0.017557764371702856,
+          "chain_rates": [
+            0.1751708984375,
+            0.15625,
+            0.2271728515625,
+            0.1480712890625
+          ]
+        },
+        "tail_-6": {
+          "observed": 0.026885986328125,
+          "analytic": 0.02275013194817922,
+          "batch_se": 0.006409469868616217,
+          "chain_rates": [
+            0.0274658203125,
+            0.0234375,
+            0.0350341796875,
+            0.0216064453125
+          ]
+        },
+        "posterior_screen": false,
+        "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+      },
+      "ladder": [
+        {
+          "draws": 512,
+          "diagnostics": {
+            "max_rhat": 1.2300529951485766,
+            "min_bulk_ess": 13.803733364616761,
+            "min_tail_ess": 66.41010748235074,
+            "mean": [
+              -1.284892181083059,
+              0.1431852808194395,
+              -0.1225100673919134,
+              -0.044203512147759694,
+              0.03645744551507822,
+              0.24453084027697292,
+              -0.26248140832139993,
+              -0.10772746268232263,
+              -0.02057397829478059,
+              0.06473744509973059
+            ],
+            "v_rhat": 1.2300529951485768,
+            "v_bulk_ess": 13.803733364616761,
+            "v_tail_ess": 66.41010748235074,
+            "transformed": {
+              "max_rhat": 1.2300529951485766,
+              "min_bulk_ess": 13.803733364616761,
+              "min_tail_ess": 66.41010748235074,
+              "mean": [
+                -0.4282973936943528,
+                0.04588514861206078,
+                0.006543834900755852,
+                -0.02635475372049699,
+                -0.0016363366296216365,
+                0.040833474727407754,
+                -0.026182724967178297,
+                -0.02435640987202661,
+                0.020136811304259206,
+                0.0070807337553424445
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -1.2848921810830576,
+            "v_sd": 3.5242007374611037,
+            "v_range": [
+              -10.60974300508279,
+              7.084293180208285
+            ],
+            "transformed_mean": [
+              -0.4282973936943528,
+              0.0458851486120608,
+              0.006543834900755868,
+              -0.026354753720497007,
+              -0.0016363366296216226,
+              0.040833474727407754,
+              -0.026182724967178262,
+              -0.024356409872026634,
+              0.02013681130425928,
+              0.007080733755342411
+            ],
+            "transformed_variance": [
+              1.3799989819912644,
+              0.9689062257318339,
+              0.9825595099707515,
+              0.9544351321540809,
+              0.9235281763727652,
+              0.9895840315258627,
+              1.065956454233149,
+              0.9285074951059546,
+              0.9479132055757675,
+              0.9522995601585096
+            ],
+            "transformed_mean_batch_se": [
+              0.13689834409869533,
+              0.022704850180374825,
+              0.02299480773306177,
+              0.021605677051093668,
+              0.019788163609895833,
+              0.023614415180991166,
+              0.02280562170243208,
+              0.018818653696948472,
+              0.02427096784599899,
+              0.021251509328767914
+            ],
+            "tail_-3": {
+              "observed": 0.31787109375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.05167508661715753,
+              "chain_rates": [
+                0.4296875,
+                0.38671875,
+                0.404296875,
+                0.05078125
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.10986328125,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.03304311341339269,
+              "chain_rates": [
+                0.119140625,
+                0.1796875,
+                0.140625,
+                0.0
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 2048,
+          "diagnostics": {
+            "max_rhat": 1.0769387544028963,
+            "min_bulk_ess": 64.00653589935837,
+            "min_tail_ess": 157.16726932577944,
+            "mean": [
+              -0.3905551868206204,
+              -0.017015237195947275,
+              0.10116484234721977,
+              0.04669391816666527,
+              0.09772486621094595,
+              0.024076661023223877,
+              0.02811667355652712,
+              -0.07427178406643385,
+              0.05874672205199334,
+              -0.030089129498700525
+            ],
+            "v_rhat": 1.0769387544028963,
+            "v_bulk_ess": 64.00653589935837,
+            "v_tail_ess": 157.16726932577944,
+            "transformed": {
+              "max_rhat": 1.0769387544028963,
+              "min_bulk_ess": 64.00653589935837,
+              "min_tail_ess": 157.16726932577944,
+              "mean": [
+                -0.13018506227354004,
+                0.010059258562183893,
+                0.022553271087568598,
+                -0.014742958043083766,
+                0.015555202821637588,
+                0.0060845345837750595,
+                0.006174948357276541,
+                -0.01751287630617742,
+                0.00014578411430051386,
+                -0.016978279046672942
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.39055518682062007,
+            "v_sd": 3.190076275291283,
+            "v_range": [
+              -10.867714899010801,
+              8.371073748317235
+            ],
+            "transformed_mean": [
+              -0.13018506227354004,
+              0.010059258562183902,
+              0.022553271087568605,
+              -0.014742958043083778,
+              0.015555202821637608,
+              0.006084534583775045,
+              0.006174948357276576,
+              -0.017512876306177476,
+              0.00014578411430052438,
+              -0.016978279046672994
+            ],
+            "transformed_variance": [
+              1.1307318491307001,
+              0.987541905365886,
+              0.9782910751977121,
+              1.0133475829448317,
+              0.9760856702252865,
+              1.0053467424157732,
+              1.0144099587367374,
+              1.0118474973061817,
+              0.98582814645824,
+              0.9787668695956546
+            ],
+            "transformed_mean_batch_se": [
+              0.0948307789135346,
+              0.01185165236450735,
+              0.011564303328865901,
+              0.010292600587017225,
+              0.011149631037222186,
+              0.01050059853820096,
+              0.011303240774618067,
+              0.010128191899300682,
+              0.010791395021554613,
+              0.01052556810364013
+            ],
+            "tail_-3": {
+              "observed": 0.206787109375,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.03191952776816672,
+              "chain_rates": [
+                0.17578125,
+                0.18212890625,
+                0.33349609375,
+                0.1357421875
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.0576171875,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.01643569391732399,
+              "chain_rates": [
+                0.02978515625,
+                0.07177734375,
+                0.09375,
+                0.03515625
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        },
+        {
+          "draws": 8192,
+          "diagnostics": {
+            "max_rhat": 1.0033451615997173,
+            "min_bulk_ess": 319.5988186170975,
+            "min_tail_ess": 449.7533840386249,
+            "mean": [
+              -0.16004929822307817,
+              -0.07508900746599292,
+              -0.03584100397998421,
+              0.09007044750035535,
+              0.014885114620829597,
+              -0.012350520652645674,
+              0.10204364990732155,
+              -0.13877270211699727,
+              0.05005681531946998,
+              -0.06705188162155465
+            ],
+            "v_rhat": 1.003345161599717,
+            "v_bulk_ess": 319.5988186170975,
+            "v_tail_ess": 449.7533840386249,
+            "transformed": {
+              "max_rhat": 1.0033451615997173,
+              "min_bulk_ess": 319.5988186170975,
+              "min_tail_ess": 449.7533840386249,
+              "mean": [
+                -0.05334976607435939,
+                0.008838273004208695,
+                -0.004307784868431511,
+                0.0021507028186699712,
+                -0.001893952788788813,
+                -0.005728057016421371,
+                0.01601092009925132,
+                -0.013610151204603703,
+                0.005051211299460418,
+                -0.00595393868274836
+              ]
+            },
+            "finite": true,
+            "movement": true,
+            "v_mean": -0.16004929822307778,
+            "v_sd": 3.0152270642700953,
+            "v_range": [
+              -10.867714899010801,
+              10.804682715887475
+            ],
+            "transformed_mean": [
+              -0.053349766074359393,
+              0.008838273004208677,
+              -0.004307784868431509,
+              0.0021507028186700055,
+              -0.001893952788788822,
+              -0.005728057016421387,
+              0.016010920099251282,
+              -0.013610151204603734,
+              0.005051211299460431,
+              -0.00595393868274836
+            ],
+            "transformed_variance": [
+              1.0101771387896488,
+              0.9854743224048927,
+              1.0083455674784045,
+              1.013160212929279,
+              0.996312892136763,
+              0.9898541317667948,
+              1.0075348147135892,
+              0.9935645009318886,
+              0.9944492891069365,
+              1.0072521637588674
+            ],
+            "transformed_mean_batch_se": [
+              0.0525177443562966,
+              0.005804842785948131,
+              0.005448005834379775,
+              0.0054661389236186205,
+              0.005189281487737903,
+              0.005329132898471083,
+              0.005850597440102889,
+              0.005197545900870012,
+              0.004897839187384279,
+              0.005343450556769903
+            ],
+            "tail_-3": {
+              "observed": 0.176666259765625,
+              "analytic": 0.15865525393145707,
+              "batch_se": 0.017557764371702856,
+              "chain_rates": [
+                0.1751708984375,
+                0.15625,
+                0.2271728515625,
+                0.1480712890625
+              ]
+            },
+            "tail_-6": {
+              "observed": 0.026885986328125,
+              "analytic": 0.02275013194817922,
+              "batch_se": 0.006409469868616217,
+              "chain_rates": [
+                0.0274658203125,
+                0.0234375,
+                0.0350341796875,
+                0.0216064453125
+              ]
+            },
+            "posterior_screen": false,
+            "uncertainty_status": "Batch SE is descriptive unless chains are stationary; no equivalence or ranking test"
+          }
+        }
+      ]
+    }
+  ],
+  "matched_comparisons": [
+    {
+      "candidate": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11",
+      "baseline": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+      "dimension": 11,
+      "interpretation": "Descriptive difference; neither equivalence nor ranking established",
+      "tail_-3": {
+        "difference": -0.035186767578125,
+        "combined_batch_se": 0.021983881846328508,
+        "descriptive_95_interval": [
+          -0.07827517599692888,
+          0.007901640840678875
+        ]
+      },
+      "tail_-6": {
+        "difference": -0.01202392578125,
+        "combined_batch_se": 0.007061207076784475,
+        "descriptive_95_interval": [
+          -0.025863891651747573,
+          0.0018160400892475708
+        ]
+      }
+    },
+    {
+      "candidate": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11",
+      "baseline": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-06-corrected11",
+      "dimension": 11,
+      "interpretation": "Descriptive difference; neither equivalence nor ranking established",
+      "tail_-3": {
+        "difference": -0.035186767578125,
+        "combined_batch_se": 0.021983881846328508,
+        "descriptive_95_interval": [
+          -0.07827517599692888,
+          0.007901640840678875
+        ]
+      },
+      "tail_-6": {
+        "difference": -0.01202392578125,
+        "combined_batch_se": 0.007061207076784475,
+        "descriptive_95_interval": [
+          -0.025863891651747573,
+          0.0018160400892475708
+        ]
+      }
+    },
+    {
+      "candidate": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-11-gpu10",
+      "baseline": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-10-corrected10",
+      "dimension": 10,
+      "interpretation": "Descriptive difference; neither equivalence nor ranking established",
+      "tail_-3": {
+        "difference": -0.020538330078125,
+        "combined_batch_se": 0.025662961866056135,
+        "descriptive_95_interval": [
+          -0.07083773533559502,
+          0.029761075179345023
+        ]
+      },
+      "tail_-6": {
+        "difference": -0.011077880859375,
+        "combined_batch_se": 0.009727536203380809,
+        "descriptive_95_interval": [
+          -0.030143851818001385,
+          0.007988090099251385
+        ]
+      }
+    }
+  ],
+  "cross_device": [
+    {
+      "cpu": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-12-cpu11",
+      "gpu": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnuts-author-funnel-20261029/attempt-07-gpu11",
+      "max_absolute_difference": 0.004023878536550285,
+      "max_scaled_difference": 0.001160863878663093,
+      "exact_depth": true,
+      "exact_work": false,
+      "exact_macros": true,
+      "exact_reverse_zero": true,
+      "interpretation": "Long chaotic trajectories need not be bitwise identical; matched-input local parity is the correctness check"
+    }
+  ],
+  "tests": {
+    "focused": 5,
+    "matched_input_trees": 16,
+    "status": "passed",
+    "source": "attempt-14-tests-final/worker.log"
+  },
+  "interpretation": "Engineering checks pass. All posterior arms fail the predeclared combined screen. No statistical ranking or equivalence claim.",
+  "incomplete": {
+    "paper_million_draw_run": "Not attempted in bounded campaign",
+    "v_minus30_transient": "One author macro exceeded 60 seconds; full experiment not completed",
+    "native_tf_appendix_c_tuning": "Not implemented; author reference tuning transferred"
+  },
+  "timing_correction": "Attempt 05 dispatch-only timing excluded; subsequent TF times include state tensor materialization.",
+  "prebuilt_sha256": "ea5d4965854c950c3a8d91f9b4ff5452a6283422edfa0b2e3d51ec15a326f45b"
+}

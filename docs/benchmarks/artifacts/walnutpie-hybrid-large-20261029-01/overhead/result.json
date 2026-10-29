@@ -1,0 +1,95 @@
+{
+  "mode": "overhead",
+  "command": [
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/walnutpie_gpu_tf/hybrid_followup.py",
+    "--root",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnutpie-hybrid-large-20261029-01",
+    "--mode",
+    "overhead",
+    "--gpu",
+    "2"
+  ],
+  "started_utc": "2026-10-29T10:00:53.738835+00:00",
+  "python": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "tensorflow": "2.20.0",
+  "git_commit": "0a1bcd26b6d752c13849435ed78d664745687a8f",
+  "source_sha256": "a35279b6b12f2680bf82ef2d443764f00bf93ac48f74b3108363005911af637e",
+  "plan": "docs/plans/bayesfilter-walnutpie-hybrid-large-model-2026-10-29.md",
+  "main_result": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/walnutpie-hybrid-large-20261029-01/result.json",
+  "gpu_intentionally_hidden": false,
+  "growth": [
+    {
+      "name": "/physical_device:GPU:0",
+      "growth": true
+    }
+  ],
+  "intra_threads": 4,
+  "tf32": false,
+  "jit_compile": true,
+  "role": "explanatory diagnostic, not an independent sampler-efficiency ranking",
+  "records": [
+    {
+      "block": 0,
+      "thirty_round_trips_seconds": {
+        "raw": 0.008586026960983872,
+        "compiled_echo": 0.12714723404496908
+      }
+    },
+    {
+      "block": 1,
+      "thirty_round_trips_seconds": {
+        "compiled_echo": 0.13356729701627046,
+        "raw": 0.013006479013711214
+      }
+    },
+    {
+      "block": 2,
+      "thirty_round_trips_seconds": {
+        "raw": 0.012076899060048163,
+        "compiled_echo": 0.13494732498656958
+      }
+    },
+    {
+      "block": 3,
+      "thirty_round_trips_seconds": {
+        "compiled_echo": 0.1309978140052408,
+        "raw": 0.012368545983918011
+      }
+    },
+    {
+      "block": 4,
+      "thirty_round_trips_seconds": {
+        "raw": 0.01170149096287787,
+        "compiled_echo": 0.12689691898413002
+      }
+    },
+    {
+      "block": 5,
+      "thirty_round_trips_seconds": {
+        "compiled_echo": 0.1335536859696731,
+        "raw": 0.008814112050458789
+      }
+    },
+    {
+      "block": 6,
+      "thirty_round_trips_seconds": {
+        "raw": 0.008759710006415844,
+        "compiled_echo": 0.13988891302142292
+      }
+    }
+  ],
+  "median_thirty_round_trips_seconds": {
+    "raw": 0.01170149096287787,
+    "compiled_echo": 0.1335536859696731
+  },
+  "true_leaf_bytes": 70592,
+  "raw_round_trip_bytes": 74720,
+  "note": "Raw copy returns the request-sized buffer, conservatively larger than the real response. Echo omits model/tree work. Neither is a causal decomposition.",
+  "trace_count": 1,
+  "allocator": {
+    "current": 38656,
+    "peak": 72448
+  },
+  "status": "completed",
+  "wall_seconds": 1.4290930279530585
+}

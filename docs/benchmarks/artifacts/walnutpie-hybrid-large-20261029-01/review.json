@@ -1,0 +1,82 @@
+{
+  "reviewed_utc": "2026-10-29T10:01:56.674369+00:00",
+  "checks": {
+    "all_fourteen_paired_blocks_present": true,
+    "seven_seed_blocks": true,
+    "matched_work_each_block": true,
+    "one_trace_per_compiled_component": true,
+    "gpu_leaf_contains_model_gradient": true,
+    "gpu_linear_algebra": true,
+    "no_host_callback": true,
+    "cpu8_completed": true,
+    "overhead_completed": true,
+    "gpu_memory_under_reviewed_cap": true
+  },
+  "source_checks": {
+    "docs/benchmarks/walnutpie_gpu_tf/hybrid.py": {
+      "current_sha256": "15ab0a8a1fbfdb03900d474a747852604f37f23f11018bb3a29160f31bf19087",
+      "run_sha256": "15ab0a8a1fbfdb03900d474a747852604f37f23f11018bb3a29160f31bf19087"
+    },
+    "docs/benchmarks/walnutpie_gpu_tf/hybrid_benchmark.py": {
+      "current_sha256": "2d1ddfada339706ad87c6b9c2924b9751f7361e0d254e54a2832d64cf5d1e6f2",
+      "run_sha256": "2d1ddfada339706ad87c6b9c2924b9751f7361e0d254e54a2832d64cf5d1e6f2"
+    }
+  },
+  "median_block_seconds": {
+    "cpu": 18.15351319598267,
+    "gpu": 1.8258081314852461,
+    "hybrid": 2.063142197090201
+  },
+  "cpu8_median_seconds": 10.633378883940168,
+  "paired_hybrid_over_gpu": {
+    "ratio": 1.1381195980341365,
+    "interval95": [
+      1.1225352098867232,
+      1.1539203474607242
+    ],
+    "per_seed_ratios": [
+      1.1504647488253308,
+      1.1602243132080192,
+      1.1240602994690245,
+      1.1413163356669256,
+      1.1512220491506935,
+      1.1255620344167356,
+      1.1147458315912728
+    ],
+    "method": "Student-t on seven paired seed-block log ratios, df=6"
+  },
+  "gradient_gpu_over_cpu": {
+    "ratio": 0.11213076328956856,
+    "interval95": [
+      0.08290554698029688,
+      0.15165822473723495
+    ],
+    "per_seed_ratios": [
+      0.08558994109941044,
+      0.15607762224377605,
+      0.08650072899580058,
+      0.15720987673109652,
+      0.08574420495314836,
+      0.16351690066995725,
+      0.0875070538010599
+    ],
+    "method": "Student-t on seven paired seed-block log ratios, df=6"
+  },
+  "transfer_diagnostics": {
+    "raw": 0.01170149096287787,
+    "compiled_echo": 0.1335536859696731
+  },
+  "peak_device_bytes": 285796864,
+  "benchmark_wall_seconds": 486.27370392589364,
+  "budget_seconds": 2700,
+  "decision": "Do not promote hybrid over full GPU for this target; retain optional experimental implementation",
+  "scientific_inference": "Engineering feasibility and conditional runtime evidence only; no posterior-quality claim",
+  "limitations": [
+    "One synthetic 128-latent-bias neural regression; fixed network weights",
+    "Two-transition blocks, four chains, fixed tuning; not a converged posterior experiment",
+    "Shared hardware; CPU8 measured later in separate process, descriptive only",
+    "Python dispatch retained; optimized native dispatch not evaluated",
+    "Pure copies and echo calls are explanatory, not an additive causal decomposition",
+    "All XLA numerical components, but no single fused CPU/GPU executable"
+  ]
+}

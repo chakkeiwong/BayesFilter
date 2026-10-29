@@ -1,0 +1,645 @@
+{
+  "python": "3.13.13",
+  "tensorflow": "2.20.0",
+  "device": "gpu",
+  "gpus": [
+    {
+      "name": "/physical_device:GPU:0",
+      "growth": true,
+      "details": {
+        "compute_capability": [
+          8,
+          9
+        ],
+        "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+      }
+    }
+  ],
+  "gpu_hidden": false,
+  "jit_compile": true,
+  "tf32": false,
+  "xla_flags": "",
+  "trust_basis": "trusted_escalated_execution",
+  "memory_policy": "memory_growth_before_initialization",
+  "cases": [
+    {
+      "name": "deterministic-diagonal-fixed",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "deterministic",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": false
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "52bf59b56522a746199411f8501bb42d9ed321a30285e907a6f5ad1e113c402a",
+        "bytes": 2613502,
+        "custom_calls": [],
+        "trace_count": 1,
+        "nodes": 3492,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/deterministic-diagonal-fixed.hlo.txt",
+        "while_count": 16,
+        "fusion_count": 206,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 10.223471247009002,
+      "initial_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ],
+      "final_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ]
+    },
+    {
+      "name": "deterministic-diagonal-adaptive",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "deterministic",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": true
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "320f644c54c6b8e57326b8938678337bd3924f67046a82099f290dcc1cf09848",
+        "bytes": 2611204,
+        "custom_calls": [],
+        "trace_count": 1,
+        "nodes": 3494,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/deterministic-diagonal-adaptive.hlo.txt",
+        "while_count": 16,
+        "fusion_count": 205,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 9.53557000902947,
+      "initial_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ],
+      "final_mass": [
+        [
+          1.7946567014859638,
+          1.9025817656116142
+        ],
+        [
+          1.2246293917291138,
+          2.107092582861791
+        ]
+      ]
+    },
+    {
+      "name": "deterministic-dense-fixed",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "deterministic",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": false
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "99f6d8af9b646baf1e120833b46e087a450dc36f76dee46f4fd51fd2c3998b09",
+        "bytes": 2722866,
+        "custom_calls": [
+          "__cublas$triangularSolve",
+          "__cusolver$cholesky"
+        ],
+        "trace_count": 1,
+        "nodes": 3897,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/deterministic-dense-fixed.hlo.txt",
+        "while_count": 16,
+        "fusion_count": 231,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 9.996922141988762,
+      "initial_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ],
+      "final_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "deterministic-dense-adaptive",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "deterministic",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": true
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "ecb1e5605596025b75b89770ba08e378a6bff3f674dcdcf45171d124ba7f65e8",
+        "bytes": 2733273,
+        "custom_calls": [
+          "__cublas$triangularSolve",
+          "__cusolver$cholesky"
+        ],
+        "trace_count": 1,
+        "nodes": 3899,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/deterministic-dense-adaptive.hlo.txt",
+        "while_count": 16,
+        "fusion_count": 230,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 10.006044837995432,
+      "initial_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ],
+      "final_mass": [
+        [
+          [
+            2.9975536073311533,
+            0.7493884018327883
+          ],
+          [
+            0.7493884018327883,
+            1.511847170378898
+          ]
+        ],
+        [
+          [
+            1.7154786785842142,
+            0.42886966964605355
+          ],
+          [
+            0.42886966964605355,
+            1.3735998132292435
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "r2p-diagonal-fixed",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "r2p",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": false
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "48361434c777f34859bbc988a974376d2915ae0e8758e64775feefefbab17c85",
+        "bytes": 3430930,
+        "custom_calls": [],
+        "trace_count": 1,
+        "nodes": 4795,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/r2p-diagonal-fixed.hlo.txt",
+        "while_count": 19,
+        "fusion_count": 239,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 13.183215425931849,
+      "initial_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ],
+      "final_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ]
+    },
+    {
+      "name": "r2p-diagonal-adaptive",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "r2p",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": true
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "b940c03a4d05c0997c242c6aef05fba27f912ce96aa736a74313ed84a0cf924f",
+        "bytes": 3428634,
+        "custom_calls": [],
+        "trace_count": 1,
+        "nodes": 4797,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/r2p-diagonal-adaptive.hlo.txt",
+        "while_count": 19,
+        "fusion_count": 238,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 13.310157927917317,
+      "initial_mass": [
+        [
+          2.0,
+          3.0
+        ],
+        [
+          2.0,
+          3.0
+        ]
+      ],
+      "final_mass": [
+        [
+          1.5784965251180014,
+          2.372762124019399
+        ],
+        [
+          1.3735946926980458,
+          2.0586027243787552
+        ]
+      ]
+    },
+    {
+      "name": "r2p-dense-fixed",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "r2p",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": false
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "000ff2c7e0b3129fa93851ac3ad6465e21e09ac61ed6267057346c145072628c",
+        "bytes": 3583632,
+        "custom_calls": [
+          "__cublas$triangularSolve",
+          "__cusolver$cholesky"
+        ],
+        "trace_count": 1,
+        "nodes": 5305,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/r2p-dense-fixed.hlo.txt",
+        "while_count": 19,
+        "fusion_count": 270,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 15.285554438945837,
+      "initial_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ],
+      "final_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "r2p-dense-adaptive",
+      "config": {
+        "chains": 2,
+        "dimension": 2,
+        "warmup": 4,
+        "draws": 4,
+        "max_depth": 3,
+        "max_halvings": 3,
+        "min_micro_steps": 1,
+        "max_error": 0.5,
+        "initial_step": 0.1,
+        "mass_smoothing": 1e-05,
+        "mass_init_count": 4.0,
+        "target_macro_steps": 15.0,
+        "target_accept": 0.8,
+        "learning_rate": 0.05,
+        "beta1": 0.8,
+        "beta2": 0.9,
+        "stabilization": 0.0001,
+        "learning_decay": 0.5,
+        "init_search_limit": 64,
+        "variant": "r2p",
+        "r2p_probability": 0.6666666666666666,
+        "r2p_max_exponent": 3,
+        "r2p_jitter": 0.2,
+        "execution_layout": "fieldwise",
+        "adapt_mass": true
+      },
+      "passed": true,
+      "graph": {
+        "sha256": "af36e7d38f2510089640f5bf3a3995a59101f1386d340eaabf6e3d1170294560",
+        "bytes": 3598243,
+        "custom_calls": [
+          "__cublas$triangularSolve",
+          "__cusolver$cholesky"
+        ],
+        "trace_count": 1,
+        "nodes": 5307,
+        "hlo": "docs/benchmarks/artifacts/walnutpie-supplied-mass-20261029-gpu01/r2p-dense-adaptive.hlo.txt",
+        "while_count": 19,
+        "fusion_count": 269,
+        "model_gradient_inside_loop": true
+      },
+      "first_call_seconds": 14.477982932003215,
+      "initial_mass": [
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ],
+        [
+          [
+            4.0,
+            1.0
+          ],
+          [
+            1.0,
+            2.0
+          ]
+        ]
+      ],
+      "final_mass": [
+        [
+          [
+            3.0839039513646487,
+            0.7709759878411622
+          ],
+          [
+            0.7709759878411622,
+            1.7579811420708786
+          ]
+        ],
+        [
+          [
+            1.9303067499905924,
+            0.4825766874976481
+          ],
+          [
+            0.4825766874976481,
+            1.494967813587203
+          ]
+        ]
+      ]
+    }
+  ],
+  "role": "engineering only, no posterior or performance promotion",
+  "allocator": {
+    "current": 26112,
+    "peak": 117760
+  },
+  "status": "passed",
+  "wall_seconds": 182.5391502659768
+}

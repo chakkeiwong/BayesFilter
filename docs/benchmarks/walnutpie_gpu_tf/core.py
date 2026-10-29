@@ -29,15 +29,33 @@ class Config:
     beta2: float = .9
     stabilization: float = 1e-4
     learning_decay: float = .5
-    init_search_limit: int = 64
+    init_search_limit: int | None = 64
+    variant: str = "deterministic"
+    r2p_probability: float = 2./3.
+    r2p_max_exponent: int = 10
+    r2p_jitter: float = .2
     # Execution-only alternatives; mathematical and random primitives are shared.
     execution_layout: str = 'fieldwise'
+    # Optional supplied metric freeze for NeuTra; author default unchanged.
+    adapt_mass: bool = True
 
     def __post_init__(self):
+        if type(self.adapt_mass) is not bool:
+            raise ValueError('adapt_mass must be boolean')
+        if self.variant not in ('deterministic','r2p'):
+            raise ValueError('variant must be deterministic or r2p')
+        if not 0 < self.r2p_probability < 1 or not 0 <= self.r2p_jitter < 1:
+            raise ValueError('invalid R2P probability/jitter')
+        if type(self.r2p_max_exponent) is not int or not 0 <= self.r2p_max_exponent <= 19:
+            raise ValueError('R2P exponent must be between 0 and 19')
+        if self.variant == 'r2p' and self.min_micro_steps != 1:
+            raise ValueError('R2P uses one macro interval and powers-of-two refinements')
+        if self.init_search_limit is not None and (type(self.init_search_limit) is not int or self.init_search_limit < 1):
+            raise ValueError('init_search_limit must be positive or None (uncapped)')
         if self.execution_layout not in ('fieldwise', 'packed', 'flat'):
             raise ValueError('execution_layout must be fieldwise, packed or flat')
         for name in ('chains', 'dimension', 'max_depth', 'max_halvings',
-                     'min_micro_steps', 'init_search_limit'):
+                     'min_micro_steps'):
             x = getattr(self, name)
             if type(x) is not int or x < 1: raise ValueError(name+' must be a positive integer')
         for name in ('warmup', 'draws'):
@@ -248,6 +266,11 @@ class Kernel:
         chosen = self.choose(select, new, old)
         return Span(b.bq,b.bp,b.bg,b.bj,f.fq,f.fp,f.fg,f.fj,chosen.q,chosen.g,chosen.lp,total), seed
 
+    def grow_leaf(self, old, forward, inv, eps, minimum, live, seed, adam, adapt):
+        p, ok, bad, cost, adam = self.macro(self.edge(old, forward), inv,
+            self.tf.where(forward, eps, -eps), minimum, live, adam, adapt)
+        return self.span(p), ok, bad, cost, seed, adam
+
     def subtree(self, old, depth, forward, inv, eps, minimum, seed, active, adam, adapt):
         if self.cfg.execution_layout == 'flat':
             return self.subtree_flat(old, depth, forward, inv, eps, minimum, seed, active, adam, adapt)
@@ -256,14 +279,12 @@ class Kernel:
         def cond(i, live, last, stack, seed, adam, ev, macros, failed, revfail):
             return (i < tf.bitwise.left_shift(1, depth)) & tf.reduce_any(live)
         def body(i, live, last, stack, seed, adam, ev, macros, failed, revfail):
-            start = self.edge(last, forward)
-            p, ok, bad, cost, adam = self.macro(start, inv,
-                tf.where(forward, eps, -eps), minimum, live, adam, adapt)
+            nxt, ok, bad, cost, seed, adam = self.grow_leaf(
+                last, forward, inv, eps, minimum, live, seed, adam, adapt)
             failed |= live & ~ok
             revfail |= bad
             macros += tf.cast(live, tf.int32)
             live &= ok
-            nxt = self.span(p)
             def cc(level, span, live, seed):
                 return (level < depth) & (tf.math.floormod(i+1, tf.bitwise.left_shift(1, level+1)) == 0) & tf.reduce_any(live)
             def cb(level, span, live, seed):
@@ -322,9 +343,9 @@ class Kernel:
             return ((i < tf.bitwise.left_shift(1, depth)) | pending) & tf.reduce_any(live)
         def body(i, level, pending, live, last, stack, seed, adam, ev, macros, failed, revfail):
             def leaf():
-                p, ok, bad, cost, a = self.macro(self.edge(last, forward), inv,
-                    tf.where(forward, eps, -eps), minimum, live, adam, adapt)
-                return (i+1, tf.constant(0), live & ok, self.span(p), seed, a, ev+cost,
+                span, ok, bad, cost, rng, a = self.grow_leaf(
+                    last, forward, inv, eps, minimum, live, seed, adam, adapt)
+                return (i+1, tf.constant(0), live & ok, span, rng, a, ev+cost,
                     macros+tf.cast(live, tf.int32), failed | (live & ~ok), revfail | bad)
             def carry():
                 prev = self.stack_read(stack, level)
@@ -361,28 +382,35 @@ class Kernel:
              tf.zeros([self.c], tf.bool), tf.zeros([self.c], tf.bool)), parallel_iterations=1)
         return Transition(out.q, out.lp, out.g, seed, adam, depth, ev, macros, failed, revfail)
 
-    def initial_step(self, q, lp, g, inv, seed):
+    def initial_step(self, q, lp, g, inv, seed, epsilon=None):
         tf, c = self.tf, self.cfg
-        z, seed = self.random(seed, self.active(), normal=True)
+        eps = tf.fill([self.c], self.f(c.initial_step)) if epsilon is None else epsilon
+        valid = (self.health(q, lp, g) & tf.math.is_finite(eps) & (eps > 0)
+                 & tf.reduce_all(tf.math.is_finite(inv) & (inv > 0), -1)
+                 & tf.reduce_all(seed >= 0, -1))
+        z, seed = self.random(seed, valid, normal=True)
         start = self.point(q, z/tf.sqrt(inv), g, lp, inv)
-        eps = tf.fill([self.c], self.f(c.initial_step))
-        counts, valid = self.ints(), self.health(q, lp, g)
+        counts = self.ints()
         def search(eps, counts, valid, grow):
             def error(e):
                 p = self.leapfrogs(start, inv, e, tf.ones([self.c], tf.int32), self.active())
                 return p.joint-start.joint
             err = error(eps)
             def need(err): return err > self.f(math.log(.9)) if grow else err < self.f(math.log(.6))
-            def cond(e, n, err): return tf.reduce_any(need(err) & (n < c.init_search_limit))
+            def allowed(n):
+                return tf.ones_like(n, tf.bool) if c.init_search_limit is None else n < c.init_search_limit
+            def live_at(e, n, err):
+                return valid & tf.math.is_finite(e) & (e > 0) & need(err) & allowed(n)
+            def cond(e, n, err): return tf.reduce_any(live_at(e, n, err))
             def body(e, n, err):
-                live = need(err) & (n < c.init_search_limit)
+                live = live_at(e, n, err)
                 e = tf.where(live, e*(2. if grow else math.sqrt(.5)), e)
                 return e, n+tf.cast(live, tf.int32), error(e)
             e, n, err = tf.while_loop(cond, body, (eps, counts, err), parallel_iterations=1)
             # An infinite negative energy difference ends growth and can be
             # repaired by shrinkage; only NaN or the final nonfinite error fails.
             finite = ~tf.math.is_nan(err) if grow else tf.math.is_finite(err)
-            return e, n, valid & ~need(err) & finite
+            return e, n, valid & ~need(err) & finite & tf.math.is_finite(e) & (e > 0)
         eps, counts, valid = search(eps, counts, valid, True)
         eps, counts, valid = search(eps, counts, valid, False)
         return eps, seed, valid, counts
