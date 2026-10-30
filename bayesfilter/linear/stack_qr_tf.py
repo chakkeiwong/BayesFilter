@@ -67,24 +67,26 @@ def _batched_transpose(value: tf.Tensor) -> tf.Tensor:
     return tf.linalg.matrix_transpose(value)
 
 
-def _positive_qr(matrix: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+def _positive_qr(matrix: tf.Tensor, *, validate_numerics: bool = True) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
     """Return thin QR factors with a deterministic positive diagonal."""
 
     matrix = _as_float(matrix, "matrix")
     tf.debugging.assert_rank(matrix, 3, message="QR matrix must have rank three")
-    tf.debugging.assert_all_finite(matrix, "QR matrix contains NaN or Inf")
+    if validate_numerics:
+        tf.debugging.assert_all_finite(matrix, "QR matrix contains NaN or Inf")
     rows = matrix.shape[-2]
     cols = matrix.shape[-1]
     if rows is None or cols is None or int(rows) < int(cols):
         raise ValueError("QR stack must have at least as many rows as columns")
     q, r = tf.linalg.qr(matrix, full_matrices=False)
     diagonal = tf.linalg.diag_part(r)
-    tf.debugging.assert_all_finite(diagonal, "QR diagonal contains NaN or Inf")
-    tf.debugging.assert_greater(
-        tf.abs(diagonal),
-        tf.zeros_like(diagonal),
-        message="qr_pivot_nonpositive",
-    )
+    if validate_numerics:
+        tf.debugging.assert_all_finite(diagonal, "QR diagonal contains NaN or Inf")
+        tf.debugging.assert_greater(
+            tf.abs(diagonal),
+            tf.zeros_like(diagonal),
+            message="qr_pivot_nonpositive",
+        )
     signs = tf.where(diagonal >= 0.0, tf.ones_like(diagonal), -tf.ones_like(diagonal))
     q = q * signs[:, tf.newaxis, :]
     r = signs[:, :, tf.newaxis] * r
@@ -103,6 +105,7 @@ def batched_stack_qr_lower(
     *,
     compute_covariance_diagnostics: bool = True,
     relative_pivot_tolerance: float = DEFAULT_RELATIVE_PIVOT_TOLERANCE,
+    validate_numerics: bool = True,
 ) -> tuple[tf.Tensor, tf.Tensor | None, dict[str, tf.Tensor]]:
     """Factor a batched horizontal stack and optionally its first derivatives.
 
@@ -124,15 +127,18 @@ def batched_stack_qr_lower(
         raise ValueError("stack must have at least as many columns as rows")
     if relative_pivot_tolerance < 0.0:
         raise ValueError("relative_pivot_tolerance must be nonnegative")
-    q, r, pivots = _positive_qr(_batched_transpose(stack))
+    # Row-isolating callers may explicitly replace batch-global assertions
+    # with their own per-row finite/pivot checks. The default stays strict.
+    q, r, pivots = _positive_qr(_batched_transpose(stack), validate_numerics=validate_numerics)
     factor = _batched_transpose(r)
     scale = tf.maximum(tf.linalg.norm(stack, axis=[-2, -1]), tf.constant(1.0e-300, tf.float64))
     relative_min_pivot = tf.reduce_min(pivots, axis=-1) / scale
-    tf.debugging.assert_greater_equal(
-        relative_min_pivot,
-        tf.cast(relative_pivot_tolerance, tf.float64),
-        message="qr_relative_pivot_below_tolerance",
-    )
+    if validate_numerics:
+        tf.debugging.assert_greater_equal(
+            relative_min_pivot,
+            tf.cast(relative_pivot_tolerance, tf.float64),
+            message="qr_relative_pivot_below_tolerance",
+        )
     d_factor = None
 
     if d_stack is not None:
@@ -143,7 +149,8 @@ def batched_stack_qr_lower(
             raise ValueError("d_stack batch and dimension do not match stack")
         if d_stack.shape[2] != dimension or d_stack.shape[3] != columns:
             raise ValueError("d_stack spatial dimensions do not match stack")
-        tf.debugging.assert_all_finite(d_stack, "d_stack contains NaN or Inf")
+        if validate_numerics:
+            tf.debugging.assert_all_finite(d_stack, "d_stack contains NaN or Inf")
         d_matrix = tf.linalg.matrix_transpose(d_stack)
         # Independent derivative directions are a batch axis, not traced copies
         # of the solve (ch12_factor_derivatives, eq:bf-factor-qr-r-first).
@@ -157,7 +164,8 @@ def batched_stack_qr_lower(
         omega = lower - tf.linalg.matrix_transpose(lower)
         d_r = tf.einsum("bpij,bjk->bpik", e - omega, r)
         d_factor = tf.linalg.matrix_transpose(d_r)
-        tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
+        if validate_numerics:
+            tf.debugging.assert_all_finite(d_factor, "QR derivative contains NaN or Inf")
 
     # This residual is valid without constructing a covariance and is the
     # runtime diagnostic used by the admitted SR-UKF route.

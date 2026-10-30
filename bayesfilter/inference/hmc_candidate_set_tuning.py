@@ -1322,7 +1322,7 @@ class HMCTuningCandidateSetController:
             "nonfinite_log_accept_ratio", "nonfinite_proposal",
             "nonfinite_proposal_displacement", "nonfinite_proposed_target_log_prob",
             "nonfinite_final_momentum", "nonfinite_log_acceptance_correction",
-            "nonfinite_target_score",
+            "nonfinite_target_score", "nonfinite_proposal_target_status",
         }
         latest = {receipt.candidate_id: receipt for receipt in self._receipts}
         boundaries = [RejectedEpsilonBoundary(c.epsilon, c.candidate_id, c.parent_candidate_id)

@@ -503,6 +503,28 @@ class NonlinearSSMAdapterContract:
         }
 
 
+def require_exact_score_adapter(adapter: Any) -> None:
+    """Refuse an explicit proposal-field contract at an exact-score boundary.
+
+    Capability metadata describes backend authority, not whether a declared
+    proposal field is a target gradient. Preserve the legacy contract for
+    adapters without this declaration; its absence does not verify a score.
+    Keep this check out of generic capability lookup so the separate frozen
+    position-field route can inspect the same adapter legitimately.
+    """
+
+    absent = object()
+    declaration = getattr(adapter, "proposal_field_semantics", absent)
+    if declaration is absent:
+        return
+    semantics = declaration() if callable(declaration) else declaration
+    raise ValueError(
+        "exact target score required; adapter declares proposal-field semantics "
+        f"{semantics!r}. Use the supported typed position-field binding with an "
+        "exact endpoint target instead of an exact-score route."
+    )
+
+
 def value_score_capability(adapter: Any) -> ValueScoreCapability:
     """Return conservative value/score capability metadata for an adapter.
 

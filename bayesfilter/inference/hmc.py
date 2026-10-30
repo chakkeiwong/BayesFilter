@@ -44,8 +44,10 @@ from bayesfilter.inference.hmc_verification import (
     summarize_hmc_tuning_telemetry,
 )
 from bayesfilter.inference.batched_value_score import reviewed_value_score_target_fn
-from bayesfilter.inference.hmc_status import cache_hmc_target_status, cached_target_status
-from bayesfilter.inference.posterior_adapter import value_score_capability
+from bayesfilter.inference.hmc_status import (
+    cache_hmc_target_status, cached_target_status, cached_previous_target_log_prob,
+)
+from bayesfilter.inference.posterior_adapter import require_exact_score_adapter, value_score_capability
 from bayesfilter.inference.tuning_contract import HMC_TUNING_ORDINARY_RHAT_THRESHOLD
 
 
@@ -5660,6 +5662,7 @@ def _validate_full_chain_hmc_authority(
 ) -> Any:
     """Return adapter value/score authority after full-chain HMC checks."""
 
+    require_exact_score_adapter(adapter)
     capability = value_score_capability(adapter)
     if config.use_xla and not capability.is_accepted_full_chain_xla_diagnostic_authority:
         raise ValueError(
@@ -6647,6 +6650,15 @@ def _trace_fn_for_config(
                 results = results.inner_results
             proposed = results.proposed_results
             accepted = results.accepted_results
+            previous_value = cached_previous_target_log_prob(results)
+            if previous_value is not None:
+                trace['previous_target_log_prob'] = previous_value
+            # Keep accepted-cache validity distinct from the rejected proposal.
+            # A failed proposed score must not conceal a valid retained score.
+            trace['accepted_target_score_finite'] = tf.reduce_all(tf.stack([
+                tf.reduce_all(tf.math.is_finite(score), axis=-1)
+                for score in tf.nest.flatten(accepted.grads_target_log_prob)
+            ]), axis=0)
             if hasattr(proposed, 'failure_code'):
                 trace['proposal_failure_code'] = proposed.failure_code
                 trace['proposal_failure_step'] = proposed.failure_step

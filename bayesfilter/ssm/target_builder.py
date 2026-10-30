@@ -94,6 +94,8 @@ class GenericSSMPosteriorAdapter:
         contract: SSMTargetContract,
         prior_log_prob_and_grad: BatchValueScoreFn,
         filter_log_likelihood_and_grad: BatchValueScoreFn,
+        target_status_telemetry: Callable[[tf.Tensor], Mapping[str, Any]] | None = None,
+        target_status_manifest: Mapping[str, Any] | None = None,
         dtype: Any = tf.float64,
         batch_rank_policy: BatchRankPolicy = "rank2_required",
         target_scope: str | None = None,
@@ -153,6 +155,18 @@ class GenericSSMPosteriorAdapter:
         self.non_batch_static_shape = dict(
             validated.problem.static_shape.manifest_payload()
         )
+        self._target_status_manifest = None
+        if (target_status_telemetry is None) != (target_status_manifest is None):
+            raise InvalidSSMTargetBuilderContract(
+                "target status callback and nonempty provenance manifest must be supplied together")
+        if target_status_telemetry is not None:
+            if not callable(target_status_telemetry) or not target_status_manifest:
+                raise InvalidSSMTargetBuilderContract(
+                    "target status requires a callable and nonempty provenance manifest")
+            self._target_status_manifest = json.loads(json.dumps(
+                _json_safe(target_status_manifest), sort_keys=True, allow_nan=False))
+            self._target_status_callback = target_status_telemetry
+            self.target_status_telemetry = self._evaluate_target_status
         self._adapter_signature = _stable_json_hash(self._signature_payload())
 
     def manifest_payload(self) -> Mapping[str, Any]:
@@ -236,6 +250,8 @@ class GenericSSMPosteriorAdapter:
 
     def _signature_payload(self) -> Mapping[str, Any]:
         return {
+            **({"target_status_manifest": json.loads(json.dumps(self._target_status_manifest))}
+               if self._target_status_manifest is not None else {}),
             "schema": "bayesfilter.ssm.generic_posterior_adapter.v1",
             "target_signature": self.target_signature,
             "dtype": self.dtype.name,
@@ -247,6 +263,51 @@ class GenericSSMPosteriorAdapter:
             "runtime_backend": self.runtime_backend,
             "target_scope": self.target_scope,
         }
+
+    def _evaluate_target_status(self, theta: Any) -> Mapping[str, tf.Tensor]:
+        """Carry measured filter/chart status and include prior/input finiteness.
+
+        Legacy instances have no public status callback. No healthy fallback
+        is supplied. The provider remains responsible for filter/chart health.
+        """
+        theta = self._validate_theta(theta)
+        payload = self._target_status_callback(theta)
+        if not isinstance(payload, Mapping):
+            raise TypeError("target status callback must return a tensor mapping")
+        required = ('status_code', 'valid_pre_regularized_score', 'floor_count_value')
+        if any(name not in payload for name in required):
+            raise ValueError("target status callback is missing required core fields")
+        conditioning = ('min_innovation_eigenvalue', 'innovation_condition_estimate')
+        if sum(name in payload for name in conditioning) == 1:
+            raise ValueError("target status conditioning fields must be both present or both absent")
+        tensors = {}
+        for name, value in payload.items():
+            tensor = tf.convert_to_tensor(value)
+            if tensor.shape.rank != 1:
+                raise ValueError("target status fields must have rank 1 [batch]")
+            if not (tensor.dtype.is_integer or tensor.dtype.is_floating or tensor.dtype.is_bool):
+                raise TypeError("target status fields must be real numeric or boolean tensors")
+            tensor = tf.ensure_shape(tensor, theta.shape[:1])
+            tensors[name] = tf.reshape(tensor, [tf.shape(theta)[0]])
+        for name in ('status_code', 'floor_count_value'):
+            if not tensors[name].dtype.is_integer:
+                raise TypeError(f"target status {name} must be integer")
+        if tensors['valid_pre_regularized_score'].dtype != tf.bool:
+            raise TypeError("target status valid_pre_regularized_score must be boolean")
+        prior_value, prior_score = self._call_value_score(self.prior_log_prob_and_grad, theta, 'prior')
+        prior_finite = (tf.math.is_finite(prior_value)
+                        & tf.reduce_all(tf.math.is_finite(prior_score), axis=-1)
+                        & tf.reduce_all(tf.math.is_finite(theta), axis=-1))
+        health_valid = prior_finite & (tensors['floor_count_value'] >= 0)
+        for name in conditioning:
+            if name in tensors:
+                if not tensors[name].dtype.is_floating:
+                    raise TypeError("target status conditioning fields must be floating point")
+                health_valid &= tf.math.is_finite(tensors[name]) & (tensors[name] > 0)
+        tensors['valid_pre_regularized_score'] &= health_valid
+        status = tensors['status_code']
+        tensors['status_code'] = tf.where((status == 0) & ~health_valid, tf.ones_like(status), status)
+        return tensors
 
     def _validate_theta(self, theta: Any) -> tf.Tensor:
         tensor = tf.convert_to_tensor(theta, dtype=self.dtype)
@@ -310,6 +371,8 @@ def build_ssm_posterior_adapter(
     contract: SSMTargetContract,
     prior_log_prob_and_grad: BatchValueScoreFn,
     filter_log_likelihood_and_grad: BatchValueScoreFn,
+    target_status_telemetry: Callable[[tf.Tensor], Mapping[str, Any]] | None = None,
+    target_status_manifest: Mapping[str, Any] | None = None,
     dtype: Any = tf.float64,
     batch_rank_policy: BatchRankPolicy = "rank2_required",
     target_scope: str | None = None,
@@ -325,6 +388,8 @@ def build_ssm_posterior_adapter(
         contract=contract,
         prior_log_prob_and_grad=prior_log_prob_and_grad,
         filter_log_likelihood_and_grad=filter_log_likelihood_and_grad,
+        target_status_telemetry=target_status_telemetry,
+        target_status_manifest=target_status_manifest,
         dtype=dtype,
         batch_rank_policy=batch_rank_policy,
         target_scope=target_scope,
