@@ -1,0 +1,93 @@
+{
+  "all_models_validated": false,
+  "continuation_veto": false,
+  "device": "gpu",
+  "gpu_intentionally_hidden": false,
+  "heuristic_dominance": "NOT_EVALUATED",
+  "inference_launched": false,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "next_action": "Existing master: inspect conditional curves and repair controls within budget; prepare posterior reference.",
+  "posterior_comparisons": "NOT_RUN",
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "qualified": false,
+  "reason": "NO_STABLE_CONTROL_PAIR",
+  "scope": {
+    "attempt": 4,
+    "chunk_extent": 2048,
+    "control_family": "m13_fixed_reset_caps_lm_curve_v1",
+    "data_regime": "independent T20 calibration/validation/claim; once-rounded FP32 observations",
+    "design_seed": 20260923,
+    "draw_design": "scrambled_halton_gaussian",
+    "dtype": "float32",
+    "fixed_initial_law": true,
+    "fixture": "range_bearing_gaussian_tf_tfp_moderate",
+    "horizon": 20,
+    "jit_compile": true,
+    "model": "M13",
+    "noise_law": "Q=exp(2*lambda_Q)*Q0; R=exp(2*lambda_R)*R0",
+    "observation_dimension": 2,
+    "parameter_dimension": 2,
+    "parameters": [
+      "lambda_Q",
+      "lambda_R"
+    ],
+    "particle_count": 4096,
+    "partition_seeds": {
+      "calibration": {
+        "data_seed": 1704,
+        "design_partition": 9
+      },
+      "claim": {
+        "data_seed": 3701,
+        "design_partition": 2
+      },
+      "validation": {
+        "data_seed": 2704,
+        "design_partition": 10
+      }
+    },
+    "prior": "independent N(0,log(2)^2)",
+    "prior_support": "R^2",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "state_dimension": 4,
+    "tf32": true
+  },
+  "stage": "m13-controls-recovery",
+  "status": "M13_CONTROL_REPAIR_REQUIRED",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true
+}

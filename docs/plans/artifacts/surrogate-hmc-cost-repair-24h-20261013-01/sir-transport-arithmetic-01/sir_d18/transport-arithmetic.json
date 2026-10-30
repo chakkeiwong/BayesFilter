@@ -1,0 +1,1047 @@
+{
+  "schema": "transport_arithmetic_localization_v1",
+  "status": "TRANSPORT_ARITHMETIC_LOCALIZED",
+  "evidence_role": "diagnostic_candidates_only",
+  "model": "sir_d18",
+  "particles": 4032,
+  "state_dimension": 18,
+  "parameter_count": 3,
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "source": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18",
+  "source_sha256": {
+    "gauge": "94a771776d8207ebc7d1131480af26ace5bbaede60d41cbd1238c1b2f439a135",
+    "direct": "6547b64ef51e593498a4e1d54eb9f6b0132ce016ab2a0f7ae8e16acb9f2cc4a2",
+    "direct_gauge": "8754e1a9e6c60909222ba843c721fb3325048115d5df874ebc13a7cfa39c2703"
+  },
+  "stages": [
+    {
+      "observation": 2,
+      "inputs_sha256": {
+        "child": "45bfdb79f115e3376b6bf08403da4f4367c9de36d1b4dc78d8c22852f7983268",
+        "child_tangent": "a41378072c804b1d0ab7f55b07104822a2339aeccf092b8c3f52fbef43c3c8d7",
+        "log_weights": "c5c1cc6f1848e62682e3aa95d55651e31cd7e254a0f2c3d97bf3712e2331f4d1",
+        "log_weight_tangent": "9a6c34d02be28ef20261f02f4851ecc66fe2d240a268e6ed80655187128a0a02"
+      },
+      "comparisons": {
+        "baseline": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 9.409401809534756e-05,
+            "maximum_scaled": 3.920792826002587e-06,
+            "per_row_maximum_absolute": [
+              9.409401809534756e-05,
+              8.472382833701886e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.290913350780641e-06,
+              3.920792826002587e-06
+            ],
+            "relative_l2": [
+              5.964599346629618e-09,
+              6.150428098266683e-09
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022391841821502112,
+            "maximum_scaled": 0.0032925180919747277,
+            "per_row_maximum_absolute": [
+              0.013013247723961285,
+              0.022391841821502112
+            ],
+            "per_row_maximum_scaled": [
+              0.0015059030036326249,
+              0.0032925180919747277
+            ],
+            "relative_l2": [
+              3.6618030850223023e-06,
+              4.399668805102581e-06
+            ]
+          }
+        },
+        "gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00012647952608801916,
+            "maximum_scaled": 6.011297242110514e-06,
+            "per_row_maximum_absolute": [
+              6.228377611705582e-05,
+              0.00012647952608801916
+            ],
+            "per_row_maximum_scaled": [
+              1.9153513725486687e-06,
+              6.011297242110514e-06
+            ],
+            "relative_l2": [
+              5.583097794778758e-09,
+              7.0325423430259e-09
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.02248157574075549,
+            "maximum_scaled": 0.004860358668146603,
+            "per_row_maximum_absolute": [
+              0.0133625798292627,
+              0.02248157574075549
+            ],
+            "per_row_maximum_scaled": [
+              0.0015361202489287962,
+              0.004860358668146603
+            ],
+            "relative_l2": [
+              3.3411379162669483e-06,
+              6.255975620421336e-06
+            ]
+          }
+        },
+        "direct": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 9.409401809534756e-05,
+            "maximum_scaled": 3.920792826002587e-06,
+            "per_row_maximum_absolute": [
+              9.409401809534756e-05,
+              8.472382833701886e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.290913350780641e-06,
+              3.920792826002587e-06
+            ],
+            "relative_l2": [
+              5.924103845036004e-09,
+              6.150428098266683e-09
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022239253930877112,
+            "maximum_scaled": 0.0018276743419747277,
+            "per_row_maximum_absolute": [
+              0.01096970752149673,
+              0.022239253930877112
+            ],
+            "per_row_maximum_scaled": [
+              0.0011434401308036968,
+              0.0018276743419747277
+            ],
+            "relative_l2": [
+              2.471997526152391e-06,
+              3.61116381344683e-06
+            ]
+          }
+        },
+        "direct_gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00012647952608801916,
+            "maximum_scaled": 6.011297242110514e-06,
+            "per_row_maximum_absolute": [
+              6.228377611705582e-05,
+              0.00012647952608801916
+            ],
+            "per_row_maximum_scaled": [
+              1.9153513725486687e-06,
+              6.011297242110514e-06
+            ],
+            "relative_l2": [
+              5.5937245762731854e-09,
+              7.028365753298366e-09
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 0.02040638042825549,
+            "maximum_scaled": 0.004118903997991197,
+            "per_row_maximum_absolute": [
+              0.010246765971089644,
+              0.02040638042825549
+            ],
+            "per_row_maximum_scaled": [
+              0.004118903997991197,
+              0.0034527353771309777
+            ],
+            "relative_l2": [
+              2.6076373290348122e-06,
+              5.273044154200761e-06
+            ]
+          }
+        }
+      },
+      "transport_diagnostics": {
+        "baseline": {
+          "row_mass": [
+            0.003352418541908264,
+            0.003330752020701766
+          ],
+          "column_mass": [
+            1.3828277587890625e-05,
+            1.4483928680419922e-05
+          ]
+        },
+        "gauge": {
+          "row_mass": [
+            0.003352418541908264,
+            0.003330752020701766
+          ],
+          "column_mass": [
+            1.1861324310302734e-05,
+            8.821487426757812e-06
+          ]
+        },
+        "direct": {
+          "row_mass": [
+            0.003352418541908264,
+            0.003330752020701766
+          ],
+          "column_mass": [
+            1.3828277587890625e-05,
+            1.4483928680419922e-05
+          ]
+        },
+        "direct_gauge": {
+          "row_mass": [
+            0.003352418541908264,
+            0.003330752020701766
+          ],
+          "column_mass": [
+            1.1861324310302734e-05,
+            8.821487426757812e-06
+          ]
+        }
+      }
+    },
+    {
+      "observation": 3,
+      "inputs_sha256": {
+        "child": "c761037d2991fe2e484ee2aca65c2844975a268a5488c3f33dc5138a80e68152",
+        "child_tangent": "0ba3de48afe3277b7328aa4fac22fc9ea110b045153e317cec9710f998efa408",
+        "log_weights": "01dc439f010097f2413f6deeb552818d5fa45609382fc4a912818405225dd157",
+        "log_weight_tangent": "4fe5b8ed1b646bc0d1498f5095fad955322ba0f43de3cdf82168ff5e430a96e5"
+      },
+      "comparisons": {
+        "baseline": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0010332075538599383,
+            "maximum_scaled": 1.3166181711897337e-05,
+            "per_row_maximum_absolute": [
+              0.0008393048886432553,
+              0.0010332075538599383
+            ],
+            "per_row_maximum_scaled": [
+              1.3166181711897337e-05,
+              1.2509380893143904e-05
+            ],
+            "relative_l2": [
+              2.488789554401113e-08,
+              2.986203700391538e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 2.5529558927501057,
+            "maximum_scaled": 0.006213751089391915,
+            "per_row_maximum_absolute": [
+              2.5529558927501057,
+              2.4643269274311024
+            ],
+            "per_row_maximum_scaled": [
+              0.00535656193989098,
+              0.006213751089391915
+            ],
+            "relative_l2": [
+              9.364106799574897e-05,
+              9.51894925182395e-05
+            ]
+          }
+        },
+        "gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0005647703742397425,
+            "maximum_scaled": 1.5254408966556334e-05,
+            "per_row_maximum_absolute": [
+              0.0005518794216712308,
+              0.0005647703742397425
+            ],
+            "per_row_maximum_scaled": [
+              1.5254408966556334e-05,
+              1.2650700037232391e-05
+            ],
+            "relative_l2": [
+              2.6484355196494787e-08,
+              2.082805530886552e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.1371784899311024,
+            "maximum_scaled": 0.011285997495662059,
+            "per_row_maximum_absolute": [
+              0.7189161250398683,
+              1.1371784899311024
+            ],
+            "per_row_maximum_scaled": [
+              0.011285997495662059,
+              0.005998421822425748
+            ],
+            "relative_l2": [
+              5.666053261559452e-05,
+              4.590150073547885e-05
+            ]
+          }
+        },
+        "direct": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0010332075538599383,
+            "maximum_scaled": 1.3166181711897337e-05,
+            "per_row_maximum_absolute": [
+              0.0008393048886432553,
+              0.0010332075538599383
+            ],
+            "per_row_maximum_scaled": [
+              1.3166181711897337e-05,
+              1.2509380893143904e-05
+            ],
+            "relative_l2": [
+              2.488789554401113e-08,
+              2.986203700391538e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 2.5519793302501057,
+            "maximum_scaled": 0.0059108409529848365,
+            "per_row_maximum_absolute": [
+              2.5519793302501057,
+              2.4487019274311024
+            ],
+            "per_row_maximum_scaled": [
+              0.00566173772114098,
+              0.0059108409529848365
+            ],
+            "relative_l2": [
+              9.212679047063873e-05,
+              9.45205563897667e-05
+            ]
+          }
+        },
+        "direct_gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0005647703742397425,
+            "maximum_scaled": 1.5254408966556334e-05,
+            "per_row_maximum_absolute": [
+              0.0005518794216712308,
+              0.0005647703742397425
+            ],
+            "per_row_maximum_scaled": [
+              1.5254408966556334e-05,
+              1.2650700037232391e-05
+            ],
+            "relative_l2": [
+              2.656034049431334e-08,
+              2.082805530886552e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 1.1225300524311024,
+            "maximum_scaled": 0.010683275327693309,
+            "per_row_maximum_absolute": [
+              0.6290723750398683,
+              1.1225300524311024
+            ],
+            "per_row_maximum_scaled": [
+              0.010683275327693309,
+              0.006716107158350851
+            ],
+            "relative_l2": [
+              5.270110709645259e-05,
+              4.5216579644594105e-05
+            ]
+          }
+        }
+      },
+      "transport_diagnostics": {
+        "baseline": {
+          "row_mass": [
+            0.017074601724743843,
+            0.01689896360039711
+          ],
+          "column_mass": [
+            2.8252601623535156e-05,
+            2.4437904357910156e-05
+          ]
+        },
+        "gauge": {
+          "row_mass": [
+            0.01707460545003414,
+            0.01689896732568741
+          ],
+          "column_mass": [
+            2.199411392211914e-05,
+            2.5033950805664062e-05
+          ]
+        },
+        "direct": {
+          "row_mass": [
+            0.017074601724743843,
+            0.01689896360039711
+          ],
+          "column_mass": [
+            2.8252601623535156e-05,
+            2.4437904357910156e-05
+          ]
+        },
+        "direct_gauge": {
+          "row_mass": [
+            0.01707460545003414,
+            0.01689896732568741
+          ],
+          "column_mass": [
+            2.199411392211914e-05,
+            2.5033950805664062e-05
+          ]
+        }
+      }
+    },
+    {
+      "observation": 4,
+      "inputs_sha256": {
+        "child": "31dd94894410e2c587df18c7c7198b52d69a18b744efbe4eaa48627f03907ab5",
+        "child_tangent": "80d23df4accbf33d09e4c94f4a318988a23cd0ed5b2dcead4b82c2d5cefcf201",
+        "log_weights": "f9c6f4a3996a4581ea4f7ae486d79123017546a9fae0203112369ea76672a6b6",
+        "log_weight_tangent": "ad0debf0908a687f3305fc37b514fa83f3b52b52ef19bbbf03809dbb93d775c6"
+      },
+      "comparisons": {
+        "baseline": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00074826941261108,
+            "maximum_scaled": 9.713186707038544e-06,
+            "per_row_maximum_absolute": [
+              0.00033723721372780346,
+              0.00074826941261108
+            ],
+            "per_row_maximum_scaled": [
+              4.568738067766577e-06,
+              9.713186707038544e-06
+            ],
+            "relative_l2": [
+              2.3141346064064893e-08,
+              2.5895296390590834e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.55855496507138,
+            "maximum_scaled": 0.014430114710862085,
+            "per_row_maximum_absolute": [
+              6.55855496507138,
+              4.475612478934636
+            ],
+            "per_row_maximum_scaled": [
+              0.004998992337927759,
+              0.014430114710862085
+            ],
+            "relative_l2": [
+              3.554955077262288e-05,
+              6.283182697783812e-05
+            ]
+          }
+        },
+        "gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00038205847511108004,
+            "maximum_scaled": 4.8794222649584564e-06,
+            "per_row_maximum_absolute": [
+              0.00032161507607497697,
+              0.00038205847511108004
+            ],
+            "per_row_maximum_scaled": [
+              3.238873625840554e-06,
+              4.8794222649584564e-06
+            ],
+            "relative_l2": [
+              1.625741193711745e-08,
+              1.6990254123536215e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 2.2117673719476443,
+            "maximum_scaled": 0.017863342249924585,
+            "per_row_maximum_absolute": [
+              2.2117673719476443,
+              2.084987478934636
+            ],
+            "per_row_maximum_scaled": [
+              0.0041331251107821435,
+              0.017863342249924585
+            ],
+            "relative_l2": [
+              1.2932136911280133e-05,
+              3.2014049185975295e-05
+            ]
+          }
+        },
+        "direct": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00074826941261108,
+            "maximum_scaled": 9.713186707038544e-06,
+            "per_row_maximum_absolute": [
+              0.00033723721372780346,
+              0.00074826941261108
+            ],
+            "per_row_maximum_scaled": [
+              4.568738067766577e-06,
+              9.713186707038544e-06
+            ],
+            "relative_l2": [
+              2.3141346064064893e-08,
+              2.5895296390590834e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 6.038232628052356,
+            "maximum_scaled": 0.014948913538987085,
+            "per_row_maximum_absolute": [
+              6.038232628052356,
+              4.442409353934636
+            ],
+            "per_row_maximum_scaled": [
+              0.0044187088318625185,
+              0.014948913538987085
+            ],
+            "relative_l2": [
+              3.07531042708635e-05,
+              6.251333762293462e-05
+            ]
+          }
+        },
+        "direct_gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00038205847511108004,
+            "maximum_scaled": 4.8794222649584564e-06,
+            "per_row_maximum_absolute": [
+              0.00032161507607497697,
+              0.00038205847511108004
+            ],
+            "per_row_maximum_scaled": [
+              3.238873625840554e-06,
+              4.8794222649584564e-06
+            ],
+            "relative_l2": [
+              1.625741193711745e-08,
+              1.6990254123536215e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 2.126003103934636,
+            "maximum_scaled": 0.018420288050705835,
+            "per_row_maximum_absolute": [
+              1.9461423719476443,
+              2.126003103934636
+            ],
+            "per_row_maximum_scaled": [
+              0.0038563942790030554,
+              0.018420288050705835
+            ],
+            "relative_l2": [
+              1.3881016719770218e-05,
+              3.248484232468863e-05
+            ]
+          }
+        }
+      },
+      "transport_diagnostics": {
+        "baseline": {
+          "row_mass": [
+            0.009331734851002693,
+            0.009407274425029755
+          ],
+          "column_mass": [
+            4.565715789794922e-05,
+            4.3392181396484375e-05
+          ]
+        },
+        "gauge": {
+          "row_mass": [
+            0.009331738576292992,
+            0.009407278150320053
+          ],
+          "column_mass": [
+            2.86102294921875e-05,
+            4.3392181396484375e-05
+          ]
+        },
+        "direct": {
+          "row_mass": [
+            0.009331734851002693,
+            0.009407274425029755
+          ],
+          "column_mass": [
+            4.565715789794922e-05,
+            4.3392181396484375e-05
+          ]
+        },
+        "direct_gauge": {
+          "row_mass": [
+            0.009331738576292992,
+            0.009407278150320053
+          ],
+          "column_mass": [
+            2.86102294921875e-05,
+            4.3392181396484375e-05
+          ]
+        }
+      }
+    },
+    {
+      "observation": 5,
+      "inputs_sha256": {
+        "child": "de1f09ae1c9d6066af58672223f152d016afc3fe6d28a7c66c0ce17ad92bba84",
+        "child_tangent": "546be407c1b85a9f222c71c22c2785af0c7f2762f7459f926282d48a51434c57",
+        "log_weights": "d8b9caaf167c5a2dda932a75c23264c05d37b8708839d94b74765c9fadf906a0",
+        "log_weight_tangent": "7251e5f52442997d5a7c132fdd71179784e09ed9b1b3892f6006bdbb33483c9b"
+      },
+      "comparisons": {
+        "baseline": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0015296285226895634,
+            "maximum_scaled": 1.1080959898484128e-05,
+            "per_row_maximum_absolute": [
+              0.0005069074978791832,
+              0.0015296285226895634
+            ],
+            "per_row_maximum_scaled": [
+              6.235800132983895e-06,
+              1.1080959898484128e-05
+            ],
+            "relative_l2": [
+              3.2931911825142646e-08,
+              5.4849494871756326e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 19.152543520147447,
+            "maximum_scaled": 0.040349681804144666,
+            "per_row_maximum_absolute": [
+              6.17628804101696,
+              19.152543520147447
+            ],
+            "per_row_maximum_scaled": [
+              0.040349681804144666,
+              0.015794782923581014
+            ],
+            "relative_l2": [
+              4.435529773974823e-05,
+              0.00012075482124763319
+            ]
+          }
+        },
+        "gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0014523188639259388,
+            "maximum_scaled": 9.140090125978165e-06,
+            "per_row_maximum_absolute": [
+              0.0014523188639259388,
+              0.0009493256900441338
+            ],
+            "per_row_maximum_scaled": [
+              9.140090125978165e-06,
+              7.976699162252034e-06
+            ],
+            "relative_l2": [
+              6.153562294854714e-08,
+              4.9560155067516806e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 15.215043520147447,
+            "maximum_scaled": 0.05042958446206569,
+            "per_row_maximum_absolute": [
+              10.48608987184707,
+              15.215043520147447
+            ],
+            "per_row_maximum_scaled": [
+              0.05042958446206569,
+              0.006082287550652698
+            ],
+            "relative_l2": [
+              8.019055670947137e-05,
+              9.662940456545725e-05
+            ]
+          }
+        },
+        "direct": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0015296285226895634,
+            "maximum_scaled": 1.1080959898484128e-05,
+            "per_row_maximum_absolute": [
+              0.0005069074978791832,
+              0.0015296285226895634
+            ],
+            "per_row_maximum_scaled": [
+              6.235800132983895e-06,
+              1.1080959898484128e-05
+            ],
+            "relative_l2": [
+              3.2931911825142646e-08,
+              5.4849494871756326e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 19.394731020147447,
+            "maximum_scaled": 0.032262523601019666,
+            "per_row_maximum_absolute": [
+              6.00441304101696,
+              19.394731020147447
+            ],
+            "per_row_maximum_scaled": [
+              0.032262523601019666,
+              0.007129900246575187
+            ],
+            "relative_l2": [
+              4.341139487831476e-05,
+              0.0001216136396762723
+            ]
+          }
+        },
+        "direct_gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0014523188639259388,
+            "maximum_scaled": 9.140090125978165e-06,
+            "per_row_maximum_absolute": [
+              0.0014523188639259388,
+              0.0009493256900441338
+            ],
+            "per_row_maximum_scaled": [
+              9.140090125978165e-06,
+              7.976699162252034e-06
+            ],
+            "relative_l2": [
+              6.153562294854714e-08,
+              4.9560155067516806e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 15.261918520147447,
+            "maximum_scaled": 0.05152821727456569,
+            "per_row_maximum_absolute": [
+              10.31812112184707,
+              15.261918520147447
+            ],
+            "per_row_maximum_scaled": [
+              0.05152821727456569,
+              0.004677693347616696
+            ],
+            "relative_l2": [
+              7.906017271585687e-05,
+              9.606674111975058e-05
+            ]
+          }
+        }
+      },
+      "transport_diagnostics": {
+        "baseline": {
+          "row_mass": [
+            0.0056912777945399284,
+            0.005564968567341566
+          ],
+          "column_mass": [
+            3.695487976074219e-05,
+            3.707408905029297e-05
+          ]
+        },
+        "gauge": {
+          "row_mass": [
+            0.0056912777945399284,
+            0.0055649722926318645
+          ],
+          "column_mass": [
+            2.682209014892578e-05,
+            2.658367156982422e-05
+          ]
+        },
+        "direct": {
+          "row_mass": [
+            0.0056912777945399284,
+            0.005564968567341566
+          ],
+          "column_mass": [
+            3.695487976074219e-05,
+            3.707408905029297e-05
+          ]
+        },
+        "direct_gauge": {
+          "row_mass": [
+            0.0056912777945399284,
+            0.0055649722926318645
+          ],
+          "column_mass": [
+            2.682209014892578e-05,
+            2.658367156982422e-05
+          ]
+        }
+      }
+    },
+    {
+      "observation": 6,
+      "inputs_sha256": {
+        "child": "784a3d8c77a09ddc595e3502894683fc2e87fadc6bf2136b003da398f11834bd",
+        "child_tangent": "efc90d03d4266695f8563bce6fbe3751c8abd3d74726485fc68a11cdac0f40e7",
+        "log_weights": "23794d76457dc0361a6785d62044fb2956414d3ad7c523bc9fce908177b5a15c",
+        "log_weight_tangent": "852b1a12550810fba5679c41a78e0db0c7e3139939ddf7b97285c1227b48d7c1"
+      },
+      "comparisons": {
+        "baseline": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0004958893366335815,
+            "maximum_scaled": 3.8333455348295294e-06,
+            "per_row_maximum_absolute": [
+              0.0003658862779047922,
+              0.0004958893366335815
+            ],
+            "per_row_maximum_scaled": [
+              2.778433883366673e-06,
+              3.8333455348295294e-06
+            ],
+            "relative_l2": [
+              2.0499528309927145e-08,
+              3.2058463494164375e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 7.900935181489331,
+            "maximum_scaled": 0.033163024128512575,
+            "per_row_maximum_absolute": [
+              7.756231179606402,
+              7.900935181489331
+            ],
+            "per_row_maximum_scaled": [
+              0.027858563053456464,
+              0.033163024128512575
+            ],
+            "relative_l2": [
+              3.8563133823170335e-05,
+              5.9982297627473424e-05
+            ]
+          }
+        },
+        "gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00039420893966735093,
+            "maximum_scaled": 2.003169037057646e-06,
+            "per_row_maximum_absolute": [
+              0.00028411298930564044,
+              0.00039420893966735093
+            ],
+            "per_row_maximum_scaled": [
+              2.003169037057646e-06,
+              1.8838793691013143e-06
+            ],
+            "relative_l2": [
+              1.483671917942099e-08,
+              2.088974968794947e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 4.130314818510669,
+            "maximum_scaled": 0.02821117305470011,
+            "per_row_maximum_absolute": [
+              3.7796686796064023,
+              4.130314818510669
+            ],
+            "per_row_maximum_scaled": [
+              0.010687294662972135,
+              0.02821117305470011
+            ],
+            "relative_l2": [
+              1.453212981403344e-05,
+              3.698193570436991e-05
+            ]
+          }
+        },
+        "direct": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.0004958893366335815,
+            "maximum_scaled": 3.8333455348295294e-06,
+            "per_row_maximum_absolute": [
+              0.0003658862779047922,
+              0.0004958893366335815
+            ],
+            "per_row_maximum_scaled": [
+              2.778433883366673e-06,
+              3.8333455348295294e-06
+            ],
+            "relative_l2": [
+              2.0499528309927145e-08,
+              3.2058463494164375e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 7.900935181489331,
+            "maximum_scaled": 0.033353758991793825,
+            "per_row_maximum_absolute": [
+              7.889924989052815,
+              7.900935181489331
+            ],
+            "per_row_maximum_scaled": [
+              0.024852581608143964,
+              0.033353758991793825
+            ],
+            "relative_l2": [
+              3.8434562524781386e-05,
+              6.037332216102928e-05
+            ]
+          }
+        },
+        "direct_gauge": {
+          "value": {
+            "finite": true,
+            "maximum_absolute": 0.00039420893966735093,
+            "maximum_scaled": 2.003169037057646e-06,
+            "per_row_maximum_absolute": [
+              0.00028411298930564044,
+              0.00039420893966735093
+            ],
+            "per_row_maximum_scaled": [
+              2.003169037057646e-06,
+              1.8838793691013143e-06
+            ],
+            "relative_l2": [
+              1.483671917942099e-08,
+              2.088974968794947e-08
+            ]
+          },
+          "tangent": {
+            "finite": true,
+            "maximum_absolute": 3.9740648185106693,
+            "maximum_scaled": 0.02868419551563761,
+            "per_row_maximum_absolute": [
+              3.4359186796064023,
+              3.9740648185106693
+            ],
+            "per_row_maximum_scaled": [
+              0.009321843805320296,
+              0.02868419551563761
+            ],
+            "relative_l2": [
+              1.3335486352492188e-05,
+              3.634524997905375e-05
+            ]
+          }
+        }
+      },
+      "transport_diagnostics": {
+        "baseline": {
+          "row_mass": [
+            0.01104242354631424,
+            0.011601313948631287
+          ],
+          "column_mass": [
+            5.221366882324219e-05,
+            3.0100345611572266e-05
+          ]
+        },
+        "gauge": {
+          "row_mass": [
+            0.01104242354631424,
+            0.011601313948631287
+          ],
+          "column_mass": [
+            4.7266483306884766e-05,
+            2.849102020263672e-05
+          ]
+        },
+        "direct": {
+          "row_mass": [
+            0.01104242354631424,
+            0.011601313948631287
+          ],
+          "column_mass": [
+            5.221366882324219e-05,
+            3.0100345611572266e-05
+          ]
+        },
+        "direct_gauge": {
+          "row_mass": [
+            0.01104242354631424,
+            0.011601313948631287
+          ],
+          "column_mass": [
+            4.7266483306884766e-05,
+            2.849102020263672e-05
+          ]
+        }
+      }
+    }
+  ],
+  "warm_seconds": {
+    "baseline": [
+      0.1264819090720266,
+      0.12447052705101669,
+      0.12411967082880437
+    ],
+    "gauge": [
+      0.1270394769962877,
+      0.12458701408468187,
+      0.12480580410920084
+    ],
+    "direct": [
+      2.105632027843967,
+      2.067104262067005,
+      2.076497350819409
+    ],
+    "direct_gauge": [
+      2.2338717819657177,
+      2.2519623211119324,
+      2.252968328073621
+    ]
+  },
+  "jit_compile": true,
+  "tf32": false,
+  "cpu_only": false,
+  "posterior_complete": false,
+  "nominated": [],
+  "wall_seconds": 51.61150283878669,
+  "trace_counts": {
+    "baseline": 1,
+    "reference": 1,
+    "gauge": 1,
+    "direct": 1,
+    "direct_gauge": 1
+  }
+}

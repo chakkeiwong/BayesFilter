@@ -1,0 +1,422 @@
+[
+  {
+    "route": "iid_dual_cap",
+    "is_ablation": false,
+    "model": "diagonal_lgssm_canonical",
+    "horizon": 20,
+    "particle_count": 1008,
+    "dimensions": {
+      "state": 3,
+      "observation": 3
+    },
+    "backend": "float64_gpu",
+    "backend_note": "float64 GPU, matching the UNTUNED baseline diagnostic dtype so the TUNED-vs-UNTUNED comparison varies controls only. The repository float32/TF32 production target is a separate tuning scope.",
+    "observations_source": "ledh_canonical_neutra_targets_tf._lgssm_frozen_observations",
+    "reset_family": "contract_e_genut_dual_cap",
+    "tuning_seeds": [
+      50001,
+      50002,
+      50003,
+      50004,
+      50005,
+      50006,
+      50007,
+      50008,
+      50009,
+      50010,
+      50011,
+      50012,
+      50013,
+      50014,
+      50015,
+      50016
+    ],
+    "git_commit": "037c5f08e0a7c083ea049e0162c62cb892f39e02",
+    "gpu_memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "hard_constraints": {
+      "cosine_similarity_min": 0.999,
+      "relative_norm_error_max": 0.05,
+      "fisher_scaled_error_max": 1.0,
+      "applied_to": "seed_aggregated_mean",
+      "threshold_source": "docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md decision framework; no-fire calibrated against the known-good warm-start baseline via docs/benchmarks/calibrate_sqmc_tuning_vetoes.py"
+    },
+    "best_controls": {
+      "reset_epsilon": 16.0,
+      "reset_sinkhorn_steps": 8,
+      "reset_balance_steps": 8,
+      "correction_strength": 0.2,
+      "correction_steps": 4,
+      "pairwise_strength": 0.03,
+      "pairwise_steps": 4
+    },
+    "best_metrics": {
+      "mean_score_l2_error": 1.4010164983097386,
+      "mean_cosine_similarity": 0.9995350549809162,
+      "mean_relative_norm_error": 0.013812392912108385,
+      "mean_fisher_scaled": 0.2340565037145733,
+      "mean_induced_hmc_error": 0.0003378550727183222,
+      "valid_fraction": 1.0
+    },
+    "grid_size": 18,
+    "source": "/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909/docs/tuning/sqmc-lgssm-t20-n1008-iid_dual_cap-20260912/tuning_artifact.json",
+    "sha256": "f5af7f3ca91464909dfa67b6b97248ea6e575de46d1574f3680e2d5ac9ce95c5",
+    "bytes": 186920,
+    "grid_valid_fractions": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "route": "previous_inverse_cdf",
+    "is_ablation": false,
+    "model": "diagonal_lgssm_canonical",
+    "horizon": 20,
+    "particle_count": 1008,
+    "dimensions": {
+      "state": 3,
+      "observation": 3
+    },
+    "backend": "float64_gpu",
+    "backend_note": "float64 GPU, matching the UNTUNED baseline diagnostic dtype so the TUNED-vs-UNTUNED comparison varies controls only. The repository float32/TF32 production target is a separate tuning scope.",
+    "observations_source": "ledh_canonical_neutra_targets_tf._lgssm_frozen_observations",
+    "reset_family": "contract_e_genut_dual_cap",
+    "tuning_seeds": [
+      50001,
+      50002,
+      50003,
+      50004,
+      50005,
+      50006,
+      50007,
+      50008,
+      50009,
+      50010,
+      50011,
+      50012,
+      50013,
+      50014,
+      50015,
+      50016
+    ],
+    "git_commit": "037c5f08e0a7c083ea049e0162c62cb892f39e02",
+    "gpu_memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "hard_constraints": {
+      "cosine_similarity_min": 0.999,
+      "relative_norm_error_max": 0.05,
+      "fisher_scaled_error_max": 1.0,
+      "applied_to": "seed_aggregated_mean",
+      "threshold_source": "docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md decision framework; no-fire calibrated against the known-good warm-start baseline via docs/benchmarks/calibrate_sqmc_tuning_vetoes.py"
+    },
+    "best_controls": {
+      "reset_epsilon": 16.0,
+      "reset_sinkhorn_steps": 8,
+      "reset_balance_steps": 8,
+      "correction_strength": 0.15,
+      "correction_steps": 4,
+      "pairwise_strength": 0.03,
+      "pairwise_steps": 4
+    },
+    "best_metrics": {
+      "mean_score_l2_error": 1.4353267126163434,
+      "mean_cosine_similarity": 0.9995540023409408,
+      "mean_relative_norm_error": 0.016626899273220468,
+      "mean_fisher_scaled": 0.24000973556943783,
+      "mean_induced_hmc_error": 0.00034612897953064335,
+      "valid_fraction": 1.0
+    },
+    "grid_size": 18,
+    "source": "/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909/docs/tuning/sqmc-lgssm-t20-n1008-previous_inverse_cdf-20260912/tuning_artifact.json",
+    "sha256": "46e1ac5d10d90848d815208f9d73ae3d357988cf45e20d6771880fed25c706af",
+    "bytes": 185638,
+    "grid_valid_fractions": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "route": "repaired_permutation",
+    "is_ablation": false,
+    "model": "diagonal_lgssm_canonical",
+    "horizon": 20,
+    "particle_count": 1008,
+    "dimensions": {
+      "state": 3,
+      "observation": 3
+    },
+    "backend": "float64_gpu",
+    "backend_note": "float64 GPU, matching the UNTUNED baseline diagnostic dtype so the TUNED-vs-UNTUNED comparison varies controls only. The repository float32/TF32 production target is a separate tuning scope.",
+    "observations_source": "ledh_canonical_neutra_targets_tf._lgssm_frozen_observations",
+    "reset_family": "contract_e_genut_dual_cap",
+    "tuning_seeds": [
+      50001,
+      50002,
+      50003,
+      50004,
+      50005,
+      50006,
+      50007,
+      50008,
+      50009,
+      50010,
+      50011,
+      50012,
+      50013,
+      50014,
+      50015,
+      50016
+    ],
+    "git_commit": "037c5f08e0a7c083ea049e0162c62cb892f39e02",
+    "gpu_memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "hard_constraints": {
+      "cosine_similarity_min": 0.999,
+      "relative_norm_error_max": 0.05,
+      "fisher_scaled_error_max": 1.0,
+      "applied_to": "seed_aggregated_mean",
+      "threshold_source": "docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md decision framework; no-fire calibrated against the known-good warm-start baseline via docs/benchmarks/calibrate_sqmc_tuning_vetoes.py"
+    },
+    "best_controls": {
+      "reset_epsilon": 16.0,
+      "reset_sinkhorn_steps": 8,
+      "reset_balance_steps": 8,
+      "correction_strength": 0.15,
+      "correction_steps": 4,
+      "pairwise_strength": 0.03,
+      "pairwise_steps": 4
+    },
+    "best_metrics": {
+      "mean_score_l2_error": 1.4274131309976632,
+      "mean_cosine_similarity": 0.9995595432842586,
+      "mean_relative_norm_error": 0.016553342650711057,
+      "mean_fisher_scaled": 0.23926315928425917,
+      "mean_induced_hmc_error": 0.00034422061963875964,
+      "valid_fraction": 1.0
+    },
+    "grid_size": 18,
+    "source": "/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909/docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation-20260912/tuning_artifact.json",
+    "sha256": "69c919b0942577b2d80cfd41628b3eb979120f7f37aff51a23f8e5d8ecb72f19",
+    "bytes": 184570,
+    "grid_valid_fractions": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  {
+    "route": "repaired_permutation",
+    "is_ablation": true,
+    "model": "diagonal_lgssm_canonical",
+    "horizon": 20,
+    "particle_count": 1008,
+    "dimensions": {
+      "state": 3,
+      "observation": 3
+    },
+    "backend": "float64_gpu",
+    "backend_note": "float64 GPU, matching the UNTUNED baseline diagnostic dtype so the TUNED-vs-UNTUNED comparison varies controls only. The repository float32/TF32 production target is a separate tuning scope.",
+    "observations_source": "ledh_canonical_neutra_targets_tf._lgssm_frozen_observations",
+    "reset_family": "contract_e_genut_dual_cap",
+    "tuning_seeds": [
+      50001,
+      50002,
+      50003,
+      50004,
+      50005,
+      50006,
+      50007,
+      50008,
+      50009,
+      50010,
+      50011,
+      50012,
+      50013,
+      50014,
+      50015,
+      50016
+    ],
+    "git_commit": "037c5f08e0a7c083ea049e0162c62cb892f39e02",
+    "gpu_memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "hard_constraints": {
+      "cosine_similarity_min": 0.999,
+      "relative_norm_error_max": 0.05,
+      "fisher_scaled_error_max": 1.0,
+      "applied_to": "seed_aggregated_mean",
+      "threshold_source": "docs/plans/sqmc-oracle-principled-score-metrics-2026-09-11.md decision framework; no-fire calibrated against the known-good warm-start baseline via docs/benchmarks/calibrate_sqmc_tuning_vetoes.py"
+    },
+    "best_controls": {
+      "reset_epsilon": 16.0,
+      "reset_sinkhorn_steps": 8,
+      "reset_balance_steps": 8,
+      "correction_strength": 0.15,
+      "correction_steps": 4,
+      "pairwise_strength": 0.03,
+      "pairwise_steps": 4
+    },
+    "best_metrics": {
+      "mean_score_l2_error": 1.4316608667864505,
+      "mean_cosine_similarity": 0.9995582804185765,
+      "mean_relative_norm_error": 0.01669806911774099,
+      "mean_fisher_scaled": 0.23976678601711088,
+      "mean_induced_hmc_error": 0.0003452449609548972,
+      "valid_fraction": 1.0
+    },
+    "grid_size": 18,
+    "source": "/home/chakwong/BayesFilter/.claude/worktrees/kdm-score-campaign-20260909/docs/tuning/sqmc-lgssm-t20-n1008-repaired_permutation_ablation-20260912/tuning_artifact.json",
+    "sha256": "50f56a1758e58434810a2ca30f6f3f04b67e481ca6efe4c97cbcfa2f6d3e2c1c",
+    "bytes": 186238,
+    "grid_valid_fractions": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  }
+]

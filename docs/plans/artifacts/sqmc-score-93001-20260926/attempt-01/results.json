@@ -1,0 +1,1461 @@
+{
+  "program": "saved_repair_cpu_diagnostic",
+  "tuning": "replay saved scope-specific tiny diagnostic controls",
+  "promotion": false,
+  "cpu_only": "CUDA_VISIBLE_DEVICES=-1; GPUs intentionally hidden",
+  "jit_compile": false,
+  "dtype": "float64",
+  "theta": [
+    0.25,
+    -1.7147984280919266,
+    -2.120263536200091,
+    0.04
+  ],
+  "cases": [
+    {
+      "seed": 93001,
+      "route": "iid_dual_cap",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.962211386799967,
+        "score": [
+          -0.14867392321592582,
+          -0.5951554603415445,
+          -0.5614133309483884,
+          0.18392955329640476
+        ],
+        "score1_increments": [
+          0.03662728152353529,
+          -0.1853012047394611
+        ],
+        "value_increments": [
+          -2.837651735360629,
+          -1.1245596514393381
+        ]
+      },
+      "value": -3.9559606044713185,
+      "score1": -0.1146133800143585,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.8351278767879657,
+          "score_increment": 0.06573229133135838,
+          "score_prior_proposal_part": -0.32047875414155963,
+          "score_observation_part": 0.38621104547291796,
+          "ess": 8.935936908630163,
+          "parent_mean": [
+            0.1851316400077785,
+            -0.06395408437696543,
+            -0.08855468061590648
+          ],
+          "process_normal_mean": [
+            0.004991254298557725,
+            -0.2306066002682984,
+            0.055556590433542295
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.23276134286897246,
+              -0.24636151298332576,
+              0.05610068664081063
+            ],
+            [
+              -0.23138938932008077,
+              -0.006788295992015719,
+              -0.14685546752091624
+            ],
+            [
+              0.5782027106687696,
+              -0.343609861289815,
+              -0.11289059196526402
+            ]
+          ],
+          "pre_flow_mean": [
+            0.026947147604441904,
+            -0.10993616826584403,
+            0.018524545939988868
+          ],
+          "post_reset_mean": [
+            0.1938489893459082,
+            -0.06987172637347071,
+            0.7158520765459601
+          ],
+          "process_observation_integrated_value": -2.844679218729204,
+          "process_observation_integrated_score": 0.015356905909733709
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.1208327276833527,
+          "score_increment": -0.18034567134571688,
+          "score_prior_proposal_part": -0.16989583019651538,
+          "score_observation_part": -0.01044984114920153,
+          "ess": 11.655904707697434,
+          "parent_mean": [
+            0.1938489893459082,
+            -0.06987172637347071,
+            0.7158520765459601
+          ],
+          "process_normal_mean": [
+            -0.1131024353974703,
+            0.21246657758288237,
+            -0.18621008736451317
+          ],
+          "parent_process_cross_covariance": [
+            [
+              0.023547195145017043,
+              -0.23771795176111468,
+              0.06520142671840581
+            ],
+            [
+              0.0553305943787712,
+              -0.008247542471153302,
+              0.03650336588366686
+            ],
+            [
+              0.03011913756608689,
+              0.02219736189149157,
+              -0.04273794380519322
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.01941037276611306,
+            0.08654138270940469,
+            -0.02257609294933043
+          ],
+          "post_reset_mean": [
+            -0.06614675276927487,
+            0.1376966206542302,
+            -0.09886583381622364
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": [
+        {
+          "h": 0.0001,
+          "score1": -0.11461338156548706,
+          "absolute_difference": 1.551128558929804e-09,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        },
+        {
+          "h": 1e-05,
+          "score1": -0.11461338005336329,
+          "absolute_difference": 3.900478551255304e-11,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        }
+      ]
+    },
+    {
+      "seed": 93001,
+      "route": "previous_inverse_cdf",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.962211386799967,
+        "score": [
+          -0.14867392321592582,
+          -0.5951554603415445,
+          -0.5614133309483884,
+          0.18392955329640476
+        ],
+        "score1_increments": [
+          0.03662728152353529,
+          -0.1853012047394611
+        ],
+        "value_increments": [
+          -2.837651735360629,
+          -1.1245596514393381
+        ]
+      },
+      "value": -3.9549384117512276,
+      "score1": 0.37739469062731157,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            4,
+            10,
+            0,
+            6,
+            2,
+            9,
+            8,
+            11,
+            11,
+            5,
+            1,
+            7
+          ],
+          "unique_ancestors": 11,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.7670871167959596,
+          "score_increment": 0.5979563152766862,
+          "score_prior_proposal_part": 0.12463296958798038,
+          "score_observation_part": 0.47332334568870593,
+          "ess": 8.6388562045576,
+          "parent_mean": [
+            0.08674632724726727,
+            -0.1575448874166485,
+            0.352863207034492
+          ],
+          "process_normal_mean": [
+            0.09450797048679911,
+            -0.10947217443827569,
+            -0.07761366174569194
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.08469027562414144,
+              -0.08424116596520044,
+              -0.01989823217432335
+            ],
+            [
+              0.1924680963344646,
+              0.18314344510057431,
+              0.24669571616724287
+            ],
+            [
+              -0.02295397428304199,
+              -0.08380047470311457,
+              0.17019768963380547
+            ]
+          ],
+          "pre_flow_mean": [
+            0.04972391129713416,
+            -0.06675084931363161,
+            -0.004271708645808864
+          ],
+          "post_reset_mean": [
+            0.21198477234978827,
+            -0.06230560400778975,
+            0.7370669012993892
+          ],
+          "process_observation_integrated_value": -2.7270160140181905,
+          "process_observation_integrated_score": 0.4699982920472937
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            3,
+            8,
+            1,
+            9,
+            7,
+            7,
+            2,
+            0,
+            0,
+            10,
+            11,
+            11
+          ],
+          "unique_ancestors": 9,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.187851294955268,
+          "score_increment": -0.2205616246493747,
+          "score_prior_proposal_part": -0.13698051289524507,
+          "score_observation_part": -0.0835811117541297,
+          "ess": 11.595278009716093,
+          "parent_mean": [
+            0.21804825038632888,
+            -0.05024951323079658,
+            0.746671833349331
+          ],
+          "process_normal_mean": [
+            -0.15524350734326994,
+            -0.45273024686619373,
+            -0.04175197840408392
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.03348222579712217,
+              -0.031421890742129595,
+              0.006250650599180772
+            ],
+            [
+              -0.1636951022736863,
+              0.08335756582564734,
+              0.051334354906986845
+            ],
+            [
+              0.10658026185033476,
+              -0.04211984902269499,
+              0.021271083259242058
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.03311205918405828,
+            -0.2072057851798277,
+            0.050209525987493536
+          ],
+          "post_reset_mean": [
+            -0.0722967638434338,
+            -0.023732474027997958,
+            -0.04053943033670732
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": [
+        {
+          "h": 0.0001,
+          "score1": 0.3773946839036313,
+          "absolute_difference": 6.723680279208111e-09,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        },
+        {
+          "h": 1e-05,
+          "score1": 0.3773946905427649,
+          "absolute_difference": 8.454664746082585e-11,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        }
+      ]
+    },
+    {
+      "seed": 93001,
+      "route": "repaired_permutation",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.962211386799967,
+        "score": [
+          -0.14867392321592582,
+          -0.5951554603415445,
+          -0.5614133309483884,
+          0.18392955329640476
+        ],
+        "score1_increments": [
+          0.03662728152353529,
+          -0.1853012047394611
+        ],
+        "value_increments": [
+          -2.837651735360629,
+          -1.1245596514393381
+        ]
+      },
+      "value": -4.020638296402895,
+      "score1": 0.1099365853847494,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            4,
+            10,
+            0,
+            6,
+            2,
+            9,
+            8,
+            3,
+            11,
+            5,
+            1,
+            7
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.8326419461863823,
+          "score_increment": 0.33831147294923647,
+          "score_prior_proposal_part": 0.03170777721832387,
+          "score_observation_part": 0.3066036957309125,
+          "ess": 8.431535654948412,
+          "parent_mean": [
+            0.16037787376136606,
+            -0.07789688458644793,
+            0.17127890803003923
+          ],
+          "process_normal_mean": [
+            0.09450797048679911,
+            -0.10947217443827569,
+            -0.07761366174569194
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.06978371859459172,
+              -0.04882690783588093,
+              -0.016890156696151154
+            ],
+            [
+              0.2085926727244333,
+              0.2214514131557257,
+              0.2499495824180766
+            ],
+            [
+              -0.05971534677794665,
+              -0.17113631839538157,
+              0.16277941169566926
+            ]
+          ],
+          "pre_flow_mean": [
+            0.05964246823275643,
+            -0.05763119483076155,
+            -0.0213939613416979
+          ],
+          "post_reset_mean": [
+            0.2097651771099955,
+            -0.07409176096475516,
+            0.7386602949206545
+          ],
+          "process_observation_integrated_value": -2.783080998513849,
+          "process_observation_integrated_score": 0.2192497640272959
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            11,
+            3,
+            8,
+            1,
+            9,
+            5,
+            7,
+            2,
+            6,
+            0,
+            10,
+            4
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.1879963502165123,
+          "score_increment": -0.22837488756448707,
+          "score_prior_proposal_part": -0.13933867130982766,
+          "score_observation_part": -0.0890362162546594,
+          "ess": 11.61341555402322,
+          "parent_mean": [
+            0.20976517710999554,
+            -0.07409176096475514,
+            0.7386602949206545
+          ],
+          "process_normal_mean": [
+            -0.15524350734326994,
+            -0.45273024686619373,
+            -0.04175197840408392
+          ],
+          "parent_process_cross_covariance": [
+            [
+              0.06327158263865283,
+              0.027611853931775746,
+              -0.023203095546165384
+            ],
+            [
+              0.04242327656885658,
+              0.006258597935587845,
+              -0.014180806460310356
+            ],
+            [
+              -0.0006092464156281785,
+              -0.0005183297337912404,
+              -0.045809258997612366
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.03422783275914559,
+            -0.20993571002040703,
+            0.0494540885063308
+          ],
+          "post_reset_mean": [
+            -0.0660216567896965,
+            -0.02462648511852511,
+            -0.03750822716281653
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": [
+        {
+          "h": 0.0001,
+          "score1": 0.10993658432045805,
+          "absolute_difference": 1.06429134949515e-09,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        },
+        {
+          "h": 1e-05,
+          "score1": 0.10993658534630411,
+          "absolute_difference": 3.8445288619293194e-11,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        }
+      ]
+    },
+    {
+      "seed": 93001,
+      "route": "repaired_permutation_ablation",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.962211386799967,
+        "score": [
+          -0.14867392321592582,
+          -0.5951554603415445,
+          -0.5614133309483884,
+          0.18392955329640476
+        ],
+        "score1_increments": [
+          0.03662728152353529,
+          -0.1853012047394611
+        ],
+        "value_increments": [
+          -2.837651735360629,
+          -1.1245596514393381
+        ]
+      },
+      "value": -4.0206321188376375,
+      "score1": 0.10999019567260312,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            4,
+            10,
+            0,
+            6,
+            2,
+            9,
+            8,
+            3,
+            11,
+            5,
+            1,
+            7
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.8326419461863823,
+          "score_increment": 0.33831147294923647,
+          "score_prior_proposal_part": 0.03170777721832387,
+          "score_observation_part": 0.3066036957309125,
+          "ess": 8.431535654948412,
+          "parent_mean": [
+            0.16037787376136606,
+            -0.07789688458644793,
+            0.17127890803003923
+          ],
+          "process_normal_mean": [
+            0.09450797048679911,
+            -0.10947217443827569,
+            -0.07761366174569194
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.06978371859459172,
+              -0.04882690783588093,
+              -0.016890156696151154
+            ],
+            [
+              0.2085926727244333,
+              0.2214514131557257,
+              0.2499495824180766
+            ],
+            [
+              -0.05971534677794665,
+              -0.17113631839538157,
+              0.16277941169566926
+            ]
+          ],
+          "pre_flow_mean": [
+            0.05964246823275643,
+            -0.05763119483076155,
+            -0.0213939613416979
+          ],
+          "post_reset_mean": [
+            0.20976517710999554,
+            -0.07409176096475513,
+            0.7386602949206548
+          ],
+          "process_observation_integrated_value": -2.783080998513849,
+          "process_observation_integrated_score": 0.2192497640272959
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            11,
+            3,
+            8,
+            1,
+            9,
+            5,
+            7,
+            2,
+            6,
+            0,
+            10,
+            4
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.1879901726512547,
+          "score_increment": -0.22832127727663334,
+          "score_prior_proposal_part": -0.1392423062328233,
+          "score_observation_part": -0.08907897104380999,
+          "ess": 11.613032514640256,
+          "parent_mean": [
+            0.20976517710999554,
+            -0.07409176096475512,
+            0.7386602949206548
+          ],
+          "process_normal_mean": [
+            -0.15524350734326994,
+            -0.45273024686619373,
+            -0.04175197840408392
+          ],
+          "parent_process_cross_covariance": [
+            [
+              0.06310891937102976,
+              0.027274795904036392,
+              -0.0228777385180662
+            ],
+            [
+              0.04260260711780193,
+              0.006676366876385182,
+              -0.014258210948376258
+            ],
+            [
+              -0.0007858840633493125,
+              -0.0008564519707263338,
+              -0.04575323540320375
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.034227832759145586,
+            -0.20993571002040698,
+            0.04945408850633081
+          ],
+          "post_reset_mean": [
+            -0.06602026098514165,
+            -0.024608439186473912,
+            -0.037528672199698965
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": [
+        {
+          "h": 0.0001,
+          "score1": 0.10999019460555814,
+          "absolute_difference": 1.0670449801519766e-09,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        },
+        {
+          "h": 1e-05,
+          "score1": 0.10999019566249045,
+          "absolute_difference": 1.0112674586615356e-11,
+          "ancestry_unchanged": true,
+          "parity_pass": true
+        }
+      ]
+    },
+    {
+      "seed": 93002,
+      "route": "iid_dual_cap",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.5372554548846633,
+        "score": [
+          -0.2845677271873434,
+          -1.000254008144911,
+          -0.5412941067135222,
+          -0.047953059471089375
+        ],
+        "score1_increments": [
+          -0.309625167633967,
+          0.025057440446623613
+        ],
+        "value_increments": [
+          -1.3018431847791936,
+          -2.2354122701054697
+        ]
+      },
+      "value": -3.6111057845263645,
+      "score1": -0.40270873961999964,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.4304462761051604,
+          "score_increment": -0.41653909776613546,
+          "score_prior_proposal_part": -0.3111047842522333,
+          "score_observation_part": -0.10543431351390213,
+          "ess": 10.572219271204258,
+          "parent_mean": [
+            0.19602847678343938,
+            0.08820153177483976,
+            -0.1438425851030544
+          ],
+          "process_normal_mean": [
+            0.10584166465932353,
+            0.42770580973903405,
+            0.6210834946148471
+          ],
+          "parent_process_cross_covariance": [
+            [
+              0.06706991893320564,
+              0.24307818754972474,
+              0.3748197071655239
+            ],
+            [
+              -0.14593489310365004,
+              0.4294740874435696,
+              -0.13618431091116134
+            ],
+            [
+              0.3065482532775899,
+              -0.1190600216189489,
+              0.31733768584748295
+            ]
+          ],
+          "pre_flow_mean": [
+            0.06900651604515724,
+            0.20041609980015684,
+            0.28687666559498276
+          ],
+          "post_reset_mean": [
+            -0.07058635037620538,
+            -0.08827131516228603,
+            0.029020240290312794
+          ],
+          "process_observation_integrated_value": -1.3325898646926244,
+          "process_observation_integrated_score": -0.4684189360099814
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.180659508421204,
+          "score_increment": 0.01383035814613584,
+          "score_prior_proposal_part": -0.030908862603648377,
+          "score_observation_part": 0.044739220749784196,
+          "ess": 10.446660988600241,
+          "parent_mean": [
+            -0.07058635037620538,
+            -0.08827131516228603,
+            0.029020240290312794
+          ],
+          "process_normal_mean": [
+            0.004201902013554619,
+            0.12676437695010243,
+            -0.126571986669665
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.05111117047609049,
+              0.055428919988332485,
+              -0.07533409948707938
+            ],
+            [
+              0.05666011803817972,
+              0.0697126195858961,
+              0.06828029952031155
+            ],
+            [
+              -0.10213696221534607,
+              0.06785745865780358,
+              -0.1549269330825613
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.007817120048276624,
+            0.04629956761845707,
+            -0.058490933417405876
+          ],
+          "post_reset_mean": [
+            -0.4579873236410948,
+            0.28971907120598844,
+            -0.2574106376868102
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": []
+    },
+    {
+      "seed": 93002,
+      "route": "previous_inverse_cdf",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.5372554548846633,
+        "score": [
+          -0.2845677271873434,
+          -1.000254008144911,
+          -0.5412941067135222,
+          -0.047953059471089375
+        ],
+        "score1_increments": [
+          -0.309625167633967,
+          0.025057440446623613
+        ],
+        "value_increments": [
+          -1.3018431847791936,
+          -2.2354122701054697
+        ]
+      },
+      "value": -3.500509045898519,
+      "score1": -0.26876590573332876,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            10,
+            4,
+            6,
+            2,
+            0,
+            8,
+            3,
+            5,
+            9,
+            11,
+            1,
+            7
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.2934250628285788,
+          "score_increment": -0.27569584816936243,
+          "score_prior_proposal_part": -0.4208561917830854,
+          "score_observation_part": 0.145160343613723,
+          "ess": 11.72180176122428,
+          "parent_mean": [
+            0.08665797559459167,
+            -0.050028673645727224,
+            -0.4198015404912112
+          ],
+          "process_normal_mean": [
+            0.03036908980615453,
+            -0.12106949960912444,
+            -0.0688034377156961
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.08052447860703416,
+              -0.07726735079814323,
+              0.10665225466510787
+            ],
+            [
+              -0.17161376103361092,
+              -0.12358628733073412,
+              -0.5564011169813018
+            ],
+            [
+              -0.5452312149406789,
+              0.20644951925658964,
+              -0.10308964060678588
+            ]
+          ],
+          "pre_flow_mean": [
+            0.023896608367926706,
+            -0.05960078324113649,
+            -0.07286729716224459
+          ],
+          "post_reset_mean": [
+            -0.05309907541991824,
+            -0.2232579281770545,
+            -0.12774391385935752
+          ],
+          "process_observation_integrated_value": -1.293017832011415,
+          "process_observation_integrated_score": -0.3157088022665031
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            5,
+            5,
+            1,
+            9,
+            8,
+            3,
+            0,
+            0,
+            6,
+            10,
+            10,
+            11
+          ],
+          "unique_ancestors": 9,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.20708398306994,
+          "score_increment": 0.006929942436033683,
+          "score_prior_proposal_part": -0.08045772680397681,
+          "score_observation_part": 0.08738766924001046,
+          "ess": 11.078408509206083,
+          "parent_mean": [
+            -0.10722675625883198,
+            -0.3119204538549235,
+            -0.14053661587861405
+          ],
+          "process_normal_mean": [
+            -0.09369366422066767,
+            0.09792641106384374,
+            -0.06362693850220427
+          ],
+          "parent_process_cross_covariance": [
+            [
+              0.00318598157151471,
+              0.03176857650453067,
+              -0.010442096244584725
+            ],
+            [
+              0.014549108280712089,
+              -0.02081008248509277,
+              -0.1815640096619893
+            ],
+            [
+              0.06501062998281014,
+              0.07542252226306348,
+              -0.02378800902296282
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.05215498095076241,
+            0.007859773988321722,
+            -0.04403032206859231
+          ],
+          "post_reset_mean": [
+            -0.4163497642460133,
+            0.24884371235534727,
+            -0.2077811289303487
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": []
+    },
+    {
+      "seed": 93002,
+      "route": "repaired_permutation",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.5372554548846633,
+        "score": [
+          -0.2845677271873434,
+          -1.000254008144911,
+          -0.5412941067135222,
+          -0.047953059471089375
+        ],
+        "score1_increments": [
+          -0.309625167633967,
+          0.025057440446623613
+        ],
+        "value_increments": [
+          -1.3018431847791936,
+          -2.2354122701054697
+        ]
+      },
+      "value": -3.5088414876543395,
+      "score1": -0.2883749505414409,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            10,
+            4,
+            6,
+            2,
+            0,
+            8,
+            3,
+            5,
+            9,
+            11,
+            1,
+            7
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.2934250628285788,
+          "score_increment": -0.27569584816936243,
+          "score_prior_proposal_part": -0.4208561917830854,
+          "score_observation_part": 0.145160343613723,
+          "ess": 11.72180176122428,
+          "parent_mean": [
+            0.08665797559459167,
+            -0.050028673645727224,
+            -0.4198015404912112
+          ],
+          "process_normal_mean": [
+            0.03036908980615453,
+            -0.12106949960912444,
+            -0.0688034377156961
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.08052447860703416,
+              -0.07726735079814323,
+              0.10665225466510787
+            ],
+            [
+              -0.17161376103361092,
+              -0.12358628733073412,
+              -0.5564011169813018
+            ],
+            [
+              -0.5452312149406789,
+              0.20644951925658964,
+              -0.10308964060678588
+            ]
+          ],
+          "pre_flow_mean": [
+            0.023896608367926706,
+            -0.05960078324113649,
+            -0.07286729716224459
+          ],
+          "post_reset_mean": [
+            -0.05309907541991824,
+            -0.2232579281770545,
+            -0.12774391385935752
+          ],
+          "process_observation_integrated_value": -1.293017832011415,
+          "process_observation_integrated_score": -0.3157088022665031
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            5,
+            2,
+            1,
+            9,
+            8,
+            3,
+            0,
+            7,
+            6,
+            10,
+            4,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.2154164248257606,
+          "score_increment": -0.012679102372078494,
+          "score_prior_proposal_part": -0.05869395629632107,
+          "score_observation_part": 0.04601485392424258,
+          "ess": 11.079736172568756,
+          "parent_mean": [
+            -0.053099075419918235,
+            -0.2232579281770545,
+            -0.12774391385935754
+          ],
+          "process_normal_mean": [
+            -0.09369366422066767,
+            0.09792641106384374,
+            -0.06362693850220427
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.03183974532321612,
+              0.09689986644911613,
+              0.039140511859155874
+            ],
+            [
+              -0.0906321867377831,
+              0.046709268736751436,
+              -0.09400713671444862
+            ],
+            [
+              -0.0352989842699031,
+              0.01722010959056752,
+              0.0005284833860156295
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.04486369739621756,
+            0.018011586601684174,
+            -0.04282405105376436
+          ],
+          "post_reset_mean": [
+            -0.4103715838058946,
+            0.25256221431699716,
+            -0.20939144848050464
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 4.440892098500626e-16,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": []
+    },
+    {
+      "seed": 93002,
+      "route": "repaired_permutation_ablation",
+      "controls": {
+        "flow_substeps": 2,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "correction_lm_damping": 0.01,
+        "correction_lm_scale_floor": 0.0001,
+        "correction_trust_radius": 0.5,
+        "pairwise_rms_cap": 2.0,
+        "coordinate_cap_power": 8,
+        "state_map_policy": "adaptive_empirical",
+        "hilbert_bits": 12,
+        "reset_epsilon": 0.4,
+        "reset_sinkhorn_steps": 24,
+        "reset_balance_steps": 12,
+        "correction_steps": 1,
+        "correction_strength": 0.12,
+        "pairwise_steps": 1,
+        "pairwise_strength": 0.03
+      },
+      "oracle": {
+        "value": -3.5372554548846633,
+        "score": [
+          -0.2845677271873434,
+          -1.000254008144911,
+          -0.5412941067135222,
+          -0.047953059471089375
+        ],
+        "score1_increments": [
+          -0.309625167633967,
+          0.025057440446623613
+        ],
+        "value_increments": [
+          -1.3018431847791936,
+          -2.2354122701054697
+        ]
+      },
+      "value": -3.5088203388817947,
+      "score1": -0.28831076253051,
+      "steps": [
+        {
+          "time": 1,
+          "ancestor_indices": [
+            10,
+            4,
+            6,
+            2,
+            0,
+            8,
+            3,
+            5,
+            9,
+            11,
+            1,
+            7
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -1.2934250628285788,
+          "score_increment": -0.27569584816936243,
+          "score_prior_proposal_part": -0.4208561917830854,
+          "score_observation_part": 0.145160343613723,
+          "ess": 11.72180176122428,
+          "parent_mean": [
+            0.08665797559459167,
+            -0.050028673645727224,
+            -0.4198015404912112
+          ],
+          "process_normal_mean": [
+            0.03036908980615453,
+            -0.12106949960912444,
+            -0.0688034377156961
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.08052447860703416,
+              -0.07726735079814323,
+              0.10665225466510787
+            ],
+            [
+              -0.17161376103361092,
+              -0.12358628733073412,
+              -0.5564011169813018
+            ],
+            [
+              -0.5452312149406789,
+              0.20644951925658964,
+              -0.10308964060678588
+            ]
+          ],
+          "pre_flow_mean": [
+            0.023896608367926706,
+            -0.05960078324113649,
+            -0.07286729716224459
+          ],
+          "post_reset_mean": [
+            -0.053099075419918214,
+            -0.2232579281770545,
+            -0.12774391385935754
+          ],
+          "process_observation_integrated_value": -1.293017832011415,
+          "process_observation_integrated_score": -0.3157088022665031
+        },
+        {
+          "time": 2,
+          "ancestor_indices": [
+            5,
+            2,
+            1,
+            9,
+            8,
+            3,
+            0,
+            7,
+            6,
+            10,
+            4,
+            11
+          ],
+          "unique_ancestors": 12,
+          "hilbert_ties": 0,
+          "state_map_saturation": 0.0,
+          "value_increment": -2.215395276053216,
+          "score_increment": -0.012614914361147592,
+          "score_prior_proposal_part": -0.058494031583405943,
+          "score_observation_part": 0.04587911722225835,
+          "ess": 11.079027875040538,
+          "parent_mean": [
+            -0.05309907541991821,
+            -0.2232579281770545,
+            -0.12774391385935754
+          ],
+          "process_normal_mean": [
+            -0.09369366422066767,
+            0.09792641106384374,
+            -0.06362693850220427
+          ],
+          "parent_process_cross_covariance": [
+            [
+              -0.03174232389247784,
+              0.09675643556367586,
+              0.03953265130762724
+            ],
+            [
+              -0.09075538377748003,
+              0.04672925864702315,
+              -0.09391722575694339
+            ],
+            [
+              -0.03481809454558962,
+              0.016621969031337086,
+              0.0006298622507492548
+            ]
+          ],
+          "pre_flow_mean": [
+            -0.04486369739621752,
+            0.018011586601684174,
+            -0.042824051053764356
+          ],
+          "post_reset_mean": [
+            -0.4103969567285948,
+            0.2526016021111341,
+            -0.2094281356362787
+          ]
+        }
+      ],
+      "replay_value_abs_difference": 0.0,
+      "replay_score1_abs_difference": 0.0,
+      "finite_differences": []
+    }
+  ],
+  "wall_seconds": 17.716894938988844
+}

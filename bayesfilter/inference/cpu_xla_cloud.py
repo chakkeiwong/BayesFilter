@@ -4,12 +4,14 @@ This module does not provide a GPU fallback. A caller deliberately selects the
 CPU route, supplies an importable value/score factory, and owns the context
 manager lifetime. Each spawned child hides CUDA before importing TensorFlow,
 compiles one static ``B=1`` function, and reuses it for all assigned rows.
+This independent scalar score-generation lane is not a NeuTra training target.
 """
 
 from __future__ import annotations
 
 import concurrent.futures
 import importlib
+import math
 import multiprocessing
 import os
 import threading
@@ -17,13 +19,10 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping
 
-import numpy as np
-
 from bayesfilter.cpu_xla_worker_bootstrap import (
     evaluate_cpu_xla_row,
     initialize_cpu_xla_worker,
 )
-
 
 _SPAWN_ENV_LOCK = threading.Lock()
 
@@ -61,15 +60,17 @@ class CPUXLACloudConfig:
         )
         if self.heartbeat_seconds is not None:
             heartbeat = float(self.heartbeat_seconds)
-            if not np.isfinite(heartbeat) or heartbeat <= 0.0:
+            if not math.isfinite(heartbeat) or heartbeat <= 0.0:
                 raise ValueError("heartbeat_seconds must be positive finite")
             object.__setattr__(self, "heartbeat_seconds", heartbeat)
 
 
 @dataclass(frozen=True)
 class CPUXLACloudResult:
-    values: np.ndarray
-    scores: np.ndarray
+    """Completed immutable TensorFlow values/scores and host process metadata."""
+
+    values: Any
+    scores: Any
     worker_pids: tuple[int, ...]
     worker_count: int
     core_count: int
@@ -81,12 +82,15 @@ class CPUXLACloudResult:
     automatic_fallback_used: bool = False
 
     def __post_init__(self) -> None:
-        values = np.asarray(self.values, dtype=float).copy()
-        scores = np.asarray(self.scores, dtype=float).copy()
-        if values.ndim != 1 or scores.ndim != 2 or scores.shape[0] != values.shape[0]:
+        import tensorflow as tf
+
+        from bayesfilter.ops.host_tensor_io import numeric_tensor
+
+        with tf.device("/CPU:0"):
+            values = tf.identity(numeric_tensor(self.values, tf.float64))
+            scores = tf.identity(numeric_tensor(self.scores, tf.float64))
+        if values.shape.rank != 1 or scores.shape.rank != 2 or scores.shape[0] != values.shape[0]:
             raise ValueError("values/scores must have [rows] and [rows, dimension] shapes")
-        values.setflags(write=False)
-        scores.setflags(write=False)
         object.__setattr__(self, "values", values)
         object.__setattr__(self, "scores", scores)
         object.__setattr__(self, "worker_pids", tuple(int(pid) for pid in self.worker_pids))
@@ -118,6 +122,7 @@ class CPUXLACloudResult:
                 "no GPU fallback",
                 "no CPU/GPU performance claim",
                 "no HMC or posterior claim",
+                "scalar score generation is not eligible for NeuTra training",
             ],
         }
 
@@ -154,15 +159,20 @@ class CPUXLACloudEvaluator:
     ) -> CPUXLACloudResult:
         if not self._open:
             raise RuntimeError("CPU/XLA evaluator must be opened with a context manager")
-        rows = np.asarray(points, dtype=float)
+        import tensorflow as tf
+
+        from bayesfilter.ops.host_tensor_io import numeric_tensor
+
+        with tf.device("/CPU:0"):
+            rows = numeric_tensor(points, tf.float64)
         if (
-            rows.ndim != 2
+            rows.shape.rank != 2
             or rows.shape[1] != self.config.dimension
             or rows.shape[0] == 0
-            or not np.all(np.isfinite(rows))
+            or not bool(tf.reduce_all(tf.math.is_finite(rows)))
         ):
             raise ValueError("points must be a nonempty finite [rows, dimension] matrix")
-        tasks = [(index, rows[index].tolist()) for index in range(rows.shape[0])]
+        tasks = list(enumerate(rows.numpy().tolist()))
         if self._executor is None:
             self._worker_count = default_cpu_worker_count(
                 task_count=int(rows.shape[0]),
@@ -229,8 +239,9 @@ class CPUXLACloudEvaluator:
             completed_rows=int(rows.shape[0]),
             semantic_progress=True,
         )
-        values = np.asarray([item[1] for item in outputs], dtype=float)
-        scores = np.asarray([item[2] for item in outputs], dtype=float)
+        with tf.device("/CPU:0"):
+            values = tf.convert_to_tensor([item[1] for item in outputs], tf.float64)
+            scores = tf.convert_to_tensor([item[2] for item in outputs], tf.float64)
         pids = tuple(sorted({int(item[3]) for item in outputs}))
         bootstrap_by_pid = {
             int(item[3]): {"worker_pid": int(item[3]), **dict(item[4])}

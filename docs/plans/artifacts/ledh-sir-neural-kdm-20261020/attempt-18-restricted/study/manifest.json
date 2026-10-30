@@ -1,0 +1,129 @@
+{
+  "command": [
+    "scripts/refit_sir_moment_baselines.py",
+    "--neural-study",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-16-finalized",
+    "--output",
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-18-restricted/study",
+    "--budget-seconds",
+    "5985.0"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_commit": "4d6915cc66e701c4c7b657e094306d298fdd3e76",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "source_snapshot": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-18-restricted/study/source",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_devices": [
+    "/device:GPU:0"
+  ],
+  "visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "gpu_details": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "cpu_only": false,
+  "xla_flags": "--xla_gpu_enable_command_buffer=",
+  "plan": "docs/plans/ledh-sir-neural-kdm-adaptation-20261020.md",
+  "result": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-18-restricted/study/result.json",
+  "data_version": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "chunk": 64,
+  "horizon": 5,
+  "particles": 64,
+  "batch_size": 2,
+  "beta": 0.5,
+  "calibration_seed": 263040001,
+  "reset_seed": 263040002,
+  "training_namespace": 263041000,
+  "particle_namespace": 283010000,
+  "training_target": "actual corrected terminal first/raw-second moments",
+  "model_score_backend": "shared analytical recursion",
+  "exception": "diagnostic adaptation; no canonical/default/model-score-accuracy claim",
+  "budget_seconds": 5985.0,
+  "script_sha256": "5055ec00cc3714c20e36b88128a42d34a2e6924de8bd0305737c6e4f76b1e53a",
+  "protocol": "docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-01/restricted-comparator-protocol.md",
+  "baseline_beta": 0.5,
+  "fitting_particles": 512,
+  "fitting_validation_particles": 256,
+  "fitting_components": 32,
+  "adapter_seeds": [
+    263047001,
+    263047002
+  ],
+  "adapter_rates": [
+    0.05,
+    0.15
+  ],
+  "adapter_updates": [
+    8,
+    24
+  ],
+  "generated_batch_size": 4,
+  "adapter_parameter_counts": [
+    3,
+    12
+  ],
+  "method_families": [
+    "restricted quadratic cSMC-derived",
+    "restricted positive RBF"
+  ],
+  "training_batch_rows": [
+    0,
+    1
+  ],
+  "fitting_seed_namespaces": [
+    284040000,
+    284042000,
+    284043000
+  ],
+  "neural_study": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-neural-kdm-20261020/attempt-16-finalized"
+}

@@ -1,0 +1,1 @@
+Driver metric construction failed tracing: Python 1.0 was inferred as FP32 in tf.maximum against an FP64 target. No numerical comparison completed. The metric scalar is now explicitly cast. Attempt 03 begins with the planned CPU reference before the GPU phase. Both phase outputs are fresh.

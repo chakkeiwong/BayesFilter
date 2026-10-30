@@ -1,0 +1,25 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791768712.222623 3918114 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791768712.226265 3918114 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791768712.237093 3918114 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791768712.237150 3918114 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791768712.237157 3918114 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791768712.237159 3918114 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-10-12 09:31:53.572634: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791768714.530690 3918114 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+2026-10-12 09:32:01.377912: E external/local_xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %call.181 = (f64[64,2,2]{2,1,0}, f64[64,2]{1,0}) call(%constant.1697), to_apply=%xla.Qr_f64_64_2_2_.243, metadata={op_type="MatrixSolve" op_name="while/MatrixSolve_15" source_file="/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1221}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-12 09:32:01.437372: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 1.244865731s
+Constant folding an instruction is taking > 1s:
+
+  %call.181 = (f64[64,2,2]{2,1,0}, f64[64,2]{1,0}) call(%constant.1697), to_apply=%xla.Qr_f64_64_2_2_.243, metadata={op_type="MatrixSolve" op_name="while/MatrixSolve_15" source_file="/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1221}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.

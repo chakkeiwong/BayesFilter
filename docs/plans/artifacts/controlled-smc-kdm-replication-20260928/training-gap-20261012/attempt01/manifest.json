@@ -1,0 +1,62 @@
+{
+  "status": "FAILED",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_kdm_current_training_gap.py"
+  ],
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan_file": "docs/plans/controlled-smc-kdm-training-gap-investigation-20261012.md",
+  "result_file": "docs/plans/controlled-smc-kdm-training-gap-result-20261012.md",
+  "started_utc": "2026-10-12T00:33:50.775659+00:00",
+  "seed": 202610121,
+  "cpu_gpu_status": "CPU author explicitly hides GPU; escalated TF GPU/XLA, TF32 disabled",
+  "environment": {
+    "cpu": "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+    "gpu": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python"
+  },
+  "campaign_before": {
+    "cpu": 1800,
+    "gpu": 1800
+  },
+  "resource_wall_seconds": {
+    "cpu": 6.533137277001515,
+    "gpu": 0.06561392406001687
+  },
+  "steps": [
+    {
+      "label": "nvidia",
+      "command": [
+        "nvidia-smi",
+        "--query-gpu=name,memory.used,memory.total",
+        "--format=csv"
+      ],
+      "resource": "gpu",
+      "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt01/nvidia.log",
+      "returncode": 0,
+      "wall_seconds": 0.06561392406001687
+    },
+    {
+      "label": "author",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tf-gpu2/bin/python",
+        "-I",
+        "-B",
+        "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_current_training_gap.py",
+        "--output",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt01/reference"
+      ],
+      "resource": "cpu",
+      "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/training-gap-20261012/attempt01/author.log",
+      "returncode": 1,
+      "wall_seconds": 6.533137277001515
+    }
+  ],
+  "source_hashes": {
+    "docs/benchmarks/run_kdm_current_training_gap.py": "450412c1af26f60c36e80a97afe62c7a869ca30f04294e3a9670e9180f30cd33",
+    "docs/plans/controlled-smc-kdm-training-gap-investigation-20261012.md": "3b9ec965698e557a055c29788957db297f2af18970c18ceff2fc00159d9e8d54",
+    "docs/benchmarks/reference_kdm_current_training_gap.py": "1c228357df187ef1dee0d16c1b0fbeb1207723ea3dffb273677a44b35401db89",
+    "docs/benchmarks/reference_kdm_coupled_updates.py": "60d25417912960e878ce5bbb759c0506105dbdc266a607bcfe1bfb8149ed1290",
+    "docs/benchmarks/diagnose_kdm_neural_precision_tf.py": "2577e4e6760cda9853908a8d3321fb822c56f85c28bd17074210092f07567091"
+  },
+  "ended_utc": "2026-10-12T00:33:57.376751+00:00"
+}

@@ -1,0 +1,95 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________________ test_mixture_common_tangent_translation ____________________
+
+    def test_mixture_common_tangent_translation():
+        # The same large tangent in particle and component means cancels exactly
+        # in their differences. FP64 densities of the FP32-quantized inputs are
+        # the independent authority, preserving quantization rather than assuming
+        # the unrounded random increments are representable at this scale.
+>       test_mixture_analytical_score_against_independent_finite_values(
+            18,False,tf.float32,tangent_offset=262144.)
+
+tests/highdim/test_covariance_proposal_packed_score.py:118: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/highdim/test_covariance_proposal_packed_score.py:110: in test_mixture_analytical_score_against_independent_finite_values
+    tf.debugging.assert_near(tf.cast(derivative[axis],tf.float64),fd,atol=tolerance,rtol=tolerance)
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = <tf.Tensor: shape=(), dtype=bool, numpy=False>
+data = ['', 'x and y not equal to tolerance rtol = tf.Tensor(2e-05, shape=(), dtype=float64), atol = tf.Tensor(2e-05, shape=(...745066 ,
+        -0.48314765, -0.17165866,  0.17164263, -0.13033219, -0.54251489,
+         0.16911546, -0.23345529]])>]
+summarize = None, name = None
+
+    @tf_export("debugging.Assert", "Assert")
+    @dispatch.add_dispatch_support
+    @tf_should_use.should_use_result
+    def Assert(condition, data, summarize=None, name=None):
+      """Asserts that the given condition is true.
+    
+      If `condition` evaluates to false, print the list of tensors in `data`.
+      `summarize` determines how many entries of the tensors to print.
+    
+      Args:
+        condition: The condition to evaluate.
+        data: The tensors to print out when condition is false.
+        summarize: Print this many entries of each tensor.
+        name: A name for this operation (optional).
+    
+      Returns:
+        assert_op: An `Operation` that, when executed, raises a
+        `tf.errors.InvalidArgumentError` if `condition` is not true.
+        @compatibility(eager)
+        returns None
+        @end_compatibility
+    
+      Raises:
+        @compatibility(TF1)
+        When in TF V1 mode (that is, outside `tf.function`) Assert needs a control
+        dependency on the output to ensure the assertion executes:
+    
+      ```python
+      # Ensure maximum element of x is smaller or equal to 1
+      assert_op = tf.Assert(tf.less_equal(tf.reduce_max(x), 1.), [x])
+      with tf.control_dependencies([assert_op]):
+        ... code using x ...
+      ```
+    
+        @end_compatibility
+      """
+      if context.executing_eagerly():
+        if not condition:
+          xs = ops.convert_n_to_tensor(data)
+          data_str = [_summarize_eager(x, summarize) for x in xs]
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message="Expected '%s' to be true. Summarized data: %s" %
+              (condition, "\n".join(data_str)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''
+E         b'x and y not equal to tolerance rtol = tf.Tensor(2e-05, shape=(), dtype=float64), atol = tf.Tensor(2e-05, shape=(), dtype=float64)'
+E         b'x (shape=(2, 32) dtype=float64) = '
+E         -0.07266164571046829, -0.33059054613113403, -0.47230201959609985, ...
+E         b'y (shape=(2, 32) dtype=float64) = '
+E         -0.06924018638443385, -0.38326380096265206, -0.46225344618733283, ...
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/control_flow_assert.py:102: InvalidArgumentError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791743583.185553 3562314 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_packed_score.py::test_mixture_common_tangent_translation
+1 failed, 2 warnings in 3.60s

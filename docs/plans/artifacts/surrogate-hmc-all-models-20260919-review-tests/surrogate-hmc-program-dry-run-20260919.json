@@ -1,0 +1,85 @@
+{
+  "schema": "bayesfilter.surrogate_hmc_master.v1",
+  "stage": "all",
+  "scope": "all",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/surrogate_hmc_lg1_probe.py",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260918T155904Z-01/P1-LG1",
+    "--particle-count",
+    "1024"
+  ],
+  "required_inputs": [
+    "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+    "docs/plans/surrogate-hmc-all-models-execution-2026-09-19.md"
+  ],
+  "scope_card": {
+    "id": "M01-LG1-T10-N1024-attempt4",
+    "family": "M01",
+    "stage": "P1",
+    "inference_attempt": 4,
+    "mechanics_only": true,
+    "state_dimension": 1,
+    "parameter_dimension": 1,
+    "parameters": [
+      "phi"
+    ],
+    "horizon": 10,
+    "particle_count": 1024,
+    "chunk_extent": 1024,
+    "law": "x0~N(0,1/(1-phi^2)); xt=phi*xprev+N(0,1); yt=xt+N(0,.5)",
+    "prior": "Uniform(-.95,.95)",
+    "chart": "phi=-.95+1.9*sigmoid(z), Jacobian once",
+    "truth": 0.8,
+    "data_partition": "diagnostic",
+    "data_replicate": 0,
+    "force": "full canonical analytical DCTR; frozen proposal field, not admitted exact score",
+    "endpoint": "same-law FP64 Kalman posterior",
+    "precision_classification": "FP64_INTEGRATOR_FP32_DCTR",
+    "precision": {
+      "integrator": "float64",
+      "momentum": "float64",
+      "force": "float32",
+      "endpoint": "float64",
+      "reference": "float64",
+      "force_tf32": true,
+      "device": "GPU",
+      "jit_compile": true
+    },
+    "controls_status": "warm_start_hypothesis_not_selected_or_admitted",
+    "continuation_vetoes": [
+      "wrong target",
+      "nonfinite accepted state",
+      "cross-chain coupling",
+      "nondeterministic field",
+      "mutating endpoint",
+      "invalid status"
+    ],
+    "explanatory_only": [
+      "force discrepancy",
+      "filter discrepancy",
+      "acceptance",
+      "runtime"
+    ],
+    "comparisons": {
+      "B_vs_R": "NOT_RUN",
+      "C_vs_D": "NOT_RUN",
+      "D_vs_R": "NOT_RUN",
+      "C_vs_R": "NOT_RUN"
+    },
+    "nonclaims": [
+      "posterior recovery",
+      "convergence",
+      "DCTR likelihood accuracy",
+      "default readiness"
+    ]
+  },
+  "endpoint_force_identities": "issued from actual frozen inputs by worker before evaluation",
+  "inference_forecast": "NOT_MEASURED; inference launch prohibited",
+  "remaining_budget": {
+    "gpu_seconds": 3600.0,
+    "cpu_worker_seconds": 7200.0
+  },
+  "inference_ready": false
+}

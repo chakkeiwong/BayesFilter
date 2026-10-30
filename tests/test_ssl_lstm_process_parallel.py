@@ -84,14 +84,16 @@ def _pool_config(q: int = 1, worker_count: int = 2) -> CPUValueScorePoolConfig:
         worker_config={"q": q},
         dimension=4,
         worker_count=worker_count,
+        evaluation_mode="scalar",
+        diagnostic_only=True,
     )
 
 
 def test_batch_native_mode_requires_exact_declared_shard_sizes() -> None:
     config = CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": 1},
         dimension=4,
@@ -101,6 +103,23 @@ def test_batch_native_mode_requires_exact_declared_shard_sizes() -> None:
     )
     assert config.evaluation_mode == "batch_native"
     assert config.batch_sizes == (2,)
+
+
+@pytest.mark.parametrize("overrides", [
+    {"evaluation_mode": "scalar"}, {"jit_compile": False}, {"batch_sizes": (1, 2)},
+])
+def test_pool_defaults_reject_uncompiled_or_scalar_training(overrides):
+    with pytest.raises(ValueError, match="training"):
+        CPUValueScorePoolConfig("unused:factory", {}, 4, **overrides)
+
+
+def test_training_shard_signatures_cover_unequal_batches():
+    from bayesfilter.inference.cpu_value_score_pool import training_shard_sizes
+
+    assert training_shard_sizes((9, 480, 64, 256), 32) == (2, 3, 8, 15)
+    assert training_shard_sizes((97,), 16) == (6, 7)
+    with pytest.raises(ValueError, match="more than one"):
+        training_shard_sizes((1,), 4)
 
 
 def test_batch_native_pool_matches_scalar_reference() -> None:
@@ -120,8 +139,8 @@ def test_batch_native_pool_matches_scalar_reference() -> None:
     )
     config = CPUValueScorePoolConfig(
         worker_factory_path=(
-            "bayesfilter.nonlinear.ssl_lstm_complexity_target_tf:"
-            "complexity_target_worker_factory"
+            "bayesfilter.nonlinear.ssl_lstm_complexity_batched_target_tf:"
+            "batch_native_complexity_target_worker_factory"
         ),
         worker_config={"q": 1},
         dimension=4,

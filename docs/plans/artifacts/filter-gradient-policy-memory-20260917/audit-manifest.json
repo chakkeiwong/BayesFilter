@@ -1,0 +1,103 @@
+{
+  "schema": "filter_gradient_policy_memory_audit_manifest.v1",
+  "created_utc": "2026-09-16T18:19:01.688620+00:00",
+  "git_head": "3582b4ac5fea67fb5da7fa60a1cbfaf19df35adf",
+  "git_tracked_diff": "",
+  "audit_python": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "audit_python_version": "3.11.15",
+  "plan": "docs/plans/filter_gradient_policy_memory_audit_20260917.md",
+  "result": "docs/plans/filter_gradient_policy_memory_result_20260917.md",
+  "inventory": "docs/plans/filter_gradient_algorithm_inventory_20260917.md",
+  "commands": [
+    [
+      "python",
+      "scripts/audit_filter_gradient_policy.py",
+      "--output",
+      "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-complete.json.gz",
+      "--markdown",
+      "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-complete.md"
+    ],
+    [
+      "python",
+      "scripts/summarize_filter_xla_memory.py",
+      "--input",
+      "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3",
+      "--output",
+      "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-comparison.json"
+    ],
+    [
+      "/home/ubuntu/miniforge3/envs/tf-gpu/bin/ruff",
+      "check",
+      "scripts/audit_filter_gradient_policy.py",
+      "scripts/measure_filter_xla_memory.py",
+      "scripts/summarize_filter_xla_memory.py"
+    ],
+    [
+      "python",
+      "-m",
+      "py_compile",
+      "scripts/audit_filter_gradient_policy.py",
+      "scripts/measure_filter_xla_memory.py",
+      "scripts/summarize_filter_xla_memory.py"
+    ]
+  ],
+  "validation": {
+    "ruff": "passed",
+    "py_compile": "passed",
+    "source_inventory": "all_owned_modules_parsed",
+    "static_chains": 7,
+    "gpu_comparisons_passed": 4,
+    "warm_calls_per_worker": 20,
+    "tracked_runtime_edits": false,
+    "relative_report_links": "passed"
+  },
+  "notes": [
+    "Exact worker commands and environment are in each memory-v3 JSON. Use fresh output filenames to rerun.",
+    "Audited runtime Git source is unchanged; added scripts and reports are untracked work for this task.",
+    "Worker source revisions are recorded per result; rectangular off/on differ in import formatting only.",
+    "The broad static scan is not a runtime compliance certificate."
+  ],
+  "files_sha256": {
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/README.md": "81b94c95d61f3afd2af80547d31fe0fb8a45e3ae0ef5a9e71cccaf2a5fc10948",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory/gpu-jit-off-v2.json": "8c5088de755547e066696cfd8f4cf11d2cceaabb0f31993032e50893f3a8025c",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-comparison.json": "3c07514c7e441741762ff6d19c11cafdfa5b3c2cacccfe5b167cd6b6ead054d8",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-off.json": "0cf79baed909d148e60ffc2955579016cc7415e0aec7aad485d2091ed012bc63",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-off.log": "685844a1955b395da67ec495547e113c24122cbfe2f172f23bbd5937e517d586",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-on.json": "6d0f61979dcd2c7a52279de0a204d4d8a1214f3479f97f42f3bb4adaa53cd2f0",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-on.log": "8193b8f806c4b8b088f83b7435f5f27761abd04606b291fd4577ce2983421891",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/covariance-on.optimized_hlo.txt": "b94d9220e3717b2a779835bdf4c042ce6972e4e7adddc931ffafc0afc8c7d9f1",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-off.json": "5be67820944efb3483f6abbe299dc755db0b7f28980f6338ba35ba09e7e0ec26",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-off.log": "89159e89b8f43f0a1d0aa57971cc3c28b8eb40649c9da9be808a74d08c48a6e3",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-on.json": "ce0bf6670df09f6ce5c8764fd7bb250324c149d0796af7024116f809be8fa399",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-on.log": "4313649f268d14edcb548a7946ecf437b98af1cad9e5378480119e19641161c2",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/factor-on.optimized_hlo.txt": "16b1333c09fc9ab11552417273bc576e39f525ec22403722e0192a46d98a4d7f",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-off.json": "41a983e5cb1d5341e9fa2887c92735f9c19cd92398d9a0ea8dde53839df072fa",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-on.json": "de2979b5169d201a4c83c31fb511a87c87ccf7e6c44c75c460dfa9a75f48d594",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-on.log": "b8de836f45769c70278b516235fa3458a3573d721ab97ec4f593bf4fe0571c57",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/rectangular-on.optimized_hlo.txt": "eed1d48abe9239702abbfb13e10106e5ce2a34ffd4e602d7d83337fc397c4ef0",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-off.json": "df85494c897ca8775cb06f026df56b943dc56666217b8d206fa5117af6bca27b",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-off.log": "1d2030bcaa450dd443cde5e045bcdd7cb285edd4ed6125f67887e264a17def81",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-on.json": "2f6991366f9a973ecc034b343a169f1a40e22f8401062b0038e756d7193d52f0",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-on.log": "c14f335aa0fa2499cf56d0525aad42755da703fc0d32751c304aac7a594a370b",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/sinkhorn_jvp-on.optimized_hlo.txt": "19d7940795e59c9ab3d182d85f78db36165ce7d5a5798c11f028fecfc8e07220",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/memory-v3/supervisor.json": "c35db4398bbb74d7741338aa8393b6758256f1222857dd3c15b30ae2dbe7ed59",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/reviewed-call-chains-complete.json": "37c6a0497a7e44de4a5e7551add318086255b5ffce2627433fd91b003189f723",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/reviewed-call-chains.json": "0de654fcbe1eb3a312ac8547286438c376d854bd59884a5039f5fea291de0d95",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-audit.json.gz": "d8d05ec810afc3cfbbfa239767a0482011eabf8449a3c5828e57e7ae7c03d98d",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-audit.md": "d22256db876262a669f96b71c39faef89dff14b3490aebc8f0e95e296b4744fc",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-complete.json.gz": "8a47227ca6e38ef491a4136ea66999efb988410e7623ca9c157512a171733fcf",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-complete.md": "ad08b3f43a7ecc3535ccc278f8881d5c1339664b0ae1cbe8ff79045dcef2aa21",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-final.json.gz": "905bf109f0ab9c203cdac868488d073a3f7e7845169f08412c6c44d6c0cd4222",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-final.md": "55de757f7bbdecd22021d56ce87b06788d66fa10ac334324d80ac37fac6f7958",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-v2.json.gz": "4f28fd0e5c21496d4a17b9913e1eca460e9e3cc180304751a9bb1959d315533d",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-v2.md": "f5c39af657902be68e68598cf83d226fb72cf062519ba54551070e3342b10da2",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-v3.json.gz": "f3a4e89623fbdc2e7376d7e54c1f12d0405f0db84038ed26093ca66ed66368ad",
+    "docs/plans/artifacts/filter-gradient-policy-memory-20260917/static-v3.md": "55de757f7bbdecd22021d56ce87b06788d66fa10ac334324d80ac37fac6f7958",
+    "docs/plans/filter_gradient_algorithm_inventory_20260917.md": "6a2e9f8e5bb699ab62b5e9caac33150be6a0df6c246775c9ad2557a0a819ff34",
+    "docs/plans/filter_gradient_policy_memory_audit_20260917.md": "ae807265dfec9cbeb62bb65c1ec2311fc2d9a8d547e8080fe4ee5bc9229d432f",
+    "docs/plans/filter_gradient_policy_memory_result_20260917.md": "6e5b5235e17f4cf6c58bdaa27f619a9e0f2bc93bb93aee5c49e91d8a969ce212",
+    "scripts/audit_filter_gradient_policy.py": "c81a6e698d9855ec640533ff9864986a10294178b814abcd9211aa41b4a29425",
+    "scripts/measure_filter_xla_memory.py": "0dadce33a4ae9140835ce451b82a759e3a2d8d3c688fddc2366f1bfad1f3f3c7",
+    "scripts/summarize_filter_xla_memory.py": "c8782799868bf79b559f53659322a381741f388f8389f0e8ee8ef69cd7562665"
+  }
+}

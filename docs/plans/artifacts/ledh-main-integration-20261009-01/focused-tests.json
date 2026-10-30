@@ -1,0 +1,24 @@
+{
+  "name": "focused-tests",
+  "parents": {
+    "HEAD": "285b43e111124b0f3337f81032905591b9a54324",
+    "MERGE_HEAD": "b1ccb8678c1ca68811eaa301bd4e1fd368e4bc23"
+  },
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_ledh_independent_validation.py",
+    "tests/highdim/test_covariance_proposal.py",
+    "tests/test_ledh_zhao_horizon_harness.py",
+    "tests/test_ledh_independent_reporting.py"
+  ],
+  "workdir": "/tmp/bayesfilter-sqmc-main-integration-20260924",
+  "exit_code": 1,
+  "wall_seconds": 32.139761289115995,
+  "CPU_only": "GPUs intentionally hidden by CUDA_VISIBLE_DEVICES=-1",
+  "purpose": "post-merge integration regression",
+  "tail": "/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58\n  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.\n    distutils.version.LooseVersion(required_tensorflow_version)):\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/test_ledh_zhao_horizon_harness.py::test_generated_checkpoint_writer_accepts_both_author_return_formats[False]\nFAILED tests/test_ledh_zhao_horizon_harness.py::test_generated_checkpoint_writer_accepts_both_author_return_formats[True]\n2 failed, 38 passed, 2 warnings in 28.88s\n"
+}

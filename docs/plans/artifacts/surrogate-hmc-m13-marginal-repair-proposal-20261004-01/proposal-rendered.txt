@@ -1,0 +1,472 @@
+     A proposal to repair the M13 particle-flow likelihood and score
+                 while preserving LGSSM and KSC-SV
+                                    BayesFilter working proposal
+
+                                            4 October 2026
+
+
+    The proposed repair is to sum over possible ancestors in the importance correction, while retaining
+the existing UKF covariance lifecycle, LEDH flow, Contract E reset, and analytical differentiation. This
+is the marginal particle-filter construction applied to the actual affine flow proposals. It changes the
+finite likelihood approximation and therefore needs a distinct route identity and its own tuning. It is
+not the unchanged Li–Coates Algorithm 1.
+    The purpose remains testing surrogate HMC. A particle-filter score may supply a force for proposals,
+but the Metropolis calculation must use the declared endpoint target. A better filter score can make
+those proposals more useful; it does not by itself establish posterior correctness or convergence.
+    The mathematics below establishes the proposed one-step integration identity and the total derivative
+of the resulting finite program. It also establishes why a universal finite-sample improvement claim
+would be wrong. The existing LGSSM and KSC-SV computations are preserved by retaining their
+existing route, then checking that preservation through the actual consumers. The new M13 route must
+earn admission by measurement.
+
+
+1    The observed failure and the quantity to repair
+The October 4 localization traced the M13 consumer through the fused batch route into the canonical
+scalar value and analytical-score implementation. At all eight diagnosed parameter points, the diagnostic
+trace and full consumer agreed in FP64. The analytical score also agreed with finite differences of
+its own implemented likelihood to about 2.6 10−6 in the preceding score check. This rules out a large
+missing derivative term as the explanation supported by those checks. It does not establish accuracy
+relative to the statistical model.
+    M13 has a four-dimensional state and two observations (range and bearing). At the diagnosed
+low-process-noise point, the first observation already shows the failure:
+
+       Method                             Log likelihood   First score coordinate    Particle ESS
+       Refined independent quadrature       −0.13791267                0.01149807              —
+       Same-design bootstrap                −0.13013616                0.00812633          205.04
+       Current LEDH                         −2.22116858                3.57681741            6.66
+
+There are 4,096 particles. The second score coordinates are respectively −0.10229746, −0.10443582,
+and 0.19335105. The diagnostic parameter is θ = (−0.73272085, −0.01465508) in the recorded M13
+coordinates.
+   Before applying the observation density, the importance estimate of an integral equal to one is only
+0.00344047. The first UKF position variance is about 116.74 times the conditional process variance.
+The root mean square flow displacement, measured in process-covariance Mahalanobis units, is 20.61.
+These observations support a specific mechanism: a child can be moved far from its own ancestor’s
+
+                                                   1
+narrow transition density. Its assigned ancestor then explains it poorly, even when other ancestors
+could explain the same location.
+    The discrepancy occurs before the first reset. Preserving the computed cloud’s mean and covariance
+during reset cannot reconstruct filtering probability that the importance approximation has already lost.
+Replacing the UKF covariance with the process covariance is not justified by this observation: those
+covariances describe different conditional distributions, and the UKF lifecycle is part of the specified
+algorithm.
+    The quadrature was refined in both grid size and finite-difference step. This is a numerical reference,
+not an exact closed-form M13 score oracle. The eight points are now development data. Their results
+are descriptive and cannot serve as untouched promotion evidence.
+
+
+2    Specify the finite mixture before changing its weights
+Fix one time step and condition on the complete previous cloud and all offline numerical controls. Write
+the ancestors and their normalized positive weights as (aj , ωj )N
+                                                                             P
+                                                                 j=1 , where   j ωj = 1. For M13,
+
+                                                                  N
+                                                                  X                                  Z
+       fj (x) = pθ (x | aj ) = N (x; mj , Qθ ),        pN (x) =         ωj fj (x),          ZN =             gθ (x)pN (x) dx.   (1)
+                                                                  j=1
+
+Here mj = Aaj with the model’s declared transition, and gθ (x) is the implemented range–bearing
+observation density, including its angle convention. ZN is the normalizer of this finite predictive mixture;
+it is not automatically the exact model’s predictive likelihood.
+     In the current M13 implementation, each auxiliary flow starts at the zero-process-noise prediction.
+Conditional on the previous cloud, its coefficients do not depend on the current process innovation. The
+composed Euler map acting on that innovation’s child is therefore affine. For a state dimension d (here
+d = 4), u, x, cj , mj ∈ Rd and Bj , Qθ ∈ Rd×d ; assume Qθ is symmetric positive definite and each Bj is
+nonsingular throughout the parameter neighborhood under consideration:
+                                                                                            
+                                                                       fj Bj−1 (x − cj )
+                                Fj (u) = Bj u + cj ,      qj (x) =                               .                              (2)
+                                                                              | det Bj |
+These conditions make qj a normalized pushforward density, as in the conditional-flow construction of
+[1, Algorithm 1 and Eqs. (19)–(20)]. Nonsingularity must hold in the neighborhood in which a score is
+claimed. For a general nonlinear map, a nonsingular Jacobian at the sampled point alone would not
+establish global invertibility; the conditional affine structure is doing real work here.
+    This construction uses a full-dimensional density with respect to Lebesgue measure. A structurally
+singular transition, such as a deterministic coordinate in AR(2), needs a separate innovation-space
+measure derivation. The proposed full-rank route must reject that unsupported case, rather than add
+an undeclared ridge or call it the same density.
+    With one child Xi = Fi (Ui ) from each ancestor, Ui ∼ fi , the current correction has the form
+                                                                    fi (Xi )
+                                              Viold = ωi gθ (Xi )            .                                                  (3)
+                                                                    qi (Xi )
+Define the marginal proposal and proposed weights by
+                           X                                          pN (Xi )                       X
+                qN (x) =        ωj qj (x),     Vimar = ωi gθ (Xi )             ,           Zbmar =            Vimar .           (4)
+                            j
+                                                                      qN (Xi )                           i
+
+Both the numerator and denominator change to mixtures. Replacing only one of them computes a
+different correction.
+
+                                                           2
+    The leading ωi is correct for one draw from each component and the weighted sum displayed here. If
+instead M labels are drawn independently from ω, the estimator is the average of M marginal weights,
+with leading factor 1/M , not a second factor ωJi . This distinction must survive any implementation
+refactor.
+
+
+3    What marginalization proves, and what it does not
+Proposition 1 (Conditional integration identity). Suppose each Xi has conditional marginal density
+qi , gθ pN is integrable, and qN > 0 wherever gθ pN > 0. Then E[Zbmar | (a, ω)] = ZN .
+
+Proof. Linearity of expectation and the definition of the mixture give
+
+                                                                 gθ (x)pN (x)
+                                           X        Z
+                               EZbmar =        ωi       qi (x)                dx
+                                           i
+                                                                     qN (x)
+                                           Z P
+                                                 i ωi qi (x)
+                                      =                          gθ (x)pN (x) dx = ZN .                    (5)
+                                                 qN (x)
+
+Independence between children is unnecessary for this expectation identity.
+
+    Setting gθ = 1 gives the pre-observation normalization target one. This provides a cheap diagnostic
+of integration error. The statement is conditional on the specified cloud and sampling law. A frozen
+Halton trajectory is not a random experiment satisfying those assumptions merely because its inputs
+once came from a randomized construction. Neither this proof nor the marginal-particle-filter literature
+licenses a claim that the log likelihood, its score, or the complete likelihood product after the repository’s
+deterministic Contract E and GenUT operations is unbiased. Unbiasedness of a positive likelihood
+estimator would not itself imply unbiasedness after taking its logarithm.
+
+Proposition 2 (Variance reduction in the random-label experiment). Draw J with probabilities ωj ,
+then X | J = j ∼ qj . Let W = gθ (X)fJ (X)/qJ (X) and Wm = gθ (X)pN (X)/qN (X). If the relevant
+second moments are finite, Var(Wm ) ≤ Var(W ).
+
+Proof. Bayes’ rule gives Pr(J = j | X = x) = ωj qj (x)/qN (x). Hence
+                                      X ωj qj (x) gθ (x)fj (x)             gθ (x)pN (x)
+                    E[W | X = x] =                                     =                = Wm (x).          (6)
+                                       j
+                                           qN (x)          qj (x)              qN (x)
+
+Applying the law of total variance,
+
+                                Var(W ) − Var(Wm ) = E[Var(W | X)] ≥ 0.                                    (7)
+
+For two components, with 0 < w < 1 and q1 , q2 > 0, the pointwise second-moment difference has the
+explicit nonnegative form
+
+                   wf12 (1 − w)f22 (wf1 + (1 − w)f2 )2   w(1 − w)(f1 q2 − f2 q1 )2
+                       +          −                    =                           .                       (8)
+                    q1      q2      wq1 + (1 − w)q2      q1 q2 (wq1 + (1 − w)q2 )
+
+Multiply by gθ2 and integrate to obtain the corresponding second-moment comparison.
+
+   This is the Rao–Blackwell argument behind the marginal particle filter [2, Sec. 3, Fig. 3, Sec. 3.1
+and Prop. 1]. Its sampling experiment differs from a stratified allocation with exactly one child per
+component. The distinction prevents an invalid guarantee.
+
+
+                                                            3
+    For an explicit counterexample, consider two states A, B with
+
+                    g = (1, 2),    f1 = (9/10, 1/10),              f2 = (1/10, 9/10),           ω1 = ω2 = 1/2,
+
+and choose q1 = (9/11, 2/11), q2 = (1/19, 18/19). Then gf1 /q1 = 11/10 and gf2 /q2 = 19/10, constant
+within each component. With independent draws, one from each component, the original estimate is
+exactly 3/2 and has zero variance. But pN = (1/2, 1/2) and qN = (91/209, 118/209), so the marginal
+weights at A, B are 209/182 and 209/118. Direct calculation gives
+
+                           EZbmar = 3/2,
+                                                                                       2
+                                      1        9 2    1 18              209 209                  555264
+                                                                  
+                        Var(Zbmar ) =               +                      −                =            > 0.     (9)
+                                       4       11 11 19 19              182 118                 28826161
+Thus the proposed marginal weights can be worse under stratification. There is no universal finite-design
+non-deterioration theorem to transfer to LGSSM, KSC-SV, or M13. Even the valid random-label
+theorem says nothing by itself about the variance or accuracy of log-likelihood derivatives.
+    For M13, the reason to test the repair is narrower: the diagnosed ancestor-conditional ratios are
+extremely poorly integrated, whereas a mixture can explain a transported particle using other ancestors.
+Whether that opportunity is sufficient is an empirical question.
+
+
+4    The score must differentiate the same finite program
+Let D denote the total derivative in an arbitrary parameter direction, holding the base design and
+all offline controls fixed. It includes the dependence of previous particles, weights, current children,
+UKF moments, flow coefficients and process/observation covariances on the parameter. Work on a
+neighborhood where these functions are differentiable, densities are positive and the declared numerical
+status is valid. An angle-branch boundary or an invalid factorization requires an explicit status; it
+cannot be hidden in a smooth-score assertion.
+    At a child location x = Xi (θ) define the responsibilities
+
+                                                     ωj fj (x)                  ωj qj (x)
+                                           rjf =               ,        rjq =             .
+                                                      pN (x)                     qN (x)
+
+Differentiating a finite sum and dividing by that sum yields
+                                                         X f
+                                   D log pN (x) =               rj {D log ωj + D log fj (x)},
+                                                          j
+                                                         X q
+                                   D log qN (x) =               rj {D log ωj + D log qj (x)}.                    (10)
+                                                          j
+
+For example, DpN = j {(Dωj )fj + ωj Dfj }; division by pN gives the first line. Responsibilities appear
+                          P
+
+as coefficients in this first derivative; no extra derivative of the responsibility is added. That extra term
+would belong to a second derivative.
+    The proposed log-weight derivative is therefore
+
+                    D log Vimar = D log ωi + D log gθ (Xi ) + D log pN (Xi ) − D log qN (Xi ).                   (11)
+                    P
+With V̄ti = Vti /    k Vtk , the finite log likelihood and its derivative are
+                                       X         X                               XX
+                              ℓ(θ)
+                              b    =       log       Vti (θ),        Dℓ(θ)
+                                                                      b    =                V̄ti D log Vti .     (12)
+                                       t         i                                 t    i
+
+
+
+                                                                    4
+This is an ordinary finite-program chain rule, not differentiation under a probability integral. It proves
+which derivative an implementation must compute, rather than accuracy relative to the model likelihood.
+     To evaluate a proposal component at an arbitrary child, use the same d-dimensional domain:
+Bj , DBj ∈ Rd×d , with Bj nonsingular, and x, cj , vj , Dx, Dcj ∈ Rd . Put vj = Bj−1 (x − cj ). Differentiating
+Bj vj = x − cj gives
+                                  Dvj = Bj−1 {Dx − Dcj − (DBj )vj }.                                       (13)
+On a nonsingular neighborhood the determinant has constant sign, and Jacobi’s identity gives
+
+                                 D log qj (x) = D log fj (vj ) − tr(Bj−1 DBj ).                           (14)
+
+In particular, omitting the inverse-map tangent is wrong relative to the total-score claim.
+    For a Gaussian component take symmetric positive-definite Q ∈ Rd×d and symmetric DQ ∈ Rd×d .
+Let x, m, e, u, Dx, Dm ∈ Rd , with e = x−m and u = Q−1 e. From log f = − 12 log det Q− 12 e⊤ Q−1 e+const,
+DQ−1 = −Q−1 (DQ)Q−1 and D log det Q = tr(Q−1 DQ), obtain
+
+                        D log f (x) = u⊤ (Dm − Dx) + 12 u⊤ (DQ)u − 21 tr(Q−1 DQ).                         (15)
+
+The terms in Dx, Dm and DQ all matter. In the denominator, replace x by vj and use (13).
+    The composed maps and their derivatives can be accumulated in the existing flow loop. For Euler
+step k let Mk = I + ϵk Ak , with the step schedule fixed offline. Then
+
+              Bk+1 = Mk Bk ,                                ck+1 = Mk ck + ϵk bk ,                        (16)
+            DBk+1 = (DMk )Bk + Mk DBk ,                    Dck+1 = (DMk )ck + Mk Dck + ϵk Dbk .           (17)
+
+Initialize B0 = I, c0 = 0 and both tangents at zero. The existing analytical Ak , bk , DAk , Dbk must be
+reused. Do not construct a simpler map in the batch lane or drop the UKF/auxiliary dependence.
+Matrix multiplication order must be preserved.
+    After weighting, the existing reset and correction still have to propagate the total derivative. In
+particular Contract E requires both the direct moment/weight terms and the terms through transport;
+changing the weights does not remove either dependence. The derivation is inductive: if the incoming
+cloud and UKF tangents are correct, the displayed formulas give correct weight tangents; the existing
+reset/correction must then return correct outgoing tangents. Wiring and end-to-end finite differences
+must check this induction. No new implementation exists yet, so that call-chain claim is not checked
+for the proposed route.
+
+
+5    An optional defensive component if marginalization is insufficient
+A mixture over flowed ancestors can still miss important regions. A second candidate, only if that
+problem persists, uses the actual proposal
+
+                       rj (x) = αfj (x) + (1 − α)qj (x),    0 < α ≤ 1,
+                                                                            gθ (x)pN (x)
+                       rN (x) = αpN (x) + (1 − α)qN (x),         Wα (x) =                .                (18)
+                                                                                rN (x)
+
+Samples must be drawn from rj , for example by an offline frozen, parameter-independent Bernoulli
+label and the corresponding base innovation. Merely changing the denominator while continuing to
+sample only from qj is wrong. As with the earlier identity, the randomized sampling-law claim and any
+particular frozen realization are distinct. This proposal keeps α fixed; parameter-dependent or online
+selection would require another method and derivative derivation.
+
+
+                                                       5
+    Since rN ≥ αpN pointwise, wherever pN > 0,
+
+                                pN  1                             gθ2 p2N  1
+                                                              Z
+                                   ≤ ,           ErN Wα2 =                ≤ EpN gθ2 .                 (19)
+                                rN  α                               rN     α
+
+Provided EpN gθ2 < ∞, subtraction of ZN
+                                      2 yields
+
+
+                                              1                          1
+                                                                            
+                                                                                2
+                                 VarrN (Wα ) ≤ VarpN (gθ ) +               − 1 ZN .                   (20)
+                                              α                          α
+The last term must not be dropped. The bound is on a random marginal draw, not a uniform guarantee
+about stratified quadrature error, score error, or the adequacy of the previous cloud. It does not
+guarantee high ESS. At α = 1 this is bootstrap sampling; at α = 0 one obtains the unprotected marginal
+proposal, outside the displayed bound.
+   This is the basic defensive-importance argument discussed by Owen and Zhou [3, Sec. 3, especially
+Eq. (10), and Sec. 3.1]. Their stronger results use additional control variates; those are not part of this
+proposal and their guarantees must not be borrowed. A defensive mixture can deteriorate an already
+excellent importance proposal. No numerical value of α has been justified here. Its choice would need
+scope-specific offline calibration and a separate non-harm assessment, never selection inside HMC.
+
+
+6    Preserve the original LGSSM and KSC-SV values and scores
+Preservation has a precise and achievable meaning. Existing qualified scopes keep their existing
+algorithm, prepared observations, base designs, settings, coordinate transforms and consumer endpoints.
+The proposed correction is an explicit optional mode selected before tracing. It must not be a parameter-
+dependent switch and must not silently become the factory default. The mode is generic; this does not
+justify a reduced, model-specific implementation of the canonical flow.
+
+Proposition 3 (Preservation by unchanged execution). Let Aold (θ; ξ, c) denote the current finite
+program with fixed inputs ξ and controls c. If the new factory’s legacy mode calls that same program on
+those same inputs, with no changed operations, then on its valid differentiable domain
+
+                   Alegacy (θ; ξ, c) = Aold (θ; ξ, c),       DAlegacy (θ; ξ, c) = DAold (θ; ξ, c).    (21)
+
+Proof. The function computed in legacy mode is the same function. Equal differentiable functions on a
+neighborhood have equal derivatives there. If the implementation returns a separate analytical score,
+preserving its operations and inputs also preserves that returned score, including any pre-existing error.
+This proposition does not newly certify that score.
+
+    The implementation obligation is substantive: a refactor can change reduction order, random-number
+consumption, precision or a shared helper. The proof cannot certify those details before code exists.
+Freeze the current post-fix source closure and actual outputs, then exercise the real consumers to verify
+them. Bitwise parity is the goal where execution is deterministic. Any nondeterministic FP32 tolerance
+must come from measured same-build repeatability, not from a convenient new error allowance.
+    The original scalar LG1 model has state and observation dimensions one: xt = ϕxt−1 + ϵt with
+process variance one, observation variance 1/2, and stationary initial variance (1 − ϕ2 )−1 . Its exact
+Kalman value and analytical derivative are the independent reference. Preserve the derivative of the
+initial variance, 2ϕ/(1 − ϕ2 )2 , and the existing bounded-parameter chart and prior. The regression
+inventory must include every already qualified LGSSM consumer/scope, not infer coverage of all linear
+models from this one case.
+
+
+
+                                                         6
+   The protected KSC consumer is the seven-component approximation to the log-squared-return
+observation law:
+                                             7
+                                             X
+                              gθ (z | x) =         πk N (z; x + 2 log β + µk , vk ).                   (22)
+                                             k=1
+It is distinct from the raw-return Gaussian stochastic-volatility observation density. For residual
+ek = z − x − 2 log β − µk and fixed mixture constants, each component has
+                                                 ek                2 Dβ
+                                                                         
+                                      D log gk =              Dx +            .                        (23)
+                                                 vk                  β
+The recently repaired 2 Dβ/β term must remain. The score of (22) is the responsibility-weighted
+sum of these component scores. The T = 2 KSC fixture has an independent 49-component Gaussian
+likelihood after integrating its latent states; it is exact for this declared KSC mixture model, not for the
+unapproximated SV model. Preserve the stationary state variance and its derivative, chart, prior and
+observation mixture.
+    For both protected families, compare separately the physical likelihood, physical score, transformed
+target and transformed score. Check FP64 against the frozen post-fix implementation and the inde-
+pendent reference. Check the actual FP32 GPU/XLA consumer using the repository memory policy.
+Require the previous error envelope against the reference to be maintained for both values and scores;
+an improved value cannot excuse a worse score. Statuses, finiteness and deterministic outputs are part
+of preservation. Repeated builds or randomizations need paired uncertainty where relevant.
+    This proposal does not assert that marginal weighting will be as accurate as the old computation on
+every LGSSM or KSC scope. Migration would require new evidence. Retaining the original computation
+is what guarantees that testing the M13 candidate does not degrade those working results.
+
+
+7     Implementation and the smallest discriminating experiments
+The current M13 call chain is ledh_range_bearing_target_tf.py → ledh_canonical_batch_fused_
+tf.py → ledh_canonical_score_tf.py. In the last module the current conditional density is formed
+near line 475, the flow near 594, and the importance correction near 611–652. The affine flow updates
+are near 1167–1403. Line numbers refer to the current dirty checkout and will move if it changes. The
+previous executable trace parity establishes the baseline chain, not the unimplemented extension.
+    The proposed implementation would return B, c, DB, Dc from the shared flow and evaluate the two
+mixture densities and their tangents at all children. Use log-sum-exp and responsibility reductions
+with stable TensorFlow graphs; keep the analytical score as the claim-bearing path. Autodiff and finite
+differences are independent diagnostics only. Tiled sums must equal the dense mathematical sums.
+At N = 4096 the repository chunk policy gives K = 2048. There are N 2 component/child pairs per
+step: tiling controls memory, not this arithmetic cost. A truncation to nearby ancestors would be an
+additional approximation, not the exact method derived here.
+    The following sequence belongs to the existing master’s M13 repair phase. It is proposed work, not
+an already executed new sampling campaign.
+
+    1. Freeze the current post-fix LGSSM/KSC source, observations, controls and output baselines. Add
+       an optional generic correction mode. Run consumer-level dispatch and value/score preservation
+       checks before enabling the M13 candidate. Preserve canonical identity through the repository-
+       owned factory; a changed source closure must be recorded, not hidden behind a caller-stamped
+       identifier.
+
+    2. Check affine composition, inverse densities and analytical tangents on small full-rank cases,
+       including noncommuting matrices. Check batch/scalar and tiled/dense parity and invalid-map
+
+                                                          7
+       status handling. Test the complete finite likelihood against directional finite differences on stable
+       branches. This establishes engineering correctness only.
+
+    3. At T = 1, compare original LEDH, marginal LEDH, the same-design bootstrap and refined
+       quadrature. Use the diagnosed low-Q case first, then all eight development points, reporting
+       low noise, center and tails separately. Record the pre-observation normalizer, weight concentra-
+       tion, value error and both score errors. Movement of normalization toward one is explanatory;
+       simultaneous value/score agreement with a qualified reference is the local accuracy criterion.
+
+    4. If proposal coverage still fails, evaluate the defensive component as a separately tuned candidate,
+       including α = 1 bootstrap and α = 0 marginalization as comparators. Choose no online thresholds
+       or defensive proportions. A failed candidate triggers the next discriminating repair, not automatic
+       rejection of particle flow.
+
+    5. Before a T = 20 accuracy decision, qualify the independent reference score by refinement
+       and independent-design uncertainty. Stability of its likelihood alone is insufficient. Use fresh
+       calibration/validation partitions for tuning and untouched cases for any promotion. Do not select
+       settings using the eight now-inspected points as a final holdout.
+
+    6. Only then test the actual surrogate-HMC consumer with its declared endpoint, the supported
+       public HMC tuner, and the repository’s adaptive warm-up and cumulative sampling procedure.
+       Do not introduce another arbitrary fixed terminal sample count. Posterior agreement and declared
+       sampler diagnostics remain the campaign’s substantive criteria.
+
+    The correct tuner must be chosen using docs/reference/hmc-tuning-interface.md and HMC_
+TUNING_INTERFACE_CAPABILITIES. The existing neural-force runner binding supports the public
+tune_hmc_kernel route; a stage helper is not a tuner, and an arbitrary force must not be routed
+through the fixed-transport tuner.
+    Every new scope still owes offline LEDH tuning. FP32 GPU/XLA remains the default execution
+target, with memory growth verified before device initialization; FP64 is a reference arm. No new
+tolerance is selected from the observed failures. For HMC materiality, useful explanatory quantities are
+local log-likelihood-ratio error δ(θ + h) − δ(θ) and score error in the declared HMC coordinates, such as
+∥L⊤ (sb − sref )∥ for θ = θ0 + Lz. Neither substitutes for downstream sampling evidence.
+
+
+8     Mathematical audit and limits of this proposal
+Manual proofs above establish the stated conditional identities. MathDevMCP has verified the two-
+component variance identity, conditional-expectation identity, rational mixture derivative, Gaussian
+scalar tangent, inverse-map scalar tangent, KSC tangent and exact counterexample arithmetic using its
+symbolic backend. Five additional coefficient checks cover the full two-dimensional Gaussian derivative;
+independent local algebra also checks noncommuting map composition and inverse differentiation. The
+separate audit record preserves exact inputs, outputs, parser limitations and document-audit results.
+    An attempted nested differentiation expression was not encoded correctly by the tool. It was
+replaced by an explicit rational derivative identity. A separate high-level request to refute universal
+stratified non-deterioration returned an inconclusive wrapper status despite an exact nonzero backend
+difference. The explicit counterexample and its checked rational arithmetic carry the argument; the
+wrapper abstention is not represented as a proof certificate.
+    These checks do not certify the unimplemented TensorFlow call chain, empirical improvement,
+universal non-deterioration, a full-horizon exact M13 score or HMC convergence. This stage changes no
+algorithmic source. The review question is whether this is a mathematically valid, honestly bounded
+
+
+                                                     8
+and implementable M13 repair proposal with an adequate preservation protocol for the working LGSSM
+and KSC-SV consumers.
+
+
+References
+[1] Y. Li and M. Coates (2017). Particle Filtering with Invertible Particle Flow. IEEE Transactions on
+    Signal Processing, 65(16), 4102–4116. Algorithm 1, Eqs. (19)–(20), Lemma IV.2, Theorem IV.3 and
+    Lemma IV.4. https://arxiv.org/abs/1607.08799. The local implementation was inspected; the
+    original-author software link was unavailable during this audit. No author-code equivalence claim
+    follows from the paper inspection.
+
+[2] M. Klaas, N. de Freitas and A. Doucet (2005). Toward Practical N 2 Monte Carlo: the Marginal
+    Particle Filter. Proceedings of UAI, 308–315. Sec. 3 and Fig. 3 (mixture weights); Sec. 3.1 and Propo-
+    sition 1 (random-label variance argument). https://www.cs.ubc.ca/~arnaud/klass_defreitas_
+    doucet_marginalparticlefilterUAI2005.pdf.
+
+[3] A. B. Owen and Y. Zhou (2000). Safe and Effective Importance Sampling. Journal of the American
+    Statistical Association, 95(449), 135–143. Sec. 3, Eq. (10) and Sec. 3.1. https://artowen.su.
+    domains/reports/seis.pdf.
+
+
+
+
+                                                    9
+

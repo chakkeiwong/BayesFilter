@@ -1,0 +1,248 @@
+{
+  "base_target": {
+    "alias_limit_role": "numerical_validity_not_parameter_support",
+    "alias_policy": {
+      "aliases_each_side": 4,
+      "maximum_conditional_sigma": 3.141592653589793,
+      "omitted_mass_upper_bound": 2.2571768119076845e-19,
+      "tail_mass_tolerance": 1e-14
+    },
+    "chunk_policy": {
+      "col_blocks": 1,
+      "col_chunk_size": 256,
+      "num_particles": 256,
+      "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "row_blocks": 1,
+      "row_chunk_size": 256
+    },
+    "control_status": "diagnostic_warm_start_not_scope_tuned",
+    "design_partition": 6,
+    "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+    "dtype": "float32",
+    "fixture": {
+      "A": [
+        [
+          1.0,
+          0.0,
+          0.1,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.1
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "P0": [
+        [
+          0.04,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.04,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.01,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.01
+        ]
+      ],
+      "Q": [
+        [
+          0.0015,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0015,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0008,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0008
+        ]
+      ],
+      "R": [
+        [
+          0.0144,
+          0.0
+        ],
+        [
+          0.0,
+          0.0016
+        ]
+      ],
+      "backend": "tensorflow_tensorflow_probability",
+      "fixture_generation_seed": 1703,
+      "horizon": 20,
+      "initial_distribution": "x_0 ~ Normal(m0, P0)",
+      "m0": [
+        1.2,
+        0.7,
+        0.18,
+        -0.06
+      ],
+      "model_checksum": "d7e9af86ad3acffa8ecd1b9ad865fbe7db78639e3bd62ffc60e615c3d6231859",
+      "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+      "observation_checksum": "0ba5eb2ab5010adad12c2ab9c962b853f94e52577b7b9f2ecf8c8bcba450b77a",
+      "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+      "reference_status": "UKF is approximate for this nonlinear fixture.",
+      "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+    },
+    "horizon": 20,
+    "innovation_dimension": 4,
+    "input_sha256": {
+      "initial_covariances": "238f14a623dc9c9a2f5b87994dc8cce2657fd5510ce64b1e81323be7139a4871",
+      "initial_states": "d29f5269ec3367a0dd9f74c17cd0d7867f6fef8dcc2ae40388d03d18385d832f",
+      "noises": "f404a84527590cdc563f56417c8813c8cc8fb48ffceba49842bd6eb56930efcf",
+      "observations": "22b63e08be197348bfb56b33f8efc8a98f90c45da157196313b489251190804b",
+      "reset_design": "7ea2509d71f0cc145e123e29bf374697bd3e0b4baf68a668e8e2ac6f1a5eb1b0"
+    },
+    "jit_compile": true,
+    "model_id": "M13",
+    "observation_dimension": 2,
+    "observation_law": "wrapped_correlated_gaussian",
+    "parameter_dimension": 2,
+    "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+    "particle_count": 256,
+    "prior": null,
+    "quantity": "finite_canonical_log_likelihood_only",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "score_engine": "analytical_recursive_all_parameter_dependencies",
+    "seeds": {
+      "20": [
+        934758472,
+        20
+      ],
+      "22": [
+        934758472,
+        22
+      ]
+    },
+    "settings": {
+      "coordinate_cap": 16.0,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 0.001,
+      "correction_lm_scale_floor": 1e-06,
+      "correction_steps": 2,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 0.1,
+      "pairwise_rms_cap": 2.0,
+      "pairwise_steps": 2,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 8,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-05,
+      "reset_sinkhorn_steps": 8,
+      "substeps": 10
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+      "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+      "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+      "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+      "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+      "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+      "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+      "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+      "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+      "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+    },
+    "state_dimension": 4,
+    "tf32": true,
+    "transition_before_observation": true
+  },
+  "baseline": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-12/m13-moment-localize/repaired-fp32.json",
+  "baseline_attempt_status": "budget_terminated_after_report_saved",
+  "baseline_sha256": "2c72a8baa0e9aa210af59c73107ee642d12606e84b6dda0b856550d20ff3d20b",
+  "data": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-controls-07/m13-controls-bounded/calibration/data.json",
+  "data_sha256": "9bbb11e7060ff73f070c5bd39efe73d8a206834fd46fe0cb0aa9676019ade245",
+  "plan": "docs/plans/surrogate-hmc-m13-particle-recovery-2026-09-24.md",
+  "points": [
+    [
+      -0.6931471824645996,
+      -0.6931471824645996
+    ],
+    [
+      -0.6931471824645996,
+      0.0
+    ],
+    [
+      -0.6931471824645996,
+      0.6931471824645996
+    ],
+    [
+      0.0,
+      -0.6931471824645996
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.6931471824645996
+    ],
+    [
+      0.6931471824645996,
+      -0.6931471824645996
+    ],
+    [
+      0.6931471824645996,
+      0.0
+    ],
+    [
+      0.6931471824645996,
+      0.6931471824645996
+    ]
+  ]
+}

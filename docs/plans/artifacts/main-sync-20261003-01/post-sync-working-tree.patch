@@ -1,0 +1,3128 @@
+diff --git a/bayesfilter/highdim/genut_shape_lm_tf.py b/bayesfilter/highdim/genut_shape_lm_tf.py
+index 98a0b4456..166920ce1 100644
+--- a/bayesfilter/highdim/genut_shape_lm_tf.py
++++ b/bayesfilter/highdim/genut_shape_lm_tf.py
+@@ -7,6 +7,9 @@ least-squares problem and optionally cap the resulting particle displacement.
+ from __future__ import annotations
+ 
+ import tensorflow as tf
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
++
++from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+ 
+ GENUT_SHAPE_SOLVER_ID = "genut_column_scaled_lm_smooth_rms_trust_v1"
+ 
+@@ -39,15 +42,24 @@ def scaled_lm_coefficients_value(
+     )
+     system += tf.cast(damping, dtype) * tf.eye(2, dtype=dtype)
+     rhs = tf.reduce_sum(scaled_jacobian * residual[..., :, None], axis=-2)
+-    scaled_coefficient = tf.linalg.solve(system, rhs[..., None])[..., 0]
++    system_valid, _ = safe_cholesky(system,"genut_lm_system")
++    system_valid &= tf.reduce_all(tf.math.is_finite(rhs),axis=-1)
++    safe_system = tf.where(system_valid[...,None,None],system,tf.eye(2,dtype=dtype))
++    safe_rhs = tf.where(system_valid[...,None],rhs,tf.zeros_like(rhs))
++    scaled_coefficient = small_matrix.solve(safe_system,safe_rhs[...,None])[...,0]
++    # An internal invalid result remains visible to the enclosing correction's
++    # validity check; the factor passed to every solve is still safe.
++    scaled_coefficient = tf.where(system_valid[...,None],scaled_coefficient,
++                                  tf.constant(float('nan'),dtype))
+     coefficient = (
+         tf.cast(strength, dtype) * scaled_coefficient / column_scale
+     )
+-    eigenvalues = tf.linalg.eigvalsh(system)
++    eigenvalues = tf.linalg.eigvalsh(safe_system)
+     return {
+         "coefficient": coefficient,
+         "column_scale": column_scale,
+-        "scaled_system": system,
++        "scaled_system": safe_system,
++        "value_valid": system_valid,
+         "scaled_system_condition": eigenvalues[..., -1]
+         / eigenvalues[..., 0],
+     }
+@@ -104,7 +116,7 @@ def scaled_lm_coefficients_jvp(
+     solve_rhs = rhs_tangent - tf.reduce_sum(
+         system_tangent * scaled_coefficient[..., None, :, None], axis=-2
+     )
+-    scaled_coefficient_tangent = tf.linalg.solve(
++    scaled_coefficient_tangent = small_matrix.solve(
+         result["scaled_system"], solve_rhs
+     )
+     coefficient_tangent = tf.cast(strength, jacobian.dtype) * (
+diff --git a/bayesfilter/highdim/higher_moment_contract_e.py b/bayesfilter/highdim/higher_moment_contract_e.py
+index b1efe8c81..971ffad9a 100644
+--- a/bayesfilter/highdim/higher_moment_contract_e.py
++++ b/bayesfilter/highdim/higher_moment_contract_e.py
+@@ -11,6 +11,9 @@ import math
+ 
+ import tensorflow as tf
+ 
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
++from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky, cholesky_differential, all_finite
++
+ from bayesfilter.highdim.genut_shape_lm_tf import (
+     necessary_marginal_feasibility,
+     scaled_lm_coefficients_jvp,
+@@ -36,7 +39,7 @@ def _sym_tangent(value: tf.Tensor) -> tf.Tensor:
+ 
+ def _right_solve(lower: tf.Tensor, rows: tf.Tensor) -> tf.Tensor:
+     return tf.linalg.matrix_transpose(
+-        tf.linalg.triangular_solve(lower, tf.linalg.matrix_transpose(rows))
++        small_matrix.triangular_solve(lower, tf.linalg.matrix_transpose(rows))
+     )
+ 
+ 
+@@ -110,16 +113,10 @@ def _relative_psd_covariance(
+     return ridged, ridged_tangent
+ 
+ 
+-def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
+-    parameter_count = tf.shape(matrix_tangent)[-1]
+-    batched_chol = tf.broadcast_to(
+-        chol[None, :, :],
+-        [parameter_count, tf.shape(chol)[0], tf.shape(chol)[1]],
+-    )
+-    batched_tangent = tf.transpose(matrix_tangent, [2, 0, 1])
+-    return tf.transpose(
+-        _contract_e_cholesky_jvp(batched_chol, batched_tangent), [1, 2, 0]
+-    )
++def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor,
++                  valid: tf.Tensor | None = None) -> tf.Tensor:
++    tangent = tf.transpose(matrix_tangent, [2, 0, 1])
++    return tf.transpose(cholesky_differential(chol, tangent, valid), [1, 2, 0])
+ 
+ 
+ def _weighted_moments_jvp(
+@@ -167,6 +164,20 @@ def _uniform_moments_jvp(
+     return mean, _sym(covariance), mean_tangent, _sym_tangent(covariance_tangent)
+ 
+ 
++def _weighted_square_jvp(standardized, weights, standardized_tangent, weights_tangent):
++    """Apply weights before powers; retain both weight and particle derivatives.
++
++    w*z*z can be finite when z**4 overflows in a later weighted moment.
++    This is polynomial regrouping, with no clipping or covariance change.
++    """
++    weighted = weights[:, None] * standardized
++    tangent = (weights_tangent[:, None, :] * standardized[:, :, None]
++               + weights[:, None, None] * standardized_tangent)
++    square_tangent = (tangent * standardized[:, :, None]
++                      + weighted[:, :, None] * standardized_tangent)
++    return weighted * standardized, square_tangent
++
++
+ def _weighted_diag_moments_jvp(
+     source: tf.Tensor,
+     weights: tf.Tensor,
+@@ -183,25 +194,18 @@ def _weighted_diag_moments_jvp(
+     standardized_tangent = _right_solve_jvp(
+         chol, chol_tangent, centered, centered_tangent
+     )
+-    skew = tf.reduce_sum(weights[:, None] * tf.pow(standardized, 3.0), axis=0)
+-    kurt = tf.reduce_sum(weights[:, None] * tf.pow(standardized, 4.0), axis=0)
+-    skew_tangent = tf.reduce_sum(
+-        weights_tangent[:, None, :] * tf.pow(standardized[:, :, None], 3.0)
+-        + weights[:, None, None]
+-        * 3.0
+-        * tf.pow(standardized[:, :, None], 2.0)
+-        * standardized_tangent,
+-        axis=0,
+-    )
+-    kurt_tangent = tf.reduce_sum(
+-        weights_tangent[:, None, :] * tf.pow(standardized[:, :, None], 4.0)
+-        + weights[:, None, None]
+-        * 4.0
+-        * tf.pow(standardized[:, :, None], 3.0)
+-        * standardized_tangent,
+-        axis=0,
+-    )
+-    return skew, kurt, skew_tangent, kurt_tangent
++    weighted, tangent = _weighted_square_jvp(
++        standardized, weights, standardized_tangent, weights_tangent)
++    # a_(k+1)=a_k*z and da_(k+1)=da_k*z+a_k*dz, starting from a_2=w*z*z.
++    # Never construct the unweighted cube/fourth power for these targets.
++    cubic_tangent = (tangent * standardized[:, :, None]
++                     + weighted[:, :, None] * standardized_tangent)
++    cubic = weighted * standardized
++    quartic_tangent = (cubic_tangent * standardized[:, :, None]
++                       + cubic[:, :, None] * standardized_tangent)
++    quartic = cubic * standardized
++    return (tf.reduce_sum(cubic, axis=0), tf.reduce_sum(quartic, axis=0),
++            tf.reduce_sum(cubic_tangent, axis=0), tf.reduce_sum(quartic_tangent, axis=0))
+ 
+ 
+ def _weighted_pair_moments_jvp(
+@@ -211,36 +215,20 @@ def _weighted_pair_moments_jvp(
+     weights_tangent: tf.Tensor,
+ ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor, tf.Tensor]:
+     """Return ordered E[z_i^2 z_j] and symmetric E[z_i^2 z_j^2]."""
+-
++    weighted_square, weighted_square_tangent = _weighted_square_jvp(
++        standardized, weights, standardized_tangent, weights_tangent)
+     squared = tf.square(standardized)
+     squared_tangent = 2.0 * standardized[:, :, None] * standardized_tangent
+-    co_skew = tf.einsum("n,ni,nj->ij", weights, squared, standardized)
+-    co_skew_tangent = tf.einsum(
+-        "np,ni,nj->ijp", weights_tangent, squared, standardized
+-    )
+-    co_skew_tangent += tf.einsum(
+-        "n,nip,nj->ijp", weights, squared_tangent, standardized
+-    )
+-    co_skew_tangent += tf.einsum(
+-        "n,ni,njp->ijp", weights, squared, standardized_tangent
+-    )
+-    co_kurtosis = tf.einsum("n,ni,nj->ij", weights, squared, squared)
+-    co_kurtosis_tangent = tf.einsum(
+-        "np,ni,nj->ijp", weights_tangent, squared, squared
+-    )
+-    co_kurtosis_tangent += tf.einsum(
+-        "n,nip,nj->ijp", weights, squared_tangent, squared
+-    )
+-    co_kurtosis_tangent += tf.einsum(
+-        "n,ni,njp->ijp", weights, squared, squared_tangent
+-    )
++    co_skew = tf.einsum("ni,nj->ij", weighted_square, standardized)
++    co_skew_tangent = (tf.einsum("nip,nj->ijp", weighted_square_tangent, standardized)
++                      + tf.einsum("ni,njp->ijp", weighted_square, standardized_tangent))
++    co_kurtosis = tf.einsum("ni,nj->ij", weighted_square, squared)
++    co_kurtosis_tangent = (tf.einsum("nip,nj->ijp", weighted_square_tangent, squared)
++                          + tf.einsum("ni,njp->ijp", weighted_square, squared_tangent))
+     off_diagonal = 1.0 - tf.eye(tf.shape(standardized)[1], dtype=standardized.dtype)
+-    return (
+-        co_skew * off_diagonal,
+-        co_kurtosis * off_diagonal,
+-        co_skew_tangent * off_diagonal[:, :, None],
+-        co_kurtosis_tangent * off_diagonal[:, :, None],
+-    )
++    return (co_skew * off_diagonal, co_kurtosis * off_diagonal,
++            co_skew_tangent * off_diagonal[:, :, None],
++            co_kurtosis_tangent * off_diagonal[:, :, None])
+ 
+ 
+ def weighted_shape_targets_jvp(
+@@ -261,8 +249,8 @@ def weighted_shape_targets_jvp(
+     covariance, covariance_tangent = _relative_psd_covariance(
+         covariance, covariance_tangent
+     )
+-    chol = tf.linalg.cholesky(covariance)
+-    chol_tangent = _cholesky_jvp(chol, covariance_tangent)
++    covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
++    chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+     skew, kurtosis, skew_tangent, kurtosis_tangent = _weighted_diag_moments_jvp(
+         points,
+         weights,
+@@ -285,6 +273,8 @@ def weighted_shape_targets_jvp(
+         )
+     )
+     return {
++        "value_valid": covariance_valid & all_finite(skew, kurtosis, co_skew, co_kurtosis),
++        "valid": covariance_valid & all_finite(skew, kurtosis, co_skew, co_kurtosis, skew_tangent, kurtosis_tangent, co_skew_tangent, co_kurtosis_tangent),
+         "skew": skew,
+         "kurtosis": kurtosis,
+         "skew_tangent": skew_tangent,
+@@ -314,7 +304,7 @@ def affine_restore_cloud_jvp(
+     current_mean, current_cov, current_mean_tangent, current_cov_tangent = (
+         _uniform_moments_jvp(points, points_tangent)
+     )
+-    # Class-B guard (2026-08-27): annealed concentration can collapse the
++    # Existing Class-C relative ridge (2026-08-27): annealed concentration can collapse the
+     # covariances in the affine restore; apply relative ridge to both.
+     target_cov_safe, target_cov_tangent_safe = _relative_psd_covariance(
+         target_cov, target_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+@@ -322,10 +312,10 @@ def affine_restore_cloud_jvp(
+     current_cov_safe, current_cov_tangent_safe = _relative_psd_covariance(
+         current_cov, current_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+     )
+-    target_chol = tf.linalg.cholesky(target_cov_safe)
+-    current_chol = tf.linalg.cholesky(current_cov_safe)
+-    target_chol_tangent = _cholesky_jvp(target_chol, target_cov_tangent_safe)
+-    current_chol_tangent = _cholesky_jvp(current_chol, current_cov_tangent_safe)
++    target_valid, target_chol = safe_cholesky(target_cov_safe, "restore_target")
++    current_valid, current_chol = safe_cholesky(current_cov_safe, "restore_current")
++    target_chol_tangent = _cholesky_jvp(target_chol, target_cov_tangent_safe, target_valid)
++    current_chol_tangent = _cholesky_jvp(current_chol, current_cov_tangent_safe, current_valid)
+     centered = points - current_mean[None, :]
+     centered_tangent = points_tangent - current_mean_tangent[None, :, :]
+     standardized = _right_solve(current_chol, centered)
+@@ -365,7 +355,8 @@ def affine_restore_cloud_jvp(
+         "maximum_normalized_covariance_residual": (
+             maximum_covariance_residual / covariance_scale
+         ),
+-        "valid": tf.reduce_all(tf.math.is_finite(output))
++        "value_valid": target_valid & current_valid & all_finite(output),
++        "valid": target_valid & current_valid & tf.reduce_all(tf.math.is_finite(output))
+         & tf.reduce_all(tf.math.is_finite(output_tangent)),
+     }
+ def _uniform_pair_moments_jvp(
+@@ -386,8 +377,9 @@ def _uniform_pair_moments_jvp(
+ def _standardize_uniform_jvp(
+     points: tf.Tensor,
+     points_tangent: tf.Tensor,
+-    *, relative_ridge: bool = True,
+-) -> tuple[tf.Tensor, tf.Tensor]:
++    *, relative_ridge: bool = True, return_valid: bool = False,
++) -> tuple[tf.Tensor, tf.Tensor] | tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
++    """Standardize values and tangents, optionally exposing factor validity."""
+     mean, covariance, mean_tangent, covariance_tangent = _uniform_moments_jvp(
+         points, points_tangent
+     )
+@@ -395,16 +387,19 @@ def _standardize_uniform_jvp(
+         covariance, covariance_tangent = _relative_psd_covariance(
+             covariance, covariance_tangent
+         )
+-    chol = tf.linalg.cholesky(covariance)
+-    chol_tangent = _cholesky_jvp(chol, covariance_tangent)
++    covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
++    chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+     centered = points - mean[None, :]
+     centered_tangent = points_tangent - mean_tangent[None, :, :]
+-    return (
++    result = (
+         _right_solve(chol, centered),
+         _right_solve_jvp(
+             chol, chol_tangent, centered, centered_tangent
+         ),
+     )
++    if return_valid:
++        return (*result, covariance_valid & all_finite(points))
++    return result
+ 
+ 
+ def _projected_moment_tensors_jvp(
+@@ -619,7 +614,7 @@ def _projected_cumulant_iteration_jvp(
+     corrected_tangent = current_standardized_tangent + tf.cast(
+         strength, current_standardized.dtype
+     ) * normalized_tangent
+-    return _standardize_uniform_jvp(corrected, corrected_tangent)
++    return _standardize_uniform_jvp(corrected, corrected_tangent, return_valid=True)
+ 
+ 
+ def _pairwise_shape_iteration_jvp(
+@@ -776,13 +771,15 @@ def _pairwise_shape_iteration_jvp(
+     )
+     safety_stats = empty_safety_stats(standardized.dtype)
+     if safety_loss is None:
+-        output, output_tangent = _standardize_uniform_jvp(corrected, corrected_tangent)
++        output, output_tangent, output_valid = _standardize_uniform_jvp(
++            corrected, corrected_tangent, return_valid=True)
+     else:
+         output, output_tangent, safety_stats = guarded_moment_step(
+             standardized, standardized_tangent,
+             tf.cast(strength, standardized.dtype) * normalized_direction,
+             tf.cast(strength, standardized.dtype) * normalized_direction_tangent,
+             normalize=_standardize_uniform_jvp, loss=safety_loss)
++        output_valid = all_finite(output) & (safety_stats[3] > .5)
+     return (
+         output,
+         output_tangent,
+@@ -790,6 +787,7 @@ def _pairwise_shape_iteration_jvp(
+         tf.reduce_max(post_cap_particle_rms),
+         tf.reduce_min(row_scale),
+         safety_stats,
++        output_valid,
+     )
+ 
+ 
+@@ -823,8 +821,8 @@ def _shape_iteration_jvp(
+     covariance, covariance_tangent = _relative_psd_covariance(
+         covariance, covariance_tangent
+     )
+-    chol = tf.linalg.cholesky(covariance)
+-    chol_tangent = _cholesky_jvp(chol, covariance_tangent)
++    covariance_valid, chol = safe_cholesky(covariance, "shape_covariance")
++    chol_tangent = _cholesky_jvp(chol, covariance_tangent, covariance_valid)
+     centered = points - mean[None, :]
+     centered_tangent = points_tangent - mean_tangent[None, :, :]
+     u = _right_solve(chol, centered)
+@@ -977,14 +975,16 @@ def _shape_iteration_jvp(
+         + displacement_tangent
+     )
+     safety_stats = empty_safety_stats(u.dtype)
+-    def normalize(value, tangent):
+-        return _standardize_uniform_jvp(value, tangent, relative_ridge=False)
+     if safety_loss is None:
+-        output, output_tangent = normalize(corrected, corrected_tangent)
++        output, output_tangent, corrected_valid = _standardize_uniform_jvp(
++            corrected, corrected_tangent, relative_ridge=False, return_valid=True)
+     else:
+         output, output_tangent, safety_stats = guarded_moment_step(
+             u, u_tangent, displacement, displacement_tangent,
+-            normalize=normalize, loss=safety_loss)
++            normalize=lambda value, tangent: _standardize_uniform_jvp(
++                value, tangent, relative_ridge=False),
++            loss=safety_loss)
++        corrected_valid = all_finite(output) & (safety_stats[3] > .5)
+     return (
+         output,
+         output_tangent,
+@@ -994,6 +994,7 @@ def _shape_iteration_jvp(
+         tf.reduce_max(pre_cap_rms),
+         tf.reduce_max(post_cap_rms),
+         safety_stats,
++        covariance_valid & corrected_valid & all_finite(output),
+     )
+ 
+ 
+@@ -1106,8 +1107,8 @@ def higher_moment_shape_jvp(
+     covariance, covariance_tangent = _relative_psd_covariance(
+         covariance, covariance_tangent
+     )
+-    target_chol = tf.linalg.cholesky(covariance)
+-    target_chol_tangent = _cholesky_jvp(target_chol, covariance_tangent)
++    target_valid, target_chol = safe_cholesky(covariance, "shape_target")
++    target_chol_tangent = _cholesky_jvp(target_chol, covariance_tangent, target_valid)
+     target_skew, target_kurt, target_skew_tangent, target_kurt_tangent = _weighted_diag_moments_jvp(
+         source, weights, source_tangent, weights_tangent, mean, mean_tangent, target_chol, target_chol_tangent
+     )
+@@ -1277,8 +1278,8 @@ def higher_moment_shape_jvp(
+         and projected_cumulant_correction_steps == 0
+         and not moment_safety
+     ):
+-        output_standardized, output_standardized_tangent = _standardize_uniform_jvp(
+-            points, points_tangent
++        output_standardized, output_standardized_tangent, output_standardized_valid = _standardize_uniform_jvp(
++            points, points_tangent, return_valid=True
+         )
+         output_skew = tf.reduce_mean(tf.pow(output_standardized, 3.0), axis=0)
+         output_kurt = tf.reduce_mean(tf.pow(output_standardized, 4.0), axis=0)
+@@ -1315,7 +1316,14 @@ def higher_moment_shape_jvp(
+             "projected_cumulant_residual_norm": tf.zeros([], source.dtype),
+             "projected_cumulant_third_residual_norm": tf.zeros([], source.dtype),
+             "projected_cumulant_fourth_residual_norm": tf.zeros([], source.dtype),
+-            "valid": valid & projected_basis_valid,
++            "value_valid": tf.reduce_all(tf.math.is_finite(points)) & target_valid & output_standardized_valid & projected_basis_valid,
++            "valid": valid & target_valid & output_standardized_valid & projected_basis_valid,
++            "target_covariance_valid": target_valid,
++            "initial_standardization_valid": output_standardized_valid,
++            "diagonal_iterations_valid": tf.constant(True),
++            "pairwise_iterations_valid": tf.constant(True),
++            "affine_restoration_value_valid": tf.constant(True),
++            "output_standardization_valid": output_standardized_valid,
+             "maximum_coordinatewise_pre_cap_absolute": tf.reduce_max(
+                 tf.abs(points)
+             ),
+@@ -1349,7 +1357,7 @@ def higher_moment_shape_jvp(
+     maximum_diagonal_pre_cap_rms = tf.zeros([], source.dtype)
+     maximum_diagonal_post_cap_rms = tf.zeros([], source.dtype)
+ 
+-    def body(index, current, current_tangent, _r3, _r4, max_condition, max_pre, max_post, stats):
++    def body(index, current, current_tangent, _r3, _r4, max_condition, max_pre, max_post, stats, alive):
+         (
+             next_points,
+             next_tangent,
+@@ -1359,6 +1367,7 @@ def higher_moment_shape_jvp(
+             next_pre,
+             next_post,
+             next_stats,
++            next_valid,
+         ) = _shape_iteration_jvp(
+             current, current_tangent, target_skew, target_kurt,
+             target_skew_tangent, target_kurt_tangent,
+@@ -1379,6 +1388,7 @@ def higher_moment_shape_jvp(
+             tf.maximum(max_pre, next_pre),
+             tf.maximum(max_post, next_post),
+             combine_safety_stats(stats, next_stats),
++            alive & next_valid,
+         )
+ 
+     # Initialize the loop state with a standardization of the input cloud.
+@@ -1389,8 +1399,8 @@ def higher_moment_shape_jvp(
+     initial_cov_safe, initial_cov_tangent_safe = _relative_psd_covariance(
+         initial_cov, initial_cov_tangent, relative_floor=RELATIVE_PSD_FLOOR
+     )
+-    initial_chol = tf.linalg.cholesky(initial_cov_safe)
+-    initial_chol_tangent = _cholesky_jvp(initial_chol, initial_cov_tangent_safe)
++    initial_valid, initial_chol = safe_cholesky(initial_cov_safe, "shape_initial")
++    initial_chol_tangent = _cholesky_jvp(initial_chol, initial_cov_tangent_safe, initial_valid)
+     initial_standardized = _right_solve(initial_chol, points - initial_mean[None, :])
+     initial_standardized_tangent = _right_solve_jvp(
+         initial_chol, initial_chol_tangent, points - initial_mean[None, :], points_tangent - initial_mean_tangent[None, :, :]
+@@ -1406,6 +1416,7 @@ def higher_moment_shape_jvp(
+         maximum_diagonal_pre_cap_rms,
+         maximum_diagonal_post_cap_rms,
+         safety_stats,
++        diagonal_valid,
+     ) = tf.while_loop(
+         lambda index, *_: index < steps,
+         body,
+@@ -1419,6 +1430,7 @@ def higher_moment_shape_jvp(
+             maximum_diagonal_pre_cap_rms,
+             maximum_diagonal_post_cap_rms,
+             safety_stats,
++            initial_valid & target_valid,
+         ),
+         parallel_iterations=1,
+     )
+@@ -1438,6 +1450,7 @@ def higher_moment_shape_jvp(
+         maximum_post_cap_rms,
+         minimum_cap_scale,
+         stats,
++        alive,
+     ):
+         (
+             next_points,
+@@ -1446,6 +1459,7 @@ def higher_moment_shape_jvp(
+             next_post_cap_rms,
+             next_minimum_cap_scale,
+             next_stats,
++            next_valid,
+         ) = _pairwise_shape_iteration_jvp(
+             current,
+             current_tangent,
+@@ -1468,6 +1482,7 @@ def higher_moment_shape_jvp(
+             tf.maximum(maximum_post_cap_rms, next_post_cap_rms),
+             tf.minimum(minimum_cap_scale, next_minimum_cap_scale),
+             combine_safety_stats(stats, next_stats),
++            alive & next_valid,
+         )
+ 
+     (
+@@ -1478,6 +1493,7 @@ def higher_moment_shape_jvp(
+         maximum_pairwise_post_cap_particle_rms,
+         minimum_pairwise_particle_cap_scale,
+         safety_stats,
++        pairwise_valid,
+     ) = tf.while_loop(
+         lambda index, *_: index < pairwise_steps,
+         pairwise_body,
+@@ -1489,13 +1505,14 @@ def higher_moment_shape_jvp(
+             tf.zeros([], source.dtype),
+             tf.ones([], source.dtype),
+             safety_stats,
++            diagonal_valid,
+         ),
+         parallel_iterations=1,
+     )
+     projected_steps = tf.constant(projected_cumulant_correction_steps, tf.int32)
+ 
+-    def projected_body(index, current, current_tangent):
+-        next_points, next_tangent = _projected_cumulant_iteration_jvp(
++    def projected_body(index, current, current_tangent, alive):
++        next_points, next_tangent, next_valid = _projected_cumulant_iteration_jvp(
+             source_standardized,
+             weights,
+             source_standardized_tangent,
+@@ -1506,13 +1523,14 @@ def higher_moment_shape_jvp(
+             strength=projected_cumulant_strength,
+             floor=projected_cumulant_floor,
+         )
+-        return index + 1, next_points, next_tangent
++        return index + 1, next_points, next_tangent, alive & next_valid
+ 
++    projected_valid = pairwise_valid
+     if projected_basis is not None:
+-        _, standardized, standardized_tangent = tf.while_loop(
++        _, standardized, standardized_tangent, projected_valid = tf.while_loop(
+             lambda index, *_: index < projected_steps,
+             projected_body,
+-            (tf.zeros([], tf.int32), standardized, standardized_tangent),
++            (tf.zeros([], tf.int32), standardized, standardized_tangent, pairwise_valid),
+             parallel_iterations=1,
+         )
+     # The Austria bounded-teacher route caps its local chart through
+@@ -1568,8 +1586,10 @@ def higher_moment_shape_jvp(
+         raw_output = standardized_restore["particles"]
+         raw_output_tangent = standardized_restore["particles_tangent"]
+         standardized_restore_valid = standardized_restore["valid"]
++        standardized_restore_value_valid = standardized_restore["value_valid"]
+     else:
+         standardized_restore_valid = tf.constant(True)
++        standardized_restore_value_valid = tf.constant(True)
+     coordinatewise_pre_cap = raw_output
+     coordinatewise_pre_cap_tangent = raw_output_tangent
+     if coordinatewise_bounded_cap > 0.0:
+@@ -1590,9 +1610,10 @@ def higher_moment_shape_jvp(
+         cap_derivative = tf.ones_like(coordinatewise_pre_cap)
+     output = coordinatewise_cap
+     output_tangent = coordinatewise_cap_tangent
+-    output_standardized, output_standardized_tangent = _standardize_uniform_jvp(
++    output_standardized, output_standardized_tangent, output_standardized_valid = _standardize_uniform_jvp(
+         output,
+         output_tangent,
++        return_valid=True,
+     )
+     output_skew = tf.reduce_mean(tf.pow(output_standardized, 3.0), axis=0)
+     output_kurt = tf.reduce_mean(tf.pow(output_standardized, 4.0), axis=0)
+@@ -1716,7 +1737,16 @@ def higher_moment_shape_jvp(
+         "maximum_diagonal_post_cap_particle_rms": (
+             maximum_diagonal_post_cap_rms
+         ),
+-        "valid": valid & projected_basis_valid,
++        "value_valid": (tf.reduce_all(tf.math.is_finite(output))
++                        & standardized_restore_value_valid & projected_basis_valid
++                        & target_valid & diagonal_valid & pairwise_valid & projected_valid & output_standardized_valid),
++        "valid": valid & projected_basis_valid & target_valid & diagonal_valid & pairwise_valid & projected_valid & output_standardized_valid,
++        "target_covariance_valid": target_valid,
++        "initial_standardization_valid": initial_valid,
++        "diagonal_iterations_valid": diagonal_valid,
++        "pairwise_iterations_valid": pairwise_valid,
++        "affine_restoration_value_valid": standardized_restore_value_valid,
++        "output_standardization_valid": output_standardized_valid,
+     }
+ 
+     if return_stages:
+@@ -1758,8 +1788,8 @@ def higher_moment_shape_jvp(
+                 pairwise_target_mask=pairwise_target_mask,
+                 pairwise_co_skew_target_mask=pairwise_co_skew_target_mask,
+                 pairwise_co_kurtosis_target_mask=pairwise_co_kurtosis_target_mask)
+-            baseline_u, _ = _standardize_uniform_jvp(
+-                baseline["particles"], baseline["particles_tangent"])
++            baseline_u, _, _ = _standardize_uniform_jvp(
++                baseline["particles"], baseline["particles_tangent"], return_valid=True)
+             baseline_loss = safety_loss(baseline_u)
+             final_loss = result["moment_safety_final_loss"]
+             accept = (result["valid"] & tf.math.is_finite(final_loss)
+diff --git a/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py b/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
+index 0f0cfa332..0f672560b 100644
+--- a/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py
+@@ -29,6 +29,32 @@ from bayesfilter.highdim.ledh_canonical_score_tf import (
+     canonical_value_and_analytical_score,
+ )
+ 
++from bayesfilter.highdim.ledh_unified_correction_tf import higher_moment_diagnostic_signature
++
++from bayesfilter.highdim.ledh_failure_status_tf import (
++    initial_status, record_failure, FailureCode, FailureStage,
++)
++
++
++def _map_evaluations(fn, elements, signature, *, use_whileloop=False):
++    """Two loop implementations, one evaluator and one numerical contract."""
++    if not use_whileloop:
++        return tf.map_fn(fn, elements, fn_output_signature=signature, parallel_iterations=1)
++    count = tf.shape(tf.nest.flatten(elements)[0])[0]
++    outputs = tf.nest.map_structure(
++        lambda spec: tf.zeros(tf.concat([[count], tf.constant(spec.shape.as_list(),tf.int32)],0), spec.dtype),
++        signature)
++    def body(index, outputs):
++        row = tf.nest.map_structure(lambda value: value[index],elements)
++        result = fn(row)
++        outputs = tf.nest.map_structure(
++            lambda target,value: tf.tensor_scatter_nd_update(target,tf.reshape(index,[1,1]),value[None]),
++            outputs,result)
++        return index+1,outputs
++    return tf.while_loop(lambda index,*_: index<count,body,(tf.constant(0),outputs),
++                         parallel_iterations=1)[1]
++
++
+ Tensor = tf.Tensor
+ 
+ 
+@@ -49,6 +75,40 @@ class PerPointScoreModel:
+     ) = None
+ 
+ 
++    # Optional parameter-dependent callbacks. Values take theta [P]; covariance
++    # tangents also take direction [P]. Observation callbacks receive rows
++    # aligned with particles. Missing tangent partners are configuration errors.
++    process_covariance_fn: Callable | None = None
++    process_covariance_tangent_fn: Callable | None = None
++    observation_covariance_fn: Callable | None = None
++    observation_covariance_tangent_fn: Callable | None = None
++    parameter_observation_fn: Callable | None = None
++    parameter_observation_tangent_fn: Callable | None = None
++    parameter_observation_jacobian_fn: Callable | None = None
++    parameter_observation_jacobian_tangent_fn: Callable | None = None
++    observation_jacobian_tangent_fn: Callable | None = None
++    initial_distribution_fn: Callable | None = None
++    initial_distribution_tangent_fn: Callable | None = None
++    # Additive structural transition x=f(ancestor)+B e. If supplied, the
++    # process covariance and frozen noises are r-dimensional innovations.
++    innovation_matrix: Tensor | None = None
++    innovation_matrix_fn: Callable | None = None
++    innovation_matrix_tangent_fn: Callable | None = None
++
++    def __post_init__(self):
++        for value_name,tangent_name in (
++            ('process_covariance_fn','process_covariance_tangent_fn'),
++            ('observation_covariance_fn','observation_covariance_tangent_fn'),
++            ('parameter_observation_fn','parameter_observation_tangent_fn'),
++            ('parameter_observation_jacobian_fn','parameter_observation_jacobian_tangent_fn'),
++            ('initial_distribution_fn','initial_distribution_tangent_fn'),
++            ('innovation_matrix_fn','innovation_matrix_tangent_fn')):
++            if (getattr(self,value_name) is None) != (getattr(self,tangent_name) is None):
++                raise ValueError(f'{value_name} and {tangent_name} must be supplied together')
++        if self.innovation_matrix is not None and self.innovation_matrix_fn is not None:
++            raise ValueError('supply constant or parameter-dependent innovation_matrix, not both')
++
++
+ def _single_cloud_model(
+     model: PerPointScoreModel,
+     theta: Tensor,
+@@ -105,16 +165,34 @@ def _single_cloud_model(
+                 direction_rows(points),
+             )
+ 
++    q = model.process_covariance if model.process_covariance_fn is None else model.process_covariance_fn(theta)
++    r = model.observation_covariance if model.observation_covariance_fn is None else model.observation_covariance_fn(theta)
++    observation_fn = model.observation_fn if model.parameter_observation_fn is None else (
++        lambda points: model.parameter_observation_fn(theta_rows(points),points))
++    observation_tangent_fn = model.observation_tangent_fn if model.parameter_observation_tangent_fn is None else (
++        lambda points,dx: model.parameter_observation_tangent_fn(theta_rows(points),points,dx,direction_rows(points)))
++    jacobian_fn = model.observation_jacobian_fn if model.parameter_observation_jacobian_fn is None else (
++        lambda points: model.parameter_observation_jacobian_fn(theta_rows(points),points))
++    jacobian_tangent_fn = model.observation_jacobian_tangent_fn if model.parameter_observation_jacobian_tangent_fn is None else (
++        lambda points,dx: model.parameter_observation_jacobian_tangent_fn(theta_rows(points),points,dx,direction_rows(points)))
+     return NonlinearScoreModel(
+         transition_mean_fn=transition_mean_fn,
+         transition_mean_tangent_fn=transition_mean_tangent_fn,
+-        observation_fn=model.observation_fn,
+-        observation_jacobian_fn=model.observation_jacobian_fn,
+-        observation_tangent_fn=model.observation_tangent_fn,
+-        process_covariance=model.process_covariance,
+-        observation_covariance=model.observation_covariance,
++        observation_fn=observation_fn,
++        observation_jacobian_fn=jacobian_fn,
++        observation_tangent_fn=observation_tangent_fn,
++        observation_jacobian_tangent_fn=jacobian_tangent_fn,
++        process_covariance=q,
++        observation_covariance=r,
++        process_covariance_tangent_fn=None if model.process_covariance_tangent_fn is None else (
++            lambda _theta: model.process_covariance_tangent_fn(theta,direction)),
++        observation_covariance_tangent_fn=None if model.observation_covariance_tangent_fn is None else (
++            lambda _theta: model.observation_covariance_tangent_fn(theta,direction)),
+         observation_log_density_fn=observation_log_density_fn,
+         observation_log_density_tangent_fn=observation_log_density_tangent_fn,
++        innovation_matrix=model.innovation_matrix if model.innovation_matrix_fn is None else model.innovation_matrix_fn(theta),
++        innovation_matrix_tangent_fn=None if model.innovation_matrix_tangent_fn is None else (
++            lambda _theta: model.innovation_matrix_tangent_fn(theta, direction)),
+     )
+ 
+ 
+@@ -148,6 +226,9 @@ def canonical_batch_fused_value_score(
+     annealed_stages: int = 1,
+     annealed_seed: int = 0,
+     k_batch_mode: str = "sequential",
++    _use_whileloop: bool = False,
++    return_filter_moments: bool = False,
++    return_all_correction_diagnostics: bool = False,
+ ) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
+     """Evaluate value ``[B]`` and analytical directional scores ``[B,K]``.
+ 
+@@ -200,12 +281,16 @@ def canonical_batch_fused_value_score(
+             raise ValueError("theta and theta_directions parameter dimensions must agree")
+ 
+     k_count = directions.shape[1]
+-    if k_count is None:
+-        raise ValueError("K dimension must be statically known")
++    if k_count is None or k_count < 1:
++        raise ValueError("K dimension must be statically known and positive")
++    if theta.shape[0] == 0:
++        raise ValueError("theta must contain at least one row")
+ 
+     common_kwargs = dict(
+         flow_substeps=substeps,
+         with_score=True,
++        return_status=True,
++        return_trace=return_filter_moments,
+         reset_policy=reset_policy,
+         reset_design=reset_design,
+         reset_epsilon=reset_epsilon,
+@@ -226,230 +311,142 @@ def canonical_batch_fused_value_score(
+         annealed_seed=annealed_seed,
+     )
+ 
+-    def evaluate_row(inputs: tuple[Tensor, Tensor]) -> tuple[Tensor, Tensor]:
++    status_signature = tf.nest.map_structure(lambda value: tf.TensorSpec([],value.dtype), initial_status())
++    if return_filter_moments:
++        horizon, dimension = int(observations.shape[0]), int(initial_states.shape[1])
++        status_signature.update(
++            filtering_mean=tf.TensorSpec([horizon,dimension],dtype),
++            filtering_covariance=tf.TensorSpec([horizon,dimension,dimension],dtype),
++            filtering_ess=tf.TensorSpec([horizon],dtype),
++            post_reset_mean=tf.TensorSpec([horizon,dimension],dtype),
++            post_reset_covariance=tf.TensorSpec([horizon,dimension,dimension],dtype))
++        # Keep the established batch-consumer output contract on the default
++        # numerical path. The complete correction record is an explicit
++        # observability lane because adding TensorFlow outputs can change an
++        # XLA graph and therefore alter floating-point operation ordering.
++        if return_all_correction_diagnostics:
++            correction_diagnostics = higher_moment_diagnostic_signature(dimension, dtype)
++        else:
++            correction_diagnostics = {
++                key: tf.TensorSpec([], dtype)
++                for key in (
++                    "maximum_coordinatewise_pre_cap_absolute",
++                    "maximum_coordinatewise_post_cap_absolute",
++                    "mean_coordinatewise_cap_displacement",
++                    "fraction_coordinatewise_cap_active",
++                    "minimum_coordinatewise_cap_derivative",
++                )
++            }
++        for key, spec in correction_diagnostics.items():
++            status_signature["higher_moment_"+key] = tf.TensorSpec(
++                [horizon]+spec.shape.as_list(), spec.dtype)
++
++    def evaluate_row(inputs):
+         theta_row, row_directions = inputs
+ 
+-        def evaluate_direction(direction: Tensor) -> tuple[Tensor, Tensor]:
+-            bound_model = _single_cloud_model(model, theta_row, direction)
+-            value, score = canonical_value_and_analytical_score(
+-                bound_model,
+-                theta_row,
+-                initial_states,
+-                initial_covariances,
+-                noises,
+-                observations,
+-                **common_kwargs,
+-            )
+-            return value, score[0]
+-
+-        values, scores = tf.map_fn(
+-            evaluate_direction,
+-            row_directions,
+-            fn_output_signature=(
+-                tf.TensorSpec([], dtype),
+-                tf.TensorSpec([], dtype),
+-            ),
+-            parallel_iterations=1,
+-        )
+-        tf.debugging.assert_near(
+-            values,
+-            tf.broadcast_to(values[0], tf.shape(values)),
+-            rtol=1.0e-12,
+-            atol=1.0e-12,
+-            message="direction changed the primal canonical value",
+-        )
+-        return values[0], scores
+-
+-    values, scores = tf.map_fn(
+-        evaluate_row,
+-        (theta, directions),
+-        fn_output_signature=(
+-            tf.TensorSpec([], dtype),
+-            tf.TensorSpec([k_count], dtype),
+-        ),
+-        parallel_iterations=1,
+-    )
+-
+-    valid = tf.math.is_finite(values) & tf.reduce_all(
+-        tf.math.is_finite(scores), axis=1
+-    )
+-    nan = tf.cast(float("nan"), dtype)
+-    values = tf.where(valid, values, nan)
+-    scores = tf.where(valid[:, None], scores, nan)
++        def evaluate_direction(direction):
++            states,covariances = initial_states,initial_covariances
++            d_states,d_covariances = None,None
++            if model.initial_distribution_fn is not None:
++                from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky,cholesky_differential
++                mean,covariance=model.initial_distribution_fn(theta_row)
++                d_mean,d_covariance=model.initial_distribution_tangent_fn(theta_row,direction)
++                valid,chol=safe_cholesky(covariance,"initial_distribution")
++                d_chol=cholesky_differential(chol,d_covariance,valid)
++                # initial_states are fixed standard-normal base draws in this
++                # explicit mode. P0 is separately the local UKF design covariance,
++                # following canonical_filter_tf's initialization contract.
++                states=mean[None]+tf.linalg.matmul(initial_states,chol,transpose_b=True)
++                d_states=d_mean[None]+tf.linalg.matmul(initial_states,d_chol,transpose_b=True)
++                covariances=tf.broadcast_to(covariance,tf.shape(initial_covariances))
++                d_covariances=tf.broadcast_to(d_covariance,tf.shape(initial_covariances))
++            result = canonical_value_and_analytical_score(
++                _single_cloud_model(model, theta_row, direction), theta_row,
++                states, covariances, noises, observations,
++                initial_state_tangent=d_states,initial_covariance_tangent=d_covariances,
++                **common_kwargs)
++            if return_filter_moments:
++                value, score, trace, status = result
++                means, covs, esses, reset_means, reset_covs = [], [], [], [], []
++                for step in trace:
++                    cloud, weights = step['children'], step['posterior_weights']
++                    mean = tf.reduce_sum(weights[:,None]*cloud,axis=0)
++                    centered = cloud-mean
++                    covariance = tf.einsum('n,ni,nj->ij',weights,centered,centered)
++                    means.append(mean); covs.append(covariance)
++                    esses.append(1/tf.reduce_sum(tf.square(weights)))
++                    reset_cloud=step['states_after_reset']
++                    reset_mean=tf.reduce_mean(reset_cloud,axis=0)
++                    reset_centered=reset_cloud-reset_mean
++                    reset_means.append(reset_mean)
++                    reset_covs.append(tf.einsum('ni,nj->ij',reset_centered,reset_centered)/tf.cast(tf.shape(reset_cloud)[0],dtype))
++                status.update(filtering_mean=tf.stack(means),
++                              filtering_covariance=tf.stack(covs),filtering_ess=tf.stack(esses),
++                              post_reset_mean=tf.stack(reset_means),post_reset_covariance=tf.stack(reset_covs))
++                for key, spec in correction_diagnostics.items():
++                    # A disabled correction has no computed diagnostic. Explicit
++                    # sentinels preserve that distinction from a healthy zero.
++                    absent = (float("nan") if spec.dtype.is_floating
++                              else False if spec.dtype == tf.bool else -1)
++                    default = tf.fill(spec.shape, tf.constant(absent, spec.dtype))
++                    name = "higher_moment_"+key
++                    status[name] = tf.stack([step.get(name, default) for step in trace])
++            else:
++                value, score, status = result
++            return value, score[0], status
++
++        signature = (tf.TensorSpec([],dtype),tf.TensorSpec([],dtype),status_signature)
++        if k_batch_mode == 'pfor':
++            values,scores,direction_status = tf.vectorized_map(evaluate_direction,row_directions)
++        else:
++            values,scores,direction_status = _map_evaluations(
++                evaluate_direction,row_directions,signature,use_whileloop=_use_whileloop)
++        value_valid = direction_status['value_valid'] & tf.math.is_finite(values)
++        force_valid = direction_status['force_valid'] & tf.math.is_finite(scores) & value_valid
++        # Never compare infinities arithmetically. The predicate also executes
++        # under XLA, where TensorFlow debugging assertions may be elided.
++        finite_values = tf.where(value_valid,values,tf.zeros_like(values))
++        consistent = tf.reduce_all(value_valid == value_valid[0])
++        consistent &= tf.reduce_all(tf.abs(finite_values-finite_values[0]) <=
++            tf.constant(1e-12,dtype)*(1+tf.abs(finite_values[0])))
++        failed = ~(value_valid & force_valid)
++        first = tf.argmax(tf.cast(failed,tf.int32),output_type=tf.int32)
++        status = {key:value[first] for key,value in direction_status.items()}
++        status['value_valid'] = tf.reduce_all(value_valid)
++        status['force_valid'] = tf.reduce_all(force_valid)
++        value_first = tf.argmax(tf.cast(~value_valid,tf.int32),output_type=tf.int32)
++        status['value_failure_code'] = direction_status['value_failure_code'][value_first]
++        status = record_failure(status, consistent, consistent,
++            time=-1, stage=FailureStage.DIRECTIONS, value_code=FailureCode.DIRECTION_MISMATCH)
++        status['direction_value_valid'] = value_valid
++        status['direction_force_valid'] = force_valid
++        status['direction_force_failure_code'] = direction_status['force_failure_code']
++        value = tf.where(status['value_valid'],values[0],tf.constant(float('-inf'),dtype))
++        # Individual directional evidence remains available, but the force
++        # supplied to an integrator is a single, deterministic all-or-zero field.
++        score = tf.where(status['force_valid'],scores,tf.zeros_like(scores))
++        return value,score,status
++
++    row_signature = dict(status_signature)
++    row_signature.update(direction_value_valid=tf.TensorSpec([k_count],tf.bool),
++                         direction_force_valid=tf.TensorSpec([k_count],tf.bool),
++                         direction_force_failure_code=tf.TensorSpec([k_count],tf.int32))
++    values,scores,diagnostics = _map_evaluations(
++        evaluate_row,(theta,directions),
++        (tf.TensorSpec([],dtype),tf.TensorSpec([k_count],dtype),row_signature),
++        use_whileloop=_use_whileloop)
++    diagnostics['program_valid'] = diagnostics['value_valid'] & diagnostics['force_valid']
+     if squeeze_output:
+-        scores = scores[:, 0]
+-    return values, scores, {"program_valid": valid}
++        scores = scores[:,0]
++    return values,scores,diagnostics
+ 
+ 
+-def canonical_batch_fused_value_score_whileloop(
+-    model: PerPointScoreModel,
+-    theta: Tensor,
+-    theta_directions: Tensor,
+-    initial_states: Tensor,
+-    initial_covariances: Tensor,
+-    noises: Tensor,
+-    observations: Tensor,
+-    substeps: int = 8,
+-    reset_policy: str = "contract_e_tp",
+-    reset_design: str = "ledh_canonical_ot_streaming",
+-    reset_epsilon: float = 1e-5,
+-    reset_sinkhorn_steps: int = 10,
+-    reset_balance_steps: int = 3,
+-    reset_ridge: float = 1e-10,
+-    correction_steps: int = 4,
+-    correction_strength: float = 1.0,
+-    correction_lm_damping: float = 1e-3,
+-    correction_lm_scale_floor: float = 1e-10,
+-    correction_trust_radius: float | None = None,
+-    pairwise_steps: int = 4,
+-    pairwise_strength: float = 1.0,
+-    pairwise_rms_cap: float | None = None,
+-    coordinate_cap: float | None = None,
+-    coordinate_cap_power: float = 1.0,
+-    annealed_stages: int = 1,
+-    annealed_seed: int | None = None,
+-) -> tuple[Tensor, Tensor, dict[str, Tensor]]:
+-    """XLA-compatible while_loop variant of canonical_batch_fused_value_score.
+-
+-    Replaces nested tf.map_fn with nested tf.while_loop + tensor_scatter_nd_update
+-    to eliminate TensorArray, enabling XLA compilation.
++def canonical_batch_fused_value_score_whileloop(*args, **kwargs):
++    """Dense while-loop evaluator with the same settings and authority as map mode.
+ 
+-    All parameters and behavior match canonical_batch_fused_value_score exactly.
+-    This is Phase 1.5 of the while-loop restoration (2026-09-14).
+-
+-    Returns:
+-        values: [B] primal canonical values
+-        scores: [B, K] directional scores (or [B] if theta_directions is rank-2)
+-        diagnostics: {"program_valid": [B] boolean mask}
++    In particular, this entry point has no separate reset family or correction
++    defaults. Both entry points execute the same scalar canonical calculation
++    and expose identical value, force and per-direction status.
+     """
+-    dtype = theta.dtype
+-
+-    # Input validation (copied from original)
+-    directions_input = theta_directions
+-    if directions_input.shape.rank == 2:
+-        directions = directions_input[:, None, :]
+-        squeeze_output = True
+-    elif directions_input.shape.rank == 3:
+-        directions = directions_input
+-        squeeze_output = False
+-    else:
+-        raise ValueError("theta_directions must have rank 2 or 3")
+-
+-    if theta.shape.rank != 2:
+-        raise ValueError("theta must have rank 2")
+-    if theta.shape[0] is not None and directions.shape[0] is not None:
+-        if theta.shape[0] != directions.shape[0]:
+-            raise ValueError("theta and theta_directions batch dimensions must agree")
+-    if theta.shape[1] is not None and directions.shape[2] is not None:
+-        if theta.shape[1] != directions.shape[2]:
+-            raise ValueError("theta and theta_directions parameter dimensions must agree")
+-
+-    k_count = directions.shape[1]
+-    if k_count is None:
+-        raise ValueError("K dimension must be statically known")
+-
+-    common_kwargs = dict(
+-        flow_substeps=substeps,
+-        with_score=True,
+-        reset_policy=reset_policy,
+-        reset_design=reset_design,
+-        reset_epsilon=reset_epsilon,
+-        reset_sinkhorn_steps=reset_sinkhorn_steps,
+-        reset_balance_steps=reset_balance_steps,
+-        reset_ridge=reset_ridge,
+-        correction_steps=correction_steps,
+-        correction_strength=correction_strength,
+-        correction_lm_damping=correction_lm_damping,
+-        correction_lm_scale_floor=correction_lm_scale_floor,
+-        correction_trust_radius=correction_trust_radius,
+-        pairwise_steps=pairwise_steps,
+-        pairwise_strength=pairwise_strength,
+-        pairwise_rms_cap=pairwise_rms_cap,
+-        coordinate_cap=coordinate_cap,
+-        coordinate_cap_power=coordinate_cap_power,
+-        annealed_stages=annealed_stages,
+-        annealed_seed=annealed_seed,
+-    )
+-
+-    # Preallocate outputs
+-    batch_size = tf.shape(theta)[0]
+-    values_out = tf.zeros([batch_size], dtype=dtype)
+-    scores_out = tf.zeros([batch_size, k_count], dtype=dtype)
+-
+-    def batch_loop_cond(batch_idx, vals, scrs):
+-        return batch_idx < batch_size
+-
+-    def batch_loop_body(batch_idx, vals, scrs):
+-        theta_row = theta[batch_idx]
+-        row_directions = directions[batch_idx]  # [K, P]
+-
+-        # Inner K-direction loop
+-        k_values = tf.zeros([k_count], dtype=dtype)
+-        k_scores = tf.zeros([k_count], dtype=dtype)
+-
+-        def k_loop_cond(k_idx, k_vals, k_scrs):
+-            return k_idx < k_count
+-
+-        def k_loop_body(k_idx, k_vals, k_scrs):
+-            direction = row_directions[k_idx]
+-            bound_model = _single_cloud_model(model, theta_row, direction)
+-            value, score = canonical_value_and_analytical_score(
+-                bound_model,
+-                theta_row,
+-                initial_states,
+-                initial_covariances,
+-                noises,
+-                observations,
+-                **common_kwargs,
+-            )
+-            k_vals = tf.tensor_scatter_nd_update(
+-                k_vals, [[k_idx]], [value]
+-            )
+-            k_scrs = tf.tensor_scatter_nd_update(
+-                k_scrs, [[k_idx]], [score[0]]
+-            )
+-            return k_idx + 1, k_vals, k_scrs
+-
+-        _, k_values, k_scores = tf.while_loop(
+-            cond=k_loop_cond,
+-            body=k_loop_body,
+-            loop_vars=(tf.constant(0, tf.int32), k_values, k_scores),
+-            maximum_iterations=k_count,
+-            parallel_iterations=1,
+-        )
+-
+-        # Primal invariance check (from original line 260)
+-        tf.debugging.assert_near(
+-            k_values,
+-            tf.broadcast_to(k_values[0], tf.shape(k_values)),
+-            rtol=1.0e-12,
+-            atol=1.0e-12,
+-            message="direction changed the primal canonical value",
+-        )
+-
+-        # Update batch outputs
+-        vals = tf.tensor_scatter_nd_update(vals, [[batch_idx]], [k_values[0]])
+-        scrs = tf.tensor_scatter_nd_update(scrs, [[batch_idx]], [k_scores])
+-        return batch_idx + 1, vals, scrs
+-
+-    _, values, scores = tf.while_loop(
+-        cond=batch_loop_cond,
+-        body=batch_loop_body,
+-        loop_vars=(tf.constant(0, tf.int32), values_out, scores_out),
+-        maximum_iterations=batch_size,
+-        parallel_iterations=1,
+-    )
+-
+-    # Validity check (from original line 279)
+-    valid = tf.math.is_finite(values) & tf.reduce_all(
+-        tf.math.is_finite(scores), axis=1
+-    )
+-    nan = tf.cast(float("nan"), dtype)
+-    values = tf.where(valid, values, nan)
+-    scores = tf.where(valid[:, None], scores, nan)
+-    if squeeze_output:
+-        scores = scores[:, 0]
+-    return values, scores, {"program_valid": valid}
+-
+-
+-__all__ = ["PerPointScoreModel", "canonical_batch_fused_value_score", "canonical_batch_fused_value_score_whileloop"]
++    kwargs['_use_whileloop'] = True
++    return canonical_batch_fused_value_score(*args, **kwargs)
+diff --git a/bayesfilter/highdim/ledh_canonical_score_stages_tf.py b/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
+index 9d82734da..262e19da9 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_stages_tf.py
+@@ -27,6 +27,7 @@ from __future__ import annotations
+ import tensorflow as tf
+ 
+ from bayesfilter.ops.slogdet_tf import determinant_tf
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+ 
+ Tensor = tf.Tensor
+ 
+@@ -56,7 +57,7 @@ def flow_value_and_parameter_tangent_lgssm(
+     transition = theta[0] * f0
+     d_transition = f0  # d(theta*F0)/dtheta
+ 
+-    process_chol = tf.linalg.cholesky(process_covariance)
++    process_chol = small_matrix.cholesky(process_covariance)
+     anchors = tf.einsum("ij,nj->ni", transition, states)
+     d_anchors = tf.einsum("ij,nj->ni", d_transition, states)
+     pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
+@@ -74,8 +75,8 @@ def flow_value_and_parameter_tangent_lgssm(
+     eps = tf.constant(1.0 / substeps, dtype=dtype)
+     h = observation_matrix
+     r = observation_covariance
+-    r_chol = tf.linalg.cholesky(r)
+-    r_inv_z = tf.linalg.cholesky_solve(r_chol, observation[:, None])[:, 0]
++    r_chol = small_matrix.cholesky(r)
++    r_inv_z = small_matrix.cholesky_solve(r_chol, observation[:, None])[:, 0]
+ 
+     actual = pre_flow
+     d_actual = d_pre_flow
+@@ -93,12 +94,12 @@ def flow_value_and_parameter_tangent_lgssm(
+         php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
+         d_php = tf.einsum("oi,nij,pj->nop", h, d_predicted, h)
+         innovation = lam * php + r[None]
+-        innovation_chol = tf.linalg.cholesky(innovation)
++        innovation_chol = small_matrix.cholesky(innovation)
+         ph_t = tf.einsum("nij,oj->nio", predicted, h)
+         d_ph_t = tf.einsum("nij,oj->nio", d_predicted, h)
+         # K_lam = P H^T S^{-1}
+         k_lam = tf.linalg.matrix_transpose(
+-            tf.linalg.cholesky_solve(
++            small_matrix.cholesky_solve(
+                 innovation_chol, tf.linalg.matrix_transpose(ph_t)
+             )
+         )
+@@ -106,13 +107,13 @@ def flow_value_and_parameter_tangent_lgssm(
+         # d(K_lam) = dP H^T S^{-1} - K_lam dS S^{-1}
+         # implemented via cholesky_solve on the transposed systems:
+         term_one = tf.linalg.matrix_transpose(
+-            tf.linalg.cholesky_solve(
++            small_matrix.cholesky_solve(
+                 innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
+             )
+         )
+         k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
+         term_two = tf.linalg.matrix_transpose(
+-            tf.linalg.cholesky_solve(
++            small_matrix.cholesky_solve(
+                 innovation_chol, tf.linalg.matrix_transpose(k_ds)
+             )
+         )
+@@ -207,12 +208,12 @@ def multi_step_value_and_score_lgssm(
+     count = tf.shape(initial_states)[0]
+     transition = theta[0] * f0
+     d_transition = f0
+-    process_chol = tf.linalg.cholesky(process_covariance)
+-    obs_chol = tf.linalg.cholesky(observation_covariance)
++    process_chol = small_matrix.cholesky(process_covariance)
++    obs_chol = small_matrix.cholesky(observation_covariance)
+     eye = tf.eye(int(initial_states.shape[1]), dtype=dtype)
+     eps = tf.constant(1.0 / substeps, dtype=dtype)
+     h = observation_matrix
+-    r_inv = tf.linalg.cholesky_solve(obs_chol, tf.eye(int(observation_matrix.shape[0]), dtype=dtype))
++    r_inv = small_matrix.cholesky_solve(obs_chol, tf.eye(int(observation_matrix.shape[0]), dtype=dtype))
+ 
+     states = initial_states
+     d_states = tf.zeros_like(initial_states)
+@@ -253,25 +254,25 @@ def multi_step_value_and_score_lgssm(
+             lam = schedule[step_index]
+             php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
+             d_php = tf.einsum("oi,nij,pj->nop", h, base_d_predicted, h)
+-            innovation_chol = tf.linalg.cholesky(
++            innovation_chol = small_matrix.cholesky(
+                 lam * php + observation_covariance[None]
+             )
+             ph_t = tf.einsum("nij,oj->nio", predicted, h)
+             d_ph_t = tf.einsum("nij,oj->nio", base_d_predicted, h)
+             k_lam = tf.linalg.matrix_transpose(
+-                tf.linalg.cholesky_solve(
++                small_matrix.cholesky_solve(
+                     innovation_chol, tf.linalg.matrix_transpose(ph_t)
+                 )
+             )
+             d_s = lam * d_php
+             term_one = tf.linalg.matrix_transpose(
+-                tf.linalg.cholesky_solve(
++                small_matrix.cholesky_solve(
+                     innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
+                 )
+             )
+             k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
+             term_two = tf.linalg.matrix_transpose(
+-                tf.linalg.cholesky_solve(
++                small_matrix.cholesky_solve(
+                     innovation_chol, tf.linalg.matrix_transpose(k_ds)
+                 )
+             )
+@@ -372,9 +373,9 @@ def _cholesky_forward_differential(
+     Batched over the leading axis.
+     """
+ 
+-    inv_d = tf.linalg.triangular_solve(chol, d_matrix)
++    inv_d = small_matrix.triangular_solve(chol, d_matrix)
+     inv_d_inv_t = tf.linalg.matrix_transpose(
+-        tf.linalg.triangular_solve(
++        small_matrix.triangular_solve(
+             chol, tf.linalg.matrix_transpose(inv_d)
+         )
+     )
+@@ -416,7 +417,8 @@ def _sigma_points_with_tangent(
+     )
+     scale_c = tf.constant(scale, dtype=dtype)
+     valid, chol = safe_cholesky(scale_c * stabilized, "sigma_points")
+-    d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
++    from bayesfilter.highdim.ledh_numerical_safety_tf import cholesky_differential
++    d_chol = cholesky_differential(chol, scale_c * d_stabilized, valid)
+     if standard_points is not None:
+         return (means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, chol),
+                 d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol),
+@@ -624,19 +626,21 @@ def quadrature_update_with_parameter_tangent(
+     d_cross_cov = tf.einsum(
+         "s,nsi,nsj->nij", cov_w, d_centered_x, centered_y
+     ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered_x, d_centered_y)
+-    chol = tf.linalg.cholesky(
+-        innovation_cov
+-        + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype)
++    from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
++    innovation_valid, chol = safe_cholesky(
++        innovation_cov + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype),
++        "ukf_innovation",
+     )
++    valid = valid & innovation_valid
+     gain = tf.linalg.matrix_transpose(
+-        tf.linalg.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
++        small_matrix.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
+     )
+     # dK = (dC - K dS) S^{-1}
+     residual_matrix = d_cross_cov - tf.einsum(
+         "nio,nop->nip", gain, d_innovation_cov
+     )
+     d_gain = tf.linalg.matrix_transpose(
+-        tf.linalg.cholesky_solve(
++        small_matrix.cholesky_solve(
+             chol, tf.linalg.matrix_transpose(residual_matrix)
+         )
+     )
+@@ -664,13 +668,13 @@ def quadrature_update_with_parameter_tangent(
+     )
+     result = (post_means, post_covs, d_post_means, d_post_covs, valid)
+     if return_evidence:
+-        inverse_innovation = tf.linalg.cholesky_solve(chol, innovation[..., None])[..., 0]
++        inverse_innovation = small_matrix.cholesky_solve(chol, innovation[..., None])[..., 0]
+         logdet = 2 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1)
+         constant = tf.cast(obs_dim, dtype) * tf.math.log(2 * tf.acos(tf.cast(-1., dtype)))
+         log_evidence = -.5 * (constant + logdet + tf.reduce_sum(innovation * inverse_innovation, -1))
+         d_log_evidence = -tf.reduce_sum(d_innovation * inverse_innovation, -1)
+         d_log_evidence += .5 * tf.einsum("ni,nij,nj->n", inverse_innovation, d_innovation_cov, inverse_innovation)
+-        d_log_evidence -= .5 * tf.linalg.trace(tf.linalg.cholesky_solve(chol, d_innovation_cov))
++        d_log_evidence -= .5 * tf.linalg.trace(small_matrix.cholesky_solve(chol, d_innovation_cov))
+         return (*result, log_evidence, d_log_evidence)
+     return result
+ 
+@@ -714,7 +718,7 @@ def _gaussian_log_density_and_tangent(
+     """
+ 
+     residual = points - means
+-    solved = tf.linalg.triangular_solve(
++    solved = small_matrix.triangular_solve(
+         tf.broadcast_to(
+             covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]
+         ),
+@@ -734,7 +738,7 @@ def _gaussian_log_density_and_tangent(
+     d_residual = (d_points if d_points is not None else 0.0) - (
+         d_means if d_means is not None else 0.0
+     )
+-    d_solved = tf.linalg.triangular_solve(
++    d_solved = small_matrix.triangular_solve(
+         tf.broadcast_to(
+             covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]
+         ),
+@@ -745,7 +749,7 @@ def _gaussian_log_density_and_tangent(
+         symmetric_d_covariance = 0.5 * (
+             d_covariance + tf.linalg.matrix_transpose(d_covariance)
+         )
+-        precision_residual = tf.linalg.cholesky_solve(
++        precision_residual = small_matrix.cholesky_solve(
+             covariance_chol, residual[:, :, None]
+         )[:, :, 0]
+         covariance_quadratic = tf.einsum(
+@@ -755,7 +759,7 @@ def _gaussian_log_density_and_tangent(
+             precision_residual,
+         )
+         covariance_trace = tf.linalg.trace(
+-            tf.linalg.cholesky_solve(
++            small_matrix.cholesky_solve(
+                 covariance_chol, symmetric_d_covariance
+             )
+         )
+@@ -793,7 +797,7 @@ def one_step_increment_and_parameter_tangent_lgssm(
+     d_transition = f0
+     anchors = tf.einsum("ij,nj->ni", transition, states)
+     d_anchors = tf.einsum("ij,nj->ni", d_transition, states)
+-    process_chol = tf.linalg.cholesky(process_covariance)
++    process_chol = small_matrix.cholesky(process_covariance)
+     pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
+     d_pre_flow = d_anchors
+ 
+@@ -821,7 +825,7 @@ def one_step_increment_and_parameter_tangent_lgssm(
+         d_anchors if with_tangent else None,
+         process_chol,
+     )
+-    obs_chol = tf.linalg.cholesky(observation_covariance)
++    obs_chol = small_matrix.cholesky(observation_covariance)
+     observed = tf.einsum(
+         "oi,ni->no", observation_matrix, children
+     )
+diff --git a/bayesfilter/highdim/ledh_canonical_score_tf.py b/bayesfilter/highdim/ledh_canonical_score_tf.py
+index 4a6fe12e2..99b9123f2 100644
+--- a/bayesfilter/highdim/ledh_canonical_score_tf.py
++++ b/bayesfilter/highdim/ledh_canonical_score_tf.py
+@@ -16,17 +16,26 @@ gates; it never ships.
+ 
+ from __future__ import annotations
+ 
+-from collections.abc import Callable, Mapping
+-from dataclasses import dataclass
++from dataclasses import dataclass, replace
++from typing import Callable, Mapping
+ 
+ import tensorflow as tf
+ 
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
++
+ from bayesfilter.highdim.ledh_canonical_score_stages_tf import (
+     _gaussian_log_density_and_tangent,
+     ukf_predict_with_parameter_tangent,
+     ukf_update_with_parameter_tangent,
+ )
+ 
++from bayesfilter.highdim.ledh_numerical_safety_tf import (
++    safe_cholesky, cholesky_differential, all_finite, finite_or_zero,
++)
++from bayesfilter.highdim.ledh_failure_status_tf import (
++    FailureCode, FailureStage, initial_status, record_failure, first_invalid_particle,
++)
++
+ Tensor = tf.Tensor
+ 
+ ANCESTRY_POLICIES = (
+@@ -109,6 +118,11 @@ class NonlinearScoreModel:
+     transition_log_density_tangent_fn: (
+         Callable[[Tensor, Tensor, Tensor, Tensor, Tensor], Tensor] | None
+     ) = None
++    # Optional structural chart x=f(ancestor)+B e. With this field, process
++    # covariance/noises are in innovation coordinates, not full-state space.
++    # The full-state UKF uses B S B'; only proposals flow in innovation space.
++    innovation_matrix: Tensor | None = None
++    innovation_matrix_tangent_fn: Callable[[Tensor], Tensor] | None = None
+ 
+ 
+ def _value_and_analytical_score_impl(
+@@ -123,6 +137,7 @@ def _value_and_analytical_score_impl(
+     with_score: bool,
+     return_trace: bool = False,
+     _stacked_trace: bool = False,
++    return_status: bool = False,
+     initial_state_tangent: Tensor | None = None,
+     initial_covariance_tangent: Tensor | None = None,
+     observation_factor_override: Callable[
+@@ -256,9 +271,33 @@ def _value_and_analytical_score_impl(
+     if state_map_policy == "fixed_supplied":
+         tf.debugging.assert_positive(state_map_scale)
+     eye = tf.eye(dim, dtype=dtype)
+-    process_chol = tf.linalg.cholesky(model.process_covariance)
+-    obs_chol = tf.linalg.cholesky(model.observation_covariance)
+-    r_inv = tf.linalg.cholesky_solve(obs_chol, tf.eye(obs_dim, dtype=dtype))
++    if flow_substeps <= 0 or horizon <= 0 or initial_states.shape[0] == 0:
++        raise ValueError("positive horizon, particle count and flow_substeps are required")
++    if reset_policy not in ("none", "contract_e"):
++        raise ValueError("reset_policy must be 'none' or 'contract_e'")
++    if reset_policy == "contract_e" and reset_design is None:
++        raise ValueError("Contract E requires an explicit fixed reset design")
++    geometry = None
++    if model.innovation_matrix is not None:
++        from bayesfilter.highdim.ledh_structural_innovation_tf import affine_innovation_geometry
++        if model.transition_log_density_fn is not None:
++            raise ValueError("structural innovations currently require the declared Gaussian density")
++        innovation_dim = int(model.process_covariance.shape[-1])
++        if noises.shape[-1] != innovation_dim:
++            raise ValueError("structural noises must have innovation dimension")
++        geometry = affine_innovation_geometry(
++            model.innovation_matrix,
++            None if model.innovation_matrix_tangent_fn is None else model.innovation_matrix_tangent_fn(theta),
++            state_dim=dim, innovation_dim=innovation_dim)
++    elif model.innovation_matrix_tangent_fn is not None:
++        raise ValueError("innovation_matrix_tangent_fn requires innovation_matrix")
++    process_valid, process_chol = safe_cholesky(model.process_covariance, "process")
++    observation_valid, obs_chol = safe_cholesky(model.observation_covariance, "observation")
++    process_covariance = tf.where(process_valid, model.process_covariance,
++                                  tf.eye(int(model.process_covariance.shape[-1]), dtype=dtype))
++    observation_covariance = tf.where(observation_valid, model.observation_covariance,
++                                      tf.eye(obs_dim, dtype=dtype))
++    r_inv = small_matrix.cholesky_solve(obs_chol, tf.eye(obs_dim, dtype=dtype))
+ 
+     d_q = (
+         model.process_covariance_tangent_fn(theta)
+@@ -271,8 +310,15 @@ def _value_and_analytical_score_impl(
+         else None
+     )
+     d_process_chol = (
+-        _cholesky_forward_diff_local(process_chol, d_q) if d_q is not None else None
++        cholesky_differential(process_chol, d_q, process_valid) if d_q is not None else None
+     )
++    # S/dS stay in innovation coordinates for transition density evaluation.
++    # Q/dQ for UKF prediction include all dependence of the rectangular B.
++    d_state_q = d_q
++    if geometry is not None:
++        process_covariance, d_state_q = geometry.state_covariance(
++            process_covariance, tf.zeros_like(process_covariance) if d_q is None else d_q)
++        process_valid = process_valid & geometry.value_valid
+     d_r_inv = (
+         -tf.linalg.matmul(tf.linalg.matmul(r_inv, d_r), r_inv)
+         if d_r is not None
+@@ -289,7 +335,24 @@ def _value_and_analytical_score_impl(
+     d_incoming_log_weights = tf.zeros_like(uniform_log_weights)
+     total = tf.zeros([], dtype)
+     d_total = tf.zeros([], dtype)
+-    program_valid = tf.constant(True)
++    status = record_failure(initial_status(),
++        all_finite(theta, states, covariances), all_finite(d_states, d_covariances, d_q, d_r),
++        time=-1, stage=FailureStage.INITIAL)
++    status = record_failure(status, process_valid & observation_valid,
++        all_finite(d_process_chol, d_r_inv, d_state_q)
++        & (geometry.force_valid if geometry is not None else tf.constant(True)),
++        time=-1, stage=FailureStage.INITIAL,
++        value_code=FailureCode.FACTORIZATION)
++    states = tf.where(status['value_valid'], states, tf.zeros_like(states))
++    covariances = tf.where(status['value_valid'], covariances, tf.broadcast_to(eye, tf.shape(covariances)))
++    d_states = tf.where(status['force_valid'], d_states, tf.zeros_like(d_states))
++    d_covariances = tf.where(status['force_valid'], d_covariances, tf.zeros_like(d_covariances))
++    if d_q is not None:
++        d_q = tf.where(status['force_valid'], d_q, tf.zeros_like(d_q))
++        d_process_chol = tf.where(status['force_valid'], d_process_chol, tf.zeros_like(d_process_chol))
++    if d_r is not None:
++        d_r = tf.where(status['force_valid'], d_r, tf.zeros_like(d_r))
++        d_r_inv = tf.where(status['force_valid'], d_r_inv, tf.zeros_like(d_r_inv))
+ 
+     def mean_fn(points):
+         return model.transition_mean_fn(theta, points)
+@@ -299,7 +362,7 @@ def _value_and_analytical_score_impl(
+ 
+     # Phase 1 while-loop: convert time loop (2026-09-14)
+     # Reference: deleted implementation at 5cc59cfa~1, lines 691-714
+-    def time_loop_cond(t, _states, _d_states, _covs, _d_covs, _in_log_w, _d_in_log_w, _program_valid, _total, _d_total):
++    def time_loop_cond(t, *_):
+         return t < horizon
+ 
+     moment_predict, moment_update = (moment_provider if moment_provider is not None else
+@@ -311,7 +374,9 @@ def _value_and_analytical_score_impl(
+         moments = tuple(tf.broadcast_to(moment_schedule[prefix + name][t],
+                      [count, dim, dim] if "covariances" in name else [count, dim])
+                      for name in ("means", "covariances", "d_means", "d_covariances"))
+-        return (*moments, tf.broadcast_to(moment_schedule[prefix + "valid"][t], [count]))
++        valid, _ = safe_cholesky(moments[1], "scheduled_covariance")
++        schedule_valid = moment_schedule.get(prefix + "valid", tf.constant(True))
++        return (*moments, valid & tf.broadcast_to(schedule_valid[t] if schedule_valid.shape.rank else schedule_valid, [count]))
+ 
+     def predict_at(t, *args, **kwargs):
+         return scheduled_moments(t, "predicted_") if moment_schedule is not None else moment_predict(*args, **kwargs)
+@@ -319,8 +384,10 @@ def _value_and_analytical_score_impl(
+     def update_at(t, *args, **kwargs):
+         return scheduled_moments(t, "post_") if moment_schedule is not None else moment_update(*args, **kwargs)
+ 
+-    def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, program_valid, total, d_total):
+-        # SQMC ordering uses the fixed particle extent of this invocation.
++    def time_loop_body(t, states, d_states, covariances, d_covariances, incoming_log_weights, d_incoming_log_weights, status, total, d_total):
++        # Apply the fixed SQMC ancestry map used by the main score program.
++        # The selected indices are part of the diagnostic trace so the realized
++        # piecewise-constant program can be audited independently of its score.
+         states = tf.ensure_shape(states, [particle_count, dim])
+         (
+             ancestor_indices,
+@@ -337,7 +404,14 @@ def _value_and_analytical_score_impl(
+             hilbert_bits=hilbert_bits,
+             state_map_policy=state_map_policy,
+         )
+-        program_valid = program_valid & ancestry_valid
++        status = record_failure(
++            status,
++            ancestry_valid,
++            tf.constant(True),
++            time=t,
++            stage=FailureStage.WEIGHTS,
++            value_code=FailureCode.CALLBACK,
++        )
+         states = tf.gather(states, ancestor_indices)
+         d_states = tf.gather(d_states, ancestor_indices)
+         covariances = tf.gather(covariances, ancestor_indices)
+@@ -346,9 +420,11 @@ def _value_and_analytical_score_impl(
+         d_incoming_log_weights = tf.gather(
+             d_incoming_log_weights, ancestor_indices
+         )
+-
+         observation = observations[t]
+         noise = noises[t]
++        status = record_failure(status, all_finite(observation, noise), True,
++                                time=t, stage=FailureStage.INITIAL)
++        observation, noise = finite_or_zero(observation), finite_or_zero(noise)
+         step_incoming_log_weights = incoming_log_weights
+         d_step_incoming_log_weights = d_incoming_log_weights
+ 
+@@ -366,23 +442,43 @@ def _value_and_analytical_score_impl(
+             d_covariances,
+             mean_fn,
+             mean_tangent_fn,
+-            model.process_covariance,
+-            d_process_noise_covariance=d_q,
++            process_covariance,
++            d_process_noise_covariance=d_state_q,
+         )
+ 
++        status = record_failure(status,
++            tf.reduce_all(valid_predict) & all_finite(predicted_means, predicted_covs),
++            all_finite(d_predicted_means, d_predicted_covs), time=t, stage=FailureStage.PREDICT,
++            value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(valid_predict))
++        predicted_means = tf.where(status['value_valid'], predicted_means, tf.zeros_like(predicted_means))
++        predicted_covs = tf.where(status['value_valid'], predicted_covs, tf.broadcast_to(eye, tf.shape(predicted_covs)))
++        d_predicted_means = tf.where(status['force_valid'], d_predicted_means, tf.zeros_like(d_predicted_means))
++        d_predicted_covs = tf.where(status['force_valid'], d_predicted_covs, tf.zeros_like(d_predicted_covs))
++
+         # S2: anchor + pre-flow (total tangent via model callback)
+         anchors = mean_fn(states)
+         d_anchors = mean_tangent_fn(states, d_states)
+-        pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
+-        d_pre_flow = d_anchors
++        innovation = tf.einsum("ij,nj->ni", process_chol, noise)
++        d_innovation = tf.zeros_like(innovation)
+         if d_process_chol is not None:
+-            d_pre_flow = d_pre_flow + tf.einsum("ij,nj->ni", d_process_chol, noise)
++            d_innovation = tf.einsum("ij,nj->ni", d_process_chol, noise)
++        if geometry is None:
++            pre_flow, d_pre_flow = anchors + innovation, d_anchors + d_innovation
++        else:
++            pre_flow, d_pre_flow = geometry.complete(innovation, d_innovation, anchors, d_anchors)
+ 
+         observation_record = {}
+ 
+         # Per-step density evaluators shared by S4 and the annealed
+         # telescope (model callback path or Gaussian fallback).
+         def _transition_density(points, d_points, means, d_means):
++            if geometry is not None:
++                innovation, d_innovation = geometry.coordinates(points, d_points, means, d_means)
++                # Same innovation measure in numerator and denominator; no
++                # density in the singular full-state Lebesgue measure exists.
++                return _gaussian_log_density_and_tangent(
++                    innovation, d_innovation, tf.zeros_like(innovation),
++                    tf.zeros_like(innovation), process_chol, d_covariance=d_q)
+             if model.transition_log_density_fn is not None:
+                 return (
+                     model.transition_log_density_fn(theta, points, means),
+@@ -428,59 +524,74 @@ def _value_and_analytical_score_impl(
+             return result[:2]
+ 
+         if annealed_stages > 1:
+-            # Tempered importance telescope, with realized resampling indices
+-            # held fixed in the analytical derivative. At stage j the target
+-            # factor is transition(x|anchor)*observation(x)**(j/K).
+-            # The first stage retains incoming weights; resampling makes all
+-            # subsequent stages uniform. Every particle-associated moment and
+-            # tangent follows exactly the same indices.
++            # Restore the same pre-conversion telescope in a bounded native
++            # loop. Realized resampling indices are piecewise constant.
+             k_f = tf.cast(annealed_stages, dtype)
+-            def stage_body(j, current, d_current, stage_anchors, d_stage_anchors,
+-                           stage_pm, d_stage_pm, stage_pc, d_stage_pc,
+-                           log_weights, d_log_weights, stage_total, d_stage_total):
+-                prev_trans, d_prev_trans = _transition_density(current, d_current, stage_anchors, d_stage_anchors)
+-                prev_obs, d_prev_obs = _observation_density(current, d_current)
+-                moved, d_moved, stage_log_det, d_stage_log_det = _flow_substeps_with_tangent(
+-                    model, current, d_current, stage_anchors, d_stage_anchors,
+-                    stage_pc / k_f, d_stage_pc / k_f, observation,
+-                    model.observation_covariance * k_f,
+-                    None if d_r is None else d_r * k_f,
+-                    r_inv / k_f, None if d_r_inv is None else d_r_inv / k_f,
+-                    substeps=flow_substeps, eye=eye)
+-                new_trans, d_new_trans = _transition_density(moved, d_moved, stage_anchors, d_stage_anchors)
+-                new_obs, d_new_obs = _observation_density(moved, d_moved)
+-                fraction, previous = tf.cast(j + 1, dtype) / k_f, tf.cast(j, dtype) / k_f
+-                stage_logits = log_weights + new_trans + fraction * new_obs + stage_log_det - prev_trans - previous * prev_obs
+-                d_stage_logits = d_log_weights + d_new_trans + fraction * d_new_obs + d_stage_log_det - d_prev_trans - previous * d_prev_obs
+-                stage_norm = tf.reduce_logsumexp(stage_logits)
+-                stage_soft = tf.exp(stage_logits - stage_norm)
+-                stage_total += stage_norm
+-                d_stage_total += tf.reduce_sum(stage_soft * d_stage_logits)
+-                offset = tf.random.stateless_uniform([], seed=tf.stack([
+-                    tf.cast(annealed_seed, tf.int32), t * annealed_stages + j + 1]), dtype=dtype)
+-                positions = (offset + tf.cast(tf.range(count), dtype)) / tf.cast(count, dtype)
+-                idx = tf.minimum(tf.searchsorted(tf.cumsum(stage_soft), positions, side='right'), count - 1)
+-                # Resampling preserves N. The dynamic range/searchsorted shape
+-                # otherwise erases that fact inside the nested traced loop.
+-                idx = tf.ensure_shape(idx, [particle_count])
+-                return (j + 1, tf.gather(moved, idx), tf.gather(d_moved, idx),
+-                        tf.gather(stage_anchors, idx), tf.gather(d_stage_anchors, idx),
+-                        tf.gather(stage_pm, idx), tf.gather(d_stage_pm, idx),
+-                        tf.gather(stage_pc, idx), tf.gather(d_stage_pc, idx),
+-                        uniform_log_weights, tf.zeros_like(uniform_log_weights), stage_total, d_stage_total)
+-            (_, children, d_children, _, _, predicted_means, d_predicted_means,
+-             predicted_covs, d_predicted_covs, logits, d_logits, total, d_total) = tf.while_loop(
+-                lambda j, *_: j < annealed_stages, stage_body,
+-                (0, pre_flow, d_pre_flow, anchors, d_anchors, predicted_means, d_predicted_means,
+-                 predicted_covs, d_predicted_covs, step_incoming_log_weights,
+-                 d_step_incoming_log_weights, total, d_total))
+-            softmax = tf.exp(uniform_log_weights)
++            previous_transition, d_previous_transition = _transition_density(
++                pre_flow, d_pre_flow, anchors, d_anchors)
++            previous_observation, d_previous_observation = _observation_density(pre_flow,d_pre_flow)
++            status = record_failure(status,
++                all_finite(pre_flow,anchors,previous_transition,previous_observation),
++                all_finite(d_pre_flow,d_anchors,d_previous_transition,d_previous_observation),
++                time=t,stage=FailureStage.FLOW,value_code=FailureCode.CALLBACK)
++
++            def stage_body(stage,current,d_current,stage_anchors,d_stage_anchors,
++                           pm,d_pm,pc,d_pc,prev_trans,d_prev_trans,prev_obs,d_prev_obs,
++                           stage_status,value_sum,score_sum):
++                moved,d_moved,log_det,d_log_det,vv,fv = _flow_substeps_with_tangent(
++                    model,current,d_current,stage_anchors,d_stage_anchors,
++                    pc/k_f,d_pc/k_f,observation,observation_covariance*k_f,
++                    None if d_r is None else d_r*k_f,r_inv/k_f,
++                    None if d_r_inv is None else d_r_inv/k_f,
++                    substeps=flow_substeps,eye=eye, innovation_geometry=geometry)
++                stage_status=record_failure(stage_status,vv,fv,time=t,
++                    stage=FailureStage.FLOW,value_code=FailureCode.FACTORIZATION,
++                    particle=first_invalid_particle(vv))
++                new_trans,d_new_trans=_transition_density(moved,d_moved,stage_anchors,d_stage_anchors)
++                new_obs,d_new_obs=_observation_density(moved,d_moved)
++                fraction=tf.cast(stage,dtype)/k_f
++                previous_fraction=tf.cast(stage-1,dtype)/k_f
++                stage_logits=new_trans+fraction*new_obs+log_det-prev_trans-previous_fraction*prev_obs
++                d_stage_logits=d_new_trans+fraction*d_new_obs+d_log_det-d_prev_trans-previous_fraction*d_prev_obs
++                stage_status=record_failure(stage_status,all_finite(stage_logits),
++                    all_finite(d_stage_logits),time=t,stage=FailureStage.WEIGHTS,
++                    value_code=FailureCode.CALLBACK)
++                stage_logits=tf.where(stage_status['value_valid'],stage_logits,tf.zeros_like(stage_logits))
++                d_stage_logits=tf.where(stage_status['force_valid'],d_stage_logits,tf.zeros_like(d_stage_logits))
++                norm=tf.reduce_logsumexp(stage_logits)
++                weights=tf.exp(stage_logits-norm)
++                value_sum+=norm-tf.math.log(tf.cast(count,dtype))
++                score_sum+=tf.reduce_sum(weights*d_stage_logits)
++                offset=tf.random.stateless_uniform([],seed=tf.stack([
++                    tf.constant(annealed_seed,tf.int32),t*annealed_stages+stage]),dtype=dtype)
++                positions=(offset+tf.cast(tf.range(count),dtype))/tf.cast(count,dtype)
++                indices=tf.minimum(tf.searchsorted(tf.cumsum(weights),positions),count-1)
++                indices=tf.ensure_shape(indices,[initial_states.shape[0]])
++                current,d_current=tf.gather(moved,indices),tf.gather(d_moved,indices)
++                stage_anchors,d_stage_anchors=tf.gather(stage_anchors,indices),tf.gather(d_stage_anchors,indices)
++                pm,d_pm=tf.gather(pm,indices),tf.gather(d_pm,indices)
++                pc,d_pc=tf.gather(pc,indices),tf.gather(d_pc,indices)
++                prev_trans,d_prev_trans=_transition_density(current,d_current,stage_anchors,d_stage_anchors)
++                prev_obs,d_prev_obs=_observation_density(current,d_current)
++                return (stage+1,current,d_current,stage_anchors,d_stage_anchors,
++                        pm,d_pm,pc,d_pc,prev_trans,d_prev_trans,prev_obs,d_prev_obs,
++                        stage_status,value_sum,score_sum)
++
++            (_,children,d_children,_,_,predicted_means,d_predicted_means,
++             predicted_covs,d_predicted_covs,_,_,_,_,status,total,d_total)=tf.while_loop(
++                lambda stage,*_:stage<=annealed_stages,stage_body,
++                (tf.constant(1),pre_flow,d_pre_flow,anchors,d_anchors,
++                 predicted_means,d_predicted_means,predicted_covs,d_predicted_covs,
++                 previous_transition,d_previous_transition,previous_observation,d_previous_observation,
++                 status,total,d_total),parallel_iterations=1)
++            softmax=tf.ones([count],dtype)/tf.cast(count,dtype)
++            d_logits=tf.zeros([count],dtype)
+         else:
+             # S3: flow with per-particle predicted covariance AND its
+             # tangent (shared helper), then S4: weight assembly (the
+             # transition density tangent needs the total tangent of the
+             # transition mean AT the ancestor: d_anchors).
+-            children, d_children, log_det, d_log_det = _flow_substeps_with_tangent(
++            children, d_children, log_det, d_log_det, flow_value_valid, flow_force_valid = _flow_substeps_with_tangent(
+                 model,
+                 pre_flow,
+                 d_pre_flow,
+@@ -489,13 +600,17 @@ def _value_and_analytical_score_impl(
+                 predicted_covs,
+                 d_predicted_covs,
+                 observation,
+-                model.observation_covariance,
++                observation_covariance,
+                 d_r,
+                 r_inv,
+                 d_r_inv,
+                 substeps=flow_substeps,
+                 eye=eye,
++                innovation_geometry=geometry,
+             )
++            status = record_failure(status, flow_value_valid & all_finite(pre_flow, anchors),
++                flow_force_valid & all_finite(d_pre_flow, d_anchors), time=t, stage=FailureStage.FLOW,
++                value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(flow_value_valid))
+             transition_log, d_transition_log = _transition_density(
+                 children, d_children, anchors, d_anchors
+             )
+@@ -527,6 +642,10 @@ def _value_and_analytical_score_impl(
+             )
+             logits = prior_observation_logits + observation_log
+             d_logits = d_prior_observation_logits + d_observation_log
++            status = record_failure(status, all_finite(logits), all_finite(d_logits),
++                time=t, stage=FailureStage.WEIGHTS, value_code=FailureCode.CALLBACK)
++            logits = tf.where(status['value_valid'], logits, uniform_log_weights)
++            d_logits = tf.where(status['force_valid'], d_logits, tf.zeros_like(d_logits))
+             increment = tf.reduce_logsumexp(logits)
+             softmax = tf.exp(logits - increment)
+             total = total + increment
+@@ -546,11 +665,19 @@ def _value_and_analytical_score_impl(
+             d_predicted_covs,
+             model.observation_fn,
+             model.observation_tangent_fn,
+-            model.observation_covariance,
++            observation_covariance,
+             observation,
+             d_observation_covariance=d_r,
+         )
+ 
++        status = record_failure(status,
++            tf.reduce_all(valid_update) & all_finite(_post_means, post_covs),
++            all_finite(_d_post_means, d_post_covs), time=t, stage=FailureStage.UPDATE,
++            value_code=FailureCode.FACTORIZATION, particle=first_invalid_particle(valid_update))
++        post_covs = tf.where(status['value_valid'], post_covs, tf.broadcast_to(eye, tf.shape(post_covs)))
++        d_post_covs = tf.where(status['force_valid'], d_post_covs, tf.zeros_like(d_post_covs))
++        children = tf.where(status['value_valid'], children, tf.zeros_like(children))
++        d_children = tf.where(status['force_valid'], d_children, tf.zeros_like(d_children))
+         step_weights = softmax
+         d_step_weights = softmax * (d_logits - tf.reduce_sum(softmax * d_logits))
+         reset_transport = tf.eye(count, dtype=dtype)
+@@ -601,31 +728,15 @@ def _value_and_analytical_score_impl(
+                 balance_steps=reset_balance_steps,
+                 ridge=reset_ridge,
+             )
+-            reset_row_error = tf.reduce_max(
+-                tf.abs(tf.reduce_sum(reset_transport, axis=1) - 1.0)
+-            )
+-            reset_column_residual = (
+-                tf.reduce_mean(reset_transport, axis=0) - step_weights
+-            )
+-            reset_column_tv_error = 0.5 * tf.reduce_sum(
+-                tf.abs(reset_column_residual)
+-            )
+-            d_reset_column_residual = (
+-                tf.reduce_mean(d_reset_transport, axis=0) - d_step_weights
+-            )
+-            reset_valid = (
+-                tf.reduce_all(tf.math.is_finite(reset_states))
+-                & tf.reduce_all(tf.math.is_finite(d_reset_states))
+-                & tf.reduce_all(tf.math.is_finite(reset_covariances))
+-                & tf.reduce_all(tf.math.is_finite(d_reset_covariances))
+-                & tf.reduce_all(tf.math.is_finite(reset_transport))
+-                & tf.reduce_all(tf.math.is_finite(d_reset_transport))
+-                & tf.reduce_all(tf.math.is_finite(d_reset_column_residual))
+-                & (reset_row_error <= tf.cast(1.0e-6, dtype))
+-                & (reset_column_tv_error <= tf.cast(1.0e-4, dtype))
+-            )
+-            program_valid = program_valid & reset_valid
+-            if correction_steps > 0 or pairwise_steps > 0 or moment_safety:
++            status = record_failure(status,
++                tf.reduce_all(valid_reset) & all_finite(reset_states, reset_covariances, reset_transport),
++                all_finite(d_reset_states, d_reset_covariances, d_reset_transport),
++                time=t, stage=FailureStage.RESET, value_code=FailureCode.RESET_CORRECTION)
++            reset_states = tf.where(status['value_valid'], reset_states, tf.zeros_like(reset_states))
++            reset_covariances = tf.where(status['value_valid'], reset_covariances, tf.broadcast_to(eye, tf.shape(reset_covariances)))
++            d_reset_states = tf.where(status['force_valid'], d_reset_states, tf.zeros_like(d_reset_states))
++            d_reset_covariances = tf.where(status['force_valid'], d_reset_covariances, tf.zeros_like(d_reset_covariances))
++            if correction_steps > 0 or pairwise_steps > 0:
+                 from bayesfilter.highdim.ledh_unified_correction_tf import (
+                     batched_higher_moment_shape_jvp,
+                 )
+@@ -637,6 +748,7 @@ def _value_and_analytical_score_impl(
+                     d_step_weights[None, None, ...],
+                     reset_states[None, ...],
+                     d_reset_states[None, None, ...],
++                    active=status["value_valid"][None],
+                     correction_steps=correction_steps,
+                     strength=correction_strength,
+                     floor=1.0e-5,
+@@ -661,18 +773,9 @@ def _value_and_analytical_score_impl(
+                     )
+                     for key, value in batched_corrected.items()
+                 }
+-                tf.debugging.assert_equal(
+-                    corrected["valid"],
+-                    True,
+-                    message="higher-moment Contract-E correction is invalid",
+-                )
+-                # XLA may elide Assert ops. Propagate invalidity into the
+-                # returned scalar even at the final reset, where no subsequent
+-                # observation would otherwise expose an invalid correction.
+-                neg_inf = tf.constant(float("-inf"), dtype)
+-                total = tf.where(corrected["valid"], total, neg_inf)
+-                d_total = tf.where(corrected["valid"], d_total, tf.zeros([], dtype))
+-                program_valid = program_valid & corrected["valid"]
++                status = record_failure(status, corrected['value_valid'], corrected['valid'],
++                    time=t, stage=FailureStage.CORRECTION,
++                    value_code=FailureCode.RESET_CORRECTION)
+                 reset_states = corrected["particles"]
+                 d_reset_states = corrected["particles_tangent"][:, :, 0]
+                 higher_moment_record = {
+@@ -742,28 +845,19 @@ def _value_and_analytical_score_impl(
+         callback_valid = (observation_record.get("observation_factor_valid", tf.constant(True))
+                           & post_reset_record.get("post_reset_valid", tf.constant(True)))
+ 
+-        # Combine all validity flags from numerical operations
+-        # Reduce batch-shaped validity flags to scalars for single-trajectory context
+-        numerical_valid = tf.reduce_all(valid_predict) & tf.reduce_all(valid_update)
+-        if reset_policy == "contract_e":
+-            numerical_valid = numerical_valid & tf.reduce_all(valid_reset)
+-
+-        # Overall validity: both callbacks and numerical operations must succeed
+-        program_valid = (
+-            program_valid
+-            & tf.reduce_all(callback_valid)
+-            & numerical_valid
+-            & tf.math.is_finite(total)
+-            & tf.math.is_finite(d_total)
+-            & tf.reduce_all(tf.math.is_finite(new_states))
+-            & tf.reduce_all(tf.math.is_finite(new_covariances))
+-        )
+-        overall_valid = program_valid
+-
+-        # When invalid, return -inf for log probability (NaN would propagate differently)
+-        neg_inf = tf.constant(float("-inf"), dtype)
+-        total = tf.where(overall_valid, total, neg_inf)
+-        d_total = tf.where(overall_valid, d_total, tf.zeros([], dtype))
++        status = record_failure(status,
++            tf.reduce_all(callback_valid) & all_finite(new_states, new_covariances, new_incoming_log_weights, total),
++            all_finite(new_d_states, new_d_covariances, new_d_incoming_log_weights, d_total),
++            time=t, stage=FailureStage.CALLBACK, value_code=FailureCode.CALLBACK)
++        # Inactive trajectories keep finite arithmetic state and never revive.
++        new_states = tf.where(status['value_valid'], new_states, tf.zeros_like(new_states))
++        new_covariances = tf.where(status['value_valid'], new_covariances, tf.broadcast_to(eye, tf.shape(new_covariances)))
++        new_incoming_log_weights = tf.where(status['value_valid'], new_incoming_log_weights, uniform_log_weights)
++        new_d_states = tf.where(status['force_valid'], new_d_states, tf.zeros_like(new_d_states))
++        new_d_covariances = tf.where(status['force_valid'], new_d_covariances, tf.zeros_like(new_d_covariances))
++        new_d_incoming_log_weights = tf.where(status['force_valid'], new_d_incoming_log_weights, tf.zeros_like(new_d_incoming_log_weights))
++        total = tf.where(status['value_valid'], total, tf.zeros([], dtype))
++        d_total = tf.where(status['force_valid'], d_total, tf.zeros([], dtype))
+ 
+         result = (
+             t + 1,
+@@ -773,7 +867,7 @@ def _value_and_analytical_score_impl(
+             new_d_covariances,
+             new_incoming_log_weights,
+             new_d_incoming_log_weights,
+-            program_valid,
++            status,
+             total,
+             d_total,
+         )
+@@ -781,10 +875,9 @@ def _value_and_analytical_score_impl(
+             step_record = {
+                 "time_index": t,
+                 "ancestor_indices": ancestor_indices,
+-                "program_valid": program_valid,
++                "program_valid": status["value_valid"] & status["force_valid"],
+                 # Expose already-computed stage checks without altering the value
+                 # or score. A cumulative flag alone cannot localize a failure.
+-                "ancestry_valid": tf.reduce_all(ancestry_valid),
+                 "ukf_predict_valid": tf.reduce_all(valid_predict),
+                 "ukf_update_valid": tf.reduce_all(valid_update),
+                 "callback_valid": tf.reduce_all(callback_valid),
+@@ -798,8 +891,11 @@ def _value_and_analytical_score_impl(
+                 "posterior_logits_finite": tf.reduce_all(tf.math.is_finite(logits)),
+                 "reset_states_finite": tf.reduce_all(tf.math.is_finite(new_states)),
+                 "reset_tangents_finite": tf.reduce_all(tf.math.is_finite(new_d_states)),
++                "ancestry_valid": tf.reduce_all(ancestry_valid),
+                 "hilbert_tie_count": hilbert_ties,
+                 "state_map_saturation_rate": state_map_saturation,
++                "ancestors": states,
++                "anchors": anchors,
+                 "incoming_log_weights": step_incoming_log_weights,
+                 "d_incoming_log_weights": d_step_incoming_log_weights,
+                 "pre_flow": pre_flow,
+@@ -834,6 +930,7 @@ def _value_and_analytical_score_impl(
+                 "outgoing_log_weights": new_incoming_log_weights,
+                 "d_outgoing_log_weights": new_d_incoming_log_weights,
+             }
++            step_record.update(status)
+             step_record.update(higher_moment_record)
+             step_record.update(post_reset_record)
+             step_record.update(observation_record)
+@@ -843,19 +940,18 @@ def _value_and_analytical_score_impl(
+ 
+     initial_loop = (tf.constant(0, tf.int32), states, d_states, covariances,
+                     d_covariances, incoming_log_weights, d_incoming_log_weights,
+-                    program_valid, total, d_total)
++                    status, total, d_total)
+     state_shapes = (tf.TensorShape([]), tf.TensorShape([None, dim]),
+                     tf.TensorShape([None, dim]), tf.TensorShape([None, dim, dim]),
+                     tf.TensorShape([None, dim, dim]), tf.TensorShape([None]),
+-                    tf.TensorShape([None]), tf.TensorShape([]),
++                    tf.TensorShape([None]), tf.nest.map_structure(lambda _: tf.TensorShape([]), status),
+                     tf.TensorShape([]), tf.TensorShape([]))
+     if return_trace:
+         # One traced numerical step; TensorArrays carry all diagnostic fields
+         # through the time loop. Python callbacks must return their metadata,
+         # never append loop tensors to a Python container outside this body.
+         step_kernel = tf.function(time_loop_body, autograph=False,
+-                                  input_signature=[tf.TensorSpec(v.shape, v.dtype)
+-                                                   for v in initial_loop])
++                                  input_signature=tf.nest.map_structure(lambda v: tf.TensorSpec(v.shape, v.dtype), initial_loop))
+         template = step_kernel.get_concrete_function().structured_outputs[1]
+         buffers = tf.nest.map_structure(
+             lambda value: tf.TensorArray(value.dtype, size=horizon,
+@@ -873,17 +969,21 @@ def _value_and_analytical_score_impl(
+             parallel_iterations=1)
+         stacked = tf.nest.map_structure(lambda buf: buf.stack(), loop_result[-1])
+         total, d_total = loop_result[-3:-1]
+-        if _stacked_trace:
+-            return total, d_total[None] if with_score else None, stacked
+-        trace = tuple(tf.nest.map_structure(lambda value, _index=index: value[_index], stacked)
+-                      for index in range(horizon))
+-        return total, d_total[None] if with_score else None, trace
++        status = loop_result[-4]
++        total = tf.where(status['value_valid'], total, tf.constant(float('-inf'),dtype))
++        trace = stacked if _stacked_trace else tuple(
++            tf.nest.map_structure(lambda value: value[index], stacked) for index in range(horizon))
++        result = (total, d_total[None] if with_score else None, trace)
++        return (*result, status) if return_status else result
+     loop_result = tf.while_loop(
+         time_loop_cond, time_loop_body, initial_loop,
+         shape_invariants=state_shapes, maximum_iterations=horizon,
+         parallel_iterations=1)
+     total, d_total = loop_result[-2:]
+-    return total, d_total[None] if with_score else None
++    status = loop_result[-3]
++    total = tf.where(status['value_valid'], total, tf.constant(float('-inf'),dtype))
++    result = (total, d_total[None] if with_score else None)
++    return (*result, status) if return_status else result
+ 
+ 
+ def canonical_value_and_analytical_score(
+@@ -897,6 +997,7 @@ def canonical_value_and_analytical_score(
+     flow_substeps: int = 24,
+     with_score: bool,
+     return_trace: bool = False,
++    return_status: bool = False,
+     initial_state_tangent: Tensor | None = None,
+     initial_covariance_tangent: Tensor | None = None,
+     reset_policy: str = "none",
+@@ -953,6 +1054,7 @@ def canonical_value_and_analytical_score(
+         flow_substeps=flow_substeps,
+         with_score=with_score,
+         return_trace=return_trace,
++        return_status=return_status,
+         initial_state_tangent=initial_state_tangent,
+         initial_covariance_tangent=initial_covariance_tangent,
+         observation_factor_override=None,
+@@ -1086,6 +1188,8 @@ def _flow_substep_body_impl(
+     substeps: tf.Tensor,
+     eye: Tensor,
+     eps: Tensor,
++    value_alive: Tensor,
++    force_alive: Tensor,
+ ) -> tuple[tf.Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+     """Single flow substep with analytical tangent.
+ 
+@@ -1124,25 +1228,25 @@ def _flow_substep_body_impl(
+             d_h_jac,
+         )
+     )
+-    innovation_chol = tf.linalg.cholesky(lam * php + observation_covariance[None])
++    innovation_valid, innovation_chol = safe_cholesky(lam * php + observation_covariance[None], "flow_innovation")
+     ph_t = tf.einsum("nij,noj->nio", predicted_covs, h_jac)
+     d_ph_t = tf.einsum("nij,noj->nio", d_predicted_covs, h_jac) + tf.einsum(
+         "nij,noj->nio", predicted_covs, d_h_jac
+     )
+     k_lam = tf.linalg.matrix_transpose(
+-        tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(ph_t))
++        small_matrix.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(ph_t))
+     )
+     d_s = lam * d_php
+     if d_observation_covariance is not None:
+         d_s = d_s + d_observation_covariance[None]
+     term_one = tf.linalg.matrix_transpose(
+-        tf.linalg.cholesky_solve(
++        small_matrix.cholesky_solve(
+             innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
+         )
+     )
+     k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
+     term_two = tf.linalg.matrix_transpose(
+-        tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(k_ds))
++        small_matrix.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(k_ds))
+     )
+     d_k_lam = term_one - term_two
+     a_matrix = -0.5 * tf.einsum("nio,noj->nij", k_lam, h_jac)
+@@ -1203,22 +1307,32 @@ def _flow_substep_body_impl(
+         + d_b_vector
+     )
+     step_matrix = eye[None] + eps * a_matrix
+-    q_factor, r_factor = tf.linalg.qr(step_matrix)
++    finite_matrix = tf.reduce_all(tf.math.is_finite(step_matrix),[-2,-1])
++    q_factor, r_factor = tf.linalg.qr(tf.where(finite_matrix[:,None,None], step_matrix, eye[None]))
++    factor_valid = finite_matrix & tf.reduce_all(tf.math.is_finite(r_factor),[-2,-1])
++    factor_valid &= tf.reduce_all(tf.abs(tf.linalg.diag_part(r_factor)) > 0,axis=-1)
++    r_factor = tf.where(factor_valid[:,None,None],r_factor,eye[None])
+     new_log_det = log_det + tf.reduce_sum(
+         tf.math.log(tf.abs(tf.linalg.diag_part(r_factor))), axis=1
+     )
+     q_transpose_d_a = tf.linalg.matmul(q_factor, d_a_matrix, transpose_a=True)
+-    solved_d_a = tf.linalg.triangular_solve(r_factor, q_transpose_d_a, lower=False)
++    solved_d_a = small_matrix.triangular_solve(r_factor, q_transpose_d_a, lower=False)
+     new_d_log_det = d_log_det + eps * tf.linalg.trace(solved_d_a)
+ 
++    value_alive &= innovation_valid & factor_valid
++    value_alive &= tf.reduce_all(tf.math.is_finite(new_actual),axis=-1)
++    value_alive &= tf.reduce_all(tf.math.is_finite(new_auxiliary),axis=-1) & tf.math.is_finite(new_log_det)
++    force_alive &= value_alive & tf.reduce_all(tf.math.is_finite(new_d_actual),axis=-1)
++    force_alive &= tf.reduce_all(tf.math.is_finite(new_d_auxiliary),axis=-1) & tf.math.is_finite(new_d_log_det)
+     return (
+         step_index + 1,
+-        new_actual,
+-        new_d_actual,
+-        new_auxiliary,
+-        new_d_auxiliary,
+-        new_log_det,
+-        new_d_log_det,
++        tf.where(value_alive[:,None],new_actual,tf.zeros_like(new_actual)),
++        tf.where(force_alive[:,None],new_d_actual,tf.zeros_like(new_d_actual)),
++        tf.where(value_alive[:,None],new_auxiliary,tf.zeros_like(new_auxiliary)),
++        tf.where(force_alive[:,None],new_d_auxiliary,tf.zeros_like(new_d_auxiliary)),
++        tf.where(value_alive,new_log_det,tf.zeros_like(new_log_det)),
++        tf.where(force_alive,new_d_log_det,tf.zeros_like(new_d_log_det)),
++        value_alive, force_alive,
+     )
+ 
+ 
+@@ -1238,6 +1352,7 @@ def _flow_substeps_with_tangent(
+     *,
+     substeps: int,
+     eye: Tensor,
++    innovation_geometry=None,
+ ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+     """S3 substep loop with analytical tangent, shared by the base path
+     and the annealed telescope's tempered stages (which pass P/k, R*k and
+@@ -1246,6 +1361,45 @@ def _flow_substeps_with_tangent(
+     jacobian at the moving anchor. Returns (post_flow, tangent, log_det,
+     d_log_det)."""
+ 
++    if innovation_geometry is not None:
++        g = innovation_geometry
++        anchors, d_anchors = prior_means, d_prior_means
++        z, dz = g.coordinates(actual, d_actual, anchors, d_anchors)
++        p, dp = g.project_covariance(predicted_covs, d_predicted_covs)
++
++        def completed(z, dz):
++            return g.complete(z, dz, anchors, d_anchors)
++
++        def observation_value(z):
++            x, _ = completed(z, tf.zeros_like(z))
++            return model.observation_fn(x)
++
++        def observation_tangent(z, dz):
++            x, dx = completed(z, dz)
++            return model.observation_tangent_fn(x, dx)
++
++        def jacobian(z):
++            x, _ = completed(z, tf.zeros_like(z))
++            return tf.einsum("noi,ij->noj", model.observation_jacobian_fn(x), g.matrix)
++
++        def jacobian_tangent(z, dz):
++            x, dx = completed(z, dz)
++            h = model.observation_jacobian_fn(x)
++            dh = (tf.zeros_like(h) if model.observation_jacobian_tangent_fn is None
++                  else model.observation_jacobian_tangent_fn(x, dx))
++            return tf.einsum("noi,ij->noj", dh, g.matrix) + tf.einsum("noi,ij->noj", h, g.tangent)
++
++        reduced_model = replace(model, observation_fn=observation_value,
++            observation_tangent_fn=observation_tangent, observation_jacobian_fn=jacobian,
++            observation_jacobian_tangent_fn=jacobian_tangent, innovation_matrix=None,
++            innovation_matrix_tangent_fn=None)
++        moved, d_moved, ld, dld, vv, fv = _flow_substeps_with_tangent(
++            reduced_model, z, dz, tf.zeros_like(z), tf.zeros_like(z), p, dp,
++            observation, observation_covariance, d_observation_covariance,
++            r_inv, d_r_inv, substeps=substeps, eye=tf.eye(int(z.shape[-1]), dtype=z.dtype))
++        x, dx = completed(moved, d_moved)
++        return x, dx, ld, dld, vv & g.value_valid, fv & g.force_valid
++
+     dtype = actual.dtype
+     count = tf.shape(actual)[0]
+     eps = tf.constant(1.0 / substeps, dtype=dtype)
+@@ -1258,7 +1412,7 @@ def _flow_substeps_with_tangent(
+     def substep_cond(i, *_):
+         return i < substeps_tensor
+ 
+-    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld):
++    def substep_body_wrapper(i, act, d_act, aux, d_aux, ld, d_ld, vv, fv):
+         return _flow_substep_body_impl(
+             i,
+             act,
+@@ -1279,7 +1433,7 @@ def _flow_substeps_with_tangent(
+             d_r_inv,
+             substeps_tensor,
+             eye,
+-            eps,
++            eps, vv, fv,
+         )
+ 
+     initial_loop_vars = (
+@@ -1290,21 +1444,22 @@ def _flow_substeps_with_tangent(
+         d_auxiliary,
+         log_det,
+         d_log_det,
++        tf.ones([count],tf.bool), tf.ones([count],tf.bool),
+     )
+ 
+-    _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det = tf.while_loop(
++    _, actual, d_actual, auxiliary, d_auxiliary, log_det, d_log_det, value_valid, force_valid = tf.while_loop(
+         cond=substep_cond,
+         body=substep_body_wrapper,
+         loop_vars=initial_loop_vars,
+     )
+ 
+-    return actual, d_actual, log_det, d_log_det
++    return actual, d_actual, log_det, d_log_det, value_valid, force_valid
+ 
+ 
+ def _cholesky_forward_diff_local(chol: Tensor, d_matrix: Tensor) -> Tensor:
+-    inv_d = tf.linalg.triangular_solve(chol, d_matrix)
++    inv_d = small_matrix.triangular_solve(chol, d_matrix)
+     inv_d_inv_t = tf.linalg.matrix_transpose(
+-        tf.linalg.triangular_solve(chol, tf.linalg.matrix_transpose(inv_d))
++        small_matrix.triangular_solve(chol, tf.linalg.matrix_transpose(inv_d))
+     )
+     lower = tf.linalg.band_part(inv_d_inv_t, -1, 0)
+     phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(inv_d_inv_t))
+diff --git a/bayesfilter/highdim/ledh_contract_e_reset_tf.py b/bayesfilter/highdim/ledh_contract_e_reset_tf.py
+index 29ee64025..0f22f9f0e 100644
+--- a/bayesfilter/highdim/ledh_contract_e_reset_tf.py
++++ b/bayesfilter/highdim/ledh_contract_e_reset_tf.py
+@@ -7,6 +7,7 @@ from typing import Any
+ import tensorflow as tf
+ 
+ from bayesfilter.ops.fixed_signature_tf import fixed_signature_function
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+ 
+ 
+ def _sym(value: tf.Tensor) -> tf.Tensor:
+@@ -37,7 +38,7 @@ def _uniform_moments(points: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
+ def _factor_condition_proxy(chol: tf.Tensor) -> tf.Tensor:
+     dimension = tf.shape(chol)[-1]
+     identity = tf.eye(dimension, batch_shape=[tf.shape(chol)[0]], dtype=chol.dtype)
+-    inverse_action = tf.linalg.triangular_solve(chol, identity)
++    inverse_action = small_matrix.triangular_solve(chol, identity)
+     return tf.linalg.norm(chol, ord="fro", axis=[-2, -1]) * tf.linalg.norm(
+         inverse_action, ord="fro", axis=[-2, -1]
+     )
+@@ -65,7 +66,7 @@ def _contract_e_chol_cloud_forward_core(
+     plus_mean, plus_cov = _uniform_moments(transported_particles)
+     gap = _sym(target_cov - plus_cov)
+     gap_eigenvalues = tf.linalg.eigvalsh(gap)
+-    gap_chol = tf.linalg.cholesky(gap + ridge_identity)
++    gap_chol = small_matrix.cholesky(gap + ridge_identity)
+ 
+     injected_particles = transported_particles + _apply_rows(
+         residual_design, gap_chol
+@@ -73,9 +74,9 @@ def _contract_e_chol_cloud_forward_core(
+     injected_mean, injected_cov = _uniform_moments(injected_particles)
+     centered_injected = injected_particles - injected_mean[:, None, :]
+ 
+-    target_chol = tf.linalg.cholesky(target_cov + ridge_identity)
+-    injected_chol = tf.linalg.cholesky(injected_cov + ridge_identity)
+-    solved = tf.linalg.triangular_solve(
++    target_chol = small_matrix.cholesky(target_cov + ridge_identity)
++    injected_chol = small_matrix.cholesky(injected_cov + ridge_identity)
++    solved = small_matrix.triangular_solve(
+         injected_chol,
+         tf.linalg.matrix_transpose(target_chol),
+         adjoint=True,
+@@ -210,8 +211,8 @@ def _uniform_moments_jvp(
+ 
+ 
+ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
+-    left = tf.linalg.triangular_solve(chol, matrix_tangent)
+-    inner = tf.linalg.triangular_solve(
++    left = small_matrix.triangular_solve(chol, matrix_tangent)
++    inner = small_matrix.triangular_solve(
+         chol, tf.linalg.matrix_transpose(left)
+     )
+     lower = tf.linalg.band_part(inner, -1, 0)
+@@ -222,7 +223,7 @@ def _cholesky_jvp(chol: tf.Tensor, matrix_tangent: tf.Tensor) -> tf.Tensor:
+ def _right_triangular_solve(
+     right_hand_side: tf.Tensor, lower: tf.Tensor
+ ) -> tf.Tensor:
+-    solved_transpose = tf.linalg.triangular_solve(
++    solved_transpose = small_matrix.triangular_solve(
+         lower, tf.linalg.matrix_transpose(right_hand_side), adjoint=True
+     )
+     return tf.linalg.matrix_transpose(solved_transpose)
+@@ -350,8 +351,8 @@ def _cholesky_vjp(chol: tf.Tensor, chol_bar: tf.Tensor) -> tf.Tensor:
+     product = tf.linalg.matmul(chol, chol_bar, transpose_a=True)
+     lower = tf.linalg.band_part(product, -1, 0)
+     phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(lower))
+-    left = tf.linalg.triangular_solve(chol, phi, adjoint=True)
+-    solved_transpose = tf.linalg.triangular_solve(
++    left = small_matrix.triangular_solve(chol, phi, adjoint=True)
++    solved_transpose = small_matrix.triangular_solve(
+         chol, tf.linalg.matrix_transpose(left), adjoint=True
+     )
+     return _sym(tf.linalg.matrix_transpose(solved_transpose))
+@@ -416,7 +417,7 @@ def _contract_e_chol_cloud_vjp_core(
+     )
+ 
+     target_chol_bar = tf.linalg.matrix_transpose(
+-        tf.linalg.triangular_solve(
++        small_matrix.triangular_solve(
+             forward["injected_chol"],
+             tf.linalg.matrix_transpose(affine_bar),
+         )
+diff --git a/bayesfilter/highdim/ledh_numerical_safety_tf.py b/bayesfilter/highdim/ledh_numerical_safety_tf.py
+index 6d29bcfcf..c2127f2ce 100644
+--- a/bayesfilter/highdim/ledh_numerical_safety_tf.py
++++ b/bayesfilter/highdim/ledh_numerical_safety_tf.py
+@@ -1,115 +1,76 @@
+-"""Numerical safety utilities for LEDH computations.
++"""Fail-closed numerical guards for the canonical LEDH recursion.
+ 
+-This module provides graceful failure handling for numerically unstable
+-operations that can occur during HMC parameter space exploration.
+-
+-The key insight: instead of crashing on ill-conditioned matrices, we detect
+-failures and return sentinel values (-inf log probability, zero gradient) that
+-allow Metropolis-Hastings rejection to work as designed.
++Invalid factors are identity placeholders under a false validity mask. They
++keep subsequent analytical solves defined; they are never accepted covariances.
++These checks establish arithmetic validity, not conditioning or posterior validity.
+ """
++from __future__ import annotations
+ 
+ import tensorflow as tf
+ 
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+ 
+-def safe_cholesky(
+-    matrix: tf.Tensor,
+-    name: str = "cholesky"
+-) -> tuple[tf.Tensor, tf.Tensor]:
+-    """Cholesky decomposition with per-matrix nonfinite-factor rejection.
+-
+-    TensorFlow's tf.linalg.cholesky returns NaN when the input matrix is not
+-    positive definite (e.g., due to numerical errors, ill-conditioning, or
+-    actual indefiniteness). This wrapper detects the NaN result and returns
+-    a validity flag instead of propagating NaN through the computation.
+-
+-    This enables graceful failure handling: when LEDH encounters a pathological
+-    parameter configuration during HMC exploration, we can return -inf log
+-    probability and let Metropolis-Hastings reject the proposal naturally,
+-    rather than crashing the entire chain.
+-
+-    Parameters
+-    ----------
+-    matrix : tf.Tensor
+-        Symmetric positive-definite matrix to factorize, shape [..., n, n].
+-    name : str, optional
+-        Name for the operation (used in error messages and profiling).
+-
+-    Returns
+-    -------
+-    valid : tf.Tensor
+-        Boolean batch mask with all singleton axes squeezed, preserving the
+-        existing API. Unbatched and singleton-batch inputs return a scalar.
+-        True means the computed factor is finite, not that it is well conditioned.
+-    chol : tf.Tensor
+-        Cholesky factor L such that matrix = L @ L^T when valid=True.
+-        Returns zeros when valid=False for clean propagation through graph.
+-
+-    Notes
+-    -----
+-    **Why factor inspection instead of an eigenvalue pre-check:**
+-
+-    - **Performance**: O(n²) finite scan vs O(n³) eigenvalue decomposition
+-    - **XLA-compatible**: Pure TensorFlow ops, no Python control flow
+-    - **Empirically validated**: Phase 4a logs show Cholesky returning NaN
+-      with warning messages, not crashing
+ 
+-    **Failure modes detected:**
++def all_finite(*values: tf.Tensor) -> tf.Tensor:
++    """Scalar finite check without converting a scientific tensor to NumPy."""
++    checks = [tf.reduce_all(tf.math.is_finite(value)) for value in values if value is not None]
++    return tf.reduce_all(tf.stack(checks)) if checks else tf.constant(True)
+ 
+-    - Negative eigenvalues (indefinite matrices)
+-    - Zero eigenvalues (singular matrices)
+-    - Numerical errors accumulating to non-positive-definite result
+-    - Nonfinite factors, including infinity
+ 
+-    A finite factor can still be ill-conditioned. This helper does not compute
+-    a condition number, check symmetry or establish an error bound; callers
+-    requiring those properties must check them separately. Numerical operations
+-    are TensorFlow-native and inherit compilation from their enclosing owner.
++def finite_or_zero(value: tf.Tensor) -> tf.Tensor:
++    """Arithmetic placeholder; callers must retain the original validity."""
++    return tf.where(tf.math.is_finite(value), value, tf.zeros_like(value))
+ 
+-    **Example usage:**
+ 
+-    ```python
+-    # In Contract E reset policy:
+-    gap = target_cov - plus_cov + ridge * I
+-    valid_gap, gap_chol = safe_cholesky(gap, "gap")
++def safe_cholesky(matrix: tf.Tensor, name: str = 'cholesky') -> tuple[tf.Tensor, tf.Tensor]:
++    """Factor a full symmetric covariance [..., n, n], preserving batch shape.
+ 
+-    if not valid_gap:
+-        # Return sentinel values for -inf log probability
+-        return zeros, zeros, ..., False
+-    ```
++    Both triangles must be finite and agree within 8*n machine epsilons after
++    scaling by the largest entry. This permits ordinary accumulation roundoff
++    without accepting a corrupted unused triangle. No symmetrization, ridge or
++    clipping changes an accepted input. A successful factor must be finite and
++    have strictly positive diagonal. No condition-number guarantee is implied.
+ 
+-    References
+-    ----------
+-    Phase 4a diagnostic failure (2026-09-16): Cholesky decomposition failed
+-    during HMC exploration with message "Cholesky decomposition was not
+-    successful for batch 0. The input might not be valid. Filling lower-
+-    triangular output with NaNs."
++    Returns a boolean of shape [...] and a factor of shape [..., n, n]. An
++    invalid input returns an identity factor, safe for downstream solves only
++    when its false mask is propagated. Callers must never interpret that factor
++    as a repaired covariance.
+     """
++    matrix = tf.convert_to_tensor(matrix)
++    if matrix.dtype not in (tf.float32, tf.float64):
++        raise TypeError('safe_cholesky requires float32 or float64')
++    if matrix.shape.rank is not None and matrix.shape.rank < 2:
++        raise ValueError('covariance must have rank at least two')
++    if matrix.shape[-1] is not None and matrix.shape[-2] is not None and matrix.shape[-1] != matrix.shape[-2]:
++        raise ValueError('covariance must be square')
+     with tf.name_scope(name):
+-        # Attempt Cholesky decomposition
+-        # On failure, TensorFlow returns NaN in the output tensor
+-        chol_attempt = tf.linalg.cholesky(matrix)
+-
+-        # Check each batch element; finite factors need no numerical alteration.
+-        # For shape [..., n, n], reduce over last two dimensions only
+-        # This gives per-batch validity flags for batched inputs
+-        is_valid = tf.reduce_all(
+-            tf.math.is_finite(chol_attempt),
+-            axis=[-2, -1]
+-        )
+-
+-        # Expand is_valid for broadcasting if needed
+-        # For batched inputs, we need [..., 1, 1] shape for tf.where
+-        broadcast_valid = is_valid[..., tf.newaxis, tf.newaxis]
+-
+-        # Return zeros when invalid (for clean propagation)
+-        # This prevents NaN from contaminating downstream computations
+-        chol = tf.where(
+-            broadcast_valid,
+-            chol_attempt,
+-            tf.zeros_like(chol_attempt)
+-        )
+-
+-        # Squeeze back to scalar for non-batched case
+-        is_valid = tf.squeeze(is_valid)
+-
+-        return is_valid, chol
++        identity = tf.eye(tf.shape(matrix)[-1], batch_shape=tf.shape(matrix)[:-2], dtype=matrix.dtype)
++        finite = tf.reduce_all(tf.math.is_finite(matrix), axis=[-2, -1])
++        clean = tf.where(finite[..., None, None], matrix, identity)
++        scale = tf.reduce_max(tf.abs(clean), axis=[-2, -1], keepdims=True)
++        normalized = clean / tf.where(scale > 0, scale, tf.ones_like(scale))
++        epsilon = 2.0 ** (-52 if matrix.dtype == tf.float64 else -23)
++        tolerance = tf.cast(8 * tf.shape(matrix)[-1], matrix.dtype) * tf.constant(epsilon, matrix.dtype)
++        symmetric = tf.reduce_max(tf.abs(normalized-tf.linalg.matrix_transpose(normalized)), axis=[-2,-1]) <= tolerance
++        input_valid = finite & symmetric
++        attempt = small_matrix.cholesky(tf.where(input_valid[...,None,None], matrix, identity))
++        valid = input_valid & tf.reduce_all(tf.math.is_finite(attempt), axis=[-2,-1])
++        valid &= tf.reduce_all(tf.linalg.diag_part(attempt) > 0, axis=-1)
++        return valid, tf.where(valid[...,None,None], attempt, identity)
++
++
++def cholesky_differential(chol: tf.Tensor, d_matrix: tf.Tensor,
++                          valid: tf.Tensor | None = None) -> tf.Tensor:
++    """Analytical Cholesky differential; suppress tangents of rejected factors.
++
++    A nonfinite tangent on an otherwise valid factor is left detectable by the
++    consumer's independent force check. A rejected factor's tangent is zero.
++    Leading direction dimensions may broadcast over factor batch dimensions.
++    """
++    if valid is not None:
++        d_matrix = tf.where(valid[...,None,None], d_matrix, tf.zeros_like(d_matrix))
++    left = small_matrix.triangular_solve(chol, d_matrix)
++    middle = tf.linalg.matrix_transpose(small_matrix.triangular_solve(chol, tf.linalg.matrix_transpose(left)))
++    phi = tf.linalg.band_part(middle,-1,0) - 0.5*tf.linalg.diag(tf.linalg.diag_part(middle))
++    result = tf.linalg.matmul(chol,phi)
++    return result if valid is None else tf.where(valid[...,None,None], result, tf.zeros_like(result))
+diff --git a/bayesfilter/highdim/ledh_unified_correction_tf.py b/bayesfilter/highdim/ledh_unified_correction_tf.py
+index 8c4926e16..a32683b0c 100644
+--- a/bayesfilter/highdim/ledh_unified_correction_tf.py
++++ b/bayesfilter/highdim/ledh_unified_correction_tf.py
+@@ -62,7 +62,11 @@ def _output_signature(
+         ),
+         "target_source_id": tf.TensorSpec([], tf.int32),
+         "valid": tf.TensorSpec([], tf.bool),
++        "value_valid": tf.TensorSpec([], tf.bool),
+     }
++    signature.update({key: tf.TensorSpec([], tf.bool) for key in (
++        "target_covariance_valid", "initial_standardization_valid", "diagonal_iterations_valid",
++        "pairwise_iterations_valid", "affine_restoration_value_valid", "output_standardization_valid")})
+     signature.update(
+         {key: tf.TensorSpec([state_dim], dtype) for key in _VECTOR_KEYS}
+     )
+@@ -79,6 +83,12 @@ def _output_signature(
+     return signature
+ 
+ 
++def higher_moment_diagnostic_signature(state_dim: int, dtype: tf.DType):
++    """Shapes of every diagnostic issued by the shared correction authority."""
++    return {key: spec for key, spec in _output_signature(1, state_dim, 1, dtype).items()
++            if key not in ("particles", "particles_tangent")}
++
++
+ def batched_higher_moment_shape_jvp(
+     source: Tensor,
+     weights: Tensor,
+@@ -102,6 +112,7 @@ def batched_higher_moment_shape_jvp(
+     coordinatewise_standardized_identity_radius: float = 0.0,
+     return_stages: bool = False,
+     moment_safety: bool = False,
++    active: Tensor | None = None,
+ ) -> dict[str, Tensor]:
+     """Correct B clouds with K analytical tangent directions.
+ 
+@@ -130,9 +141,16 @@ def batched_higher_moment_shape_jvp(
+     weights_tangent_by_row = tf.transpose(weights_tangent, [1, 2, 0])
+     points_tangent_by_row = tf.transpose(points_tangent, [1, 2, 3, 0])
+ 
++    if active is None:
++        active = tf.ones([tf.shape(source)[0]],tf.bool)
++    signature = _output_signature(
++        particle_count, state_dim, direction_count, dtype, return_stages
++    )
++
+     def correct_row(row):
+-        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent = row
+-        return higher_moment_shape_jvp(
++        row_source, row_weights, row_source_tangent, row_weights_tangent, row_points, row_points_tangent, row_active = row
++        def evaluate():
++            return higher_moment_shape_jvp(
+             row_source,
+             row_weights,
+             row_source_tangent,
+@@ -156,6 +174,10 @@ def batched_higher_moment_shape_jvp(
+             moment_safety=moment_safety,
+         )
+ 
++        def inactive():
++            return {key:tf.zeros(spec.shape,spec.dtype) for key,spec in signature.items()}
++        return tf.cond(row_active,evaluate,inactive)
++
+     result = tf.map_fn(
+         correct_row,
+         (
+@@ -165,6 +187,7 @@ def batched_higher_moment_shape_jvp(
+             weights_tangent_by_row,
+             points,
+             points_tangent_by_row,
++            active,
+         ),
+         fn_output_signature=_output_signature(
+             particle_count, state_dim, direction_count, dtype, return_stages
+@@ -177,4 +200,4 @@ def batched_higher_moment_shape_jvp(
+     return result
+ 
+ 
+-__all__ = ["batched_higher_moment_shape_jvp"]
++__all__ = ["batched_higher_moment_shape_jvp", "higher_moment_diagnostic_signature"]
+diff --git a/bayesfilter/highdim/ledh_unified_reset_tf.py b/bayesfilter/highdim/ledh_unified_reset_tf.py
+index b8230d7a2..8efcfe5c3 100644
+--- a/bayesfilter/highdim/ledh_unified_reset_tf.py
++++ b/bayesfilter/highdim/ledh_unified_reset_tf.py
+@@ -9,7 +9,12 @@ from __future__ import annotations
+ 
+ import tensorflow as tf
+ 
+-from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
++import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
++
++from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky, cholesky_differential
++
++from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
++from bayesfilter.highdim.ledh_exact_block_transport_tf import exact_block_transport_with_tangent
+ 
+ Tensor = tf.Tensor
+ 
+@@ -21,9 +26,9 @@ def _sym(value: Tensor) -> Tensor:
+ def _chol_diff(chol: Tensor, d_matrix: Tensor) -> Tensor:
+     """Cholesky JVP with chol [B,D,D] and tangent [K,B,D,D]."""
+     chol_k = chol[None, ...]
+-    inv_d = tf.linalg.triangular_solve(chol_k, d_matrix)
++    inv_d = small_matrix.triangular_solve(chol_k, d_matrix)
+     inv_d_inv_t = tf.linalg.matrix_transpose(
+-        tf.linalg.triangular_solve(chol_k, tf.linalg.matrix_transpose(inv_d))
++        small_matrix.triangular_solve(chol_k, tf.linalg.matrix_transpose(inv_d))
+     )
+     lower = tf.linalg.band_part(inv_d_inv_t, -1, 0)
+     phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(inv_d_inv_t))
+@@ -100,82 +105,103 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
+         children, d_children, covariances, d_covariances,
+         weights, d_weights, tf.cast(design, dtype),
+     )
++    batch = tf.shape(children)[0]
+     n = tf.shape(children)[1]
+     dim = tf.shape(children)[2]
+     n_f = tf.cast(n, dtype)
+ 
+-    deltas = children[:, :, None, :] - children[:, None, :, :]
+-    d_deltas = d_children[:, :, :, None, :] - d_children[:, :, None, :, :]
+-    cost = tf.reduce_sum(tf.square(deltas), axis=3)
+-    d_cost = 2.0 * tf.reduce_sum(deltas[None, ...] * d_deltas, axis=4)
+-    mean_cost = tf.reduce_mean(cost, axis=(1, 2))
+-    floor = tf.cast(1.0e-3, dtype)
+-    cost_scale = tf.maximum(mean_cost, floor)
+-    d_cost_scale = tf.where(
+-        mean_cost[None, :] > floor,
+-        tf.reduce_mean(d_cost, axis=(2, 3)),
+-        tf.zeros_like(d_cost[:, :, 0, 0]),
+-    )
+-    eps_c = tf.cast(epsilon, dtype)
+-    exponent = -cost / (cost_scale[:, None, None] * eps_c)
+-    d_exponent = -(
+-        d_cost / cost_scale[None, :, None, None]
+-        - cost[None, ...] * d_cost_scale[:, :, None, None]
+-        / tf.square(cost_scale)[None, :, None, None]
+-    ) / eps_c
+-    kernel = tf.exp(exponent)
+-    d_kernel = kernel[None, ...] * d_exponent
++    if children.shape[1] is None:
++        raise ValueError("particle count must be static before tracing")
++    selection = select_transport_chunks(int(children.shape[1]))
++    if selection.row_blocks == 1:
++        deltas = children[:, :, None, :] - children[:, None, :, :]
++        d_deltas = d_children[:, :, :, None, :] - d_children[:, :, None, :, :]
++        cost = tf.reduce_sum(tf.square(deltas), axis=3)
++        d_cost = 2.0 * tf.reduce_sum(deltas[None, ...] * d_deltas, axis=4)
++        mean_cost = tf.reduce_mean(cost, axis=(1, 2))
++        floor = tf.cast(1.0e-3, dtype)
++        cost_scale = tf.maximum(mean_cost, floor)
++        d_cost_scale = tf.where(
++            mean_cost[None, :] > floor,
++            tf.reduce_mean(d_cost, axis=(2, 3)),
++            tf.zeros_like(d_cost[:, :, 0, 0]),
++        )
++        eps_c = tf.cast(epsilon, dtype)
++        exponent = -cost / (cost_scale[:, None, None] * eps_c)
++        d_exponent = -(
++            d_cost / cost_scale[None, :, None, None]
++            - cost[None, ...] * d_cost_scale[:, :, None, None]
++            / tf.square(cost_scale)[None, :, None, None]
++        ) / eps_c
++        kernel = tf.exp(exponent)
++        d_kernel = kernel[None, ...] * d_exponent
+ 
+-    batch = tf.shape(children)[0]
+-    uniform = tf.fill([batch, n], 1.0 / n_f)
+-    left = tf.ones_like(uniform)
+-    right = tf.ones_like(uniform)
+-    d_left = tf.zeros_like(d_weights)
+-    d_right = tf.zeros_like(d_weights)
+-    tiny = tf.cast(1.0e-7, dtype)
+-    iteration_count = sinkhorn_steps + balance_steps
++        batch = tf.shape(children)[0]
++        uniform = tf.fill([batch, n], 1.0 / n_f)
++        left = tf.ones_like(uniform)
++        right = tf.ones_like(uniform)
++        d_left = tf.zeros_like(d_weights)
++        d_right = tf.zeros_like(d_weights)
++        tiny = tf.cast(1.0e-7, dtype)
++        def balance_body(index,left,right,d_left,d_right):
++            kr = tf.einsum("bij,bj->bi", kernel, right) + tiny
++            d_kr = tf.einsum("kbij,bj->kbi", d_kernel, right) + tf.einsum(
++                "bij,kbj->kbi", kernel, d_right
++            )
++            left_new = uniform / kr
++            d_left_new = -uniform[None, ...] * d_kr / tf.square(kr)[None, ...]
++            kl = tf.einsum("bij,bi->bj", kernel, left_new) + tiny
++            d_kl = tf.einsum("kbij,bi->kbj", d_kernel, left_new) + tf.einsum(
++                "bij,kbi->kbj", kernel, d_left_new
++            )
++            right = weights / kl
++            d_right = d_weights / kl[None, ...] - (
++                weights[None, ...] * d_kl / tf.square(kl)[None, ...]
++            )
++            return index+1,left_new,right,d_left_new,d_right
+ 
+-    def balance_step(index, left, right, d_left, d_right):
+-        kr = tf.einsum("bij,bj->bi", kernel, right) + tiny
+-        d_kr = tf.einsum("kbij,bj->kbi", d_kernel, right) + tf.einsum(
+-            "bij,kbj->kbi", kernel, d_right
+-        )
+-        left_new = uniform / kr
+-        d_left_new = -uniform[None, ...] * d_kr / tf.square(kr)[None, ...]
+-        kl = tf.einsum("bij,bi->bj", kernel, left_new) + tiny
+-        d_kl = tf.einsum("kbij,bi->kbj", d_kernel, left_new) + tf.einsum(
+-            "bij,kbi->kbj", kernel, d_left_new
++        _,left,right,d_left,d_right = tf.while_loop(
++            lambda index,*_:index < sinkhorn_steps+balance_steps,
++            balance_body,(tf.constant(0),left,right,d_left,d_right),parallel_iterations=1)
++
++        coupling = left[:, :, None] * kernel * right[:, None, :]
++        d_coupling = (
++            d_left[:, :, :, None] * kernel[None, ...] * right[None, :, None, :]
++            + left[None, :, :, None] * d_kernel * right[None, :, None, :]
++            + left[None, :, :, None] * kernel[None, ...] * d_right[:, :, None, :]
+         )
+-        right = weights / kl
+-        d_right = d_weights / kl[None, ...] - (
+-            weights[None, ...] * d_kl / tf.square(kl)[None, ...]
++        row_mass = tf.reduce_sum(coupling, axis=2)
++        d_row_mass = tf.reduce_sum(d_coupling, axis=3)
++        transport = coupling / row_mass[:, :, None]
++        d_transport = (
++            d_coupling / row_mass[None, :, :, None]
++            - coupling[None, ...] * d_row_mass[:, :, :, None]
++            / tf.square(row_mass)[None, :, :, None]
+         )
+-        return index + 1, left_new, right, d_left_new, d_right
++        barycentric = tf.einsum("bij,bjd->bid", transport, children)
++        d_barycentric = tf.einsum(
++            "kbij,bjd->kbid", d_transport, children
++        ) + tf.einsum("bij,kbjd->kbid", transport, d_children)
+ 
+-    _, left, right, d_left, d_right = tf.while_loop(
+-        lambda index, *_: index < iteration_count,
+-        balance_step, (tf.constant(0), left, right, d_left, d_right),
+-        maximum_iterations=max(0, iteration_count), parallel_iterations=1,
+-    )
+-
+-    coupling = left[:, :, None] * kernel * right[:, None, :]
+-    d_coupling = (
+-        d_left[:, :, :, None] * kernel[None, ...] * right[None, :, None, :]
+-        + left[None, :, :, None] * d_kernel * right[None, :, None, :]
+-        + left[None, :, :, None] * kernel[None, ...] * d_right[:, :, None, :]
+-    )
+-    row_mass = tf.reduce_sum(coupling, axis=2)
+-    d_row_mass = tf.reduce_sum(d_coupling, axis=3)
+-    transport = coupling / row_mass[:, :, None]
+-    d_transport = (
+-        d_coupling / row_mass[None, :, :, None]
+-        - coupling[None, ...] * d_row_mass[:, :, :, None]
+-        / tf.square(row_mass)[None, :, :, None]
+-    )
+-    barycentric = tf.einsum("bij,bjd->bid", transport, children)
+-    d_barycentric = tf.einsum(
+-        "kbij,bjd->kbid", d_transport, children
+-    ) + tf.einsum("bij,kbjd->kbid", transport, d_children)
++        carried_covariances = tf.einsum(
++            "bij,bjmn->bimn", transport, covariances
++        )
++        d_carried_covariances = (
++            tf.einsum(
++                "kbij,bjmn->kbimn", d_transport, covariances
++            )
++            + tf.einsum(
++                "bij,kbjmn->kbimn", transport, d_covariances
++            )
++        )
++        transport_valid = tf.reduce_all(tf.math.is_finite(transport), [1,2])
++    else:
++        (barycentric, d_barycentric, carried_covariances,
++         d_carried_covariances, transport, d_transport, transport_valid) = (
++            exact_block_transport_with_tangent(
++                children, d_children, weights, d_weights, covariances,
++                d_covariances, epsilon=epsilon,
++                iterations=sinkhorn_steps+balance_steps))
+ 
+     target_mean = tf.reduce_sum(weights[:, :, None] * children, axis=1)
+     d_target_mean = tf.reduce_sum(
+@@ -221,7 +247,7 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
+     gap = _sym(target_cov - plus_cov) + ridge_eye
+     d_gap = _sym(d_target_cov - d_plus_cov)
+     valid_gap, gap_chol = safe_cholesky(gap, "gap")
+-    d_gap_chol = _chol_diff(gap_chol, d_gap)
++    d_gap_chol = cholesky_differential(gap_chol[None], d_gap, valid_gap[None])
+ 
+     injected = barycentric + tf.einsum("bnj,bij->bni", design, gap_chol)
+     d_injected = d_barycentric + tf.einsum(
+@@ -250,17 +276,17 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
+     )
+ 
+     valid_target, target_chol = safe_cholesky(target_cov + ridge_eye, "target")
+-    d_target_chol = _chol_diff(target_chol, d_target_cov)
++    d_target_chol = cholesky_differential(target_chol[None], d_target_cov, valid_target[None])
+     valid_injected, injected_chol = safe_cholesky(injected_cov, "injected")
+-    d_injected_chol = _chol_diff(injected_chol, d_injected_cov)
++    d_injected_chol = cholesky_differential(injected_chol[None], d_injected_cov, valid_injected[None])
+ 
+     # Combined validity: all three Cholesky decompositions must succeed
+-    valid = valid_gap & valid_target & valid_injected
++    valid = valid_gap & valid_target & valid_injected & transport_valid
+ 
+     rhs = tf.linalg.matrix_transpose(target_chol)
+     d_rhs = tf.linalg.matrix_transpose(d_target_chol)
+-    solved = tf.linalg.triangular_solve(injected_chol, rhs, adjoint=True)
+-    d_solved = tf.linalg.triangular_solve(
++    solved = small_matrix.triangular_solve(injected_chol, rhs, adjoint=True)
++    d_solved = small_matrix.triangular_solve(
+         injected_chol[None, ...],
+         d_rhs
+         - tf.linalg.matmul(
+@@ -284,17 +310,6 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
+             "bnj,kbij->kbni", centered_injected, d_affine
+         )
+     )
+-    carried_covariances = tf.einsum(
+-        "bij,bjmn->bimn", transport, covariances
+-    )
+-    d_carried_covariances = (
+-        tf.einsum(
+-            "kbij,bjmn->kbimn", d_transport, covariances
+-        )
+-        + tf.einsum(
+-            "bij,kbjmn->kbimn", transport, d_covariances
+-        )
+-    )
+     return (
+         particles,
+         d_particles,
+diff --git a/bayesfilter/inference/__init__.py b/bayesfilter/inference/__init__.py
+index 5a57da63c..4746dcaa2 100644
+--- a/bayesfilter/inference/__init__.py
++++ b/bayesfilter/inference/__init__.py
+@@ -209,6 +209,9 @@ __all__ = [
+     "FourChainAcceptanceDecision",
+     "FourChainMeanBandAcceptancePolicy",
+     "TensorFlowHMCKernelTuningConfig",
++    "VerifiedTensorFlowHMCConfig",
++    "VerifiedTensorFlowHMCResult",
++    "load_verified_tensorflow_hmc_result",
+     "TensorFlowHMCKernelTuningResult",
+     "BoundRetainedHMCArchiveConfig",
+     "BoundRetainedHMCArchiveResult",
+@@ -758,6 +761,9 @@ _DIRECT_EXPORTS = {
+     "FourChainAcceptanceDecision": "bayesfilter.inference.hmc_tuning_dispatch",
+     "FourChainMeanBandAcceptancePolicy": "bayesfilter.inference.hmc_tuning_dispatch",
+     "TensorFlowHMCKernelTuningConfig": "bayesfilter.inference.hmc_tuning_dispatch",
++    "VerifiedTensorFlowHMCConfig": "bayesfilter.inference.hmc_tuning_dispatch",
++    "VerifiedTensorFlowHMCResult": "bayesfilter.inference.hmc_tuning_dispatch",
++    "load_verified_tensorflow_hmc_result": "bayesfilter.inference.hmc_tuning_dispatch",
+     "TensorFlowHMCKernelTuningResult": "bayesfilter.inference.hmc_tuning_dispatch",
+     "build_retained_bound_hmc_archive_runner_from_tuning_result": (
+         "bayesfilter.inference.hmc_tuning_dispatch"
+diff --git a/bayesfilter/inference/hmc_tensorflow_tuning.py b/bayesfilter/inference/hmc_tensorflow_tuning.py
+index cb21ea7c2..b88ef3a1f 100644
+--- a/bayesfilter/inference/hmc_tensorflow_tuning.py
++++ b/bayesfilter/inference/hmc_tensorflow_tuning.py
+@@ -288,10 +288,13 @@ class TensorFlowHMCKernelTuningConfig:
+     target_status_trace_policy: str = "none"
+     use_xla: bool = True
+     non_xla_reason: str | None = None
++    max_step_size: float | None = None
++    energy_error_max: float | None = None
+ 
+     def __post_init__(self) -> None:
+         dimension = _positive_int(self.parameter_dimension, "parameter_dimension")
+         role = str(self.evidence_role)
++        role = {"diagnostic_smoke": "diagnostic_only", "diagnostic_candidate_screen": "candidate"}.get(role, role)
+         if role not in {"diagnostic_only", "candidate"}:
+             raise ValueError("evidence_role must be diagnostic_only or candidate")
+         windows = tuple(
+@@ -380,6 +383,10 @@ class TensorFlowHMCKernelTuningConfig:
+         object.__setattr__(self, "eigenvalue_floor", floor)
+         object.__setattr__(self, "max_condition_number", condition)
+         object.__setattr__(self, "seed", seed)
++        for name in ("max_step_size", "energy_error_max"):
++            value = getattr(self, name)
++            if value is not None:
++                object.__setattr__(self, name, _positive_finite(value, name))
+         for name in (
+             "budget_provenance",
+             "initial_step_size_provenance",
+@@ -442,6 +449,8 @@ class TensorFlowHMCKernelTuningConfig:
+                 "and_target_accept_prob"
+             ),
+             "initial_step_size": self.initial_step_size,
++            "max_step_size": self.max_step_size,
++            "energy_error_max": self.energy_error_max,
+             "budget_provenance": self.budget_provenance,
+             "initial_step_size_provenance": self.initial_step_size_provenance,
+             "geometry_provenance": self.geometry_provenance,
+@@ -601,7 +610,7 @@ ENDPOINT_STATUS_TRACE_FIELDS = (
+     "value_valid", "force_valid", "outside_declared_support",
+     "value_failure_code", "force_failure_code", "first_failure_time",
+     "first_failure_stage", "first_failure_particle", "numerical_failure",
+-    "force_fallback", "phase", "trajectory_length", "round",
++    "force_fallback", "coordinate_boundary_rounding", "phase", "trajectory_length", "round",
+ )
+ 
+ 
+@@ -652,7 +661,7 @@ def _run_tensor_steps(
+     delta_h = tf.TensorArray(_DTYPE, num_results, element_shape=vectors)
+     accepted = tf.TensorArray(tf.bool, num_results, element_shape=vectors)
+     endpoint_status = tf.TensorArray(
+-        tf.int32, num_results, element_shape=[_CHAIN_COUNT, 10])
++        tf.int32, num_results, element_shape=[_CHAIN_COUNT, len(ENDPOINT_STATUS_TRACE_FIELDS)-3])
+ 
+     def cond(index: tf.Tensor, *_: Any) -> tf.Tensor:
+         return index < tf.constant(num_results, tf.int32)
+@@ -687,7 +696,8 @@ def _run_tensor_steps(
+             endpoint_array.write(index, tf.stack([
+                 tf.cast(inner.endpoint_status[name], tf.int32)
+                 for name in ENDPOINT_STATUS_TRACE_FIELDS[:9]
+-            ] + [tf.cast(inner.force_fallback, tf.int32)], axis=-1)),
++            ] + [tf.cast(inner.force_fallback, tf.int32),
++                 tf.cast(inner.endpoint_status["coordinate_boundary_rounding"], tf.int32)], axis=-1)),
+         )
+ 
+     result = tf.while_loop(
+@@ -867,6 +877,26 @@ def _phase_seed(root: tf.Tensor, phase: int) -> tf.Tensor:
+     )
+ 
+ 
++def _bounded_fixed_step(step, config):
++    """Cap only fixed nomination/verification steps, never the target or force."""
++    if config.max_step_size is None:
++        return step
++    return tf.minimum(step, tf.constant(config.max_step_size, _DTYPE))
++
++
++def _guard_candidate_energy(decision, delta_h, config):
++    """A finite energy-limit failure requests the existing bounded step repair."""
++    if config.energy_error_max is None:
++        return decision
++    finite = tf.reduce_all(tf.math.is_finite(delta_h))
++    healthy = tf.logical_and(finite, tf.reduce_all(
++        tf.abs(delta_h) <= tf.constant(config.energy_error_max, _DTYPE)))
++    return decision._replace(
++        passed=tf.logical_and(decision.passed, healthy),
++        log_acceptance_defined=tf.logical_and(decision.log_acceptance_defined, finite),
++        repair_direction=tf.where(healthy, decision.repair_direction, tf.constant(-1, tf.int32)))
++
++
+ def _candidate_verification(
+     *,
+     binding: HMCTuningRunnerBinding,
+@@ -892,7 +922,7 @@ def _candidate_verification(
+         seed=_phase_seed(seed, 0),
+         adaptive=True,
+     )
+-    step = adapted.final_step_size
++    step = _bounded_fixed_step(adapted.final_step_size, config)
+     state = adapted.final_state
+ 
+     def run_verification(
+@@ -916,7 +946,7 @@ def _candidate_verification(
+             chunk.log_accept_ratio,
+             divergence_count=tf.reduce_sum(tf.cast(chunk.divergence, tf.int32)),
+         )
+-        return chunk, decision
++        return chunk, _guard_candidate_energy(decision, chunk.delta_h, config)
+ 
+     verified, decision = run_verification(state, step, 0)
+     endpoint_traces = [
+@@ -935,6 +965,7 @@ def _candidate_verification(
+                 verified.final_step_size,
+             ),
+         )
++        repaired_step = _bounded_fixed_step(repaired_step, config)
+         needs_repair = tf.logical_and(
+             tf.logical_not(decision.passed),
+             tf.logical_and(
+@@ -1091,7 +1122,7 @@ def _build_tuning_graph(
+         candidate_summary = tf.TensorArray(
+             _DTYPE,
+             candidate_count,
+-            element_shape=tf.TensorShape([7]),
++            element_shape=tf.TensorShape([9]),
+             clear_after_read=False,
+         )
+ 
+@@ -1121,6 +1152,11 @@ def _build_tuning_graph(
+                     fallback_count,
+                     decision.passed,
+                     decision.overall_mean,
++                    tf.stack((tf.reduce_max(tf.abs(chunk.delta_h)),
++                        tf.cast(tf.reduce_sum(tf.cast(
++                            tf.abs(chunk.delta_h) > tf.constant(config.energy_error_max, _DTYPE),
++                            tf.int32)), _DTYPE)
++                        if config.energy_error_max is not None else tf.constant(-1., _DTYPE))),
+                     candidate_trace,
+                 )
+ 
+@@ -1134,6 +1170,7 @@ def _build_tuning_graph(
+                     tf.constant(0, tf.int32),
+                     tf.constant(False),
+                     tf.constant(float("nan"), _DTYPE),
++                    tf.fill([2], tf.constant(float("nan"), _DTYPE)),
+                     _empty_endpoint_trace(),
+                 )
+ 
+@@ -1146,6 +1183,7 @@ def _build_tuning_graph(
+                 candidate_fallback,
+                 candidate_passed,
+                 candidate_overall_mean,
++                candidate_energy_summary,
+                 candidate_trace,
+             ) = tf.cond(candidate_selected, skip_candidate, evaluate_candidate)
+             endpoint_traces.append(candidate_trace)
+@@ -1176,7 +1214,7 @@ def _build_tuning_graph(
+             candidate_selected = tf.logical_or(candidate_selected, choose)
+             candidate_summary = candidate_summary.write(
+                 candidate_index,
+-                tf.stack(
++                tf.concat((tf.stack(
+                     (
+                         tf.cast(evaluated, _DTYPE),
+                         tf.cast(leapfrog_steps, _DTYPE),
+@@ -1186,13 +1224,15 @@ def _build_tuning_graph(
+                         tf.cast(candidate_fallback, _DTYPE),
+                         tf.cast(candidate_passed, _DTYPE),
+                     )
+-                ),
++                ), candidate_energy_summary), axis=0),
+             )
+ 
+         health = config.acceptance_policy.evaluate(
+             reported_log_accept,
+             divergence_count=reported_divergence_count,
+         )
++        # HMC log acceptance is the negative endpoint Hamiltonian difference.
++        health = _guard_candidate_energy(health, -reported_log_accept, config)
+         metric_rank_eligible = tf.constant(config.metric_rank_eligible)
+         metric_update_count = tf.constant(len(config.mass_window_results), tf.int32)
+         metric_update_valid = tf.logical_and(
+@@ -1438,6 +1478,8 @@ def _write_tuning_artifact(
+                 "divergence_count",
+                 "force_fallback_count",
+                 "health_passed",
++                "max_abs_energy_error",
++                "energy_error_breach_count",
+             ),
+             "health_summary_fields": (
+                 "chain_0_acceptance_mean",
+@@ -1651,6 +1693,10 @@ def _run_tensorflow_hmc_tuning(
+         tf.cast(tf.convert_to_tensor(parameter_scales), _DTYPE),
+         [config.parameter_dimension],
+     )
++    # XLA may elide graph assertions. Validate external inputs on the host.
++    tf.debugging.assert_all_finite(position, "initial_position must be finite")
++    tf.debugging.assert_all_finite(scales, "parameter_scales must be finite")
++    tf.debugging.assert_positive(scales, "parameter_scales must be positive")
+     graph = _build_tuning_graph(config, runner_binding, adapter_signature)
+     values = dict(graph(position, scales))
+     values["initial_position_was_replicated"] = position_was_replicated
+@@ -1983,6 +2029,9 @@ def build_retained_bound_hmc_archive_runner_from_tuning_result(
+     tuning_result: TensorFlowHMCKernelTuningResult,
+     runner_binding: HMCTuningRunnerBinding,
+ ) -> BoundRetainedHMCArchiveRunner:
++    from .hmc_tensorflow_verified import VerifiedTensorFlowHMCResult, _build_verified_runner
++    if isinstance(tuning_result, VerifiedTensorFlowHMCResult):
++        return _build_verified_runner(tuning_result, runner_binding)
+     if not isinstance(tuning_result, TensorFlowHMCKernelTuningResult):
+         raise TypeError("tuning_result must be TensorFlowHMCKernelTuningResult")
+     if not isinstance(runner_binding, HMCTuningRunnerBinding):
+diff --git a/bayesfilter/inference/hmc_tuning_dispatch.py b/bayesfilter/inference/hmc_tuning_dispatch.py
+index 9436bd9f1..c278c96dc 100644
+--- a/bayesfilter/inference/hmc_tuning_dispatch.py
++++ b/bayesfilter/inference/hmc_tuning_dispatch.py
+@@ -24,6 +24,10 @@ from bayesfilter.inference.tuning_contract import (
+     require_active_hmc_tuning_route,
+ )
+ from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig
++from bayesfilter.inference.hmc_tensorflow_verified import (
++    VerifiedTensorFlowHMCConfig, VerifiedTensorFlowHMCResult,
++    _run_verified_tensorflow_tuning, load_verified_tensorflow_hmc_result,
++)
+ 
+ 
+ def tune_hmc_kernel(
+@@ -109,7 +113,7 @@ def tune_hmc_kernel(
+             output_dir=output_dir,
+             max_work_items=max_work_items,
+         )
+-    if isinstance(config, TensorFlowHMCKernelTuningConfig):
++    if isinstance(config, (TensorFlowHMCKernelTuningConfig, VerifiedTensorFlowHMCConfig)):
+         unsupported = {
+             "candidate_set_adapter": candidate_set_adapter,
+             "target_lineage": target_lineage,
+@@ -129,6 +133,19 @@ def tune_hmc_kernel(
+             )
+         if runner_binding is None:
+             raise ValueError("TensorFlow tuning requires a repository-issued binding")
++        if isinstance(config, VerifiedTensorFlowHMCConfig):
++            # Preserve the explicitly typed local campaign continuation route.
++            # Ordinary/new position-field configs still use main's controller.
++            if any(value is not None for value in (search_config, execution_config, max_work_items)):
++                raise ValueError("verified campaign continuation does not accept shared-controller options")
++            # The typed verified configuration owns the dispersed four-chain
++            # starts. Older campaign callers passed a scalar placeholder; using
++            # that placeholder would violate main's candidate-bank contract.
++            return _run_verified_tensorflow_tuning(
++                adapter=adapter, initial_position=config.initial_chain_positions,
++                config=config, output_dir=output_dir,
++                parameter_scales=parameter_scales, runner_binding=runner_binding,
++            )
+         from bayesfilter.inference.hmc_candidate_set_position_field import run_shared_position_field_tuning
+         return run_shared_position_field_tuning(
+             adapter=adapter,
+@@ -172,6 +189,9 @@ def tune_hmc_kernel(
+ 
+ 
+ __all__ = [
++    "VerifiedTensorFlowHMCConfig",
++    "VerifiedTensorFlowHMCResult",
++    "load_verified_tensorflow_hmc_result",
+     "BOUND_RETAINED_HMC_ARCHIVE_SCHEMA",
+     "BoundRetainedHMCArchiveConfig",
+     "BoundRetainedHMCArchiveResult",
+diff --git a/bayesfilter/inference/neural_force_hmc.py b/bayesfilter/inference/neural_force_hmc.py
+index e45af718e..a19b177dc 100644
+--- a/bayesfilter/inference/neural_force_hmc.py
++++ b/bayesfilter/inference/neural_force_hmc.py
+@@ -62,7 +62,8 @@ def _default_endpoint_status(value):
+         value_failure_code=zeros, force_failure_code=zeros,
+         first_failure_time=absent, first_failure_stage=absent,
+         first_failure_particle=absent,
+-        numerical_failure=tf.zeros(tf.shape(value), tf.bool))
++        numerical_failure=tf.zeros(tf.shape(value), tf.bool),
++        coordinate_boundary_rounding=tf.zeros(tf.shape(value), tf.bool))
+ 
+ 
+ class InvalidNeuralForceHMCConfiguration(ValueError):
+diff --git a/bayesfilter/inference/tuning_contract.py b/bayesfilter/inference/tuning_contract.py
+index 666750df3..f9fa623a6 100644
+--- a/bayesfilter/inference/tuning_contract.py
++++ b/bayesfilter/inference/tuning_contract.py
+@@ -1039,6 +1039,8 @@ HMC_TUNING_INTERFACE_CAPABILITIES: tuple[HMCTuningInterfaceCapability, ...] = (
+             "tests/test_hmc_whole_procedure_repair.py::test_public_ordinary_configuration_uses_common_search_and_retains_multiple_members",
+             "tests/test_hmc_kernel_tuning_public_api.py::test_public_ordinary_config_rejects_typed_runner_binding",
+             "tests/test_neural_force_hmc.py::test_typed_tuning_binding_rejects_identity_mass_fallback",
++            "tests/test_hmc_tensorflow_verified.py",
++            "scripts/qualify_hmc_tensorflow_verified.py",
+         ),
+         mass_capability="owned",
+         step_size_capability="owned",
+diff --git a/docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md b/docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md
+index ed9e922fb..e40110cf1 100644
+--- a/docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md
++++ b/docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md
+@@ -118,3 +118,9 @@ The strongest alternative explanation for the calibration failure is that the fi
+ A fresh, properly bounded candidate that passes complete calibration and untouched validation, with independently checked references and the required tuning authority, would overturn the present unready verdict for that scope. Posterior/default promotion would still require the later evidence gates. The weakest evidence here is the limited two-dataset nomination screen and the absence of prior-wide exclusion and posterior comparisons; no conclusion about those quantities is drawn from a finite score or healthy short HMC run.
+ 
+ This closeout is the executor's source/evidence review. No independent terminal Claude review was performed. The existing material plan review remains available, but it is not being represented as a review of these implementation results. The next substantive experiment requires a revised LG1 repair program because the authorized attempt allowance is exhausted.
++
++## Follow-up: apparent LGSSM regression
++
++The subsequent [fixed-input regression audit](ledh-lg1-regression-audit-result-2026-09-18.md) reproduced one failed LG1 case on the starting and revised implementations. Both have approximately 16.0006% maximum covariance error; their log likelihoods differ by only 3.8e-6. The actual consumer agrees. Thus the recent containment changes did not cause that replayed accuracy failure. This does not rule out regressions in other configurations or the N4096 multi-block path.
++
++The specific September 3 LGSSM tuning SUCCESS report used a different Cubature/GenUT evaluator and a numerical-validity screen without Kalman accuracy. It is not a matched canonical-LEDH accuracy baseline. Other prior LGSSM successes were not exhaustively reviewed. The original campaign should have established this distinction before explaining the apparent regression; its candidate rejection remains valid, while a broader claim that earlier LGSSM success was lost is unsupported. The follow-up used no new calibration candidate and did not reopen the original attempt allowance.
+diff --git a/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py b/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py
+index b9d77795b..227341ee2 100644
+--- a/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py
++++ b/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py
+@@ -47,7 +47,7 @@ class RangeBearingTFFixture:
+         return {
+             "model_id": self.name,
+             "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)",
+-            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t",
++            "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+             "initial_distribution": "x_0 ~ Normal(m0, P0)",
+             "A": _tensor_to_nested_float(self.A),
+             "Q": _tensor_to_nested_float(self.Q),
+@@ -164,7 +164,8 @@ def observation_log_density_tf(
+ ) -> tf.Tensor:
+     predicted = range_bearing_observation_tf(particles)
+     residual = observation_residual_tf(predicted, observation)
+-    return gaussian_logpdf_zero_mean_tf(residual, fixture.R)
++    from bayesfilter.wrapped_gaussian_tf import wrapped_gaussian_log_density
++    return wrapped_gaussian_log_density(residual, fixture.R)
+ 
+ 
+ def range_bearing_observation_tf(x: tf.Tensor, *, eps: float = 1e-12) -> tf.Tensor:
+diff --git a/tests/highdim/test_ledh_canonical_batch_fused.py b/tests/highdim/test_ledh_canonical_batch_fused.py
+index 9bde49e9f..798cd80f6 100644
+--- a/tests/highdim/test_ledh_canonical_batch_fused.py
++++ b/tests/highdim/test_ledh_canonical_batch_fused.py
+@@ -496,3 +496,44 @@ def test_annealed_full_union_is_tf_function_compilable():
+     assert scores.shape == (2, 2)
+     assert bool(tf.reduce_all(diagnostics["program_valid"]).numpy())
+ 
++
++
++def test_all_computed_correction_diagnostics_reach_batch_consumer():
++    """The consumer preserves the actual single-cloud diagnostic outputs."""
++    from bayesfilter.highdim.ledh_unified_correction_tf import higher_moment_diagnostic_signature
++    initial, covs, noises, observations = _fixture(211, n=16, horizon=1)
++    theta = tf.constant([.6], DTYPE)
++    value_ref, score_ref, trace, reference_status = canonical_value_and_analytical_score(
++        _single_model(),theta,initial,covs,noises,observations,flow_substeps=10,
++        with_score=True,return_trace=True,return_status=True,reset_design=_reset_design(16),**_FULL_UNION)
++    default_value, default_score, default_status = canonical_batch_fused_value_score(
++        _fused_model(),theta[None],tf.ones([1,1,1],DTYPE),initial,covs,noises,observations,
++        substeps=10,return_filter_moments=True,reset_design=_reset_design(16),**_FULL_UNION)
++    default_keys = {key for key in default_status if key.startswith("higher_moment_")}
++    assert default_keys == {
++        "higher_moment_maximum_coordinatewise_pre_cap_absolute",
++        "higher_moment_maximum_coordinatewise_post_cap_absolute",
++        "higher_moment_mean_coordinatewise_cap_displacement",
++        "higher_moment_fraction_coordinatewise_cap_active",
++        "higher_moment_minimum_coordinatewise_cap_derivative",
++    }
++    value, score, status = canonical_batch_fused_value_score(
++        _fused_model(),theta[None],tf.ones([1,1,1],DTYPE),initial,covs,noises,observations,
++        substeps=10,return_filter_moments=True,return_all_correction_diagnostics=True,
++        reset_design=_reset_design(16),**_FULL_UNION)
++    tf.debugging.assert_near(default_value,value,atol=1e-9,rtol=1e-8)
++    tf.debugging.assert_near(default_score,score,atol=1e-9,rtol=1e-8)
++    assert bool(reference_status["program_valid"] if "program_valid" in reference_status
++                else reference_status["value_valid"] & reference_status["force_valid"])
++    assert bool(status["program_valid"][0])
++    tf.debugging.assert_near(value[0],value_ref,atol=1e-9,rtol=1e-8)
++    tf.debugging.assert_near(score[0,0],score_ref[0],atol=1e-9,rtol=1e-8)
++    for key,spec in higher_moment_diagnostic_signature(2,DTYPE).items():
++        name = "higher_moment_"+key
++        assert name in trace[0] and name in status
++        expected = trace[0][name]
++        actual = status[name][0,0]
++        if spec.dtype.is_floating:
++            tf.debugging.assert_near(actual,expected,atol=1e-8,rtol=1e-7)
++        else:
++            tf.debugging.assert_equal(actual,expected)

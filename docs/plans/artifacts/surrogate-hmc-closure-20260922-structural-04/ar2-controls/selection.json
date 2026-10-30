@@ -1,0 +1,97 @@
+{
+  "controls": {
+    "coordinate_cap": 16.0,
+    "coordinate_cap_power": 8,
+    "correction_lm_damping": 0.001,
+    "correction_lm_scale_floor": 1e-06,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_trust_radius": 0.1,
+    "pairwise_rms_cap": 2.0,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "reset_balance_steps": 8,
+    "reset_epsilon": 2.0,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-05,
+    "reset_sinkhorn_steps": 8,
+    "substeps": 10
+  },
+  "default_readiness": false,
+  "evidence": {
+    "calibration": {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-structural-04/ar2-controls/calibration/curve.json",
+      "sha256": "f3f11fa7f829a2302b6e5828e7122cad13eee0bc10c1fef0ac9ad1b2b3017513"
+    },
+    "validation": {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-structural-04/ar2-controls/validation/curve.json",
+      "sha256": "e6c56d90687e94fe45776603958ea32bb70bbaf000d836b1dfb4f468aa89056e"
+    }
+  },
+  "exact_score_admission": false,
+  "issuer_sha256": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+  "partition_data": {
+    "calibration": {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-structural-04/ar2-controls/calibration/data.json",
+      "sha256": "1a574693f8c5467609de0eb3d723c56a955eb2964a60481dd33bb45117d786d1"
+    },
+    "validation": {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-structural-04/ar2-controls/validation/data.json",
+      "sha256": "23a7fc2841b46ce5d3de40081a334e5b9e81f74e4f2f1ec2b06d7796e1fa78b6"
+    }
+  },
+  "schema": "bayesfilter.surrogate_hmc_dctr_control_selection.v1",
+  "scope": {
+    "attempt": 1,
+    "chunk_extent": 64,
+    "control_family": "full_canonical_geometric_protection_curve_v1",
+    "data_regime": "AR2 T10 independent calibration/validation/claim; once-rounded FP32 observations",
+    "draw_design": "scrambled_halton_gaussian",
+    "dtype": "float32",
+    "horizon": 10,
+    "initial_law": "N(0,I2)",
+    "innovation_dimension": 1,
+    "jit_compile": true,
+    "law": "F=[[.45,-.15],[1,0]]; Q=.09*exp(2*lambda_Q)*BB'; R=.04*exp(2*lambda_R); B=[1,0]'",
+    "model": "AR2",
+    "observation_dimension": 1,
+    "parameter_dimension": 2,
+    "particle_count": 64,
+    "prior": "independent N(0,log(2)^2) on both log scales",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "state_dimension": 2,
+    "tf32": true
+  },
+  "selected_index": 0,
+  "selected_multiplier": 1.0,
+  "selection_rule": "first adjacent non-harm pass on both independent partitions",
+  "source_hashes": {
+    "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "330fca673b12727e6c9936f5b0720a907a7f7601c626b5e4e618adf7453a6232",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "68697f687301304620a59c6cfad9f26c1867a919cd946a36d589c69f1dbb9f35",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/highdim/ledh_structural_ar2_target_tf.py": "2c2b60a393369a2970f584c3a2741cd308437b4a2ae35b7e6436a071b07dab74",
+    "bayesfilter/highdim/ledh_structural_innovation_tf.py": "343be0034d08104e669e3dcb8e3059f7c35aae6ab43da4b3899e36bb09db1b85",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/testing/surrogate_hmc_ar2_consumer.py": "c6f34975eab26ae3ee36dac9f14e13d5fa5bd3b0665ff5026b4e97369947711f",
+    "bayesfilter/testing/surrogate_hmc_ar2_controls.py": "335b2741c8843cc3e8478f38fb84f8c3f6331b2cec0139f7acfe1f9183bf4ccf",
+    "bayesfilter/testing/surrogate_hmc_ar2_reference.py": "f34e99880413f76951c9b7232f6caa62228974dc20ecf928d0139746c776af0b",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f"
+  },
+  "use": "imperfect_proposal_field_experiment"
+}

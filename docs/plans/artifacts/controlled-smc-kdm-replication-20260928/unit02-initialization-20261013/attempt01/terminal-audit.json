@@ -1,0 +1,41 @@
+{
+  "schema": "kdm_training_terminal_audit_v1",
+  "verdict": "PASS",
+  "replication": "INCOMPLETE",
+  "run": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/unit02-initialization-20261013/attempt01/training",
+  "run_manifest_sha256": "c28f2ef0a1541db9958b4f5059c383ece80bd25944d0c3d98bca53b54b8eece6",
+  "command": [
+    "/home/chakwong/BayesFilter/docs/benchmarks/reference_kdm_training_terminal_audit.py",
+    "--run",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/unit02-initialization-20261013/attempt01/training",
+    "--isolated-start",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-isolation-20261013/attempt03/source-audit/diagnostic/unit02-author-start.json",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/unit02-initialization-20261013/attempt01/terminal-audit.json"
+  ],
+  "source_pin": "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18",
+  "source_controller_sha256": "af9d19e7860611224cac771458a6fda6e57da3993fe11f6f471da01795094b55",
+  "audit_sha256": "3bcdf588c796462b09ce3d8c2a15305944f882d39724c3c34e12e6d7a3bad881",
+  "torch_version": "2.11.0+cu130",
+  "controller_api_compatibility": [
+    "omit_removed_verbose_argument",
+    "is_better_to__is_better_author_worker_compatibility"
+  ],
+  "gpu_intentionally_hidden": true,
+  "stages": [
+    {
+      "stage": "mdpf",
+      "epochs": 270,
+      "best_epoch": 174,
+      "termination": "SOURCE_EARLY_STOP",
+      "best_validation_loss": 6.167362037658691,
+      "batches": 22410,
+      "peak_allocator_bytes": 140509184
+    }
+  ],
+  "checks": 70512,
+  "failures": [],
+  "native_keys": 22410,
+  "wall_seconds": 1.7924927901476622,
+  "not_concluded": "Numerical compatibility, downstream accuracy, statistical no-worse performance, or replication acceptance"
+}

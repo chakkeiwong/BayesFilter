@@ -1,0 +1,62 @@
+{
+  "schema": "filter_repair_dz5_score_analysis.v1",
+  "xla_oracle_passed": true,
+  "rows": [
+    {
+      "run": 3866,
+      "device": "CPU",
+      "jit_compile": true,
+      "max_scaled_five_point_errors": [
+        0.39171927759112085,
+        0.7678315721161366
+      ],
+      "cross_device_value_scaled_error": 0.0,
+      "cross_device_score_scaled_error": 0.0,
+      "cold_seconds": 123.8531111960765,
+      "replay_seconds": 106.32519257394597,
+      "rss_before_bytes": 617496576,
+      "rss_peak_bytes": 2652229632,
+      "rss_after_bytes": 2099236864,
+      "allocator": {
+        "available": false,
+        "reason": "Allocator stats not available for device 'CPU:0'"
+      },
+      "oracle_sha256": "f30b76a9d4a028b3becdf69c6e90fd7b6a2a209d4be7d3aa7b958ba5ce4cf167"
+    },
+    {
+      "run": 3867,
+      "device": "GPU",
+      "jit_compile": true,
+      "max_scaled_five_point_errors": [
+        0.34437959677093904,
+        0.6258568190682219
+      ],
+      "cross_device_value_scaled_error": 6.060731151654322e-09,
+      "cross_device_score_scaled_error": 2.917822376565581e-05,
+      "cold_seconds": 28.397742589004338,
+      "replay_seconds": 1.787984944996424,
+      "rss_before_bytes": 972247040,
+      "rss_peak_bytes": 1991770112,
+      "rss_after_bytes": 1991770112,
+      "allocator": {
+        "current": 109056,
+        "peak": 536980224
+      },
+      "oracle_sha256": "4580bf38b0310b19cd9e417a2260e1375ad0bfdd62d2a714c61f32e0be56e5fa"
+    }
+  ],
+  "rejected_mutations": [
+    "score",
+    "value",
+    "false_pass",
+    "snapshot",
+    "replay",
+    "validity"
+  ],
+  "snapshot_manifest_sha256": "cbe75052fe85fcff58a7cbdc337e77e6507cf4240340308347993e88445c516d",
+  "nonclaims": [
+    "CPU graph exact replay remains vetoed.",
+    "No adapter admission or E5 completion.",
+    "Single-process timings/RSS are observations, not a repeated performance ranking or memory-cause diagnosis."
+  ]
+}

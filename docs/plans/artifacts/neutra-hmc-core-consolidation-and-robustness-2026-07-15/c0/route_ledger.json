@@ -36,6 +36,10 @@
         "path": "docs/benchmarks/audit_ssl_lstm_q20_phase9b_plan_2026_09_05.py",
         "reason": "Read-only Phase 9B source-authority auditor; it records source and artifact checks and does not execute HMC or own a sampling route."
       }
+    ],
+    "explicit_paths": [
+      "scripts/run_sir_neutra_training.py",
+      "bayesfilter/testing/surrogate_hmc_five_model.py"
     ]
   },
   "routes": [
@@ -375,6 +379,84 @@
       "path": "docs/benchmarks/ledh_surrogate_hmc_single_chain_test.py",
       "classification": "historical_or_superseded",
       "reason": "Fixed-budget LEDH surrogate-force calibration or diagnostic from the terminated 2026-09-07 executable master program (termination notice dated 2026-09-16); preserved as historical code, not an active NeuTra posterior route."
+    },
+    {
+      "path": "docs/benchmarks/run_q20_configured_hmc_2026_09_24.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "assess_member"
+      ],
+      "required_symbols": [
+        "run_hmc_posterior",
+        "SequentialNeuTraHMCConfig",
+        "BudgetedCheckpoint"
+      ],
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Configured learned map is freshly tuned by the public fixed-map tuner; posterior assessment uses the shared sequential controller and preserves every warmup/retained chunk. Pricing is explicitly separate."
+    },
+    {
+      "path": "bayesfilter/testing/neutra_warm_start_qualification.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_candidate_set_retained.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Simpler-model frozen-map qualification uses the supported fixed-transport tuner and verified member's shared sequential controller with archived warm-up, precision and independent reference checks. No local sampler or mass adaptation."
+    },
+    {
+      "path": "bayesfilter/testing/neutra_source_fit_validation.py",
+      "classification": "active_claim_bearing",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_candidate_set_retained.py",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "reason": "Development-only fitted-map validation uses the public fixed-transport tuner and verified member's shared sequential controller; archived warm-up, physical quantities, precision and independent reference assessment. No local sampler or mass adaptation."
+    },
+    {
+      "path": "bayesfilter/testing/acceptance_uncertainty_models.py",
+      "classification": "smoke_mechanics_or_reference",
+      "reason": "Explicit tiny fixed-kernel CPU acceptance fixtures with supplied analytic geometry. Their fixed draws and discarded prefix make no learned-map, convergence, stationary acceptance or posterior claim."
+    },
+    {
+      "path": "bayesfilter/inference/hmc_tensorflow_verified.py",
+      "classification": "active_claim_bearing",
+      "reason": "Public fixed-force HMC callback controller, including frozen NeuTra; delegates through the shared entry point.",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "_fresh_sequence"
+      ],
+      "required_symbols": [
+        "run_sequential_neutra_hmc"
+      ]
+    },
+    {
+      "path": "bayesfilter/inference/hmc_tensorflow_resume.py",
+      "classification": "active_claim_bearing",
+      "reason": "Public fixed-force HMC callback controller, including frozen NeuTra; delegates through the shared entry point.",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "core_binding": "direct",
+      "active_entry_points": [
+        "replay_then_continue"
+      ],
+      "required_symbols": [
+        "run_sequential_neutra_hmc"
+      ]
+    },
+    {
+      "path": "scripts/run_sir_neutra_training.py",
+      "classification": "active_claim_bearing",
+      "reason": "SIR campaign consumer: fixed map and independent MH endpoint use the public adaptive HMC controller; cheap fixed-count mechanics are diagnostic only.",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_tensorflow_verified.py"
+    },
+    {
+      "path": "bayesfilter/testing/surrogate_hmc_five_model.py",
+      "classification": "active_claim_bearing",
+      "reason": "SIR campaign consumer: fixed map and independent MH endpoint use the public adaptive HMC controller; cheap fixed-count mechanics are diagnostic only.",
+      "policy_id": "bayesfilter_neutra_sequential_hmc_v1",
+      "core_binding": "delegated",
+      "delegate_path": "bayesfilter/inference/hmc_tensorflow_verified.py"
     }
   ]
 }

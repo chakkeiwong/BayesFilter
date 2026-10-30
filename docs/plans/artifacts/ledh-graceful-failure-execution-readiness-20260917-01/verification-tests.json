@@ -1,0 +1,58 @@
+[
+  {
+    "name": "collection-retry",
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "--collect-only",
+      "tests/highdim/test_ledh_numerical_safety_tf.py",
+      "tests/highdim/test_ledh_canonical_batch_fused.py",
+      "tests/inference/test_ledh_dual_parameter_target.py",
+      "tests/integration/test_ledh_graceful_failure_integration.py",
+      "tests/integration/test_ledh_hmc_graceful_failure.py"
+    ],
+    "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+    "environment_overrides": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "TF_CPP_MIN_LOG_LEVEL": "2",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "TF_NUM_INTRAOP_THREADS": "2",
+      "TF_NUM_INTEROP_THREADS": "1"
+    },
+    "gpu_intentionally_hidden": true,
+    "exit_code": 0,
+    "wall_seconds": 5.4379058060003445,
+    "log": "/tmp/ledh-execution-readiness-20260917-t34qizb_/collection-retry.log"
+  },
+  {
+    "name": "native-op-smoke",
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "-p",
+      "no:cacheprovider",
+      "tests/test_symmetric_sylvester_tf.py::test_symmetric_sylvester_solve_matches_reference_and_residual",
+      "tests/test_symmetric_sylvester_tf.py::test_symmetric_sylvester_graph_and_cpu_xla_match_eager",
+      "tests/test_symmetric_principal_sqrt_tf.py::test_symmetric_principal_sqrt_matches_reference_and_reconstructs",
+      "tests/test_symmetric_principal_sqrt_tf.py::test_symmetric_principal_sqrt_graph_and_cpu_xla_match_eager"
+    ],
+    "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+    "environment_overrides": {
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "TF_CPP_MIN_LOG_LEVEL": "2",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "TF_NUM_INTRAOP_THREADS": "2",
+      "TF_NUM_INTEROP_THREADS": "1"
+    },
+    "gpu_intentionally_hidden": true,
+    "exit_code": 0,
+    "wall_seconds": 4.588976347993594,
+    "log": "/tmp/ledh-execution-readiness-20260917-t34qizb_/native-op-smoke.log"
+  }
+]

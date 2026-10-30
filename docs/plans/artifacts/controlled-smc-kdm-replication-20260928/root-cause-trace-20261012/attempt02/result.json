@@ -1,0 +1,860 @@
+{
+  "schema": "kdm_root_cause_trace_v1",
+  "status": "PASS",
+  "torch": "2.11.0+cu130",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "source_pin": "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18",
+  "source_hashes": {
+    "src/models/internal_models/proposal_models.py": "37fd6200bef7ff097121f6bd76ed73a33e0ec57e77b8498507853cc73fae2842",
+    "src/models/internal_models/particle_encoder_models.py": "a7a30f1db8152e29e517dcd54423cf09eb3e21fc5f48e942db01de20d25ac437",
+    "src/models/particle_transformer.py": "84ef9dad9a97b638c5ac00b6ce3fe874e9d566794c8965b6a015889cec57ede1",
+    "src/models/kde_particle_filter/kde_particle_filter.py": "6b441578532339c65a885c0d8a3d52e6c055d0422049bbd2d7c70fc33ed84c48"
+  },
+  "inputs": {
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/mdpf-constructor.json": "6d04d9850af53f89bde8f528d952796ac9e19efe3bd1c4456ad6df934c9424de",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/mdpf/models/full_dpf_model_untrained.pt": "959778e94032b1f65820e881fbc1bcf117cc4f82138dcd992038f366fd6d7676",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/weights/models/weight_model_best.pt": "5553e55b41680ace969491ccca9d582562011b94e7111fef123a6bd00bbb02f4",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/weights/models/observation_encoder_best.pt": "7841865a8afc0c6c71b9526c6bafa7a6bb618ae0b1434a040db04f869a03727d",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/weights/models/particle_encoder_for_weights_model_best.pt": "a83f166026adf714641701f1915b47557e3141a6fe7b4e45265be2316563c384",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit01/training/diagnostic/mdpf-starting-state.json": "71b5b8809e6ce0bb2a1768d16fac8fd5382d0e19036e283feb0b38afc609e1d9",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit01/training/diagnostic/weights-best.json": "25c3f2720145761484d5f5b4f751e2a9ca65aa0622ce9d67976e2631389e1fc1",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/weights-constructor.json": "ccedf4316180c812da428fadfc279645ca4be3b9f404477bb93597de0e55e57a",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit01/training/diagnostic/weights-starting-state.json": "8608fef47d7b798df29c2c22a001e2e4632d9366c2e1354e6707d41eac907e91",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/mdpf-constructor.json": "76778390946102ec0e1c15ea48fbb085275f125b20fb4465cd2a32c79bf2f26a",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/mdpf/models/full_dpf_model_untrained.pt": "7d8c2cb0b13ff62995555667c7a016e1f5a3e8852c92183b38e7eee91d92d391",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/weights/models/weight_model_best.pt": "093fa32ad8e52f0304b050738cb77f9596f128b87adba5772e189a50b134981d",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/weights/models/observation_encoder_best.pt": "298eb5ef4084284249e69645359e1fb5491b28d3a60be5a5b0b3ddd8411072df",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/weights/models/particle_encoder_for_weights_model_best.pt": "fe198c00b3e2f80b2e47b021e73054360d1cd54ea1fe6a3c62c83fa5b8bdbd30",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit02/training/diagnostic/mdpf-starting-state.json": "da169a3a54716a221124cea1ded7489772e9203e2c8ef7013d8c06afb79f5e6b",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit02/training/diagnostic/weights-best.json": "4d68e12d420600743acbc3b0e74c3aa0cb3c56f9afe337cd3542c2a90d46027b",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-full/diagnostic/weights-constructor.json": "9445a3cb66626e48666c088ed19a7444fca7ddefe953ec44d7d163ef42d07e87",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit02/training/diagnostic/weights-starting-state.json": "10ae1492b986a25c54ea0090882e9058a7da62c4a374795818395de0e24c3762",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit01-full/diagnostic/configurations.json": "38aa12ab58423218e9baef754e0b9436c80fae6d9247f64619411ea8fde08a30",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/root-cause-trace-20261012/attempt02/noise.json": "b1cd5b8ee5cfd24ccb9a2bec40cc8b9c090cf0da011722a3377b14510c8b5f61",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/coupled-trajectory-20261012/attempt03/diagnostic/starting-tensors00.json": "2af3a2224eefd9d80799deda144481e72f507333d21692cebfd26888ca30e000",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit01/training/diagnostic/mdpf-best.json": "e1b4ec9f12b4de030933b094fc30876d13357f18896c99269a2c0d290913f40e",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/coupled-trajectory-20261012/attempt03/diagnostic/best-tensors00.json": "c7affcb33b3d82630d59ddf3e37dbf2e9fc28942c9a34cd070dded27de7e2d69"
+  },
+  "starting_checkpoints": [
+    {
+      "unit": "unit01",
+      "checks": {
+        "common_pretraining_constructor": true,
+        "source_transfer": true,
+        "tf_transfer": true,
+        "source_nontransferred_constructor": true,
+        "tf_nontransferred_constructor": true
+      },
+      "modules": {
+        "weight_model.": {
+          "changed": 217,
+          "count": 217,
+          "max_abs": 0.06464187894016504,
+          "rms": 0.010927338319955933
+        },
+        "observation_encoder.": {
+          "changed": 168,
+          "count": 168,
+          "max_abs": 0.015938490629196167,
+          "rms": 0.003024820861309008
+        },
+        "particle_encoder_for_weights_model.": {
+          "changed": 184,
+          "count": 184,
+          "max_abs": 0.13294681813567877,
+          "rms": 0.016225049886586566
+        },
+        "nontransferred": {
+          "changed": 0,
+          "count": 627,
+          "max_abs": 0.0,
+          "rms": 0.0
+        }
+      }
+    },
+    {
+      "unit": "unit02",
+      "checks": {
+        "common_pretraining_constructor": true,
+        "source_transfer": true,
+        "tf_transfer": true,
+        "source_nontransferred_constructor": true,
+        "tf_nontransferred_constructor": true
+      },
+      "modules": {
+        "weight_model.": {
+          "changed": 217,
+          "count": 217,
+          "max_abs": 0.5500455796718597,
+          "rms": 0.04756444315232512
+        },
+        "observation_encoder.": {
+          "changed": 168,
+          "count": 168,
+          "max_abs": 0.049316786556710235,
+          "rms": 0.010435827231957765
+        },
+        "particle_encoder_for_weights_model.": {
+          "changed": 184,
+          "count": 184,
+          "max_abs": 0.0672164261341095,
+          "rms": 0.014847648082493512
+        },
+        "nontransferred": {
+          "changed": 0,
+          "count": 627,
+          "max_abs": 0.0,
+          "rms": 0.0
+        }
+      }
+    }
+  ],
+  "layer_traces": [
+    {
+      "role": "starting",
+      "exact_saved_raw_replay": true,
+      "identical_repeat": true,
+      "coordinate": 607,
+      "cases": [
+        {
+          "requested_epsilon": 1e-08,
+          "actual_epsilon": 1.0011717677116394e-08,
+          "first_identical_stage": "layer_0_Linear",
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.0011717677116394e-08,
+              "rms": 1.2514647096395492e-10
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.0011717677116394e-08,
+              "rms": 7.225334869917106e-11
+            },
+            "layer_0_Linear": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_1_ReLU": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_2_Linear": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_3_ReLU": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_4_Linear": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "twice_sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "centered_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "scaled_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "added_to_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "normalized_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "output_particle": {
+              "changed": 0,
+              "count": 4800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-07,
+          "actual_epsilon": 1.00000761449337e-07,
+          "first_identical_stage": "sigmoid",
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.00000761449337e-07,
+              "rms": 1.2500095181167127e-09
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.00000761449337e-07,
+              "rms": 7.216933317742784e-10
+            },
+            "layer_0_Linear": {
+              "changed": 3,
+              "count": 12800,
+              "max_abs": 2.9802322387695312e-08,
+              "rms": 4.562530187486071e-10
+            },
+            "layer_1_ReLU": {
+              "changed": 2,
+              "count": 12800,
+              "max_abs": 2.9802322387695312e-08,
+              "rms": 3.7252902984619143e-10
+            },
+            "layer_2_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 5.960464477539063e-08,
+              "rms": 7.092741416640494e-10
+            },
+            "layer_3_ReLU": {
+              "changed": 3,
+              "count": 12800,
+              "max_abs": 1.4901161193847656e-08,
+              "rms": 2.2812650937430356e-10
+            },
+            "layer_4_Linear": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 2.9802322387695312e-08,
+              "rms": 3.7252902984619143e-10
+            },
+            "sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "twice_sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "centered_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "scaled_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "added_to_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "normalized_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "output_particle": {
+              "changed": 0,
+              "count": 4800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-06,
+          "actual_epsilon": 1.00000761449337e-06,
+          "first_identical_stage": "sigmoid",
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.00000761449337e-06,
+              "rms": 1.2500095181167126e-08
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.00000761449337e-06,
+              "rms": 7.216933317742784e-09
+            },
+            "layer_0_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 3.89377492673078e-09
+            },
+            "layer_1_ReLU": {
+              "changed": 5,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 3.0492815270544777e-09
+            },
+            "layer_2_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 1.4901161193847656e-07,
+              "rms": 2.363431740635917e-09
+            },
+            "layer_3_ReLU": {
+              "changed": 3,
+              "count": 12800,
+              "max_abs": 1.1920928955078125e-07,
+              "rms": 1.1853801143688948e-09
+            },
+            "layer_4_Linear": {
+              "changed": 3,
+              "count": 6400,
+              "max_abs": 5.960464477539063e-08,
+              "rms": 8.535712389193177e-10
+            },
+            "sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "twice_sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "centered_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "scaled_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "added_to_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "normalized_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "output_particle": {
+              "changed": 0,
+              "count": 4800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-05,
+          "actual_epsilon": 9.99998883344233e-06,
+          "first_identical_stage": null,
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 9.99998883344233e-06,
+              "rms": 1.2499986041802912e-07
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 9.99998883344233e-06,
+              "rms": 7.216870306101477e-08
+            },
+            "layer_0_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 2.562999725341797e-06,
+              "rms": 4.042283303977585e-08
+            },
+            "layer_1_ReLU": {
+              "changed": 5,
+              "count": 12800,
+              "max_abs": 2.562999725341797e-06,
+              "rms": 3.1076882095547616e-08
+            },
+            "layer_2_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 1.2516975402832031e-06,
+              "rms": 2.02989868527661e-08
+            },
+            "layer_3_ReLU": {
+              "changed": 3,
+              "count": 12800,
+              "max_abs": 1.1324882507324219e-06,
+              "rms": 1.1300132524296021e-08
+            },
+            "layer_4_Linear": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 4.470348358154297e-07,
+              "rms": 6.914560535729352e-09
+            },
+            "sigmoid": {
+              "changed": 2,
+              "count": 6400,
+              "max_abs": 1.1920928955078125e-07,
+              "rms": 1.666000468656264e-09
+            },
+            "twice_sigmoid": {
+              "changed": 2,
+              "count": 6400,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 3.332000937312528e-09
+            },
+            "centered_residual": {
+              "changed": 2,
+              "count": 6400,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 3.332000937312528e-09
+            },
+            "scaled_residual": {
+              "changed": 2,
+              "count": 6400,
+              "max_abs": 2.2351741790771484e-07,
+              "rms": 3.166496753692627e-09
+            },
+            "added_to_particle": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.9802322387695314e-09
+            },
+            "normalized_particle": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.9802322387695314e-09
+            },
+            "output_particle": {
+              "changed": 1,
+              "count": 4800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 3.44127577060238e-09
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "best",
+      "exact_saved_raw_replay": true,
+      "identical_repeat": true,
+      "coordinate": 607,
+      "cases": [
+        {
+          "requested_epsilon": 1e-08,
+          "actual_epsilon": 1.0011717677116394e-08,
+          "first_identical_stage": "layer_0_Linear",
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.0011717677116394e-08,
+              "rms": 1.2514647096395492e-10
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.0011717677116394e-08,
+              "rms": 7.225334869917106e-11
+            },
+            "layer_0_Linear": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_1_ReLU": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_2_Linear": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_3_ReLU": {
+              "changed": 0,
+              "count": 12800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "layer_4_Linear": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "twice_sigmoid": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "centered_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "scaled_residual": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "added_to_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "normalized_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "output_particle": {
+              "changed": 0,
+              "count": 4800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-07,
+          "actual_epsilon": 1.00000761449337e-07,
+          "first_identical_stage": "added_to_particle",
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.00000761449337e-07,
+              "rms": 1.2500095181167127e-09
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.00000761449337e-07,
+              "rms": 7.216933317742784e-10
+            },
+            "layer_0_Linear": {
+              "changed": 1,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.1073424255447016e-09
+            },
+            "layer_1_ReLU": {
+              "changed": 1,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.1073424255447016e-09
+            },
+            "layer_2_Linear": {
+              "changed": 1,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.1073424255447016e-09
+            },
+            "layer_3_ReLU": {
+              "changed": 1,
+              "count": 12800,
+              "max_abs": 2.384185791015625e-07,
+              "rms": 2.1073424255447016e-09
+            },
+            "layer_4_Linear": {
+              "changed": 2,
+              "count": 6400,
+              "max_abs": 4.76837158203125e-07,
+              "rms": 6.664001874625056e-09
+            },
+            "sigmoid": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 5.960464477539063e-08,
+              "rms": 7.450580596923829e-10
+            },
+            "twice_sigmoid": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.1920928955078125e-07,
+              "rms": 1.4901161193847657e-09
+            },
+            "centered_residual": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.1920928955078125e-07,
+              "rms": 1.4901161193847657e-09
+            },
+            "scaled_residual": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.1920928955078125e-07,
+              "rms": 1.4901161193847657e-09
+            },
+            "added_to_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "normalized_particle": {
+              "changed": 0,
+              "count": 6400,
+              "max_abs": 0.0,
+              "rms": 0.0
+            },
+            "output_particle": {
+              "changed": 0,
+              "count": 4800,
+              "max_abs": 0.0,
+              "rms": 0.0
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-06,
+          "actual_epsilon": 1.00000761449337e-06,
+          "first_identical_stage": null,
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 1.00000761449337e-06,
+              "rms": 1.2500095181167126e-08
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 1.00000761449337e-06,
+              "rms": 7.216933317742784e-09
+            },
+            "layer_0_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 9.5367431640625e-07,
+              "rms": 1.2467205919833117e-08
+            },
+            "layer_1_ReLU": {
+              "changed": 7,
+              "count": 12800,
+              "max_abs": 9.5367431640625e-07,
+              "rms": 1.228781230931777e-08
+            },
+            "layer_2_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 1.9073486328125e-06,
+              "rms": 2.623620161661358e-08
+            },
+            "layer_3_ReLU": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 1.9073486328125e-06,
+              "rms": 2.623620161661358e-08
+            },
+            "layer_4_Linear": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 4.5299530029296875e-06,
+              "rms": 7.318275664930745e-08
+            },
+            "sigmoid": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 8.344650268554688e-07,
+              "rms": 1.3683787925751281e-08
+            },
+            "twice_sigmoid": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 2.7367575851502562e-08
+            },
+            "centered_residual": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 2.744606205283681e-08
+            },
+            "scaled_residual": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 2.7439780354757183e-08
+            },
+            "added_to_particle": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 2.744606205283681e-08
+            },
+            "normalized_particle": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 3.010809026833884e-08
+            },
+            "output_particle": {
+              "changed": 3,
+              "count": 4800,
+              "max_abs": 1.6689300537109375e-06,
+              "rms": 3.4755181639464503e-08
+            }
+          }
+        },
+        {
+          "requested_epsilon": 1e-05,
+          "actual_epsilon": 9.99998883344233e-06,
+          "first_identical_stage": null,
+          "stages": {
+            "noise": {
+              "changed": 1,
+              "count": 6400,
+              "max_abs": 9.99998883344233e-06,
+              "rms": 1.2499986041802912e-07
+            },
+            "concatenated_input": {
+              "changed": 1,
+              "count": 19200,
+              "max_abs": 9.99998883344233e-06,
+              "rms": 7.216870306101477e-08
+            },
+            "layer_0_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 6.198883056640625e-06,
+              "rms": 8.785368784060285e-08
+            },
+            "layer_1_ReLU": {
+              "changed": 7,
+              "count": 12800,
+              "max_abs": 6.198883056640625e-06,
+              "rms": 8.474032406874259e-08
+            },
+            "layer_2_Linear": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 8.344650268554688e-06,
+              "rms": 1.2393968601184074e-07
+            },
+            "layer_3_ReLU": {
+              "changed": 8,
+              "count": 12800,
+              "max_abs": 8.344650268554688e-06,
+              "rms": 1.2393968601184074e-07
+            },
+            "layer_4_Linear": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 1.9073486328125e-05,
+              "rms": 3.820048616925321e-07
+            },
+            "sigmoid": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 3.5762786865234375e-06,
+              "rms": 6.763736209260408e-08
+            },
+            "twice_sigmoid": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 7.152557373046875e-06,
+              "rms": 1.3527472418520815e-07
+            },
+            "centered_residual": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 7.152557373046875e-06,
+              "rms": 1.3527472418520815e-07
+            },
+            "scaled_residual": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 7.092952728271484e-06,
+              "rms": 1.342071133856091e-07
+            },
+            "added_to_particle": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 7.152557373046875e-06,
+              "rms": 1.3488637784282393e-07
+            },
+            "normalized_particle": {
+              "changed": 4,
+              "count": 6400,
+              "max_abs": 7.569789886474609e-06,
+              "rms": 1.5563333745777939e-07
+            },
+            "output_particle": {
+              "changed": 3,
+              "count": 4800,
+              "max_abs": 9.238719940185547e-06,
+              "rms": 1.7965840898935302e-07
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "inference": "Diagnostic localization only; final trained-quality cause remains unresolved."
+}

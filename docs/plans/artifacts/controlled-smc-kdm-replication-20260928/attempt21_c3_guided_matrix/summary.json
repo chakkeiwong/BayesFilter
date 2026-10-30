@@ -1,0 +1,210 @@
+{
+  "status": "FAIL",
+  "error": "RuntimeError('Grid convergence failed; do not interpret Monte Carlo errors')",
+  "context": {
+    "stage": "reference",
+    "grid_index": 9
+  },
+  "completed_rows": 0,
+  "checks": [
+    {
+      "name": "ekf_independent_sequential_logZ",
+      "error": 5.684341886080802e-14,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "ekf_independent_sequential_mean",
+      "error": 1.9984014443252818e-15,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "ekf_independent_sequential_variance",
+      "error": 1.6653345369377348e-16,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "ekf_independent_sequential_x",
+      "error": 4.440892098500626e-16,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "ekf_independent_sequential_ancestors",
+      "error": 0.0,
+      "tolerance": 0.0,
+      "passed": true
+    },
+    {
+      "name": "quadrature3_independent_sequential_logZ",
+      "error": 4.263256414560601e-14,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "quadrature3_independent_sequential_mean",
+      "error": 2.220446049250313e-15,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "quadrature3_independent_sequential_variance",
+      "error": 1.5439038936193583e-16,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "quadrature3_independent_sequential_x",
+      "error": 1.3322676295501878e-15,
+      "tolerance": 1e-09,
+      "passed": true
+    },
+    {
+      "name": "quadrature3_independent_sequential_ancestors",
+      "error": 0.0,
+      "tolerance": 0.0,
+      "passed": true
+    }
+  ],
+  "reference_convergence": [
+    {
+      "process_variance": 0.01,
+      "errors": {
+        "mean": 3.552713678800501e-15,
+        "variance": 2.220446049250313e-16,
+        "logZ": 4.547473508864641e-13
+      },
+      "predictive_mass_loss": 4.440892098500626e-16,
+      "passed": true
+    },
+    {
+      "process_variance": 0.02,
+      "errors": {
+        "mean": 3.552713678800501e-15,
+        "variance": 2.7755575615628914e-16,
+        "logZ": 2.2737367544323206e-13
+      },
+      "predictive_mass_loss": 4.440892098500626e-16,
+      "passed": true
+    },
+    {
+      "process_variance": 0.03,
+      "errors": {
+        "mean": 3.552713678800501e-15,
+        "variance": 2.7755575615628914e-16,
+        "logZ": 4.547473508864641e-13
+      },
+      "predictive_mass_loss": 4.440892098500626e-16,
+      "passed": true
+    },
+    {
+      "process_variance": 0.04,
+      "errors": {
+        "mean": 3.552713678800501e-15,
+        "variance": 4.440892098500626e-16,
+        "logZ": 1.8189894035458565e-12
+      },
+      "predictive_mass_loss": 4.440892098500626e-16,
+      "passed": true
+    },
+    {
+      "process_variance": 0.05,
+      "errors": {
+        "mean": 3.552713678800501e-15,
+        "variance": 9.992007221626409e-16,
+        "logZ": 4.547473508864641e-13
+      },
+      "predictive_mass_loss": 4.440892098500626e-16,
+      "passed": true
+    },
+    {
+      "process_variance": 0.06,
+      "errors": {
+        "mean": 7.460698725481052e-14,
+        "variance": 6.237232952344129e-13,
+        "logZ": 9.094947017729282e-13
+      },
+      "predictive_mass_loss": 1.3322676295501878e-15,
+      "passed": true
+    },
+    {
+      "process_variance": 0.07,
+      "errors": {
+        "mean": 1.0893508317622036e-11,
+        "variance": 9.000533651715159e-11,
+        "logZ": 1.7053025658242404e-12
+      },
+      "predictive_mass_loss": 1.4432899320127035e-13,
+      "passed": true
+    },
+    {
+      "process_variance": 0.08,
+      "errors": {
+        "mean": 4.484084215050643e-10,
+        "variance": 3.6050147311783576e-09,
+        "logZ": 5.582023732131347e-11
+      },
+      "predictive_mass_loss": 5.4216631184544894e-12,
+      "passed": true
+    },
+    {
+      "process_variance": 0.09,
+      "errors": {
+        "mean": 7.88175746890829e-09,
+        "variance": 6.176310440864086e-08,
+        "logZ": 1.0095391189679503e-09
+      },
+      "predictive_mass_loss": 8.806466667010682e-11,
+      "passed": true
+    },
+    {
+      "process_variance": 0.1,
+      "errors": {
+        "mean": 7.666149492990826e-08,
+        "variance": 5.863872514222379e-07,
+        "logZ": 1.0073790690512396e-08
+      },
+      "predictive_mass_loss": 8.000026197052534e-10,
+      "passed": false
+    }
+  ],
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "jit_compile": true,
+  "wall_seconds": 14.188496494025458
+}

@@ -1,0 +1,97 @@
+{
+  "schema": "bayesfilter.nonlinear_moment_comparison.v1",
+  "job": {
+    "model": "predator_prey",
+    "horizon": 2,
+    "particles": 1008,
+    "data_seed": 260201,
+    "route": "iid_dual_cap",
+    "controls": {
+      "flow_substeps": 8,
+      "reset_epsilon": 102.4,
+      "reset_sinkhorn_steps": 24,
+      "reset_balance_steps": 12,
+      "correction_steps": 4,
+      "correction_strength": 0.12,
+      "pairwise_steps": 4,
+      "pairwise_strength": 0.03,
+      "reset_ridge": 1e-05,
+      "correction_lm_damping": 0.01,
+      "correction_lm_scale_floor": 0.0001,
+      "correction_trust_radius": 0.5,
+      "pairwise_rms_cap": 2.0,
+      "coordinate_cap_power": 8,
+      "state_map_policy": "adaptive_empirical",
+      "hilbert_bits": 12
+    },
+    "theta_points": null,
+    "design_seeds": [
+      260301
+    ],
+    "arms": [
+      "guarded_pairwise"
+    ],
+    "device": "gpu",
+    "dtype": "float32",
+    "jit_compile": true,
+    "trace": true,
+    "references": []
+  },
+  "git_commit": "3673aebf197de8ad7054f623597e31d48e77825f",
+  "command": [
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/benchmarks/run_ledh_nonlinear_master.py",
+    "_worker",
+    "--job",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/job.json"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "/GPU:0",
+  "cpu_gpu_hidden": false,
+  "tf32": true,
+  "jit_compile": true,
+  "chunk_size": 1008,
+  "evidence_role": "diagnostic_only",
+  "tuning_status": "untuned_scope_warm_start",
+  "plan": "docs/plans/ledh-nonlinear-master-20261002.md",
+  "score_method": "analytical_recursive_total_selected_branch",
+  "observations_timing": "x0_then_transition_then_observe_y1_to_yT",
+  "allocator": {
+    "current": 77312,
+    "peak": 134279168
+  },
+  "completed_rows": 1,
+  "wall_seconds": 37.815532886073925,
+  "output_artifacts": [
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/dataset.json",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/job.json",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/manifest.json",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/rows.json",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/trace-p0-s260301-guarded_pairwise.json",
+    "/tmp/bayesfilter-sqmc-main-integration-20260924/docs/plans/artifacts/ledh-nonlinear-master-20261002/merged-gpu-smoke-05/worker-0001-predator_prey/worker.log"
+  ],
+  "environment_prefix": "/home/chakwong/anaconda3/envs/tftwogpu"
+}

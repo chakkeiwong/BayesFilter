@@ -1,0 +1,22 @@
+# Project-scoped exact command forms for the 2026-10-10 replication gap-closure
+# diagnostics. The scripts create unique output directories and write manifests.
+# No generic shell, interpreter, or arbitrary benchmark command is authorized.
+
+prefix_rule(
+    pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "/home/chakwong/BayesFilter/docs/benchmarks/capture_lorenz_fit_trace.py"],
+    decision="allow",
+    justification="Owner-authorized CPU-only controlled-SMC source regression trace; the script hides GPU and writes a unique manifest/output directory.",
+)
+
+prefix_rule(
+    pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "/home/chakwong/BayesFilter/docs/benchmarks/capture_lorenz_forward_reference.py"],
+    decision="allow",
+    justification="Owner-authorized CPU-only controlled-SMC source random-tape capture; the script preserves source code and writes a unique fixture/output directory.",
+)
+
+prefix_rule(
+    pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "/home/chakwong/BayesFilter/docs/benchmarks/compare_lorenz_fitting_forward_tf.py"],
+    decision="allow",
+    justification="Owner-authorized bounded controlled-SMC GPU/XLA fitting and forward diagnostic; the reviewed script enforces FP64, TF32-off, memory-growth, source-hash, and unique-output checks.",
+)
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "/home/chakwong/BayesFilter/docs/benchmarks/run_replication_gap_localization.py"], decision="allow")

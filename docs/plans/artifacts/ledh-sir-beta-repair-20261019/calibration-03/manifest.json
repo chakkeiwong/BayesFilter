@@ -1,0 +1,107 @@
+{
+  "status": "complete",
+  "command": [
+    "scripts/calibrate_sir_guidance_beta.py",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-beta-repair-20261019/calibration-03",
+    "--guides-from",
+    "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04",
+    "--seconds",
+    "1167"
+  ],
+  "environment": "tftwogpu",
+  "git_commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+  "created_utc": "2026-10-18T18:47:34.893559+00:00",
+  "particles": 256,
+  "horizon": 50,
+  "reset_epsilon": 1.0,
+  "reset_steps": 5,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "cpu_only": false,
+  "beta_floor": 0.1,
+  "gap_relative_tolerance": 1e-07,
+  "solver_max_steps": 20000,
+  "solver": "cyclic_pairwise_simplex_log_domain_v1",
+  "flow_steps": 16,
+  "correction_steps": 0,
+  "budget_seconds": 1167,
+  "data": {
+    "26100831": {
+      "path": "docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831/dataset.json",
+      "sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+      "observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    },
+    "26100832": {
+      "path": "docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100832/dataset.json",
+      "sha256": "f6cb97aecc77bc03434cf8b719ba7de7648030dfc121deae1489cd8f94084ed7",
+      "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    }
+  },
+  "fits": {
+    "26100831": {
+      "artifact": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04/guides-26100831.json",
+      "sha256": "0c94d095e43e1a092b5e504b73d6fa72b8497d63832c0ff30dd52229227fb466",
+      "seconds": 0.8593627249938436,
+      "valid": true,
+      "projected_times": 39,
+      "kernel_active_times": 10
+    },
+    "26100832": {
+      "artifact": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04/guides-26100832.json",
+      "sha256": "d54951b4bca55290506af5deacb192de5780ebf894ca68b2006945c512fa84b9",
+      "seconds": 0.9072000939631835,
+      "valid": true,
+      "projected_times": 37,
+      "kernel_active_times": 9
+    }
+  },
+  "cuda_visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "xla_flags": "--xla_gpu_enable_command_buffer=",
+  "plan": "docs/plans/ledh-sir-beta-repair-20261019.md",
+  "reference_score_used": false,
+  "scope": "conditional_diagnostic_no_canonical_admission",
+  "result": "docs/plans/artifacts/ledh-sir-beta-repair-20261019/calibration-03/calibration.json",
+  "source_sha256": {
+    "scripts/calibrate_sir_guidance_beta.py": "4a3d73459f8b85005af09c4d0339f439ab3031f38ae60eae193408badc1696bb",
+    "bayesfilter/score_study/sir_beta_calibration_diagnostic_tf.py": "04b0622a2393777f5d56ef32d7435631b31d7ba9e049ad1fd316f670bc49b113",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "594ae286c31afc74b5b4f15c0d19a59a57fb802c2f28e637f8e041194a63312d",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "19207a1d3512cf9d29721b1fae3a328976895ad239f462d5e73b20f6b4b9d4bf",
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "01eaaafc5c9a1db722318cc8911635f9bdda38e0c3a4288be5f38c029d15bfca",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": "d583d1f1669acfdfe979a6c3f64f00453e75ba5aafe620e0b212b2a394437db7",
+    "bayesfilter/replication/multivariate_controlled_smc_tf.py": "7147061f4d1c3028c529ae620b9fc117799313fe37c8e57f0c42d5f72f357a12",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "actual_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "calibration_sha256": "313336136c4af3302696853cc020f21e6e8e251e4f042f8e217fe9e13081d88b",
+  "wall_seconds": 168.70337387698237
+}

@@ -42,8 +42,8 @@ def test_formulation_boundaries_keep_references_out_of_nomination() -> None:
     runner = _load()
     assert "native_batch" not in runner.SINGLE_PROCESS_CANDIDATES
     assert "sequential_b1_calls" not in runner.SINGLE_PROCESS_CANDIDATES
-    assert "vectorized_strict" in runner.SINGLE_PROCESS_CANDIDATES
-    assert "vectorized_fallback" in runner.SINGLE_PROCESS_CANDIDATES
+    assert "map_sequential" in runner.SINGLE_PROCESS_CANDIDATES
+    assert not runner.RETIRED_PFOR_FORMULATIONS.intersection(runner.FORMULATIONS)
     assert len(runner.FORMULATIONS) == len(set(runner.FORMULATIONS))
 
 
@@ -59,7 +59,7 @@ def test_cpu_pool_uses_distinct_primary_cores_and_excludes_siblings() -> None:
 def test_worker_command_binds_memory_and_exact_cpu_ids(tmp_path: Path) -> None:
     runner = _load()
     command = runner.worker_command(
-        "vectorized_strict",
+        "map_sequential",
         dimension=2,
         parameter_count=3,
         timesteps=4,
@@ -69,7 +69,7 @@ def test_worker_command_binds_memory_and_exact_cpu_ids(tmp_path: Path) -> None:
     assert command[:5] == [str(runner.HWLOC_BIND), "--membind", "node:0", "--", "taskset"]
     assert command[command.index("-c") + 1] == "16,17,18,19"
     assert command[command.index("--intra") + 1] == "4"
-    assert command[command.index("--formulation") + 1] == "vectorized_strict"
+    assert command[command.index("--formulation") + 1] == "map_sequential"
 
 
 def test_repo_relative_resolves_relative_output_paths() -> None:
@@ -94,15 +94,17 @@ def test_nomination_requires_twenty_percent_single_process_repair() -> None:
     runner = _load()
     records = [
         _record("native_batch", 10.0),
-        _record("vectorized_strict", 7.9),
+        _record("map_sequential", 7.9),
+        _record("vectorized_strict", 1.0),
+        _record("vectorized_fallback", 1.0),
         _record("map_parallel_16", 8.1),
         _record("static_unrolled", 7.0, passed=False),
         _record("sequential_b1_calls", 2.0),
     ]
     result = runner.nomination_summary(records)
     assert result["status"] == "candidate_nominated"
-    assert result["candidate"] == {"formulation": "vectorized_strict", "ratio": 0.79}
-    assert [row["formulation"] for row in result["eligible"]] == ["vectorized_strict"]
+    assert result["candidate"] == {"formulation": "map_sequential", "ratio": 0.79}
+    assert [row["formulation"] for row in result["eligible"]] == ["map_sequential"]
 
 
 def test_nomination_fails_closed_without_native_baseline() -> None:

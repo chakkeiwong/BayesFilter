@@ -1,0 +1,170 @@
+..............FF                                                         [100%]
+=================================== FAILURES ===================================
+____ test_worker_uses_public_authority_and_cumulative_counts[verification] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-139/test_worker_uses_public_author0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x74ec74cf1550>
+phase = 'verification'
+
+    @pytest.mark.parametrize("phase", ["verification", "retained"])
+    def test_worker_uses_public_authority_and_cumulative_counts(tmp_path, monkeypatch, phase):
+        from bayesfilter import inference
+        from bayesfilter.testing.surrogate_hmc_m13_public_tuning import tuning_config
+        from bayesfilter.testing import surrogate_hmc_m13_retained_resume as retained
+        parent=tmp_path/"parent"
+        manifest=parent/"worker/tuning/manifest.json"
+        config=tuning_config("mock-worker-wiring")
+        sequence=dict(status="PASSED" if phase=="retained" else "BUDGET_EXHAUSTED",
+            counts=dict(warmup=9000,verification=9000),events=[dict(rhat=dict(maximum=[1.,1.]))],
+            resume_timing=dict(last_chunk_wall_seconds=10.))
+        write_json(manifest,dict(config=config.payload(),sequence=sequence,checks={}))
+        previous=stopped_parent("M13_RETAINED_BUDGET_EXHAUSTED" if phase=="retained"
+                                else "M13_RESUMED_BUDGET_EXHAUSTED")
+        previous["worker"].update(tuning_manifest=str(manifest),
+            tuning_manifest_sha256=master.file_hash(manifest))
+        if phase=="retained":
+            prefix=dict(draws_per_chain=1250,status="M13_RETAINED_BUDGET_EXHAUSTED")
+            previous["worker"]["posterior"]=prefix
+            write_json(parent/"worker/posterior/report.json",prefix)
+        write_json(parent/"report.json",previous)
+        adapter,binding=object(),object()
+        monkeypatch.setattr(master,"PARENT",parent)
+        monkeypatch.setattr(master.previous,"components",lambda:(adapter,binding,None,{}))
+        monkeypatch.setattr(master.previous,"prerequisites",lambda _:({},{}))
+        monkeypatch.setattr(master.previous,"first_retained_chunk_fits",lambda _:True)
+        for name in ("REFERENCE","EXTENDED_COVERAGE","BASELINE"):
+            monkeypatch.setattr(master.previous,name,manifest)
+        calls=[]
+        returned=SimpleNamespace(passed=phase=="retained",artifact_manifest_path=str(manifest))
+        def tune(**kwargs):
+            calls.append(("tune",kwargs))
+            assert kwargs["adapter"] is adapter and kwargs["runner_binding"] is binding
+            assert kwargs["config"].resume_manifest == str(manifest)
+            assert kwargs["config"].verification_max_results == 20000
+            assert kwargs["config"].nomination == config.nomination
+            return returned
+        def load(path,**kwargs):
+            calls.append(("load",kwargs))
+            assert Path(path)==manifest and kwargs["runner_binding"] is binding
+            return returned
+        def consume(tuning,actual_binding,out,reference,calibration,**kwargs):
+            calls.append(("consume",kwargs))
+            assert actual_binding is binding and tuning is returned
+            assert kwargs["resume_report"]==parent/"worker/posterior/report.json"
+            assert kwargs["max_results"]==10000 and kwargs["looks"]==master.previous.EXTENDED_LOOKS
+            return dict(status="M13_RETAINED_BUDGET_EXHAUSTED",qualified=False,draws_per_chain=1500)
+        monkeypatch.setattr(inference,"tune_hmc_kernel",tune)
+        monkeypatch.setattr(inference,"load_verified_tensorflow_hmc_result",load)
+        monkeypatch.setattr(retained,"consume_chunks",consume)
+        output=tmp_path/"new"
+        output.mkdir()
+>       assert master.worker(output)==0
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_deadline_extension.py:248: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_deadline_extension.py:130: in worker
+    tuning_manifest_sha256=file_hash(tuning.artifact_manifest_path), checks=saved["checks"],
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/tmp/pytest-of-chakwong/pytest-139/test_worker_uses_public_author0/parent/worker/tuning/manifest.json'
+
+    def file_hash(path: Path) -> str:
+>       return hashlib.sha256(path.read_bytes()).hexdigest()
+                              ^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'read_bytes'
+
+bayesfilter/inference/surrogate_hmc_program.py:61: AttributeError
+----------------------------- Captured stderr call -----------------------------
+2026-10-01 12:05:38.929107: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+______ test_worker_uses_public_authority_and_cumulative_counts[retained] _______
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-139/test_worker_uses_public_author1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x74ec5afa3290>
+phase = 'retained'
+
+    @pytest.mark.parametrize("phase", ["verification", "retained"])
+    def test_worker_uses_public_authority_and_cumulative_counts(tmp_path, monkeypatch, phase):
+        from bayesfilter import inference
+        from bayesfilter.testing.surrogate_hmc_m13_public_tuning import tuning_config
+        from bayesfilter.testing import surrogate_hmc_m13_retained_resume as retained
+        parent=tmp_path/"parent"
+        manifest=parent/"worker/tuning/manifest.json"
+        config=tuning_config("mock-worker-wiring")
+        sequence=dict(status="PASSED" if phase=="retained" else "BUDGET_EXHAUSTED",
+            counts=dict(warmup=9000,verification=9000),events=[dict(rhat=dict(maximum=[1.,1.]))],
+            resume_timing=dict(last_chunk_wall_seconds=10.))
+        write_json(manifest,dict(config=config.payload(),sequence=sequence,checks={}))
+        previous=stopped_parent("M13_RETAINED_BUDGET_EXHAUSTED" if phase=="retained"
+                                else "M13_RESUMED_BUDGET_EXHAUSTED")
+        previous["worker"].update(tuning_manifest=str(manifest),
+            tuning_manifest_sha256=master.file_hash(manifest))
+        if phase=="retained":
+            prefix=dict(draws_per_chain=1250,status="M13_RETAINED_BUDGET_EXHAUSTED")
+            previous["worker"]["posterior"]=prefix
+            write_json(parent/"worker/posterior/report.json",prefix)
+        write_json(parent/"report.json",previous)
+        adapter,binding=object(),object()
+        monkeypatch.setattr(master,"PARENT",parent)
+        monkeypatch.setattr(master.previous,"components",lambda:(adapter,binding,None,{}))
+        monkeypatch.setattr(master.previous,"prerequisites",lambda _:({},{}))
+        monkeypatch.setattr(master.previous,"first_retained_chunk_fits",lambda _:True)
+        for name in ("REFERENCE","EXTENDED_COVERAGE","BASELINE"):
+            monkeypatch.setattr(master.previous,name,manifest)
+        calls=[]
+        returned=SimpleNamespace(passed=phase=="retained",artifact_manifest_path=str(manifest))
+        def tune(**kwargs):
+            calls.append(("tune",kwargs))
+            assert kwargs["adapter"] is adapter and kwargs["runner_binding"] is binding
+            assert kwargs["config"].resume_manifest == str(manifest)
+            assert kwargs["config"].verification_max_results == 20000
+            assert kwargs["config"].nomination == config.nomination
+            return returned
+        def load(path,**kwargs):
+            calls.append(("load",kwargs))
+            assert Path(path)==manifest and kwargs["runner_binding"] is binding
+            return returned
+        def consume(tuning,actual_binding,out,reference,calibration,**kwargs):
+            calls.append(("consume",kwargs))
+            assert actual_binding is binding and tuning is returned
+            assert kwargs["resume_report"]==parent/"worker/posterior/report.json"
+            assert kwargs["max_results"]==10000 and kwargs["looks"]==master.previous.EXTENDED_LOOKS
+            return dict(status="M13_RETAINED_BUDGET_EXHAUSTED",qualified=False,draws_per_chain=1500)
+        monkeypatch.setattr(inference,"tune_hmc_kernel",tune)
+        monkeypatch.setattr(inference,"load_verified_tensorflow_hmc_result",load)
+        monkeypatch.setattr(retained,"consume_chunks",consume)
+        output=tmp_path/"new"
+        output.mkdir()
+>       assert master.worker(output)==0
+               ^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_deadline_extension.py:248: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_deadline_extension.py:130: in worker
+    tuning_manifest_sha256=file_hash(tuning.artifact_manifest_path), checks=saved["checks"],
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = '/tmp/pytest-of-chakwong/pytest-139/test_worker_uses_public_author1/parent/worker/tuning/manifest.json'
+
+    def file_hash(path: Path) -> str:
+>       return hashlib.sha256(path.read_bytes()).hexdigest()
+                              ^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'read_bytes'
+
+bayesfilter/inference/surrogate_hmc_program.py:61: AttributeError
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_deadline_extension.py::test_worker_uses_public_authority_and_cumulative_counts[verification]
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_deadline_extension.py::test_worker_uses_public_authority_and_cumulative_counts[verification]
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_deadline_extension.py::test_worker_uses_public_authority_and_cumulative_counts[verification]
+FAILED tests/test_surrogate_hmc_deadline_extension.py::test_worker_uses_public_authority_and_cumulative_counts[retained]
+2 failed, 14 passed, 1 deselected, 2 warnings in 3.56s

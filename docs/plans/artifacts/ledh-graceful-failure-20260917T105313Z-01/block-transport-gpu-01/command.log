@@ -1,0 +1,29 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789647514.399092 2033976 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1789647514.402152 2033976 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789647514.409913 2033976 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647514.409989 2033976 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647514.409997 2033976 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647514.409999 2033976 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1789647516.588486 2033976 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 35, in <module>
+    v,dv,c,dc,valid,row,drow=fn(theta)
+                             ^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/tmp/__autograph_generated_file99361zho.py", line 15, in tf__evaluate
+    reset = ag__.converted_call(ag__.ld(batched_sinkhorn_contract_e_reset_triple_with_tangent), (ag__.ld(x), ag__.ld(delta)[None], ag__.ld(cov), ag__.ld(dcov)[None], ag__.ld(w), ag__.ld(dw)[None], ag__.ld(design)), dict(epsilon=2.0, sinkhorn_steps=4, balance_steps=4, ridge=1e-05), fscope)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/__autograph_generated_filedd8o9th8.py", line 162, in tf__batched_sinkhorn_contract_e_reset_triple_with_tangent
+    eye = ag__.converted_call(ag__.ld(tf).eye, (ag__.ld(dim),), dict(batch_shape=[ag__.ld(batch)], dtype=ag__.ld(dtype)), fscope)
+                                                                                  ^^^^^^^^^^^^^^
+UnboundLocalError: in user code:
+
+    File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 26, in evaluate  *
+        reset=batched_sinkhorn_contract_e_reset_triple_with_tangent(x,delta[None],cov,dcov[None],w,dw[None],design,
+    File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_unified_reset_tf.py", line 223, in batched_sinkhorn_contract_e_reset_triple_with_tangent  *
+        eye = tf.eye(dim, batch_shape=[batch], dtype=dtype)
+
+    UnboundLocalError: 'batch' is used before assignment
+

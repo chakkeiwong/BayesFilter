@@ -1,0 +1,358 @@
+{
+  "schema": "bayesfilter.five_model_cost_diagnostic.v1",
+  "status": "COMPLETE_DIAGNOSTIC_ONLY",
+  "model": "sir_d18",
+  "started_utc": "2026-10-11T07:21:28.577747+00:00",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/diagnose_surrogate_hmc_five_model_cost.py",
+    "--worker",
+    "sir_d18",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-cost-20261011-01/sir_d18",
+    "--gpu-uuid",
+    "GPU-68251639-fe82-8f81-3ccc-2953c32e805b"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-cost-diagnosis-2026-10-11.md",
+  "result": "docs/plans/artifacts/surrogate-hmc-five-model-cost-20261011-01/sir_d18/timings.json",
+  "script_sha256": "6b255d83ba35aed663423056137f066da7377e7a707fd17f4ca8f7c6544b15f3",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "gpu_uuid": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "device": "GPU",
+  "cpu_only": false,
+  "evidence_role": "engineering_cost_diagnostic_only",
+  "measurements": {
+    "first_step_build_maps": {
+      "status": "COMPLETE",
+      "first_call_seconds": 4.049583286046982,
+      "first_outputs": [
+        true,
+        0.22748206555843353,
+        0.9682618975639343
+      ],
+      "warm_seconds": [
+        0.06914683803915977,
+        0.06792428088374436
+      ],
+      "last_outputs": [
+        true,
+        0.22748206555843353,
+        0.9682618975639343
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 2230,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 3,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 0,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 0.06853555946145207
+    },
+    "first_step_draw": {
+      "status": "COMPLETE",
+      "first_call_seconds": 0.24752203980460763,
+      "first_outputs": [
+        17983890.0,
+        -85241.515625
+      ],
+      "warm_seconds": [
+        0.0018950311932712793,
+        0.0011379129718989134
+      ],
+      "last_outputs": [
+        17983890.0,
+        -85241.515625
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 78,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 0,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 0,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 0.0015164720825850964
+    },
+    "first_step_three_mixture_densities": {
+      "status": "COMPLETE",
+      "first_call_seconds": 2.0654013589955866,
+      "first_outputs": [
+        true,
+        -402360.34375,
+        -27565.28515625
+      ],
+      "warm_seconds": [
+        0.062294482020661235,
+        0.06188428495079279
+      ],
+      "last_outputs": [
+        true,
+        -402360.34375,
+        -27565.28515625
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 1104,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 6,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 0,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 0.06208938348572701
+    },
+    "first_step_reset": {
+      "status": "COMPLETE",
+      "first_call_seconds": 2.9551630849018693,
+      "first_outputs": [
+        true,
+        6.103515625e-05,
+        3.203403480256384e-07,
+        0.20883888006210327,
+        0.00017753741121850908,
+        0.6550539135932922,
+        5.960464477539062e-07,
+        17983648.0,
+        -90218.703125
+      ],
+      "warm_seconds": [
+        0.2761298681143671,
+        0.2390515599399805
+      ],
+      "last_outputs": [
+        true,
+        6.103515625e-05,
+        3.203403480256384e-07,
+        0.20883888006210327,
+        0.00017753741121850908,
+        0.6550539135932922,
+        5.960464477539062e-07,
+        17983648.0,
+        -90218.703125
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 1328,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 11,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 0,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 0.2575907140271738
+    },
+    "full_T50_scalar_force": {
+      "status": "COMPLETE",
+      "first_call_seconds": 47.08927745115943,
+      "first_outputs": [
+        [
+          7.119523525238037,
+          -8.930068969726562,
+          -10.838653564453125
+        ],
+        true
+      ],
+      "warm_seconds": [
+        35.208564874948934,
+        35.61126701394096
+      ],
+      "last_outputs": [
+        [
+          7.119523525238037,
+          -8.930068969726562,
+          -10.838653564453125
+        ],
+        true
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 5136,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 22,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 1,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 35.40991594444495
+    },
+    "independent_scalar_endpoint": {
+      "status": "COMPLETE",
+      "first_call_seconds": 4.283531938912347,
+      "first_outputs": [
+        -1717.1254425091997,
+        true
+      ],
+      "warm_seconds": [
+        0.10749743203632534,
+        0.10408937302418053
+      ],
+      "last_outputs": [
+        -1717.1254425091997,
+        true
+      ],
+      "graph": {
+        "xla_must_compile": true,
+        "tracing_count": 1,
+        "graph_and_function_nodes": 1726,
+        "relevant_operations": {
+          "While": 0,
+          "StatelessWhile": 8,
+          "PyFunc": 0,
+          "EagerPyFunc": 0,
+          "PartitionedCall": 4,
+          "StatefulPartitionedCall": 0
+        }
+      },
+      "warm_median_seconds": 0.10579340253025293
+    }
+  },
+  "limitations": [
+    "first-step component timings are not full-filter time shares",
+    "two warmed calls at one fixed parameter point",
+    "RTX 4080 SUPER differs from the earlier RTX 5080 pilot"
+  ],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device_details": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "gpu_trust_basis": "escalated_local_GPU_execution",
+  "scope": {
+    "model": "sir_d18",
+    "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 18,
+    "parameter_dimension": 3,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scales": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "a01f4b34cab255e6d812f31ef81f6993b51897e9cbd8cf50f81807cbc6fd435a",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486"
+    }
+  },
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.06911444664001465,
+    0.830885648727417
+  ],
+  "selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/sir_d18/filter-tuning/filter-selection.json",
+  "selection_sha256": "a5f8dab99d057ed466aa8935e7b38a60acc78822fc987b9a9017895ad435c908",
+  "particles": 4032,
+  "horizon": 50,
+  "state_dimension": 18,
+  "observation_dimension": 9,
+  "parameter_count": 3,
+  "dtype": "float32",
+  "tf32": false,
+  "endpoint_dtype": "float64",
+  "jit_compile": true,
+  "gpu_allocator_bytes": {
+    "current": 112610816,
+    "peak": 783169280
+  },
+  "wall_seconds": 136.7031350438483,
+  "finished_utc": "2026-10-11T07:23:51.986271+00:00"
+}

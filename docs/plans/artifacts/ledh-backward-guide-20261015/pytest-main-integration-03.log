@@ -1,0 +1,85 @@
+...FF..............................                                      [100%]
+=================================== FAILURES ===================================
+__________________ test_shared_full_program_total_derivative ___________________
+
+integrated = ({'initial_covariances': <tf.Tensor: shape=(8, 2, 2), dtype=float64, numpy=
+array([[[1., 0.],
+        [0., 1.]],
+
+    ...88542]])>, ...}, <tensorflow.python.eager.polymorphic_function.polymorphic_function.Function object at 0x70c909938d10>)
+
+    def test_shared_full_program_total_derivative(integrated):
+        fixture, kernel = integrated
+        theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
+        delta = tf.constant(2e-6, DTYPE)
+        for direction in tf.eye(4, dtype=DTYPE):
+            value, derivative = kernel(*_arguments(theta, direction, fixture))
+            upper = kernel(*_arguments(theta + delta * direction, tf.zeros_like(theta), fixture))[0]
+            lower = kernel(*_arguments(theta - delta * direction, tf.zeros_like(theta), fixture))[0]
+>           assert bool(tf.math.is_finite(value))
+E           AssertionError: assert False
+E            +  where False = bool(<tf.Tensor: shape=(), dtype=bool, numpy=False>)
+E            +    where <tf.Tensor: shape=(), dtype=bool, numpy=False> = <function is_finite at 0x70c971591ee0>(<tf.Tensor: shape=(), dtype=float64, numpy=-inf>)
+E            +      where <function is_finite at 0x70c971591ee0> = <module 'tensorflow._api.v2.math' from '/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/_api/v2/math/__init__.py'>.is_finite
+E            +        where <module 'tensorflow._api.v2.math' from '/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/_api/v2/math/__init__.py'> = tf.math
+
+tests/highdim/test_ledh_backward_guide_tf.py:148: AssertionError
+______________ test_initial_state_and_covariance_total_derivative ______________
+
+integrated = ({'initial_covariances': <tf.Tensor: shape=(8, 2, 2), dtype=float64, numpy=
+array([[[1., 0.],
+        [0., 1.]],
+
+    ...88542]])>, ...}, <tensorflow.python.eager.polymorphic_function.polymorphic_function.Function object at 0x70c909938d10>)
+
+    def test_initial_state_and_covariance_total_derivative(integrated):
+        fixture, kernel = integrated
+        theta = tf.constant([0.82, 1.10, -0.35, -0.20], DTYPE)
+        d_states = 0.13 * tf.ones_like(fixture["initial_states"])
+        d_covariances = 0.09 * fixture["initial_covariances"]
+        _, derivative = kernel(*_arguments(theta, tf.zeros_like(theta), fixture, d_states, d_covariances))
+        delta = tf.constant(2e-6, DTYPE)
+        shifted = []
+        for sign in (-1, 1):
+            candidate = dict(fixture)
+            candidate["initial_states"] = fixture["initial_states"] + sign * delta * d_states
+            candidate["initial_covariances"] = fixture["initial_covariances"] + sign * delta * d_covariances
+            shifted.append(kernel(*_arguments(theta, tf.zeros_like(theta), candidate))[0])
+>       np.testing.assert_allclose(derivative[0], (shifted[1] - shifted[0]) / (2 * delta), rtol=3e-4, atol=3e-5)
+
+tests/highdim/test_ledh_backward_guide_tf.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (<function assert_allclose.<locals>.compare at 0x70c909348ea0>, array(0.), array(nan))
+kwds = {'equal_nan': True, 'err_msg': '', 'header': 'Not equal to tolerance rtol=0.0003, atol=3e-05', 'strict': False, ...}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+                   ^^^^^^^^^^^^^^^^^^^
+E           AssertionError: 
+E           Not equal to tolerance rtol=0.0003, atol=3e-05
+E           
+E           nan location mismatch:
+E            ACTUAL: array(0.)
+E            DESIRED: array(nan)
+
+../../../../anaconda3/envs/tftwogpu/lib/python3.11/contextlib.py:81: AssertionError
+=============================== warnings summary ===============================
+../../../../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../../../../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_ledh_backward_guide_tf.py::test_shared_full_program_total_derivative
+FAILED tests/highdim/test_ledh_backward_guide_tf.py::test_initial_state_and_covariance_total_derivative
+2 failed, 33 passed, 2 warnings in 122.28s (0:02:02)
+real 125.75
+user 124.47
+sys 13.85

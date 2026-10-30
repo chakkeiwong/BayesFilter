@@ -1,0 +1,284 @@
+{
+  "status": "complete",
+  "policy": "bayesfilter_neutra_naf_forward_reverse_v1",
+  "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+  "selection": {
+    "method": "smc",
+    "teacher": {
+      "profile_id": "native_0",
+      "particles": 4096,
+      "stages": 32,
+      "mutation_steps": 8,
+      "step_size": 0.05,
+      "mode_starts": 64,
+      "mode_iterations": 200,
+      "replications": 4,
+      "jit_compile": true
+    },
+    "reverse": {
+      "rate": 0.0001,
+      "updates": 256
+    },
+    "student": {
+      "kind": "naf_dsf",
+      "width": 64,
+      "batch": 64,
+      "forward_updates": [
+        8192,
+        8192
+      ],
+      "forward_rates": [
+        0.001,
+        0.0003
+      ],
+      "rkl_rates": [
+        0.0001,
+        0.0003
+      ],
+      "rkl_rungs": [
+        256,
+        1024,
+        4096
+      ],
+      "reference_rows": 32768,
+      "gradient_clip": 1000.0,
+      "jit_compile": true
+    },
+    "calibration_seeds": [
+      601,
+      607,
+      613
+    ],
+    "selected_unix": 1791257729.5750966,
+    "criterion": "first complete calibration recipe passing all before/after screens"
+  },
+  "fixed": [
+    {
+      "target": "fixed_unwarped",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": false,
+      "legacy_forward_passed": false,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          1.0119680257506256,
+          0.9940268555126995
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": false,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 5.555091397624156,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    },
+    {
+      "target": "fixed_unwarped",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": true,
+      "legacy_forward_passed": true,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          1.0396633355164115,
+          0.9801156220080217
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": true,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 3.9648135285624746,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    },
+    {
+      "target": "fixed_unwarped",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": true,
+      "legacy_forward_passed": true,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          0.9870809393997545,
+          1.0064244064678116
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": true,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 2.202727582969335,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    },
+    {
+      "target": "fixed_warped",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": true,
+      "legacy_forward_passed": true,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          1.0280675850736318,
+          0.9859916961621145
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": true,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 4.038259761465897,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    },
+    {
+      "target": "fixed_warped",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": true,
+      "legacy_forward_passed": true,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          1.039663335246633,
+          0.9801156221432696
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": true,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 3.222679533570614,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    },
+    {
+      "target": "fixed_warped",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true,
+      "legacy_passed": false,
+      "legacy_forward_passed": false,
+      "warm_start": {
+        "criterion": "bayesfilter_neutra_forward_warm_start_then_final_v2",
+        "passed": true,
+        "reasons": [],
+        "component_mass_ratios": [
+          0.987928411659021,
+          1.0060029744123244
+        ],
+        "minimum_relative_mode_mass": 0.5,
+        "full_accuracy_screen_passed": false,
+        "feature_z_role": "explanatory_only_for_forward_warm_start",
+        "feature_z_max": 7.786261622496646,
+        "scope": "synthetic_evaluator_coverage_not_q20_or_HMC"
+      },
+      "final_endpoint_passed": true
+    }
+  ],
+  "random": [
+    {
+      "target": "random_two_1103",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_two_1103",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_two_1103",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_two_1104",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_two_1104",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_two_1104",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2103",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2103",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2103",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2104",
+      "seed": 51,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2104",
+      "seed": 52,
+      "status": "fit_complete",
+      "passed": true
+    },
+    {
+      "target": "random_three_2104",
+      "seed": 53,
+      "status": "fit_complete",
+      "passed": true
+    }
+  ],
+  "remaining": {
+    "gpu_process_seconds": 111947.28170388959,
+    "cpu_core_seconds": 104304.108478
+  },
+  "criterion_revision": "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/neutra-source-fit-remedy-2026-10-04/campaign-r1/forward-reverse-criterion-revision-v2.json",
+  "scientific_promotion": false,
+  "scope": "bounded approximate_FKL_to_RKL transfer study",
+  "method_status": {
+    "smc": "executable native posterior teacher",
+    "ais": "executable native posterior teacher; no resampling",
+    "fab": "deferred: auxiliary target integrability not established",
+    "gabrie": "deferred: frozen-map control is not the complete adaptive teacher",
+    "aft": "deferred: complete source-controller equivalence not established",
+    "craft": "deferred: complete source-controller equivalence not established"
+  }
+}

@@ -87,7 +87,9 @@ def gaussian_mixture_initial(theta,direction,d,o,within_fraction):
 
 
 @lru_cache(maxsize=16)
-def make_mixture_covariance_kernel(d,o,N,T,controls_tuple,within_fraction,dtype_name="float64",jit_compile=True):
+def make_mixture_covariance_kernel(d,o,N,T,controls_tuple,within_fraction,dtype_name="float64",jit_compile=True,
+                                   *,all_directions=False):
+    from .direction_assembly_tf import make_direction_kernel
     if not 0 < within_fraction <= 1: raise ValueError("within fraction must be in (0,1]")
     make_canonical_kernel(d,o,N,T,controls_tuple,dtype_name,jit_compile)
     dtype = tf.as_dtype(dtype_name)
@@ -98,9 +100,16 @@ def make_mixture_covariance_kernel(d,o,N,T,controls_tuple,within_fraction,dtype_
         model,initial,dinitial,P,dP,*_ = gaussian_direction_inputs(theta,direction,initial_noise,d,o)
         schedule = mixture_schedule(model,theta,observations,
             *gaussian_mixture_initial(theta,direction,d,o,within_fraction))
+        # TensorArray.stack loses the known horizon in its static shape. Bind
+        # this existing dimension before enclosing the direction loop.
+        schedule = tf.nest.map_structure(
+            lambda value: tf.ensure_shape(value, [T, *value.shape[1:]]), schedule)
         value,score,trace = _value_and_analytical_score_impl(model,theta,initial,
             tf.broadcast_to(P,[N,d,d]),noise,observations,with_score=True,return_trace=True,
             initial_state_tangent=dinitial,initial_covariance_tangent=tf.broadcast_to(dP,[N,d,d]),
             reset_design=design,moment_schedule=schedule,**dict(controls_tuple))
-        return value,score[0],schedule,tuple(x["predicted_covariances"] for x in trace)
-    return kernel
+        predictions = tuple(x["predicted_covariances"] for x in trace)
+        predictions = tf.nest.map_structure(
+            lambda covariance: tf.ensure_shape(covariance, [N,d,d]), predictions)
+        return value,score[0],schedule,predictions
+    return make_direction_kernel(kernel,jit_compile=jit_compile) if all_directions else kernel

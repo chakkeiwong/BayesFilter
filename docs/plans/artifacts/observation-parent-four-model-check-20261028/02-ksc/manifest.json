@@ -1,0 +1,392 @@
+{
+  "model": "ksc",
+  "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+  "theta": [
+    1.5,
+    0.0
+  ],
+  "parameter_names": [
+    "persistence_parameter",
+    "log_observation_scale"
+  ],
+  "particles": 1008,
+  "horizon": 50,
+  "seeds": [
+    281301,
+    281302,
+    281303,
+    281304,
+    281305,
+    281306,
+    281307,
+    281308
+  ],
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 1.0,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "global_guide_conditioning": "positive_information",
+    "shared_gaussian_contraction": "direct",
+    "proposal_policy": "original_three_branch"
+  },
+  "beta": [
+    0.1,
+    0.8999999999999999,
+    0.0
+  ],
+  "policies": [
+    "original_three_branch"
+  ],
+  "conditional_supported": false,
+  "unsupported_reason": "conditional implementation requires affine Gaussian observations",
+  "data": {
+    "observations": [
+      [
+        -3.4473726918737144
+      ],
+      [
+        -1.3890714615393018
+      ],
+      [
+        -2.2686382290220446
+      ],
+      [
+        -2.8469296117861367
+      ],
+      [
+        -1.1621295630359474
+      ],
+      [
+        -2.7668494725652906
+      ],
+      [
+        -5.743517662831754
+      ],
+      [
+        0.13699531015306343
+      ],
+      [
+        -3.659959172427003
+      ],
+      [
+        -2.6431282486020553
+      ],
+      [
+        -1.1463090789743067
+      ],
+      [
+        0.41773359340082383
+      ],
+      [
+        -4.57016298006894
+      ],
+      [
+        0.8373896467554128
+      ],
+      [
+        0.1382898217814197
+      ],
+      [
+        0.029462899472170734
+      ],
+      [
+        1.3402062569648723
+      ],
+      [
+        1.2333578650644603
+      ],
+      [
+        0.8339698811525329
+      ],
+      [
+        -11.923391083396833
+      ],
+      [
+        1.212936755334958
+      ],
+      [
+        0.5809864939599865
+      ],
+      [
+        -2.5626888855018075
+      ],
+      [
+        1.3650148043829171
+      ],
+      [
+        -4.05899428659019
+      ],
+      [
+        2.3111956574797006
+      ],
+      [
+        -1.1593787230391603
+      ],
+      [
+        0.20378849084055695
+      ],
+      [
+        4.132068796270031
+      ],
+      [
+        0.4940045292162214
+      ],
+      [
+        -2.68539585202085
+      ],
+      [
+        -1.1628893020226996
+      ],
+      [
+        1.1310338726764961
+      ],
+      [
+        -0.034549907077013775
+      ],
+      [
+        -0.5303210191935263
+      ],
+      [
+        1.3751464701960732
+      ],
+      [
+        1.8842282942714925
+      ],
+      [
+        -2.0238664237377395
+      ],
+      [
+        0.2782445337557977
+      ],
+      [
+        -2.068701457932049
+      ],
+      [
+        -1.8299500217634146
+      ],
+      [
+        -1.7449455875791142
+      ],
+      [
+        -1.2019408353701957
+      ],
+      [
+        -2.677278546961091
+      ],
+      [
+        -0.6795859425902634
+      ],
+      [
+        -3.1861539573028557
+      ],
+      [
+        -1.1613144701818476
+      ],
+      [
+        0.14398178435314768
+      ],
+      [
+        1.3429476334090569
+      ],
+      [
+        0.8041068434735861
+      ]
+    ],
+    "observation_sha256": "9cae9eaad1039b6f787973ed0aa99e673a02fd1dccbe9310020d80d954c833c7",
+    "data_seed": 26100831,
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "dtype": "float64",
+    "generator": "same_model_simulator_independent_T50_GPU_XLA",
+    "cpu_only": false
+  },
+  "reference": {
+    "value": -111.97460525629756,
+    "score": [
+      -2.002601069643664,
+      -0.8241235796621704
+    ],
+    "reference": "converged_mixture_grid_approximation",
+    "convergence": [
+      {
+        "nodes": 401,
+        "bound": 40.0,
+        "value": -111.97460525629752,
+        "score": [
+          -2.0026010696436645,
+          -0.8241235796621724
+        ]
+      },
+      {
+        "nodes": 801,
+        "bound": 40.0,
+        "value": -111.97460525629751,
+        "score": [
+          -2.0026010696436645,
+          -0.8241235796621719
+        ]
+      },
+      {
+        "nodes": 1201,
+        "bound": 40.0,
+        "value": -111.97460525629752,
+        "score": [
+          -2.002601069643665,
+          -0.8241235796621573
+        ]
+      },
+      {
+        "nodes": 1201,
+        "bound": 48.0,
+        "value": -111.97460525629756,
+        "score": [
+          -2.002601069643664,
+          -0.8241235796621704
+        ]
+      }
+    ],
+    "maximum_value_difference": 5.684341886080802e-14,
+    "maximum_score_difference": 1.3100631690576847e-14,
+    "kind": "independently_refined_grid"
+  },
+  "source_files": {
+    "docs/plans/artifacts/ledh-independent-validation-20261008-01/004-filter-ksc-d26100831/manifest.json": "530008715035830b538d1b1912da5b7f4d9997da41d7127d1b882edec7d4620c"
+  },
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_observation_parent_four_model_check.py",
+    "--model",
+    "ksc",
+    "--output",
+    "docs/plans/artifacts/observation-parent-four-model-check-20261028/02-ksc"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "git_commit": "14e6fbd59e9447b2ed760fccb004c4b81fa55140",
+  "cpu_only": false,
+  "device": "GPU",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "precision_exception": "diagnostic FP64 reference comparison; not default-readiness evidence",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "plan": "docs/plans/observation-parent-four-model-check-20261028.md",
+  "result_file": "docs/plans/artifacts/observation-parent-four-model-check-20261028/02-ksc/result.json",
+  "inference_status": "descriptive_only_no_ranking_or_promotion",
+  "input_design": "paired stateless draws; RB inputs FP32-rounded per saved harness",
+  "smoke": "N=16,T=2; original route; no research claim",
+  "loaded_source_sha256": {
+    "scripts/run_observation_parent_four_model_check.py": "36a23e62246ca54d00343f6e2d8710855ec81646ac243616f939c6ff15127595",
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/bases.py": "02d5315aec6beab9fe01bd2efd61fb751df2141a7a28c22cc11d2153eeb2e55c",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/tt.py": "82e66f95cfc434996d70893661ee17f2ac35bfbcbfbb31cc0af3a749683354f4",
+    "bayesfilter/highdim/squared_tt.py": "c4a8f1d90c65b433617113045a62ebeb87e10858ab3d52f7c14fa7720cee0587",
+    "bayesfilter/highdim/derivatives.py": "a5351fc1365534e277c6567eac8e1927e30b9cb26a15cf7554bbae824610a017",
+    "bayesfilter/highdim/fitting.py": "b05ad12344847ad9f0b5aeb42c0b67cc78e4d90ad68cbb64848f5312cd164af1",
+    "bayesfilter/highdim/models.py": "2cf0627454c735df91b147f54eaadfc201ec507eb47b908960c90aca01e1c0aa",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/highdim/filtering.py": "8cd5aa1cb66871b32851b889cd2592cc4d416494c941803dd7e3c6dcb4a32e35",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/native_generalized_sv.py": "2cfb4d3abb8b32ff5e9ba256183bf50c752c236638813f25a5f53cbc9164367c",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "44047f1e1d6bede46c674cd0d0180bebf958c60b67ab6d477419baee393c72c2",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/ops/fixed_signature_tf.py": "b8f4d2c987ad2e3908ff3ac04827f9b149200ab89836a15a99b6d72c02461e2d",
+    "bayesfilter/highdim/source_route_numerics_tf.py": "418a2bc22ad94c60d52ba07aadab5307b24527c3cf14114f0879a0e93498c138",
+    "bayesfilter/highdim/source_route_preparation_tf.py": "3a01abdaf0c6d7efd17da533f98b020d5d561b85d13157485afe45ca144508d0",
+    "bayesfilter/highdim/source_route_gate_runtime_tf.py": "49e475c9180a4595039b8d203a2d1d4edf5bc7c0c728ace1d321b0adb05f0d9e",
+    "bayesfilter/ops/generator_stream_tf.py": "eb7fd99ca7c0571cad91573454d12239c29ca51e3c28f58e27de845b29c041ca",
+    "bayesfilter/highdim/source_route_preparation_runtime_tf.py": "c1d0e7d0e6ce1b280284bbd778f10fa175f722ba3a4eea3cc9bd9b8a60e74989",
+    "bayesfilter/highdim/transport.py": "f0bcef0fe0e041fc8f93d0e13192c07234a78fdd930ecd07aeea138f60b8927e",
+    "bayesfilter/highdim/source_route.py": "cf44d4e62342fb179bc6cded3c815dde20c51fbe100f298a078530f37f3798c8",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/nonlinear/__init__.py": "e9e08c353cd2f7996b808466842d451424b3d1c473ca301ce04f2df4f75d38a2",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/highdim/sv_direct_sgqf_native_tf.py": "256e20dcdb1457e2fa00e50ae3af79535e7c9d093af5311bfda28dd5e392263f",
+    "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py": "b305f3fa8aecac605a7401dac139aa4b0554e7733f726bd08af985f022432547",
+    "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": "13cfe6c969bd2a86c485c5d98be16e70c52569a432f020f3329e9e82948f153f",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "e488337a5eee8439641e2df89a17ebc914b1675dd5a108b31a56c37b89c09ba3",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "5cb844a0a05730a97d35e0a82cdc2b96e159ef175212d975b8072a6cb4535bff",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "497b668b1abe0c7868ddddaea53ee7f9d3b693287c736285076c7952451eae44",
+    "bayesfilter/highdim/full_precision_contractions_tf.py": "357a72228af264d36d3f6e44d57c83f1d2df77a1f3dd9b8f54974f7db23b66ef",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "2a7ac4207cc24e60ef76786b6a6535c7feaac25a7bf4aaf29ac55d66f55adf04",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "25b3992cf08baaa30a6902659c5793007827ab3779b50a9372b12504e71358e3",
+    "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "0ea2581c3e3699321a0af7eb99a5ed4f42c2cc3288dd83246369bd7fa1ced7d3",
+    "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "b60f4377527b0ddcf3a46051cc52b53d7549ffee9700b7d57e6581a1b9b25e69",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "1d98c5ce019f4da6924a786d50ea1e152e416db622519e0174d4668dfeeadf08",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20"
+  },
+  "wall_seconds": 42.8137298620004,
+  "allocator": {
+    "current": 1851904,
+    "peak": 69198080
+  }
+}

@@ -218,8 +218,13 @@ def test_nonidentity_affine_kernel_implements_row_chain_rule_and_preserves_metad
     )
     expected_target = 0.5 * tf.reduce_sum(tf.square(raw_position), axis=-1)
 
-    tf.debugging.assert_near(kernel.force.function(latent), expected_force)
-    tf.debugging.assert_near(kernel.target.function(latent), expected_target)
+    force_evaluation = kernel.force.function(latent)
+    target_evaluation = kernel.target.function(latent)
+    tf.debugging.assert_near(force_evaluation.force, expected_force)
+    tf.debugging.assert_equal(force_evaluation.force_valid, [True, True])
+    tf.debugging.assert_near(target_evaluation.potential, expected_target)
+    tf.debugging.assert_equal(target_evaluation.status["value_valid"], [True, True])
+    tf.debugging.assert_equal(target_evaluation.status["numerical_failure"], [False, False])
     assert kernel.target.includes_chart_log_jacobian is True
 
 
@@ -304,6 +309,22 @@ def test_small_dimensional_proposal_jacobian_has_unit_magnitude():
         )
     jacobian = tape.jacobian(output, phase)
     tf.debugging.assert_near(tf.abs(tf.linalg.det(jacobian)), tf.constant(1.0, DTYPE), atol=1e-12)
+
+
+def test_large_finite_energy_error_is_mh_rejection_not_divergence():
+    position = tf.zeros([4, 2], DTYPE)
+    target = FrozenTargetPotential(
+        lambda q: 0.5 * tf.reduce_sum(tf.square(q), axis=-1), identity="energy-warning-gaussian")
+    # A deliberately poor position-only force generates finite, high-energy proposals.
+    force = FrozenPositionOnlyForce(lambda q: tf.ones_like(q) * 100.,
+                                    identity="energy-warning-poor-force")
+    result = neural_force_hmc_transition(position, tf.zeros([4], DTYPE), force, target,
+        _config(step_size=10., steps=1), seed=(19, 23))
+    tf.debugging.assert_greater(result.trace.delta_h, tf.constant(1000., DTYPE))
+    tf.debugging.assert_near(result.trace.log_acceptance_ratio, -result.trace.delta_h)
+    tf.debugging.assert_equal(result.trace.accepted, tf.zeros([4], tf.bool))
+    tf.debugging.assert_equal(result.trace.divergence, tf.zeros([4], tf.bool))
+    tf.debugging.assert_equal(result.position, position)
 
 
 def test_full_energy_trace_and_cached_endpoint_call_count():
@@ -406,9 +427,7 @@ def test_native_dual_averaging_preserves_endpoint_only_force_mechanics():
 
     transition_count = config.num_results + config.num_burnin_steps
     assert int(endpoint_calls.numpy()) == transition_count + 1
-    assert int(force_calls.numpy()) == transition_count * (
-        config.num_leapfrog_steps + 1
-    )
+    assert int(force_calls.numpy()) == 1 + transition_count * config.num_leapfrog_steps
     assert result.trace["step_size"].shape == (config.num_results,)
     assert result.trace["divergence"].shape == (config.num_results, 4)
     assert result.trace["force_fallback"].shape == (config.num_results, 4)
@@ -654,7 +673,8 @@ def test_nonlinear_chart_metadata_distinguishes_complete_and_incomplete_targets(
 
 def test_active_kernel_has_tensorflow_loops_and_no_numpy_or_host_callback():
     source = inspect.getsource(sample_neural_force_hmc)
-    proposal_source = inspect.getsource(neural_force_proposal)
+    assert "_neural_force_proposal(" in inspect.getsource(neural_force_proposal)
+    proposal_source = inspect.getsource(inspect.getmodule(neural_force_proposal)._neural_force_proposal)
     module_source = inspect.getsource(inspect.getmodule(sample_neural_force_hmc))
     assert "tf.while_loop" in source
     assert "tf.while_loop" in proposal_source

@@ -1,0 +1,260 @@
+\section[The q20 FAB calibration]{The failed FAB calibration for the recurrent state model}
+\label{sec:bf-fab-q20-failure}
+
+The September 28, 2026 calibration identified three distinct difficulties:
+biased replay sampling on the saved buffers, inadequate evidence of accurate
+AIS gradients, and a non-integrable auxiliary target for the mathematical UKF
+posterior at the initial IAF checkpoint. The last finding changes the next
+scientific question. Before asking how well a Markov kernel samples
+$\gamma^2/q$, one must establish that this function can be normalized.
+Faithfully porting the author's transitions does not establish that assumption
+for a new posterior and proposal.\footnote{\raggedright
+\def\UrlBreaks{\do\/\do\-}
+The calibration results, source-anchored tail audit, arithmetic checks and
+executed source are preserved under
+\path{plans/artifacts/fab-monograph-coverage-2026-09-28/evidence/}.
+The manuscript plan
+\path{plans/bayesfilter-fab-monograph-coverage-2026-09-28.md}
+records their provenance.\par}
+
+The application called q20 has twenty latent coordinates and twenty hidden
+coordinates, a sixty-dimensional augmented state, and thirty observations.
+Only four parameters are inferred: a latent mean weight and bias, and an
+observation weight and bias. Its prior is $\calN(\mu,16I_4)$, with
+$\mu=(0.35,-0.08,0.65,0.05)$. The frozen initial proposal uses the canonical
+three-stage IAF, two width-sixteen ELU hidden layers per stage, conditional
+log-scale cap two, a standard Gaussian base, and outer affine scale four.
+These are the actual study settings, not recommendations for other targets.
+
+\subsection{Replay bias is visible without sampling the posterior}
+
+Fix a saved map and its entire $3{,}232$-row replay buffer. Let $w_i$ denote
+the normalized stored priority, $c_i=q_{\rm old}(x_i)/q_\phi(x_i)$, and
+$h_i=-\nabla_\phi\log q_\phi(x_i)$. The declared capped finite-buffer
+expectation is exactly computable:
+\begin{equation}
+ G_{\rm buf}=\sum_{i=1}^{3232}w_i\min(c_i,10)h_i.
+ \label{eq:bf-fab-buffer-target}
+\end{equation}
+This quantity is conditional on the buffer and the cap; it is not the exact
+FAB gradient. The source sampling rule first selects $128$ distinct rows,
+shuffles them, and uses $32$ for the first update. If row $i$ has inclusion
+probability $\rho_i$ in that subset, its expected coefficient in the first
+minibatch mean is $\rho_i/128$, rather than $w_i$. In particular, that
+coefficient cannot exceed $1/128$, however large the row's priority. Drawing
+$32$ indices independently with replacement according to $w$ instead has
+expectation \eqref{eq:bf-fab-buffer-target}.
+
+At each of two saved maps, $256$ independent first minibatches were compared
+with the exact buffer sum, without optimizer updates. The mean-gradient
+relative errors were as follows; brackets give approximate conditional
+bootstrap error intervals.
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+Saved map & Distinct-row rule & Replacement rule \\
+\midrule
+Seed 1 & $0.99565\ [0.96053,1.03077]$
+       & $0.01922\ [0,0.06054]$ \\
+Seed 2 & $0.99265\ [0.97972,1.00558]$
+       & $0.00881\ [0,0.02618]$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+This supports a substantial bias of the distinct-row rule for these buffers.
+The without-replacement bias is acknowledged in
+\citet[Section 3.2]{midgley2023fab}; reproducing the heuristic correctly does
+not ensure that its bias is small. Replacement repairs this particular
+finite-buffer expectation, but not the buffer's coverage. Many stale density
+corrections exceeded the cap, and refreshing all priorities with their
+uncapped corrections gave an ESS near one. Full training would also have to
+handle repeated indices, parameter changes and priority refresh correctly.
+The experiment did not compare complete optimization trajectories.
+
+\subsection{Finite AIS diagnostics did not qualify a training setting}
+
+Five settings completed eight independent measurement batches of size $32$
+after pilot tuning. Here $K$ counts interior bridge distributions, excluding
+the endpoints, and $L$ counts leapfrog steps per HMC transition. Measurements
+used frozen steps, the same initial IAF, and the same target. The map used
+FP32 and the target FP64, with GPU/XLA execution, TF32 disabled, and verified
+incremental GPU allocation.
+
+For batch $b$, write $\widehat G_b=-\sum_i\bar W_{bi}
+\nabla_\phi\log q_\phi(X_{bi})$, and let $\bar G$ be the mean across the
+eight batches. The noise column below is the square root of the sample
+variance trace of $\widehat G_b$, divided by $\|\bar G\|$. The difference
+column is $\|\bar G-G_{\rm ref}\|/\|G_{\rm ref}\|$; the final column is
+the root mean squared difference of individual batches from $G_{\rm ref}$,
+on the same relative scale. These diagnostics remove the author's extra
+factor $1/B$ in the fresh training loss so that changing batch size does not
+merely rescale the comparison.
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Setting & Relative noise & Mean difference & RMS difference \\
+\midrule
+Metropolis, linear $K=10$ & 1.41773 & 0.31971 & 1.41926 \\
+HMC $L=5$, linear $K=10$ & 1.37817 & 0.47606 & 1.61843 \\
+HMC $L=9$, linear $K=10$ & 0.37932 & 0.86541 & 1.00209 \\
+HMC $L=5$, geometric $K=10$ & 0.82318 & 0.50710 & 1.05473 \\
+HMC $L=5$, geometric $K=21$ & 0.66453 & 0.53804 & 0.95960 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The $K=21$ setting used bridge-weighted acceptance in its pilots. The $L=9$
+screen combines two original batches and six independent continuation
+batches with the same frozen settings; device contention prevents a fair
+runtime ranking. The finite reference used $32{,}768$ fresh independent prior
+draws, reweighted by $\gamma^2/(qr)$, where $r$ is their prior density. Its
+ESS was only $77.39$, and its approximate relative bootstrap gradient radius
+was $0.3797$. It was therefore a noisy finite bank, not posterior truth or an
+exact auxiliary expectation.
+
+None of these measurements met the study's predeclared total relative
+accuracy allowance of $0.5$. That allowance was a conservative screening
+choice, not a theorem about what noise stochastic optimization can tolerate.
+The observed differences do not establish a ranking of AIS settings.
+In particular, the smaller measured variance for $L=9$ coexisted with a
+large difference from the finite reference. Ordinary acceptance could also
+conceal rejection among important particles: at the final three interior
+temperatures of the linear $L=5$ screen, bridge-weighted median acceptance
+was $0.025/0.098/0.014$, whereas ordinary mean acceptance was
+$0.604/0.564/0.467$. Weight concentration makes these weighted estimates
+noisy, but the contrast shows why acceptance alone is insufficient.
+
+The refinement to $K=43$ completed four pilots and two measurement batches.
+It was deliberately stopped during its third measurement after the tail
+finding below, before its time cap expired. A generic worker status called
+the interruption a timeout; the termination record identifies the mathematical
+validity decision. It is not a sixth completed comparison or an observed
+numerical crash. The study charged $17{,}722.765$ GPU seconds, or about
+$4.923$ of its six allocated GPU hours. It trained no new map.
+
+\subsection{Why the intended auxiliary integral diverges}
+
+Let $\gamma^0_{\rm UKF}(x)=r(x)L^0_{\rm UKF}(x)$ denote the ordinary
+real-valued UKF likelihood times the Gaussian prior. The superscript zero
+specifies a principal positive-semidefinite square-root extension when a
+state covariance is singular. This mathematical value target is distinguished
+below from the executable's covariance margins and score-status restrictions.
+The likelihood is approximate relative to the underlying nonlinear model;
+the following calculation concerns this declared UKF approximation.
+
+Consider a tube, rather than a single ray,
+\begin{equation}
+ x(t,u)=\mu+(u_0,u_1,t,t+u_3),\qquad
+ t\ge t_0,\quad |u_0|,|u_1|,|u_3|\le10^{-6}.
+ \label{eq:bf-fab-tail-tube}
+\end{equation}
+Its fixed width is a positive-volume witness, not a proposed parameter bound.
+The latent weight and bias remain in a compact set. Each LSTM hidden output
+is a sigmoid gate times a hyperbolic tangent and is therefore bounded in
+absolute value by one. Consequently the latent predictions are uniformly
+bounded over the tube and incoming state sigma points, even when some cell
+state coordinates become large.
+
+The augmented UKF rule has dimension $80$, fixed strictly positive diagonal
+innovation covariance $Q$, and parameters $\alpha=1$, $\beta_{\rm UKF}=2$,
+$\kappa=0$. Its off-center covariance weights are $1/160$ and its center
+covariance weight is two, all nonnegative. An innovation-axis pair has latent
+predictions $f(m)\pm\sqrt{80}\sqrt Qe_j$, because the augmented placement
+covariance is block diagonal. Put $d=f(m)-\bar f$ and
+$\delta_j=\sqrt{80}\sqrt Qe_j$. This pair contributes
+\begin{align}
+ &\frac1{160}\{(d+\delta_j)(d+\delta_j)^\top
+                 +(d-\delta_j)(d-\delta_j)^\top\}\nonumber\\
+ &\qquad=\frac{dd^\top}{80}+\sqrt Qe_je_j^\top\sqrt Q.
+ \label{eq:bf-fab-innovation-bound}
+\end{align}
+Summing these pairs and the other nonnegative contributions gives
+$P_{\rm pred,latent}\succeq Q$. The observation row $H(t)$ has first
+coefficient $0.65+t$, with other coefficients fixed. For its scalar predictive
+variance $S(t)=H(t)P_{\rm pred,latent}H(t)^\top+R$, $R>0$, there are positive
+constants, uniform over the tube and the thirty dates, such that
+\begin{equation}
+ c_1(1+t)^2\le S(t)\le c_2(1+t)^2.
+ \label{eq:bf-fab-observation-tail}
+\end{equation}
+The lower bound follows from $Q$; bounded latent sigma points give the upper
+bound. The predictive observation mean is $O(t)$, including its growing bias.
+Since the recorded observations are finite, the squared standardized
+prediction error is bounded. Each Gaussian predictive density is therefore
+bounded below by a positive constant times $(1+t)^{-1}$, giving
+\begin{equation}
+ L^0_{\rm UKF}(x(t,u))\ge C(1+t)^{-30}.
+ \label{eq:bf-fab-likelihood-lower}
+\end{equation}
+The recursion exists at every finite $t$: nonnegative covariance weights
+give a positive-semidefinite joint moment matrix, adding $R>0$ makes the
+observation variance positive, and its Schur complement leaves a
+positive-semidefinite filtered covariance for the next principal square root.
+
+For the saved map, the represented neural weights were treated as exact real
+numbers in an independent interval calculation of the sequential inverse.
+ELU preserves a positive-slope affine asymptote and approaches $-1$ on a
+negative-slope input. The capped scales approach finite constants. Resolving
+every nonzero branch slope uniformly over the tube cross-section gives
+\begin{align}
+ T_\phi^{-1}(x(t,u))&=a(u)t+b(u)+o(1),\\
+ 186.3135886007891&<\|a(u)\|^2<186.3135888648922.
+ \label{eq:bf-fab-inverse-tail}
+\end{align}
+The remainder is uniform, and $a,b$ are bounded over that cross-section.
+Outward-rounded calculations at eighty and 160 digits agree; 138 independent
+arithmetic enclosure checks support the calculation. Finite-ray plots alone
+would not establish this bound on a region of positive volume.
+
+At this checkpoint the twelve free scale biases are zero, so the forward
+log determinant lies between $4\log4-24$ and $4\log4+24$. Combining the
+Gaussian base density with \eqref{eq:bf-fab-inverse-tail} gives
+\begin{equation}
+ -\log q_\phi(x(t,u))\ge
+ \tfrac12(186.3135886007891)t^2-C_4t-C_5.
+\end{equation}
+Meanwhile, twice the log prior is
+\begin{equation}
+ 2\log r(x(t,u))=-\frac{t^2}{8}-\frac{u_3t}{8}
+ -\frac{u_0^2+u_1^2+u_3^2}{16}+\text{constant}.
+\end{equation}
+The tube center in the original FP32 affine translation differs slightly
+from the displayed decimal center. Recentering the tube on that represented
+translation preserves the inverse calculation and changes only linear and
+constant terms in this prior expansion. For either translation,
+\begin{equation}
+ \log\frac{\gamma^0_{\rm UKF}(x(t,u))^2}{q_\phi(x(t,u))}
+ \ge 93.0317943003945\,t^2-C_6t-60\log(1+t)-C_7.
+ \label{eq:bf-fab-tail-divergence}
+\end{equation}
+The quadratic coefficient is strictly positive. The map from $(t,u)$ to $x$
+has absolute Jacobian one and a fixed positive cross-section volume.
+Integration of this lower bound over the tube proves
+\begin{equation}
+ \int_{\R^4}\frac{\gamma^0_{\rm UKF}(x)^2}{q_\phi(x)}\,dx=\infty.
+ \label{eq:bf-fab-q20-infinite}
+\end{equation}
+Thus the normalized auxiliary law and the normalized-gradient expectation
+in \eqref{eq:bf-fab-gradient} do not exist for this target and checkpoint.
+The posterior itself is proper: the observation-noise floor bounds the
+likelihood above by a constant, and the Gaussian prior is integrable.
+Posterior properness and FAB integrability are different requirements.
+
+The executable adds small covariance margins, finite-precision repairs and
+strict covariance/score checks; invalid rows are returned as NaN. The audit
+does not prove that the whole unbounded tube passes those checks, or that an
+explicitly restricted density $\gamma\mathbf1_{\rm valid}$ has the same
+divergence. Such a restriction would be a different target whose support and
+normalization have not been justified. A numerical failure cannot silently
+become a declaration of zero posterior probability. The proved failure is
+therefore that of the ordinary UKF value target; the global semantics of the
+status-restricted numerical target remain unresolved.
+
+This result rules out treating further finite AIS banks as convergence to the
+normalized auxiliary law of that mathematical target. It does not prove that
+remote tails caused every earlier finite-time training failure, that every
+IAF has inadequate tails, or that FAB fails on targets satisfying its
+assumptions. The next repair must first specify a well-defined sampling and
+training objective. Section~\ref{sec:bf-is-multimode-recovery} develops one
+that preserves the IAF while avoiding this inverse-density tail requirement.

@@ -1,0 +1,240 @@
+{
+  "status": "CONSUMER_PAIRED_PARITY_PASS_COST_MEASURED",
+  "evidence_role": "actual_consumer_paired_diagnostic",
+  "scope": {
+    "model": "ksc",
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 1,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 40,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        1.5,
+        0.0
+      ],
+      "scales": [
+        0.5,
+        0.5
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "3df5148a6b7d7ca7ca9f6c17e9dabac4c2a11903890e67162fb160e034f08aba",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "8c4faaae7f336db7825fb6158d73248d1a03edd0114cb64282b5231961bb79c7",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection_hash": "d4681b6c1b0e7b5bbf80547626b52bbe8e5a2487fc7af1bfcbefa44151e82e05",
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "beta": [
+    0.10000000149011612,
+    0.8999999761581421,
+    0.0
+  ],
+  "baseline_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/ksc-monitored-repeats-01/repeat-02/ksc/ksc/consumer_baseline_batch.py",
+  "baseline_sha256": "14140e3bcbf48b63922a69b1bde3f143be244aa55f501309836d070e124b9586",
+  "current_batch_sha256": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+  "consumer_sha256": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+  "input_sha256": [
+    "606636579b9cb716b59e19529724c95bd107bf3a55aee87247dd03fcd92c7580",
+    "8026076b3a500b3f782f016a2ac5c4346db8341c8e43c2db6e4bd958b58d3165",
+    "e9596af9fb18531a65ceb0fef1659dcb9a6451555d17e284e1aa5bd5debd29a3",
+    "dde395b54799d98ad2fbf4514bdcd5e5f1c60b6b6d0fa8a7795f65505073d2ea",
+    "d12f4f00fa0d79fc2e83e78c4e536f02533f2f0d0c30633439a74a4ae951aad9",
+    "d309c77327055d30a8c7049070d14487f7875a08b9c8a02315e71ee197cd5889"
+  ],
+  "positions": [
+    [
+      -0.15,
+      -0.15
+    ],
+    [
+      -0.05,
+      -0.05
+    ],
+    [
+      0.05,
+      0.05
+    ],
+    [
+      0.15,
+      0.15
+    ]
+  ],
+  "precision_policy": "uniform",
+  "cpu_only": false,
+  "jit_compile": true,
+  "posterior_sampling_complete": false,
+  "canonical_admission": false,
+  "baseline_tuning_authority": false,
+  "timing_interpretation": "descriptive",
+  "contention_status": "requires_external_process_observation",
+  "cold_compile_execute_seconds": {
+    "baseline": 15.760675443103537,
+    "candidate": 16.147432872094214
+  },
+  "warmed_seconds": {
+    "baseline": [
+      9.892437872011214,
+      9.922559482976794,
+      9.874860657844692
+    ],
+    "candidate": [
+      10.083378267940134,
+      9.959192539099604,
+      10.065770147833973
+    ]
+  },
+  "allocator_by_arm": {
+    "baseline": [
+      {
+        "before_bytes": 2554368,
+        "current": 2554880,
+        "peak": 270990592
+      },
+      {
+        "before_bytes": 2554880,
+        "current": 2554880,
+        "peak": 270991104
+      },
+      {
+        "before_bytes": 2554880,
+        "current": 2554880,
+        "peak": 270991104
+      }
+    ],
+    "candidate": [
+      {
+        "before_bytes": 2554880,
+        "current": 2554880,
+        "peak": 270991104
+      },
+      {
+        "before_bytes": 2554880,
+        "current": 2554880,
+        "peak": 270991104
+      },
+      {
+        "before_bytes": 2554880,
+        "current": 2554880,
+        "peak": 270991104
+      }
+    ]
+  },
+  "allocator_interpretation": "both traced graphs and comparison outputs resident",
+  "python_graph_trace_seconds": 3.5965578979812562,
+  "baseline": {
+    "force": [
+      [
+        0.8752864360809326,
+        0.10247153639793397
+      ],
+      [
+        0.9674884796142578,
+        0.28716177940368653
+      ],
+      [
+        1.0448829412460328,
+        0.4598322093486786
+      ],
+      [
+        1.111181879043579,
+        0.6226930856704712
+      ]
+    ],
+    "force_valid": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "candidate": {
+    "force": [
+      [
+        0.8752866744995117,
+        0.10247165560722352
+      ],
+      [
+        0.967488956451416,
+        0.2871618688106537
+      ],
+      [
+        1.0448829412460328,
+        0.4598324477672577
+      ],
+      [
+        1.1111822366714477,
+        0.6226933836936951
+      ]
+    ],
+    "force_valid": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "healthy": true,
+  "maximum_scaled_force_gap": 4.76837158203125e-07,
+  "tolerance": 0.01,
+  "force_gap_by_chain": [
+    2.384185791015625e-07,
+    4.76837158203125e-07,
+    2.384185791015625e-07,
+    3.218445831389571e-07
+  ],
+  "candidate_baseline_warm_ratio": 1.0140951479747775
+}

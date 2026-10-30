@@ -1,0 +1,155 @@
+{
+  "schema": "bayesfilter.hmc_chain_validation.v1",
+  "plan": "docs/plans/hmc-chain-execution-benchmark-20261001.md",
+  "git_base": "88297ad29043746381b961d7c849e7101ca59ae2",
+  "environment": "/home/ubuntu/miniforge3/envs/tf-gpu/bin/python",
+  "cpu_gpu_intentionally_hidden": true,
+  "cpu_environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "BAYESFILTER_PRELOAD_CUSTOM_OP": "0",
+    "MPLCONFIGDIR": "/tmp/hmc-chain-mpl",
+    "XDG_CACHE_HOME": "/tmp/hmc-chain-cache"
+  },
+  "cpu_runs": [
+    {
+      "id": "cpu-validation-r4",
+      "command": "python -m pytest -q tests/test_hmc_chain_execution.py tests/test_hmc_status_reuse.py tests/test_nonlinear_ssm_phase4_full_chain_hmc.py --basetemp=/tmp/hmc-chain-tests-r4 --junitxml=docs/plans/artifacts/hmc-chain-execution-20261001/cpu-validation-r4/junit.xml",
+      "passed": 52,
+      "elapsed_seconds": 104.14
+    },
+    {
+      "id": "cpu-validation-r5",
+      "command": "python -m pytest -q tests/test_hmc_chain_execution.py --basetemp=/tmp/hmc-chain-tests-r5 --junitxml=docs/plans/artifacts/hmc-chain-execution-20261001/cpu-validation-r5/junit.xml",
+      "passed": 12,
+      "elapsed_seconds": 91.02
+    }
+  ],
+  "sources": {
+    "bayesfilter/inference/chain_execution.py": "819dd75e9570611c6109568b04ed05f564b8d838eb3f6f2153bd054ae9a52dbe",
+    "bayesfilter/inference/chain_worker.py": "7faccc9586c4cbc250105cd543197f0fa15e95d92e2e328cc112c2422bbdb717",
+    "bayesfilter/inference/chain_benchmark.py": "c0b40f6fbc89166a262847b24e40e0e9260e7dcc0c690a50a570e281e6066c16",
+    "bayesfilter/testing/hmc_chain_benchmark_targets.py": "68f6d34512e3ab1b0d012ee9a2be44c60dcdcf561bed287580cd2233005f6873",
+    "bayesfilter/inference/hmc.py": "564376af42a5a7e76fc708faebae9bc345f69e0cb9c7c05d77ea962465aba90e",
+    "tests/test_hmc_chain_execution.py": "de34d27bfa3c6fd798c98dad87ac4310e8265fa688b84ff7d4b8e1787cf250f4"
+  },
+  "archive": {
+    "path": "docs/plans/artifacts/hmc-chain-execution-20261001/cpu-validation-r5/process-evidence.tar.gz",
+    "bytes": 102088,
+    "sha256": "b2d2b56b8bcde875aca716fc152642460891634458bfc35e760a24b30204d619"
+  },
+  "gpu_trust_basis": "explicit_tool_escalation_for_gpu_hmc_validation",
+  "nonclaim": "Engineering execution validation only; no tuning, convergence or posterior admission.",
+  "gpu_runs": [
+    {
+      "id": "gpu-kalman-cli-r1",
+      "status": "reference_failed",
+      "elapsed_seconds": 9.22564233886078,
+      "command": [
+        "/home/ubuntu/workspace/BayesFilter/bayesfilter/inference/chain_benchmark.py",
+        "--chains",
+        "2",
+        "--layout",
+        "2:1:2",
+        "--layout",
+        "1:2:1",
+        "--gpu",
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+        "--draws",
+        "6",
+        "--leapfrog-steps",
+        "2",
+        "--step-size",
+        "0.03",
+        "--repetitions",
+        "1",
+        "--warm-calls",
+        "2",
+        "--timeout-seconds",
+        "90",
+        "--output-dir",
+        "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r1"
+      ]
+    },
+    {
+      "id": "gpu-kalman-cli-r2",
+      "status": "completed",
+      "elapsed_seconds": 42.064058667980134,
+      "command": [
+        "/home/ubuntu/workspace/BayesFilter/bayesfilter/inference/chain_benchmark.py",
+        "--chains",
+        "2",
+        "--layout",
+        "2:1:2",
+        "--layout",
+        "1:2:1",
+        "--gpu",
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+        "--draws",
+        "6",
+        "--leapfrog-steps",
+        "2",
+        "--step-size",
+        "0.03",
+        "--repetitions",
+        "1",
+        "--warm-calls",
+        "2",
+        "--timeout-seconds",
+        "90",
+        "--output-dir",
+        "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r2"
+      ]
+    },
+    {
+      "id": "gpu-kalman-cli-r3",
+      "status": "completed",
+      "elapsed_seconds": 40.17767785908654,
+      "command": [
+        "/home/ubuntu/workspace/BayesFilter/bayesfilter/inference/chain_benchmark.py",
+        "--chains",
+        "2",
+        "--layout",
+        "2:1:2",
+        "--layout",
+        "1:2:1",
+        "--gpu",
+        "GPU-b8045e28-4433-ec7a-77a5-db0636748322",
+        "--draws",
+        "6",
+        "--leapfrog-steps",
+        "2",
+        "--step-size",
+        "0.03",
+        "--repetitions",
+        "1",
+        "--warm-calls",
+        "2",
+        "--timeout-seconds",
+        "90",
+        "--output-dir",
+        "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-kalman-cli-r3"
+      ]
+    }
+  ],
+  "gpu_archive": {
+    "path": "docs/plans/artifacts/hmc-chain-execution-20261001/gpu-process-evidence.tar.gz",
+    "bytes": 67253,
+    "sha256": "2a85ddad6391352ca95135d56b299a57e06a48dc3baf34b523cd3f8a7a2229ad"
+  },
+  "bounded_compute": {
+    "maximum_concurrent_numerical_workers": 2,
+    "cpu_worker_wall_seconds_conservative_upper_bound": 800,
+    "gpu_worker_wall_seconds_conservative_upper_bound": 250,
+    "cpu_budget_seconds": 1800,
+    "gpu_budget_seconds": 900,
+    "accounting": "Conservative bound from sum of all check wall times times peak worker count; includes failed checks, not billed GPU kernel time."
+  },
+  "early_evidence_archive": {
+    "path": "docs/plans/artifacts/hmc-chain-execution-20261001/early-validation-and-logs.tar.gz",
+    "bytes": 127143,
+    "sha256": "a1631c7f4bd39b50a061be98b49051cb8b576ab32bc9e8a788f8af5780e2a3c8"
+  }
+}

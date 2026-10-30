@@ -2,8 +2,9 @@
 
 This entry point preserves the historical ``NonlinearScoreModel`` API. Rows are
 executed by TensorFlow control flow rather than a Python loop, so graph size no
-longer scales by duplicating the finite program once per batch row. The fused
-``PerPointScoreModel`` lane remains the NeuTra-eligible batch backend.
+longer scales by duplicating the finite program once per batch row. The
+``PerPointScoreModel`` wrapper also maps scalar targets per row; neither wrapper
+is eligible for NeuTra training under the batch-native target policy.
 
 NO autodiff (C-9): every row uses the canonical analytical recursion.
 """

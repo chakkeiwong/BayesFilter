@@ -1,0 +1,42 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790613351.822623 1338091 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790613351.825517 1338091 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790613351.832947 1338091 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613351.832996 1338091 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613351.833003 1338091 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790613351.833004 1338091 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1790613353.552632 1338091 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790613354.336112 1338091 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790613354.877770 1338091 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.007863123977148435, "wall_seconds": 13.80526638001902}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": false, "nomination_pass": false, "epsilon": 0.4, "maximum_column_tv": 0.01223485983722519, "wall_seconds": 0.4027637679828331}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 6.449859897136131e-05, "wall_seconds": 0.4191025359905325}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 1.6, "maximum_column_tv": 8.487406206592033e-05, "wall_seconds": 0.40569589694496244}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 9.35007317042409e-06, "wall_seconds": 0.40567591798026115}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 6.4, "maximum_column_tv": 9.882469757927139e-06, "wall_seconds": 0.403328845044598}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 2.090947376463047e-06, "wall_seconds": 0.4704544880078174}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": false, "epsilon": 25.6, "maximum_column_tv": 2.1384327972911714e-06, "wall_seconds": 0.4018374599982053}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211001, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 5.098892715391421e-07, "wall_seconds": 0.40352692001033574}
+{"stage": "transport_calibration", "flow_substeps": 8, "seed": 211002, "valid": true, "nomination_pass": true, "epsilon": 102.4, "maximum_column_tv": 5.331241955993724e-07, "wall_seconds": 0.42869442398659885}
+{"stage": "calibration", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.116858480024306}
+{"stage": "calibration", "route": "repaired_permutation", "horizon": 50, "seed": 211002, "valid": true, "error": 0.6789950665740085}
+{"stage": "calibration", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.1343744724488536}
+{"stage": "calibration", "route": "repaired_permutation", "horizon": 50, "seed": 211002, "valid": true, "error": 0.7330329780940229}
+{"stage": "validation", "route": "repaired_permutation", "horizon": 50, "seed": 212001, "valid": true, "error": 0.22152582488746914}
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.116177254194379}
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.1161076590797667}
+WARNING:tensorflow:5 out of the last 9 calls to <function _kernel.<locals>.compute at 0x7366edf57ec0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.103861110368742}
+WARNING:tensorflow:6 out of the last 10 calls to <function _kernel.<locals>.compute at 0x7366ede47ba0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.131060999914303}
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 2.368334097907994}
+{"stage": "safety_sensitivity", "route": "repaired_permutation", "horizon": 50, "seed": 211001, "valid": true, "error": 1.793058257367546}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214001, "valid": true, "error": 0.3494971755535291}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214002, "valid": true, "error": 0.2179087288157146}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214003, "valid": true, "error": 0.8006389309125483}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214004, "valid": true, "error": 0.3667113885687973}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214005, "valid": true, "error": 1.277082465365756}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214006, "valid": true, "error": 0.7665191174660116}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214007, "valid": true, "error": 0.5063155706380725}
+{"stage": "final", "route": "repaired_permutation", "horizon": 50, "seed": 214008, "valid": true, "error": 0.30894375161109916}

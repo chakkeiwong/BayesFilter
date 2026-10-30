@@ -1,0 +1,32 @@
+{
+  "command": [
+    "systemd-run",
+    "--user",
+    "--unit",
+    "bayesfilter-hmc-funded-ssm-20260928-r1",
+    "--service-type=exec",
+    "--property=KillMode=control-group",
+    "--property=RuntimeMaxSec=146936",
+    "--property=TimeoutStopSec=40",
+    "--property=StandardOutput=append:/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-funded-2026-09-28/queue-r1.log",
+    "--property=StandardError=inherit",
+    "--working-directory=/home/ubuntu/python/BayesFilter",
+    "--setenv=TF_FORCE_GPU_ALLOW_GROWTH=true",
+    "--setenv=TF_NUM_INTRAOP_THREADS=2",
+    "--setenv=TF_NUM_INTEROP_THREADS=2",
+    "--setenv=OMP_NUM_THREADS=2",
+    "--setenv=BAYESFILTER_PRELOAD_CUSTOM_OP=0",
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-funded-2026-09-28/prepared-r2/source/scripts/run_hmc_funded_ssm_queue.py",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-ssm-funded-2026-09-28/configuration.json"
+  ],
+  "configuration_sha256": "5fb42a26dc931bd64da2b4bb5ffebe10b79e8b31605978198c10cca55f1e3a0f",
+  "environment": "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+  "git_commit": "de80aaff5812ebfbed551977476c0868551a2c88",
+  "grant_gpu_hours": 58.73581455855436,
+  "memory_growth_required": true,
+  "plan_file": "docs/plans/bayesfilter-hmc-c1-recovery-and-ssm-launch-2026-09-28.md",
+  "queued_before_numerical_work": true,
+  "source_identity": "f2346887f86eefafe110ba7ff77604b000c5e903123e71144b91fa8a22d4b621",
+  "usable_gpu_hours": 58.40248122522103
+}

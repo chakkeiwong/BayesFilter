@@ -1,0 +1,121 @@
+{
+  "plan": "docs/plans/surrogate-hmc-closure-master-program-2026-09-22.md",
+  "reservation": {
+    "cpu_worker_seconds": 1620.0,
+    "gpu_seconds": 1200.0
+  },
+  "previous_charge": {
+    "cpu_worker_seconds": 42370.780254,
+    "gpu_seconds": 33604.5477541498
+  },
+  "jobs": [
+    {
+      "name": "review",
+      "dependencies": [],
+      "device": "cpu",
+      "timeout": 240.0,
+      "cpu": 240.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_repeatability.py",
+        "tests/test_surrogate_hmc_m13_consumer.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_dependency_execution.py"
+      ]
+    },
+    {
+      "name": "m13-repeatability-archived-1",
+      "dependencies": [
+        "review"
+      ],
+      "device": "gpu",
+      "timeout": 300.0,
+      "cpu": 300.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-repeatability-archived-1"
+      ],
+      "plan": "docs/plans/surrogate-hmc-m13-repeatability-2026-09-24.md"
+    },
+    {
+      "name": "m13-repeatability-current-1",
+      "dependencies": [
+        "m13-repeatability-archived-1"
+      ],
+      "device": "gpu",
+      "timeout": 300.0,
+      "cpu": 300.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-repeatability-current-1"
+      ],
+      "plan": "docs/plans/surrogate-hmc-m13-repeatability-2026-09-24.md"
+    },
+    {
+      "name": "m13-repeatability-archived-2",
+      "dependencies": [
+        "m13-repeatability-current-1"
+      ],
+      "device": "gpu",
+      "timeout": 300.0,
+      "cpu": 300.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-repeatability-archived-2"
+      ],
+      "plan": "docs/plans/surrogate-hmc-m13-repeatability-2026-09-24.md"
+    },
+    {
+      "name": "m13-repeatability-current-2",
+      "dependencies": [
+        "m13-repeatability-archived-2"
+      ],
+      "device": "gpu",
+      "timeout": 300.0,
+      "cpu": 300.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-repeatability-current-2"
+      ],
+      "plan": "docs/plans/surrogate-hmc-m13-repeatability-2026-09-24.md"
+    },
+    {
+      "name": "m13-repeatability-summary",
+      "dependencies": [
+        "m13-repeatability-archived-1",
+        "m13-repeatability-current-1",
+        "m13-repeatability-archived-2",
+        "m13-repeatability-current-2"
+      ],
+      "device": "cpu",
+      "timeout": 60.0,
+      "cpu": 60.0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-repeatability-summary"
+      ],
+      "plan": "docs/plans/surrogate-hmc-m13-repeatability-2026-09-24.md"
+    }
+  ],
+  "pass_kind": "m13-repeatability",
+  "inference_launched": false
+}

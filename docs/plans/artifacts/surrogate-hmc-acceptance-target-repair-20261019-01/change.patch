@@ -1,0 +1,28 @@
+--- before/scripts/run_surrogate_hmc_48h_extension.py
++++ after/scripts/run_surrogate_hmc_48h_extension.py
+@@ -73,7 +73,7 @@
+         "--priors", master.LITERATURE_PRIOR,
+     ]
+     if model == "range_bearing":
+-        command += ["--hmc-target-accept", "0.95", "--hmc-initial-step-size", "0.005"]
++        command += ["--hmc-target-accept", "0.70", "--hmc-initial-step-size", "0.005"]
+     else:
+         command += ["--resume-manifest", str(resume_manifest(model))]
+     return command
+--- before/tests/test_surrogate_hmc_48h_extension.py
++++ after/tests/test_surrogate_hmc_48h_extension.py
+@@ -84,12 +84,12 @@
+     assert "--hmc-initial-step-size" not in command
+ 
+ 
+-def test_range_bearing_retunes_without_resuming_vetoed_chain(tmp_path):
++def test_range_bearing_fresh_tuning_targets_owner_seventy_percent(tmp_path):
+     command = queue.command_for(
+         "range_bearing", 1234.0, queue.RANGE_PREPARATION, tmp_path
+     )
+     assert "--resume-manifest" not in command
+-    assert command[command.index("--hmc-target-accept") + 1] == "0.95"
++    assert command[command.index("--hmc-target-accept") + 1] == "0.70"
+     assert command[command.index("--hmc-initial-step-size") + 1] == "0.005"
+ 
+ 

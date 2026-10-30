@@ -1,0 +1,321 @@
+{
+  "schema": "bayesfilter.m13.postwarmup_accounting_diagnostic.v1",
+  "purpose": "Correct exclusion of eligible fixed-kernel post-warmup samples",
+  "plan": "docs/plans/surrogate-hmc-m13-postwarmup-accounting-2026-10-02.md",
+  "input_report": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/report.json",
+  "input_report_sha256": "77800fe8aaa5e25e64d47bc5191e05694a6100255e523a005a43af184a1bf4c5",
+  "tuning_manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-01/worker/tuning/manifest.json",
+  "tuning_manifest_sha256": "337eae155ef2331a918456cd94f90e8e3556d97a34e15058ed796c1e991ee4c6",
+  "parameter_order": [
+    "log_process_scale",
+    "log_observation_scale"
+  ],
+  "sample_layout": "draw,chain,parameter",
+  "warmup_excluded_per_chain": 9000,
+  "archive_checks_passed": true,
+  "same_frozen_kernel": true,
+  "state_and_seed_continuity": true,
+  "initial_affine_cpu_gpu_max_abs_error": 2.220446049250313e-16,
+  "saved_verification_rhat_reproduced": true,
+  "new_hmc_transitions": 0,
+  "old_phase_names_do_not_determine_sample_eligibility": true,
+  "verification_prefix": {
+    "rhat": {
+      "bulk": [
+        1.007417492159436,
+        1.0054656975370928
+      ],
+      "folded": [
+        1.0046046194799012,
+        1.0004311200158023
+      ],
+      "maximum": [
+        1.007417492159436,
+        1.0054656975370928
+      ]
+    },
+    "ess": {
+      "bulk": [
+        512.4174562100029,
+        1076.1038854853884
+      ],
+      "lower_5pct": [
+        323.5067770719482,
+        1955.5708261242821
+      ],
+      "upper_95pct": [
+        1489.4815047803866,
+        2291.552769599895
+      ],
+      "tail": [
+        323.5067770719482,
+        1955.5708261242821
+      ]
+    },
+    "means": {
+      "pooled_mean": [
+        0.07647434763827178,
+        -0.14096873653141725
+      ],
+      "posterior_sd": [
+        0.2629547458665082,
+        0.169356389828464
+      ],
+      "pooled_mean_ess": [
+        548.4306448145076,
+        1074.2137112193743
+      ],
+      "mean_mcse": [
+        0.011228458972492177,
+        0.005167211541232333
+      ],
+      "mcse_sd_ratio": [
+        0.04270110788642098,
+        0.030510874413808932
+      ],
+      "per_chain_mean": [
+        [
+          0.06738819708110312,
+          -0.1261468486683832
+        ],
+        [
+          0.0912943066271823,
+          -0.1547962394596496
+        ],
+        [
+          0.0976405689785564,
+          -0.15004269828638436
+        ],
+        [
+          0.04957431786624538,
+          -0.13288915971125173
+        ]
+      ],
+      "per_chain_sd": [
+        [
+          0.24791325229923455,
+          0.1675870830280551
+        ],
+        [
+          0.27797825278678123,
+          0.17527862172851216
+        ],
+        [
+          0.2530447731505117,
+          0.16393314026904285
+        ],
+        [
+          0.26900803692454445,
+          0.168805337532152
+        ]
+      ],
+      "per_chain_ess": [
+        [
+          174.5469750728174,
+          299.0399065960474
+        ],
+        [
+          140.99188908903167,
+          244.21664298390027
+        ],
+        [
+          153.39756274986863,
+          313.99303601281355
+        ],
+        [
+          74.70732815362864,
+          252.81680797459967
+        ]
+      ],
+      "per_chain_mean_mcse": [
+        [
+          0.01876478441956264,
+          0.00969116454882611
+        ],
+        [
+          0.02341066530938828,
+          0.011216085752114944
+        ],
+        [
+          0.020430930258581587,
+          0.009251384904599667
+        ],
+        [
+          0.031123157678322376,
+          0.010616544948460647
+        ]
+      ]
+    },
+    "draws_per_chain": 9000,
+    "chains": 4,
+    "acceptance_per_chain": [
+      0.8057777777777778,
+      0.8104444444444444,
+      0.8174444444444444,
+      0.7837777777777778
+    ],
+    "rhat_at_most_1_01": true,
+    "bulk_and_tail_ess_at_least_400": false
+  },
+  "all_postwarmup": {
+    "rhat": {
+      "bulk": [
+        1.0535658403121058,
+        1.0088375902796338
+      ],
+      "folded": [
+        1.0541788850434353,
+        1.001752797686674
+      ],
+      "maximum": [
+        1.0541788850434353,
+        1.0088375902796338
+      ]
+    },
+    "ess": {
+      "bulk": [
+        76.57102434666346,
+        321.39780248597344
+      ],
+      "lower_5pct": [
+        30.231133715948744,
+        2774.816486846453
+      ],
+      "upper_95pct": [
+        2153.2801066820325,
+        483.37660909812854
+      ],
+      "tail": [
+        30.231133715948744,
+        483.37660909812854
+      ]
+    },
+    "means": {
+      "pooled_mean": [
+        0.030267681882917827,
+        -0.12992246174581984
+      ],
+      "posterior_sd": [
+        0.3109664630129498,
+        0.17174300791236463
+      ],
+      "pooled_mean_ess": [
+        55.386615820394105,
+        314.73063217288944
+      ],
+      "mean_mcse": [
+        0.04178410833859333,
+        0.009680762326392013
+      ],
+      "mcse_sd_ratio": [
+        0.1343685358663686,
+        0.05636772317002751
+      ],
+      "per_chain_mean": [
+        [
+          0.07425225812601656,
+          -0.13155822400308279
+        ],
+        [
+          -0.07651294045880137,
+          -0.11801658513088685
+        ],
+        [
+          0.046464260485820336,
+          -0.12865085721378144
+        ],
+        [
+          0.07686714937863583,
+          -0.14146418063552751
+        ]
+      ],
+      "per_chain_sd": [
+        [
+          0.24851679796446155,
+          0.1672883286898714
+        ],
+        [
+          0.39362220179650714,
+          0.1703362716514683
+        ],
+        [
+          0.29267033020525196,
+          0.17840885989400018
+        ],
+        [
+          0.26210024731821113,
+          0.16994339160205463
+        ]
+      ],
+      "per_chain_ess": [
+        [
+          229.4551141969866,
+          374.3913675334462
+        ],
+        [
+          8.90924148476689,
+          34.1741434796297
+        ],
+        [
+          56.25207810122587,
+          64.89113904147413
+        ],
+        [
+          107.28827928805164,
+          385.07546169180665
+        ]
+      ],
+      "per_chain_mean_mcse": [
+        [
+          0.016406157569697252,
+          0.008645751109309135
+        ],
+        [
+          0.1318740126318197,
+          0.029137904654648245
+        ],
+        [
+          0.03902198988606854,
+          0.022147449453743147
+        ],
+        [
+          0.02530412304465291,
+          0.00866026853957677
+        ]
+      ]
+    },
+    "draws_per_chain": 12750,
+    "chains": 4,
+    "acceptance_per_chain": [
+      0.8098823529411765,
+      0.6811764705882353,
+      0.7784313725490196,
+      0.8057254901960784
+    ],
+    "rhat_at_most_1_01": false,
+    "bulk_and_tail_ess_at_least_400": false
+  },
+  "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+  "endpoint_role": "separately frozen full-support importance potential for MH",
+  "exact_likelihood_claim": false,
+  "calibrated_equivalence_assessed": false,
+  "posterior_promotion_claim": false,
+  "ranking_supported": false,
+  "all_models_complete": false,
+  "gpu_intentionally_hidden": true,
+  "backend": "TensorFlow CPU saved-sample diagnostic",
+  "jit_compile": false,
+  "jit_exception": "Existing rank diagnostics use data-dependent segment counts; CPU diagnostic only",
+  "pooled_sample_archive": {
+    "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-postwarmup-accounting-20261002-02/all-postwarmup-samples.tfbin",
+    "sha256": "1fef58b4e04aa4f69dbc8479161e8fafe8f856b4c4e44681e10d60d8e04dc9cc",
+    "dtype": "float64",
+    "shape": [
+      12750,
+      4,
+      2
+    ]
+  },
+  "wall_seconds": 3.2316561930347234,
+  "cpu_seconds": 6.959024
+}

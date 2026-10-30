@@ -1,0 +1,617 @@
+# LaTeX build byproducts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.log
+*.lof
+*.lol
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdv
+
+# Generated PDF outputs; rebuild locally from the TeX sources.
+/*.pdf
+/docs/**/*.pdf
+
+# Python build/test byproducts
+__pycache__/
+*.py[cod]
+*.so
+build/
+build-tf221/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated JSON outputs. Only compact artifacts whose names identify a
+# promotion, claim, verification, or reproducibility role are re-included.
+*.json
+!scripts/kalman_ukf_runtime_loop_exceptions.json
+!docs/benchmarks/*.json
+!docs/benchmarks/configs/
+!docs/benchmarks/configs/**/*.json
+!docs/benchmarks/artifacts/
+!docs/benchmarks/artifacts/**/
+!docs/plans/artifacts/
+!docs/plans/artifacts/**/
+
+# Executable NeuTra posterior route policy, required by the discovery guard.
+!docs/plans/artifacts/neutra-hmc-core-consolidation-and-robustness-2026-07-15/c0/route_ledger.json
+
+# Claim-bearing and promotion-supporting experiment artifacts. Intermediate
+# preparations, traces, mutable progress, checkpoints, and private payloads
+# remain ignored unless a narrower rule below explicitly retains them.
+!docs/benchmarks/artifacts/**/*result*.json
+!docs/plans/artifacts/**/*result*.json
+!docs/benchmarks/artifacts/**/*summary*.json
+!docs/plans/artifacts/**/*summary*.json
+!docs/benchmarks/artifacts/**/*manifest*.json
+!docs/plans/artifacts/**/*manifest*.json
+!docs/benchmarks/artifacts/**/*decision*.json
+!docs/plans/artifacts/**/*decision*.json
+!docs/benchmarks/artifacts/**/*selected*.json
+!docs/plans/artifacts/**/*selected*.json
+!docs/benchmarks/artifacts/**/*selection*.json
+!docs/plans/artifacts/**/*selection*.json
+!docs/benchmarks/artifacts/**/*audit*.json
+!docs/plans/artifacts/**/*audit*.json
+!docs/benchmarks/artifacts/**/*certif*.json
+!docs/plans/artifacts/**/*certif*.json
+!docs/benchmarks/artifacts/**/*evidence*.json
+!docs/plans/artifacts/**/*evidence*.json
+!docs/benchmarks/artifacts/**/*receipt*.json
+!docs/plans/artifacts/**/*receipt*.json
+!docs/benchmarks/artifacts/**/*report*.json
+!docs/plans/artifacts/**/*report*.json
+!docs/benchmarks/artifacts/**/*comparison*.json
+!docs/plans/artifacts/**/*comparison*.json
+!docs/benchmarks/artifacts/**/*aggregate*.json
+!docs/plans/artifacts/**/*aggregate*.json
+!docs/benchmarks/artifacts/**/*contract*.json
+!docs/plans/artifacts/**/*contract*.json
+!docs/benchmarks/artifacts/**/*policy*.json
+!docs/plans/artifacts/**/*policy*.json
+!docs/benchmarks/artifacts/**/*verification*.json
+!docs/plans/artifacts/**/*verification*.json
+!docs/benchmarks/artifacts/**/*public*.json
+!docs/plans/artifacts/**/*public*.json
+!docs/benchmarks/artifacts/**/*tuning*.json
+!docs/plans/artifacts/**/*tuning*.json
+!docs/benchmarks/artifacts/**/*geometry*.json
+!docs/plans/artifacts/**/*geometry*.json
+!docs/benchmarks/artifacts/**/*mass*.json
+!docs/plans/artifacts/**/*mass*.json
+!docs/benchmarks/artifacts/**/*frozen_transport*.json
+!docs/plans/artifacts/**/*frozen_transport*.json
+!docs/benchmarks/artifacts/**/*artifact_hashes*.json
+!docs/plans/artifacts/**/*artifact_hashes*.json
+!docs/benchmarks/artifacts/**/*fixture*.json
+!docs/plans/artifacts/**/*fixture*.json
+!docs/benchmarks/artifacts/**/*dataset*.json
+!docs/plans/artifacts/**/*dataset*.json
+!docs/benchmarks/artifacts/**/*observations*.json
+!docs/plans/artifacts/**/*observations*.json
+
+# Mutable or non-public state wins over the semantic filename rules above.
+# Campaign-specific retained private manifests may be re-included below when
+# they are the compact hash ledger for public evidence.
+docs/benchmarks/artifacts/**/*progress*.json
+docs/plans/artifacts/**/*progress*.json
+docs/benchmarks/artifacts/**/*checkpoint*.json
+docs/plans/artifacts/**/*checkpoint*.json
+docs/benchmarks/artifacts/**/*latest*.json
+docs/plans/artifacts/**/*latest*.json
+docs/benchmarks/artifacts/**/*private*/
+docs/plans/artifacts/**/*private*/
+docs/benchmarks/artifacts/**/*private*.json
+docs/plans/artifacts/**/*private*.json
+!docs/plans/artifacts/lgssm-first-neutra-gpu-training-2026-07-07/lgssm_static_qr_exact_kalman_affine_neutra_gpu_xla_training_state_seed20260707.json
+!docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_contract_v1.json
+!docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_synthetic_data_v1_seed20260708.json
+!docs/plans/artifacts/multidim-triangular-lgssm-neutra-hmc-2026-07-08/lower_triangular_lgssm_synthetic_data_v1_manifest_seed20260708.json
+!docs/plans/bayesfilter-ledh-forward-scalar-value-integration-results-2026-07-07.json
+!docs/plans/ledh-phase5-actual-sv-forward-scalar-artifact-2026-07-07.json
+!docs/plans/ledh-phase5-actual-sv-forward-scalar-tiny-smoke-artifact-2026-07-07.json
+!docs/plans/ledh-phase6-generalized-sv-forward-scalar-artifact-2026-07-07.json
+!docs/plans/ledh-phase6-generalized-sv-forward-scalar-tiny-smoke-artifact-2026-07-07.json
+!docs/plans/ledh-phase7-ksc-sv-forward-scalar-artifact-2026-07-07.json
+!docs/plans/ledh-phase7-ksc-sv-forward-scalar-tiny-smoke-artifact-2026-07-07.json
+
+# SSL-LSTM public receipts substantiate the tracked phase results. Keep those
+# JSON artifacts visible while excluding mutable restart state and raw/private
+# payloads that the receipts and private manifests identify by hash.
+!docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*.json
+!docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/failed-attempt-*/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/failed-attempt-*/
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/checkpoint-*.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/checkpoint-*.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/progress.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/progress.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/terminal-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/terminal-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/best-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/best-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/final-state.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/final-state.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/resource-stop-checkpoint.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/resource-stop-checkpoint.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*private*/**/*.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*private*/**/*.json
+!docs/plans/artifacts/ssl-lstm-completion-2026-07-11/**/*_private_manifest.json
+!docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/**/*_private_manifest.json
+
+# Historical bulk references and superseded tuning attempts are reproducible
+# inputs/intermediates. Compact verification, terminal result, policy, and
+# summary receipts remain visible above.
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a1/pre-run-outside-write-set-inventory.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a2/
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a3/oracle-cpu-reference.json
+docs/plans/artifacts/ssl-lstm-completion-2026-07-11/phase-a3/oracle-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-study-2026-07-15/trials/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/optuna-plateau-repair-timing-smoke-gpu1-2026-07-15/
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-2/dense-iaf-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-3/trainer-gpu-xla-canary.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-3/trainer-gpu-xla-canary-r2.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-5-trial0-gh/cpu-reference.json
+docs/plans/artifacts/ssl-lstm-neutra-2026-07-14/phase-5-trial0-gh/gpu-xla.json
+
+# Raw sampler states and local tuning databases are reproducible execution
+# state, not compact promotion or claim evidence.
+*.tftensor
+*.tensor
+*.npz
+*.npy
+*.jsonl
+*.lock
+*.sqlite3
+
+# Local benchmark execution byproducts. Keep authored harnesses, compact result
+# JSON/Markdown, strict manifests, and compressed claim archives trackable.
+docs/benchmarks/**/*.txt
+docs/benchmarks/**/*.jsonl
+docs/plans/artifacts/**/*.txt
+docs/plans/logs/**/*.txt
+docs/plans/logs/**/*.pid
+docs/plans/logs/**/*.ready
+docs/benchmarks/**/logs/
+docs/benchmarks/**/methods/*.md
+docs/benchmarks/**/methods/*.payload.json
+docs/benchmarks/**/*_authorized_snapshot_*.json
+docs/benchmarks/**/*_invalid_harness_archive_*.json
+docs/benchmarks/**/*_pre_redteam_*.json
+
+# Convention-based runtime output directories. Authored harnesses and
+# claim-supporting receipts should live outside these directories.
+docs/benchmarks/**/output/
+docs/benchmarks/**/outputs/
+docs/benchmarks/**/results/
+docs/benchmarks/**/checkpoints/
+docs/benchmarks/**/runs/
+docs/benchmarks/**/tmp/
+docs/plans/artifacts/**/output/
+docs/plans/artifacts/**/outputs/
+docs/plans/artifacts/**/checkpoints/
+docs/plans/artifacts/**/runs/
+docs/plans/artifacts/**/tmp/
+
+# Local literature caches and environment-specific binary backups are not
+# repository source or compact claim receipts. Re-fetch/rebuild them locally.
+.localresources/
+*.so.*
+
+# Benchmark supervisor/runtime state. Compact result/manifest/summary/decision
+# receipts remain visible through the allow-list rules above.
+docs/benchmarks/artifacts/**/*status*/
+docs/benchmarks/artifacts/**/*_status*/
+docs/benchmarks/artifacts/**/pid
+docs/benchmarks/artifacts/**/started_at
+docs/benchmarks/artifacts/**/finished_at
+docs/benchmarks/artifacts/**/exit_code
+docs/benchmarks/artifacts/**/tmux_session
+docs/benchmarks/artifacts/**/ready
+docs/benchmarks/artifacts/**/stdout
+docs/benchmarks/artifacts/**/stderr
+
+# Transient campaign locks are runtime state, never evidence. Keep dependency
+# lockfiles visible.
+docs/plans/artifacts/**/.material-run.lock
+
+# Bounded static HMC migration audit output is reproducible local diagnostics.
+docs/plans/artifacts/ordinary-hmc-migration-debt-2026-09-03/
+
+# Per-worker summaries and test/review render sidecars are generated execution
+# output. The campaign-level summaries, manifests, and result receipts remain
+# visible through the allow-list rules above.
+docs/plans/artifacts/**/*worker_summary.json
+docs/plans/artifacts/**/*-junit.xml
+docs/plans/artifacts/**/note.tex
+
+# This malformed retry directory was emitted by an old wrapper with a literal
+# closing brace in its name; retain no generated copy in Git.
+docs/plans/artifacts/ssl-lstm-q20-tempered-rkl-transport-ensemble-2026-09-02/phase9a-full-replay[}]/
+
+# Compact receipts that support the current q=20 and PP-UKF decisions remain
+# visible; checkpoints, private payloads, and per-arm traces stay ignored by
+# the general JSON rule above.
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/summary.json
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/transformed-fd-ladder.json
+!docs/plans/artifacts/ssl-lstm-q20-32x32-hmc-tuning-2026-07-21/**/rate-refresh*.json
+!docs/plans/artifacts/ssl-lstm-q20-two-architecture-loss-gate-2026-07-21/**/final-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-two-architecture-loss-gate-2026-07-21/**/combined-gate-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-training-hierarchy-2026-07-21/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-training-hierarchy-2026-07-21/**/single-diagnostic-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-scale-vs-elu-telemetry-2026-07-21/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-scale-vs-elu-telemetry-2026-07-21/**/single-diagnostic-summary.json
+!docs/plans/artifacts/ssl-lstm-q20-cpu-training-timing-2026-07-22/**/result.json
+!docs/plans/artifacts/ssl-lstm-q20-strict-cpu-training-2026-07-22/**/summary.json
+!docs/plans/artifacts/ssl-lstm-q20-batch-native-profile-2026-07-23/**/result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-operational-broad-grid-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-operational-broad-grid-20260721/**/run_manifest.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-state-continuing-epsilon-repair-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-state-continuing-epsilon-repair-20260721/**/run_manifest.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-statistical-compatibility-guard-repair-20260721/**/public_result.json
+!docs/plans/artifacts/bayesfilter-pp-ukf-statistical-compatibility-guard-repair-20260721/**/run_manifest.json
+
+# Kalman QR superseded, failed, and exploratory run roots. Terminal roots that
+# support retained results remain trackable: CPU throughput r3, formulation r2,
+# CPU lattice r4, GPU lattice gpu0_r2, literal 16-process, and matched 3-arm.
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r1_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r2_2026-07-14/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r1_2026-07-15/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_gpu0_r1_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r2_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r3_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r5_2026-07-14/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r6_2026-07-14/
+
+# Terminal Kalman QR supervisors embed the retained phase/block summaries.
+# Nested worker, attempt, HLO, and schedule copies are reproducible sidecars.
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/canary/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/confirm/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/nominate/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/rejected-contamination/
+docs/benchmarks/kalman_qr_cpu_throughput_comparison_r3_2026-07-14/serial-anchors/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r2_2026-07-15/canary/
+docs/benchmarks/kalman_qr_cpu_xla_formulation_shootout_r2_2026-07-15/smoke/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_r4_2026-07-14/*/
+docs/benchmarks/kalman_qr_gradient_scaling_lattice_gpu0_r2_2026-07-14/*/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/methods/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/progress/
+docs/benchmarks/kalman_qr_gpu_memory_growth_canary_2026-07-14/schedule.json
+docs/benchmarks/kalman_qr_cpu_16_process_b1_d30_p150_t12_2026-07-15/attempt-1/
+docs/benchmarks/kalman_qr_cpu_16_process_b1_d30_p150_t12_2026-07-15/untimed-batch-native-reference/
+docs/benchmarks/kalman_qr_matched_cpu_process_gpu_2026-07-15/block-*/
+
+# Raw structural payloads are reproducible but unsuitable as Git objects. Their
+# tracked .json.gz archives and result notes preserve the retained evidence.
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_cpu_xla_pilot_2026-07-12.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_trace_census_2026-07-12.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_structure_localization_2026-07-13.json
+docs/benchmarks/kalman_qr_batched_xla_repair_phase6_gateb_r3_autodiff_attribution_discriminator_2026-07-13.json
+
+# Local diagnostic sidecars from benchmark/tuning runs. Public JSON/Markdown
+# summaries under docs/benchmarks stay trackable when they support evidence.
+docs/benchmarks/**/*_public_artifacts_*/private_diagnostics/
+docs/benchmarks/**/private_diagnostics/
+
+# Superseded PP-UKF preserved-sample posterior-validation artifacts. Attempt 6
+# is the terminal claim-supporting result; attempts 1-3 are ignored by the
+# global JSON/runtime rules, and attempts 4-5 are complete but superseded.
+docs/plans/artifacts/bayesfilter-pp-ukf-posterior-validation-20260730/attempt-04/
+docs/plans/artifacts/bayesfilter-pp-ukf-posterior-validation-20260730/attempt-05/
+docs/plans/artifacts/bayesfilter-pp-ukf-posterior-validation-20260730/attempt-06/
+
+# Superseded 2026-07-23 Zhao-Cui fixed-variant attempts. The authoritative
+# CPU replay, final GPU claim, and selected tuning artifact remain trackable.
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_claim_20260723_0501/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_claim_20260723_0510/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_claim_20260723_0540/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_claim_replay_20260723_1130/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_tuning_20260723_034046/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_tuning_20260723_040500/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_tuning_20260723_041000/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_tuning_20260723_042000/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_cpu_tuning_20260723_0520/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_gpu_claim_20260723_0600/
+docs/benchmarks/artifacts/zhao_cui_predator_prey_fixed_variant_20260723/attempt_gpu_claim_repaired_20260723_1040/
+docs/benchmarks/artifacts/**/*stdout*.json
+
+# Failed or superseded feasibility attempts are retained only in result notes.
+docs/benchmarks/artifacts/higher_moment_contract_e_regression_20260723/attempt01/
+docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt01/
+docs/benchmarks/artifacts/one_seed_four_filter_feasibility_20260722/attempt02/
+
+# Review packets and iterative transcripts are local process artifacts. Final
+# or standalone reviews that support a retained gate remain trackable.
+docs/reviews/**/*-bundle-*.md
+docs/reviews/**/*review-bundle*.md
+docs/reviews/**/*review-packet*.md
+docs/reviews/**/*-request-*.md
+docs/reviews/**/*round[0-9]*.md
+
+# OS metadata from local/vendored snapshots
+.DS_Store
+Icon?
+desktop.ini
+
+# Local editor/tool state
+.codex/
+.codex_*_write_probe
+.serena/
+.cache/
+.claude/
+.claude_reviews/
+.localenv/
+
+# Complete source snapshots are reproducible launch state. The authored source,
+# snapshot builders, and integrity receipts remain trackable separately.
+.complete-highdim-source-snapshot-*/
+
+# Agent scratch rewrite buffers. Evidence notes/results under docs/plans stay
+# tracked when they support a claim, gate, or promotion decision.
+.tmp_*_rewrite.tex
+
+# Reproducible point-in-time copies of authored documents are generated local
+# archives. Git history preserves the source state; the live rewrite tree and
+# claim/promotion notes remain trackable.
+docs/archive/monograph-pre-fable-rewrite-*/
+
+# Routine, failed, superseded, and intermediate benchmark attempts are local
+# generated evidence. A narrow path exception below may retain an artifact when
+# an authored result note cites that exact attempt in support of a claim, veto,
+# or promotion decision.
+docs/benchmarks/artifacts/**/smoke_attempt*/
+docs/benchmarks/artifacts/**/smoke-attempt*/
+docs/benchmarks/artifacts/**/capacity_attempt*/
+docs/benchmarks/artifacts/**/*_capacity_*/
+docs/benchmarks/artifacts/**/*_training_*/
+docs/benchmarks/artifacts/**/*_replay_*/
+docs/benchmarks/artifacts/**/*_scalar_parity_*/
+docs/benchmarks/artifacts/**/*_deterministic_*/
+docs/benchmarks/artifacts/**/*_kalman_*/
+docs/benchmarks/artifacts/**/*gross_error*/
+
+# These diagnostics are cited directly by retained result notes and therefore
+# remain claim/veto-supporting evidence despite their smoke classification.
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/result.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/result.md
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt03/run_manifest.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/result.json
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/result.md
+!docs/benchmarks/artifacts/genut_austria_antithetic_ensemble_20260803/smoke_attempt04/run_manifest.json
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/result.json
+!docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt04/run_manifest.json
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt01/
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt01/result.json
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt02_isolated_4080/
+!docs/benchmarks/artifacts/pairwise_radial_cap_diagnostic_20260806/smoke_attempt02_isolated_4080/result.json
+!docs/benchmarks/artifacts/zhao_cui_bounded_reference_genut_austria_t1_t2_20260806/smoke-attempt02/
+!docs/benchmarks/artifacts/zhao_cui_bounded_reference_genut_austria_t1_t2_20260806/smoke-attempt02/result.json
+
+# The four-model readiness aggregate has an explicit fail-closed dependency
+# closure. Retain only that terminal aggregate and the exact artifacts loaded
+# by its authored aggregator; all sibling attempts are superseded run output.
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/*/
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/result.json
+docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/run_manifest.json
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/aggregate_attempt04/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/austria_final_claim_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_claim_attempt03/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_final_training_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_scalar_parity_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/ksc_tuning_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_claim_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_final_training_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_kalman_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_scalar_parity_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/lgssm_no_tf32_tuning_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_capacity_b4_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_claim_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_claim_attempt03/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_final_training_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_scalar_parity_attempt01/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/predator_prey_tuning_attempt02/
+!docs/benchmarks/artifacts/genut_four_model_neutra_readiness_20260804/*/*.json
+
+# Retained result notes cite only the terminal diagnostic attempt in these
+# roots; earlier siblings are superseded local output.
+docs/benchmarks/artifacts/genut_austria_neutra_zero_force_smoke_20260804/attempt03/
+docs/benchmarks/artifacts/zhao_cui_genut_dual_cap_cross_model_20260807/attempt02/
+
+# Common-tuning attempts 01/03 are superseded. Attempt 04 is the terminal
+# result-bearing scope retained by the authored recovery and reset notes.
+docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/*-attempt01/
+docs/plans/artifacts/bayesfilter-neutra-common-tuning-sweep-20260803/*-attempt03/
+
+# Nested third-party source snapshots should be tracked as files, not embedded
+# repositories.
+third_party/**/.git/
+.localsource/**/.git/
+
+# Local literature workspace and downloaded papers.
+.research/
+local_research/
+.localsource/
+
+# Restart-boundary cleanup: runtime payloads are reproducible execution state,
+# even when an older campaign exception re-included their parent directory.
+# Durable result/summary/manifest/receipt files remain visible for staging.
+docs/plans/artifacts/**/checkpoint*.json
+docs/plans/artifacts/**/progress*.json
+docs/plans/artifacts/**/trainer_states.json
+docs/plans/artifacts/**/nominate.json
+docs/plans/artifacts/**/diagnostic-start.json
+docs/plans/artifacts/**/diagnostic-result.json
+docs/plans/artifacts/**/*.tftensor
+docs/plans/artifacts/**/*.tensor
+docs/plans/artifacts/**/*.npz
+docs/plans/artifacts/**/*.npy
+docs/plans/artifacts/**/*.jsonl
+docs/plans/artifacts/**/*.log
+docs/plans/artifacts/**/*.pid
+docs/plans/artifacts/**/archive/checkpoints/
+docs/plans/artifacts/**/archive/warmup/
+docs/plans/artifacts/**/archive/retained/*.tftensor
+docs/plans/artifacts/**/archive/warmup/*.tftensor
+
+# TensorFlow profiler traces are generated performance diagnostics. They are
+# not compact promotion or claim receipts; retain the authored profiling
+# harness and any cited summary instead.
+docs/plans/artifacts/**/tensorflow_profile/
+docs/benchmarks/**/tensorflow_profile/
+
+# Downloaded literature corpora are local inputs, not repository evidence.
+.localresources/papers/multimodal_hmc/
+
+# Failed literature download: this path currently contains an HTML response,
+# not the Huber paper. Track a validated source copy if one is acquired later.
+.localresources/papers/huber-1964-robust-location.pdf
+
+# Generated benchmark run directories are local runtime state by default.
+# Keep only the terminal four-model receipt used by the 2026-08-16 restart
+# boundary; historical tracked evidence is unaffected by ignore rules.
+docs/benchmarks/artifacts/**
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.json
+!docs/benchmarks/artifacts/genut_four_model_leaderboard_rerun_20260816/attempt04/result.md
+
+# Compact 2026-08-17/18 receipts cited by retained plans and result/reset notes.
+# Checkpoints, raw states, smoke-only rows, and sibling attempts remain ignored.
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/four_model_regression/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/four_model_regression/result.json
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/lgssm_oracle_regression/
+!docs/benchmarks/artifacts/genut-score-gap-closure-20260817/lgssm_oracle_regression/result.json
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/attempt07_terminal_cpu_reference/
+!docs/benchmarks/artifacts/genut-sir-ad-root-cause-20260817/attempt07_terminal_cpu_reference/result.json
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt01/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt01/result.json
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt02/
+!docs/benchmarks/artifacts/genut-sqmc-particle-count-trust-region-20260817/claim_attempt02/result.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt01/route_identity.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt04/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/attempt04/derivative_cpu.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt07/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt07/endpoint_gpu0_eager.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt08/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt08/endpoint_gpu0_graph.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt01/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt01/result.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt02/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt02/result.json
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt03/
+!docs/benchmarks/artifacts/p1b_lgssm_value_ladder_20260817/attempt03/result.json
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/attempt01/
+!docs/benchmarks/artifacts/p2a_cost_prototype_20260817/attempt01/result.json
+
+# Generated docs/plans indexes are regenerable local navigation aids, not
+# promotion or claim evidence. Rebuild with:
+#   python docs/plans/generate_plans_index.py
+docs/plans/INDEX.md
+docs/plans/INDEX-FULL.md
+
+# Claim/veto-supporting receipts of the 2026-08-19/20 Austria GenUT
+# compiler-mode campaigns. Cited by the graph-mode divergence localization
+# result (2026-08-19) and the XLA NaN localization result (2026-08-20):
+# graph bisection ladder, meta-optimizer probe, XLA hard-veto endpoint, and
+# the XLA NaN reproduction/diagnostic/TF32-off arms.
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt01/ladder_t2_t5_graph.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt02/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt02/bisect_t3_t4_steps.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt03/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/graph_bisect_attempt03/grappler_meta_off.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt09/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/repair_validation_attempt09/endpoint_gpu0_xla.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt01/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt01/eager_margin_audit.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt02/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt02/xla_small_ladder.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt03/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt03/xla_t10_t20_ladder.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt04/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt04/xla_t20_s4_diagnostics.json
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt05/
+!docs/benchmarks/artifacts/genut_austria_endpoint_root_cause_20260817/xla_nan_attempt05/xla_t20_s4_tf32off.json
+
+# Compact evidence retained for the q=20 NeuTra global-mixing campaign.  Keep
+# mutable progress, launch state, checkpoints, trained states, and raw tensor
+# payloads ignored; these receipts directly support the authored engineering,
+# admission, integrity, and terminal non-admission claims.
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/gpu-preflight.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/hmc/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r1/training-screen/audits/*.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r2/hmc/candidate-admission-*.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/artifact-hashes.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/checkpoint-diagnostics.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/raw-archive.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/replay-tieout.json
+!docs/plans/artifacts/ssl-lstm-q20-neutra-global-mixing-execution-2026-08-19/r3-rhat-trajectory-retry-01/resource-admission.json
+
+!scripts/filter_gradient_runtime_policy.json
+# Downloaded papers are local literature inputs, not repository evidence.
+docs/papers/
+
+# Transient exploratory implementations that are not canonical source.
+bayesfilter/highdim/ledh_diagonal_lgssm_any_dim.py
+execute_surrogate_force_validation.py
+
+# Agent handoff scratch summaries are transient. Authoritative plans, result
+# notes, and claim/promotion receipts remain tracked explicitly.
+/RQMC_SQMC_WORK_SUMMARY.md
+
+# Top-level result-runner runtime directories. Keep authored result notes in
+# results/ trackable; these names are reserved for generated execution state.
+results/**/logs/
+results/**/output/
+results/**/outputs/
+results/**/runs/
+results/**/checkpoints/
+results/**/tmp/
+
+# Authored KDM mathematical specification and compact receipts cited by the
+# September 9 continuation. Downloaded papers and raw campaign rows stay local.
+!docs/papers/
+docs/papers/*
+!docs/papers/ledh_younis_kdm_score/
+docs/papers/ledh_younis_kdm_score/*
+!docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex
+!docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.bib
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/result.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/manifest.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/*_result.json
+!docs/benchmarks/artifacts/ledh_younis_kdm_phase4b_20260909/*/*_selection.json

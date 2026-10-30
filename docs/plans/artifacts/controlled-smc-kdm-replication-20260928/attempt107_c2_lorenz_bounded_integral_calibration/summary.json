@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "replication": "INCOMPLETE",
+  "device": "GPU",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "dtype": "float64",
+  "tf32": false,
+  "stable_integral": true,
+  "jit_compile": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "eigen_tolerance": 1.7763568394002505e-15,
+  "eigen_refinement": true,
+  "checks": [
+    {
+      "name": "consumer_shared_kernel_snapshot",
+      "passed": true
+    },
+    {
+      "name": "scaled_repeated_indefinite_eigen_residual",
+      "passed": true,
+      "maximum_residual": 1.5706560668336854e-15,
+      "maximum_orthogonality": 1.7763568394002505e-15,
+      "rotations": 19
+    },
+    {
+      "name": "stress_graph_one_trace",
+      "passed": true
+    }
+  ],
+  "candidates": [
+    {
+      "floor": 0.001,
+      "checks": [
+        {
+          "name": "identical_coefficients_A",
+          "passed": true,
+          "max_scaled_error": 7.727223027889003e-05
+        },
+        {
+          "name": "identical_coefficients_b",
+          "passed": true,
+          "max_scaled_error": 0.0
+        },
+        {
+          "name": "identical_coefficients_c",
+          "passed": true,
+          "max_scaled_error": 0.0
+        },
+        {
+          "name": "identical_coefficients_center",
+          "passed": true,
+          "max_scaled_error": 0.0
+        },
+        {
+          "name": "identical_coefficients_scale",
+          "passed": true,
+          "max_scaled_error": 0.0
+        },
+        {
+          "name": "identical_coefficients_centered_A",
+          "passed": true,
+          "max_scaled_error": 1.0452543110107289e-06
+        },
+        {
+          "name": "identical_coefficients_centered_b",
+          "passed": true,
+          "max_scaled_error": 3.1988849596657965e-05
+        },
+        {
+          "name": "identical_coefficients_centered_c",
+          "passed": true,
+          "max_scaled_error": 1.5251258752315165e-06
+        },
+        {
+          "name": "Gaussian_correction_integral",
+          "passed": true,
+          "max_scaled_error": 4.086181272781016e-05
+        },
+        {
+          "name": "centered_raw_polynomial",
+          "passed": true,
+          "max_scaled_error": 9.244942577016937e-05
+        },
+        {
+          "name": "healthy_no_fire",
+          "passed": true
+        },
+        {
+          "name": "healthy_bitwise_unchanged",
+          "passed": true
+        },
+        {
+          "name": "valid_integral_and_coefficients",
+          "passed": true
+        },
+        {
+          "name": "one_trace",
+          "passed": true
+        },
+        {
+          "name": "consumer_floor_wiring",
+          "passed": true
+        }
+      ],
+      "eligible": true,
+      "baseline_only": false,
+      "maximum_eigen_rotations": 51.0,
+      "maximum_eigen_residual": 1.5745126755781038e-15,
+      "maximum_eigen_orthogonality": 1.5543122344752192e-15,
+      "max_A": 635014.5899889382
+    }
+  ],
+  "heuristic_dominance_verdict": "NOT_ASSESSED_NUMERICAL_REPAIR_ONLY",
+  "eligible_floors": [
+    0.001
+  ],
+  "allocator": {
+    "current": 100352,
+    "peak": 644608
+  },
+  "wall_seconds": 4.39284088392742
+}

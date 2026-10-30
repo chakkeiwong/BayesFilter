@@ -1,0 +1,90 @@
+{
+  "schema": "bayesfilter.bootstrap_fisher_reference.v1",
+  "command": [
+    "docs/benchmarks/run_nonlinear_bootstrap_reference.py",
+    "--worker-dirs",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/worker-0001-predator_prey",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/pp-expanded-03/worker-0001-predator_prey",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/screen-01/worker-0002-sir_d18",
+    "--particles",
+    "8192",
+    "32768",
+    "--seeds",
+    "260601",
+    "260602",
+    "260603",
+    "260604",
+    "--budget-seconds",
+    "900",
+    "--output",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04"
+  ],
+  "git_commit": "74bdc7777c6d030d6e59e12b24bbb36fbc701030",
+  "git_dirty": true,
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "device": "/GPU:0",
+  "visible_gpu": "1",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "GPU_trust": "escalated_GPU_access",
+  "plan": "docs/plans/ledh-nonlinear-execution-20261002.md",
+  "result": "docs/benchmarks/ledh-nonlinear-execution-results-20261002.md",
+  "particles": [
+    8192,
+    32768
+  ],
+  "seeds": [
+    260601,
+    260602,
+    260603,
+    260604
+  ],
+  "budget_seconds": 900,
+  "evidence_role": "approximate_independent_reference_not_oracle",
+  "score_method": "posterior_average_analytical_complete_data_Fisher_score",
+  "aggregation": "log_mean_unbiased_likelihood_and_likelihood_weighted_score",
+  "uncertainty": "delete_one_replication_jackknife_MCSE_not_particle_bias",
+  "validation": "tests/highdim/test_nonlinear_bootstrap_fisher_reference.py",
+  "source_sha256": {
+    "docs/benchmarks/run_nonlinear_bootstrap_reference.py": "5af91c74450d7864cfd3834d8ea201e57e263dc874e50f54ee5b3af7bade1662",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "3cf2c703616f2d794c8f1cc7ebfc6245d83a559fc3037bea15ef4154772c7b63"
+  },
+  "wall_seconds": 23.529445562977344,
+  "status": "complete",
+  "allocator": {
+    "current": 9728,
+    "peak": 134228992
+  },
+  "artifact_paths": [
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04/manifest.json",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04/replications.json",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04/scopes.json",
+    "docs/plans/artifacts/ledh-nonlinear-execution-20261002/bootstrap-reference-04/summary.json"
+  ]
+}

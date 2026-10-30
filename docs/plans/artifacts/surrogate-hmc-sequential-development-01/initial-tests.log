@@ -1,0 +1,179 @@
+.....F..............FFF.F..                                              [100%]
+=================================== FAILURES ===================================
+___________________ test_bad_public_policy_cannot_be_loaded ____________________
+
+    def test_bad_public_policy_cannot_be_loaded():
+>       from test_hmc_tensorflow_verified import config
+E       ModuleNotFoundError: No module named 'test_hmc_tensorflow_verified'
+
+tests/test_hmc_sequential_verification.py:73: ModuleNotFoundError
+_________________ test_prospective_scope_and_metric_protection _________________
+
+    def test_prospective_scope_and_metric_protection():
+        config = consumer.tuning_config("M13-unit-test")
+        assert config.nomination.mass_window_results == (128, 256)
+        assert config.nomination.max_leapfrog_steps == 4
+        assert config.nomination.use_xla
+>       assert config.warmup_results == 500
+E       AssertionError: assert 2000 == 500
+E        +  where 2000 = VerifiedTensorFlowHMCConfig(nomination=TensorFlowHMCKernelTuningConfig(parameter_dimension=2, evidence_role='diagnosti...max_results=10000, chunk_results=250, check_every_results=1000, warmup_check_window_results=1000, warmup_rhat_max=1.05).warmup_results
+
+tests/test_surrogate_hmc_m13_public_tuning.py:20: AssertionError
+_________ test_consumer_uses_public_authority_and_fresh_archive[False] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-112/test_consumer_uses_public_auth0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a772edf8850>
+repair = False
+
+    @pytest.mark.parametrize("repair", [False, True])
+    def test_consumer_uses_public_authority_and_fresh_archive(tmp_path, monkeypatch, repair):
+        """Exercise the consumer -> public tuner -> native kernel call chain."""
+        variance = math.log(2.)**2
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def force(x):
+            return PositionOnlyForceEvaluation(x / variance, tf.ones(tf.shape(x)[:-1], tf.bool))
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def endpoint(x):
+            valid = tf.ones(tf.shape(x)[:-1], tf.bool)
+            return TargetPotentialEvaluation(tf.reduce_sum(x*x, -1)/(2*variance),
+                dict(value_valid=valid, force_valid=valid, numerical_failure=~valid,
+                     outside_declared_support=~valid))
+    
+        scope = "M13-consumer-Gaussian-mechanics-only"
+        binding = bind_components(force, endpoint, scope)
+        adapter = SimpleNamespace(target_scope=scope, adapter_signature=lambda: scope+":"+binding.binding_hash)
+        fixture = SimpleNamespace(observation_checksum="diagnostic", observations=tf.zeros([2, 2]),
+                                  model_definition=lambda: {"role": "Gaussian consumer test only"})
+        selection_path = tmp_path / "selection.json"
+        selection = {"multiplier": .1, "controls": {}}
+        selection_path.write_text(json.dumps(selection))
+        monkeypatch.setattr(consumer, "selected_components", lambda: (
+            adapter, binding, SimpleNamespace(manifest=MappingProxyType({"diagnostic": True})), fixture, selection, selection_path))
+        config = consumer.tuning_config(scope)
+>       config = dataclasses.replace(config, nomination=dataclasses.replace(config.nomination,
+            mass_window_results=(16, 32), step_adaptation_results=64, verification_results=64),
+            warmup_results=100)
+
+tests/test_surrogate_hmc_m13_public_tuning.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/dataclasses.py:1503: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:16: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = VerifiedTensorFlowHMCConfig(nomination=TensorFlowHMCKernelTuningConfig(parameter_dimension=2, evidence_role='diagnosti...max_results=10000, chunk_results=250, check_every_results=1000, warmup_check_window_results=1000, warmup_rhat_max=1.05)
+
+    def __post_init__(self):
+        cfg = self.nomination
+        if not isinstance(cfg, stage.TensorFlowHMCKernelTuningConfig):
+            raise TypeError("nomination must be a TensorFlow tuning config")
+        if cfg.evidence_role != "diagnostic_candidate_screen" or not cfg.use_xla:
+            raise ValueError("verified tuning requires XLA candidate nomination")
+        for name in ("warmup_results", "verification_results"):
+            object.__setattr__(self, name, stage._positive_int(getattr(self, name), name))
+        if self.verification_results < 1000 or self.verification_results % 2:
+            raise ValueError("fresh verification requires at least 1000 even draws")
+        if self.warmup_results < 2000:
+>           raise ValueError("sequential warmup requires at least 2000 transitions per chain")
+E           ValueError: sequential warmup requires at least 2000 transitions per chain
+
+bayesfilter/inference/hmc_tensorflow_verified.py:53: ValueError
+_________ test_consumer_uses_public_authority_and_fresh_archive[True] __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-112/test_consumer_uses_public_auth1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7a7784840e10>
+repair = True
+
+    @pytest.mark.parametrize("repair", [False, True])
+    def test_consumer_uses_public_authority_and_fresh_archive(tmp_path, monkeypatch, repair):
+        """Exercise the consumer -> public tuner -> native kernel call chain."""
+        variance = math.log(2.)**2
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def force(x):
+            return PositionOnlyForceEvaluation(x / variance, tf.ones(tf.shape(x)[:-1], tf.bool))
+    
+        @tf.function(input_signature=[tf.TensorSpec([None, 2], tf.float64)],
+                     jit_compile=True, autograph=False)
+        def endpoint(x):
+            valid = tf.ones(tf.shape(x)[:-1], tf.bool)
+            return TargetPotentialEvaluation(tf.reduce_sum(x*x, -1)/(2*variance),
+                dict(value_valid=valid, force_valid=valid, numerical_failure=~valid,
+                     outside_declared_support=~valid))
+    
+        scope = "M13-consumer-Gaussian-mechanics-only"
+        binding = bind_components(force, endpoint, scope)
+        adapter = SimpleNamespace(target_scope=scope, adapter_signature=lambda: scope+":"+binding.binding_hash)
+        fixture = SimpleNamespace(observation_checksum="diagnostic", observations=tf.zeros([2, 2]),
+                                  model_definition=lambda: {"role": "Gaussian consumer test only"})
+        selection_path = tmp_path / "selection.json"
+        selection = {"multiplier": .1, "controls": {}}
+        selection_path.write_text(json.dumps(selection))
+        monkeypatch.setattr(consumer, "selected_components", lambda: (
+            adapter, binding, SimpleNamespace(manifest=MappingProxyType({"diagnostic": True})), fixture, selection, selection_path))
+        config = consumer.tuning_config(scope)
+>       config = dataclasses.replace(config, nomination=dataclasses.replace(config.nomination,
+            mass_window_results=(16, 32), step_adaptation_results=64, verification_results=64),
+            warmup_results=100)
+
+tests/test_surrogate_hmc_m13_public_tuning.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/dataclasses.py:1503: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:16: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = VerifiedTensorFlowHMCConfig(nomination=TensorFlowHMCKernelTuningConfig(parameter_dimension=2, evidence_role='diagnosti...max_results=10000, chunk_results=250, check_every_results=1000, warmup_check_window_results=1000, warmup_rhat_max=1.05)
+
+    def __post_init__(self):
+        cfg = self.nomination
+        if not isinstance(cfg, stage.TensorFlowHMCKernelTuningConfig):
+            raise TypeError("nomination must be a TensorFlow tuning config")
+        if cfg.evidence_role != "diagnostic_candidate_screen" or not cfg.use_xla:
+            raise ValueError("verified tuning requires XLA candidate nomination")
+        for name in ("warmup_results", "verification_results"):
+            object.__setattr__(self, name, stage._positive_int(getattr(self, name), name))
+        if self.verification_results < 1000 or self.verification_results % 2:
+            raise ValueError("fresh verification requires at least 1000 even draws")
+        if self.warmup_results < 2000:
+>           raise ValueError("sequential warmup requires at least 2000 transitions per chain")
+E           ValueError: sequential warmup requires at least 2000 transitions per chain
+
+bayesfilter/inference/hmc_tensorflow_verified.py:53: ValueError
+_________ test_archived_warmup_initialization_keeps_target_and_checks __________
+
+    def test_archived_warmup_initialization_keeps_target_and_checks():
+        original=tuning_config("diagnostic")
+        repaired,metadata=initialization_config(original)
+        assert repaired.nomination==original.nomination
+>       assert repaired.warmup_results==500 and repaired.verification_results==1000
+E       AssertionError: assert (2000 == 500)
+E        +  where 2000 = VerifiedTensorFlowHMCConfig(nomination=TensorFlowHMCKernelTuningConfig(parameter_dimension=2, evidence_role='diagnosti...max_results=10000, chunk_results=250, check_every_results=1000, warmup_check_window_results=1000, warmup_rhat_max=1.05).warmup_results
+
+tests/test_surrogate_hmc_m13_initialization_repair.py:12: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_sequential_verification.py::test_bad_public_policy_cannot_be_loaded
+FAILED tests/test_surrogate_hmc_m13_public_tuning.py::test_prospective_scope_and_metric_protection
+FAILED tests/test_surrogate_hmc_m13_public_tuning.py::test_consumer_uses_public_authority_and_fresh_archive[False]
+FAILED tests/test_surrogate_hmc_m13_public_tuning.py::test_consumer_uses_public_authority_and_fresh_archive[True]
+FAILED tests/test_surrogate_hmc_m13_initialization_repair.py::test_archived_warmup_initialization_keeps_target_and_checks
+5 failed, 22 passed, 2 warnings in 6.26s

@@ -1,0 +1,37 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792725076.562941       3 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792725076.565685       3 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792725076.573070       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792725076.573176       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792725076.573184       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792725076.573186       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+/home/chakwong/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-gp_w3bzi because there was an issue with the default path (/home/chakwong/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/symmetric_sylvester_tf.py", line 15, in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/load_library.py", line 54, in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.NotFoundError: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/_symmetric_sylvester_ops.so: undefined symbol: _ZN4absl12lts_2023080213hash_internal15MixingHashState5kSeedE, version tensorflow
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/audit_surrogate_hmc_five_model_posterior.py", line 197, in <module>
+    main()
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/audit_surrogate_hmc_five_model_posterior.py", line 143, in main
+    spec = spec_for(name, lgssm_family="p44")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/benchmarks/run_ledh_covariance_proposal.py", line 53, in spec_for
+    from bayesfilter.highdim.sqmc_lgssm_tf import LGSSMSpec
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/__init__.py", line 76, in <module>
+    from bayesfilter.highdim.filtering import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/filtering.py", line 45, in <module>
+    from bayesfilter.ops.slogdet_tf import slogdet_tf
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/__init__.py", line 5, in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/symmetric_sylvester_tf.py", line 17, in <module>
+    raise ImportError(
+ImportError: Could not load BayesFilter symmetric Sylvester op at /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/ops/_symmetric_sylvester_ops.so: undefined symbol: _ZN4absl12lts_2023080213hash_internal15MixingHashState5kSeedE, version tensorflow

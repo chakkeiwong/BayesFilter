@@ -24,6 +24,10 @@ from bayesfilter.inference.tuning_contract import (
     require_active_hmc_tuning_route,
 )
 from bayesfilter.inference.hmc_candidate_set_tuning import HMCControllerConfig
+from bayesfilter.inference.hmc_tensorflow_verified import (
+    VerifiedTensorFlowHMCConfig, VerifiedTensorFlowHMCResult,
+    _run_verified_tensorflow_tuning, load_verified_tensorflow_hmc_result,
+)
 
 
 def tune_hmc_kernel(
@@ -109,7 +113,7 @@ def tune_hmc_kernel(
             output_dir=output_dir,
             max_work_items=max_work_items,
         )
-    if isinstance(config, TensorFlowHMCKernelTuningConfig):
+    if isinstance(config, (TensorFlowHMCKernelTuningConfig, VerifiedTensorFlowHMCConfig)):
         unsupported = {
             "candidate_set_adapter": candidate_set_adapter,
             "target_lineage": target_lineage,
@@ -129,6 +133,19 @@ def tune_hmc_kernel(
             )
         if runner_binding is None:
             raise ValueError("TensorFlow tuning requires a repository-issued binding")
+        if isinstance(config, VerifiedTensorFlowHMCConfig):
+            # Preserve the explicitly typed local campaign continuation route.
+            # Ordinary/new position-field configs still use main's controller.
+            if any(value is not None for value in (search_config, execution_config, max_work_items)):
+                raise ValueError("verified campaign continuation does not accept shared-controller options")
+            # The typed verified configuration owns the dispersed four-chain
+            # starts. Older campaign callers passed a scalar placeholder; using
+            # that placeholder would violate main's candidate-bank contract.
+            return _run_verified_tensorflow_tuning(
+                adapter=adapter, initial_position=config.initial_chain_positions,
+                config=config, output_dir=output_dir,
+                parameter_scales=parameter_scales, runner_binding=runner_binding,
+            )
         from bayesfilter.inference.hmc_candidate_set_position_field import run_shared_position_field_tuning
         return run_shared_position_field_tuning(
             adapter=adapter,
@@ -172,6 +189,9 @@ def tune_hmc_kernel(
 
 
 __all__ = [
+    "VerifiedTensorFlowHMCConfig",
+    "VerifiedTensorFlowHMCResult",
+    "load_verified_tensorflow_hmc_result",
     "BOUND_RETAINED_HMC_ARCHIVE_SCHEMA",
     "BoundRetainedHMCArchiveConfig",
     "BoundRetainedHMCArchiveResult",

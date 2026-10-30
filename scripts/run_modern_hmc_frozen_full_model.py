@@ -120,6 +120,7 @@ def finalize_interruption(output, design, *, status):
         assessment.update(status=status, rows=result["rows"], delivered_count=result["delivered_count"])
         write_json(posterior, assessment)
         result["posterior"] = assessment
+    result["posterior_assessment"] = status if posterior.exists() else "not_run"
     write_json(output/"result.json", result)
     return result
 

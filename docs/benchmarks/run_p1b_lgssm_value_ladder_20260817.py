@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import math
 import os
 import platform
 import subprocess
@@ -44,15 +45,16 @@ SEEDS = (42, 142, 242)
 STOP_WALL_SECONDS = 45 * 60
 
 
-def _mvn_log_density(x: tf.Tensor, mean: tf.Tensor, covariance: np.ndarray) -> tf.Tensor:
+def _mvn_log_density(x: tf.Tensor, mean: tf.Tensor, covariance) -> tf.Tensor:
+    """TensorFlow runtime callback; NumPy below is independent fixture/oracle code."""
     d = int(covariance.shape[0])
-    chol = np.linalg.cholesky(covariance)
+    chol = tf.linalg.cholesky(tf.convert_to_tensor(covariance, DTYPE))
     solve = tf.linalg.triangular_solve(
-        tf.constant(chol, DTYPE), tf.transpose(x - mean), lower=True
+        chol, tf.transpose(x - mean), lower=True
     )
     quad = tf.reduce_sum(tf.square(solve), axis=0)
-    log_det = 2.0 * float(np.sum(np.log(np.diag(chol))))
-    return -0.5 * (d * np.log(2.0 * np.pi) + log_det + quad)
+    log_det = 2.0 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)))
+    return -0.5 * (d * math.log(2.0 * math.pi) + log_det + quad)
 
 
 def _case(n: int, seed: int, adversarial: bool):

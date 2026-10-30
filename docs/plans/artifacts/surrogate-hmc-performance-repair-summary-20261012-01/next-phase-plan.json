@@ -1,0 +1,41 @@
+{
+  "status": "REPAIR_UNFINISHED_GPU_ALLOCATION_USED",
+  "part_of_existing_master": true,
+  "continuation_veto": "declared repair GPU time/attempt allocation used; candidate failure itself is not a continuation veto",
+  "gpu_wall_seconds_used": 3586.0616771718487,
+  "gpu_wall_seconds_limit": 3600,
+  "remaining_gpu_wall_seconds": 13.938322828151286,
+  "attempts_used": 13,
+  "attempts_limit": 13,
+  "proposed_additional_gpu_seconds": 7200,
+  "additional_allocation_authorized": false,
+  "phases": [
+    {
+      "id": "sir_precision",
+      "action": "Rerun final-source N4032 FP32 SIR prefix and same-input FP64 finite-value width ladder; localize first derivative divergence before T50.",
+      "budget_seconds": 1800,
+      "status": "PENDING_ALLOCATION"
+    },
+    {
+      "id": "shared_cost",
+      "action": "Profile and repair KSC/range-bearing regressions; preserve finite values and all derivative terms.",
+      "budget_seconds": 1800,
+      "status": "PENDING_ALLOCATION"
+    },
+    {
+      "id": "all_five_final_source",
+      "action": "Run N4032 FP32 paired/full-value derivative checks and repeated warmed timings on final source; own-scope tuning only if numerical checks pass.",
+      "budget_seconds": 3600,
+      "status": "PENDING_ALLOCATION"
+    }
+  ],
+  "hmc": {
+    "status": "NOT_RUN",
+    "requirements": [
+      "resolved full-scope derivative and cost checks",
+      "fresh source-specific offline tuning",
+      "declared inference prior and separate adaptive-HMC budget"
+    ],
+    "nonclaim": "No completed posterior, R-hat, acceptance or canonical LEDH admission."
+  }
+}

@@ -7,7 +7,7 @@ import json
 import math
 import struct
 from dataclasses import dataclass
-from itertools import product
+from functools import lru_cache
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Sequence
 
@@ -599,20 +599,23 @@ def _canonicalize_tensor(tensor: tf.Tensor) -> Mapping[str, object]:
     }
 
 
+@lru_cache(maxsize=32)
+def _ghq_program(order, standard_normal=True):
+    from bayesfilter.highdim.gaussian_moment_hints_tf import _normal_hermite_rule
+
+    @tf.function(input_signature=[], jit_compile=True, autograph=False)
+    def evaluate():
+        nodes, weights = _normal_hermite_rule(order, True)
+        if standard_normal:
+            return nodes, weights
+        return nodes / tf.sqrt(tf.constant(2.0, tf.float64)), weights * tf.sqrt(tf.constant(math.pi, tf.float64))
+    return evaluate
+
+
 def _gauss_hermite_nodes_weights(order: int) -> tuple[tf.Tensor, tf.Tensor]:
     if int(order) <= 0:
         raise ValueError("order must be positive")
-    if int(order) == 1:
-        return (
-            tf.zeros([1], dtype=tf.float64),
-            tf.sqrt(tf.constant(math.pi, dtype=tf.float64))[tf.newaxis],
-        )
-    k = tf.cast(tf.range(1, int(order), dtype=tf.int32), tf.float64)
-    beta = tf.sqrt(k / 2.0)
-    jacobi = tf.linalg.diag(beta, k=1) + tf.linalg.diag(beta, k=-1)
-    eigenvalues, eigenvectors = tf.linalg.eigh(jacobi)
-    weights = tf.sqrt(tf.constant(math.pi, dtype=tf.float64)) * tf.square(eigenvectors[0, :])
-    return eigenvalues, weights
+    return _ghq_program(int(order), False)()
 
 
 def tf_standard_normal_ghq_level_rule(level: int) -> TFFixedSGQF1DLevelRule:
@@ -622,9 +625,7 @@ def tf_standard_normal_ghq_level_rule(level: int) -> TFFixedSGQF1DLevelRule:
     if level <= 0:
         raise ValueError("level must be positive")
     order = 2 * level - 1
-    hermite_nodes, hermite_weights = _gauss_hermite_nodes_weights(order)
-    nodes = tf.sqrt(tf.constant(2.0, dtype=tf.float64)) * hermite_nodes
-    weights = hermite_weights / tf.sqrt(tf.constant(math.pi, dtype=tf.float64))
+    nodes, weights = _ghq_program(order)()
     return TFFixedSGQF1DLevelRule(
         level=level,
         nodes=nodes,
@@ -677,36 +678,94 @@ def tf_fixed_sgqf_combination_coefficient(
     return int(((-1) ** gap) * math.comb(dim - 1, gap))
 
 
-def _merge_key(point: tuple[float, ...], tolerance: float) -> tuple[object, ...]:
-    if tolerance == 0.0:
-        return tuple(float(value).hex() for value in point)
-    return tuple(int(round(float(value) / tolerance)) for value in point)
+def _lexicographic_point_order(points: tf.Tensor) -> tf.Tensor:
+    count = tf.shape(points)[0]
+    def sort_axis(axis, order):
+        indices = tf.argsort(tf.gather(points[:, axis], order), stable=True)
+        return axis - 1, tf.gather(order, indices)
+    _, order = tf.while_loop(lambda axis, _: axis >= 0, sort_axis,
+                             (tf.shape(points)[1] - 1, tf.range(count)),
+                             maximum_iterations=tf.shape(points)[1])
+    return order
 
 
-def _find_merged_point(
-    merged: dict[tuple[object, ...], dict[str, object]],
-    point: tuple[float, ...],
-    tolerance: float,
-) -> tuple[object, ...] | None:
-    key = _merge_key(point, tolerance)
-    candidate_keys = [key]
-    if tolerance != 0.0:
-        for offsets in product((-1, 0, 1), repeat=len(point)):
-            neighbor = tuple(component + offset for component, offset in zip(key, offsets))
-            if neighbor not in candidate_keys:
-                candidate_keys.append(neighbor)
-    for candidate_key in candidate_keys:
-        existing = merged.get(candidate_key)
-        if existing is None:
-            continue
-        existing_point = tuple(float(value) for value in existing["point"])
-        if max(abs(point_component - existing_component) for point_component, existing_component in zip(point, existing_point)) <= tolerance:
-            return candidate_key
-    return None
+@tf.function(jit_compile=True, autograph=False, input_signature=(
+    tf.TensorSpec([None, None], tf.float64),
+    tf.TensorSpec([None], tf.float64), tf.TensorSpec([], tf.float64),
+))
+def _merge_sgqf_rule_points(points, weights, tolerance):
+    """Native sequential merge preserving bucket priority and summation order.
+
+    Representatives keep their first encountered point. A current bucket wins
+    before neighboring buckets; neighbors use the original lexicographic order.
+    The fixed-capacity result is compacted only at the preparation boundary.
+    """
+    count = tf.shape(weights)[0]
+    keys = tf.round(points / tf.where(tolerance > 0.0, tolerance, 1.0))
+    ranks = tf.argsort(_lexicographic_point_order(keys), stable=True)
+    representatives = tf.zeros([count], tf.bool)
+    accumulated = tf.zeros_like(weights)
+
+    def merge(index, representatives, accumulated):
+        key_distance = tf.abs(keys - keys[index])
+        same_bucket = tf.reduce_all(key_distance == 0.0, axis=1)
+        near = tf.reduce_all(key_distance <= 1.0, axis=1)
+        close = tf.reduce_all(tf.abs(points - points[index]) <= tolerance, axis=1)
+        # Exact mode follows float.hex identity, including the sign of zero.
+        exact = tf.reduce_all(tf.bitcast(points, tf.int64) == tf.bitcast(points[index], tf.int64), axis=1)
+        eligible = representatives & tf.where(tolerance > 0.0, near & close, exact)
+        priorities = tf.where(eligible, tf.where(same_bucket, -1, ranks), count)
+        existing = tf.argmin(priorities, output_type=tf.int32)
+        destination = tf.where(tf.reduce_any(eligible), existing, index)
+        representatives = tf.tensor_scatter_nd_update(representatives, [[destination]], [True])
+        accumulated = tf.tensor_scatter_nd_add(accumulated, [[destination]], [weights[index]])
+        return index + 1, representatives, accumulated
+
+    _, representatives, accumulated = tf.while_loop(
+        lambda index, *_: index < count, merge,
+        (tf.constant(0), representatives, accumulated), maximum_iterations=count,
+    )
+    order = _lexicographic_point_order(points)
+    return tf.gather(points, order), tf.gather(accumulated, order), tf.gather(representatives, order)
 
 
-def _unstack_floats(values: tf.Tensor) -> tuple[float, ...]:
-    return tuple(float(value) for value in tf.unstack(values))
+@lru_cache(maxsize=16)
+def _sgqf_cloud_program(dim, active_multi_indices, combination_coefficients):
+    from bayesfilter.highdim.gaussian_moment_hints_tf import _normal_hermite_rule
+    max_level = max(max(index) for index in active_multi_indices)
+    width = 2 * max_level - 1
+
+    @tf.function(input_signature=[tf.TensorSpec([], tf.float64)], jit_compile=True, autograph=False)
+    def evaluate(merge_tolerance):
+        def rule(level):
+            def generate():
+                nodes, weights = _normal_hermite_rule(2*level-1, True)
+                padding = [[0, width-(2*level-1)]]
+                return tf.pad(nodes, padding), tf.pad(weights, padding)
+            return generate
+        branches = tuple(rule(level) for level in range(1, max_level+1))
+        nodes_table, weights_table = tf.map_fn(lambda index: tf.switch_case(index, branches),
+            tf.range(max_level), fn_output_signature=(tf.TensorSpec([width], tf.float64),
+                tf.TensorSpec([width], tf.float64)), parallel_iterations=1)
+        levels = tf.constant(active_multi_indices, tf.int32)
+        orders = 2 * levels - 1
+        sizes = tf.reduce_prod(orders, axis=1)
+        ends = tf.cumsum(sizes)
+        row = tf.range(ends[-1])
+        term = tf.searchsorted(ends, row, side="right")
+        local_row = row - tf.gather(ends - sizes, term)
+        axis_orders = tf.gather(orders, term)
+        strides = tf.math.cumprod(axis_orders, axis=1, exclusive=True, reverse=True)
+        digit = (local_row[:, None] // strides) % axis_orders
+        table_index = tf.stack([tf.gather(levels, term) - 1, digit], axis=-1)
+        points = tf.gather_nd(nodes_table, table_index)
+        axis_weights = tf.gather_nd(weights_table, table_index)
+        weights = tf.gather(tf.constant(combination_coefficients, tf.float64), term)
+        _, weights = tf.while_loop(lambda axis, _: axis < dim,
+            lambda axis, weight: (axis+1, weight*axis_weights[:, axis]),
+            (tf.constant(0), weights), maximum_iterations=dim)
+        return _merge_sgqf_rule_points(points, weights, merge_tolerance)
+    return evaluate
 
 
 def tf_fixed_sgqf_cloud(
@@ -729,32 +788,16 @@ def tf_fixed_sgqf_cloud(
         raise ValueError("node_ordering must be lexicographic")
 
     active_multi_indices = tf_fixed_sgqf_active_multi_indices(dim, sparse_level)
-    max_level = max(max(multi_index) for multi_index in active_multi_indices)
-    rules = {level: tf_standard_normal_ghq_level_rule(level) for level in range(1, max_level + 1)}
-
-    merged: dict[tuple[object, ...], dict[str, object]] = {}
-    combination_coefficients = []
-    for multi_index in active_multi_indices:
-        coefficient = tf_fixed_sgqf_combination_coefficient(dim, sparse_level, multi_index)
-        combination_coefficients.append(coefficient)
-        rule_nodes = [_unstack_floats(rules[level].nodes) for level in multi_index]
-        rule_weights = [_unstack_floats(rules[level].weights) for level in multi_index]
-        axis_ranges = [range(len(nodes)) for nodes in rule_nodes]
-        for choice in product(*axis_ranges):
-            point = tuple(rule_nodes[axis][index] for axis, index in enumerate(choice))
-            weight = float(coefficient)
-            for axis, index in enumerate(choice):
-                weight *= rule_weights[axis][index]
-            existing_key = _find_merged_point(merged, point, merge_tolerance)
-            if existing_key is not None:
-                merged[existing_key]["weight"] = float(merged[existing_key]["weight"]) + weight
-            else:
-                merged[_merge_key(point, merge_tolerance)] = {"point": point, "weight": weight}
-
-    items = [item for item in merged.values() if abs(float(item["weight"])) > zero_weight_tolerance]
-    items.sort(key=lambda item: tuple(float(value) for value in item["point"]))
-    points = tf.constant([item["point"] for item in items], dtype=tf.float64)
-    weights = tf.constant([item["weight"] for item in items], dtype=tf.float64)
+    combination_coefficients = tuple(
+        tf_fixed_sgqf_combination_coefficient(dim, sparse_level, index)
+        for index in active_multi_indices
+    )
+    points, weights, representatives = _sgqf_cloud_program(
+        dim, active_multi_indices, combination_coefficients)(tf.constant(merge_tolerance, tf.float64))
+    keep = representatives & (tf.abs(weights) > zero_weight_tolerance)
+    # Compaction determines the immutable cloud's public shape. All quadrature
+    # arithmetic and merging have completed in the numerical program.
+    points, weights = tf.boolean_mask(points, keep), tf.boolean_mask(weights, keep)
     return TFFixedSGQFCloud(
         dim=dim,
         sparse_level=sparse_level,
@@ -787,20 +830,15 @@ def tf_fixed_sgqf_level2_axis_cloud(
     if tolerance < 0.0:
         raise ValueError("zero_weight_tolerance must be nonnegative")
 
-    radius = math.sqrt(3.0)
-    zero = (0.0,) * dimension
-    items: list[tuple[tuple[float, ...], float]] = [
-        (zero, 1.0 - float(dimension) / 3.0)
-    ]
-    for axis in range(dimension):
-        for sign in (-1.0, 1.0):
-            point = tuple(
-                sign * radius if index == axis else 0.0
-                for index in range(dimension)
-            )
-            items.append((point, 1.0 / 6.0))
-    items = [item for item in items if abs(item[1]) > tolerance]
-    items.sort(key=lambda item: item[0])
+    axes = tf.sqrt(tf.constant(3.0, tf.float64)) * tf.eye(dimension, dtype=tf.float64)
+    points = tf.concat([tf.zeros([1, dimension], tf.float64),
+                        tf.reshape(tf.stack([-axes, axes], axis=1), [2 * dimension, dimension])], axis=0)
+    weights = tf.concat([tf.constant([1.0 - dimension / 3.0], tf.float64),
+                         tf.fill([2 * dimension], tf.constant(1.0 / 6.0, tf.float64))], axis=0)
+    keep = tf.abs(weights) > tolerance
+    points, weights = tf.boolean_mask(points, keep), tf.boolean_mask(weights, keep)
+    order = _lexicographic_point_order(points)
+    points, weights = tf.gather(points, order), tf.gather(weights, order)
 
     active_multi_indices = tf_fixed_sgqf_active_multi_indices(dimension, 2)
     combination_coefficients = tuple(
@@ -810,8 +848,8 @@ def tf_fixed_sgqf_level2_axis_cloud(
     return TFFixedSGQFCloud(
         dim=dimension,
         sparse_level=2,
-        points=tf.constant([point for point, _weight in items], tf.float64),
-        weights=tf.constant([weight for _point, weight in items], tf.float64),
+        points=points,
+        weights=weights,
         active_multi_indices=active_multi_indices,
         combination_coefficients=combination_coefficients,
         merge_tolerance=0.0,

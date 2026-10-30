@@ -1,0 +1,33 @@
+{
+  "schema": "sqmc_session_recovery_diagnosis_v1",
+  "recovered_utc": "2026-09-30T09:06:59.709490+00:00",
+  "saved_session": "/home/chakwong/.codex/sessions/2026/09/28/rollout-2026-09-28T01-01-03-01a0e3d0-2332-7ea3-9fc4-d5e4dcee78d0.jsonl",
+  "saved_session_bytes": 39996479,
+  "last_successful_compaction": "2026-09-29T17:09:12.082Z",
+  "last_failures": [
+    {
+      "timestamp": "2026-09-29T21:27:52.226Z",
+      "error": {
+        "message": "unexpected status 502 Bad Gateway: Bad Gateway, url: https://cn.origincoder.com/v1/responses",
+        "codex_error_info": "other"
+      }
+    },
+    {
+      "timestamp": "2026-09-30T03:09:42.295Z",
+      "error": {
+        "message": "unexpected status 502 Bad Gateway: Bad Gateway, url: https://cn.origincoder.com/v1/responses",
+        "codex_error_info": "other"
+      }
+    },
+    {
+      "timestamp": "2026-09-30T05:56:18.676Z",
+      "error": {
+        "message": "Error running remote compact task: unexpected status 502 Bad Gateway: Bad Gateway, url: https://cn.origincoder.com/v1/responses",
+        "codex_error_info": "other"
+      }
+    }
+  ],
+  "finding": "Repeated provider HTTP 502 errors; final resume failed during pre-sampling remote compaction. GPU campaign already completed. Underlying gateway root cause unverified.",
+  "sandbox_finding": "Fresh session non-escalated Python and apply_patch encountered bubblewrap mountinfo path is not absolute; trusted commands succeed. This is separate from recorded provider failure.",
+  "recovery": "Preserve old session. Verify existing artifacts and complete remaining report, review, checkpoint and local commit in fresh session. No additional GPU run planned."
+}

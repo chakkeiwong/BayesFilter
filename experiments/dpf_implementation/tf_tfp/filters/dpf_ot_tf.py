@@ -37,93 +37,32 @@ def run_ot_dpf_tf(
     annealed_scaling: float = 0.9,
     annealed_convergence_threshold: float = 1e-3,
     retained_teacher_warmstart_fn: Callable[[tf.Tensor, tf.Tensor, float, int], SinkhornLogStateTF] | None = None,
+    jit_compile: bool = True,
 ) -> ParticleFilterTFResult:
+    from experiments.dpf_implementation.tf_tfp.filters.particle_ot_execution_tf import (
+        make_particle_ot_filter, particle_ot_reports,
+    )
+
+    observations = tf.convert_to_tensor(observations, DTYPE)
     particles = tf.cast(initial_sample(num_particles, seed), DTYPE)
-    log_weights = tf.fill([num_particles], -tf.math.log(tf.cast(num_particles, DTYPE)))
-    filtered_means = []
-    filtered_variances = []
-    ess_by_time = []
-    diagnostics: list[dict[str, Any]] = []
-    resampling_count = 0
-    log_likelihood = tf.constant(0.0, dtype=DTYPE)
-
-    for t, observation in enumerate(tf.unstack(tf.cast(observations, DTYPE), axis=0)):
-        particles = tf.cast(transition_sample(particles, seed, t), DTYPE)
-        obs_log_weights = tf.cast(observation_log_density(particles, observation, t), DTYPE)
-        weights, incremental = normalize_log_weights_tf(log_weights + obs_log_weights)
-        log_likelihood = log_likelihood + incremental
-        ess = 1.0 / tf.reduce_sum(weights * weights)
-        mean, variance = weighted_mean_and_variance_tf(particles, weights)
-        filtered_means.append(mean)
-        filtered_variances.append(variance)
-        ess_by_time.append(ess)
-        do_resample = bool((ess < ess_threshold_ratio * num_particles).numpy())
-        if do_resample:
-            resampled, resampling_method = _resample_particles(
-                particles=particles,
-                weights=weights,
-                log_weights=tf.math.log(tf.maximum(weights, tf.constant(1e-300, dtype=DTYPE))),
-                transport_method=transport_method,
-                epsilon=sinkhorn_epsilon,
-                sinkhorn_iterations=sinkhorn_iterations,
-                sinkhorn_tolerance=sinkhorn_tolerance,
-                annealed_scaling=annealed_scaling,
-                annealed_convergence_threshold=annealed_convergence_threshold,
-                retained_teacher_warmstart_fn=retained_teacher_warmstart_fn,
-                time_index=t,
-            )
-            particles = resampled.particles
-            log_weights = tf.fill([num_particles], -tf.math.log(tf.cast(num_particles, DTYPE)))
-            resampling_count += 1
-            diag: dict[str, Any] = {
-                "time_index": int(t),
-                "ess": float(ess.numpy()),
-                "ess_ratio": float((ess / tf.cast(num_particles, DTYPE)).numpy()),
-                "resampled": True,
-                "resampling_method": resampling_method,
-                **resampled.diagnostics,
-            }
-        else:
-            log_weights = tf.math.log(tf.maximum(weights, tf.constant(1e-300, dtype=DTYPE)))
-            diag = {
-                "time_index": int(t),
-                "ess": float(ess.numpy()),
-                "ess_ratio": float((ess / tf.cast(num_particles, DTYPE)).numpy()),
-                "resampled": False,
-                "resampling_method": "none",
-                "backend": "tensorflow",
-            }
-        diagnostics.append(diag)
-
-    filtered_means_tensor = tf.stack(filtered_means, axis=0)
-    filtered_variances_tensor = tf.stack(filtered_variances, axis=0)
-    ess_tensor = tf.stack(ess_by_time, axis=0)
-    finite = bool(
-        tf.math.is_finite(log_likelihood).numpy()
-        and tf.reduce_all(tf.math.is_finite(filtered_means_tensor)).numpy()
-        and tf.reduce_all(tf.math.is_finite(filtered_variances_tensor)).numpy()
-        and tf.reduce_all(tf.math.is_finite(ess_tensor)).numpy()
-    )
-    if transport_method == "annealed_transport":
-        method_suffix = "annealed_transport_tf"
-    elif transport_method == "fixed_target_sinkhorn":
-        method_suffix = "fixed_target_sinkhorn_local_comparator_tf"
-    elif transport_method == "retained_teacher_sinkhorn_warmstart":
-        method_suffix = "retained_teacher_sinkhorn_warmstart_tf"
-    else:
-        method_suffix = transport_method
-    return ParticleFilterTFResult(
-        method_id=f"ot_dpf_{method_suffix}",
-        seed=int(seed),
-        num_particles=int(num_particles),
-        log_likelihood_estimate=log_likelihood,
-        filtered_means=filtered_means_tensor,
-        filtered_variances=filtered_variances_tensor,
-        ess_by_time=ess_tensor,
-        resampling_count=int(resampling_count),
-        resampling_diagnostics=diagnostics,
-        finite=finite,
-    )
+    call = make_particle_ot_filter(tf.TensorSpec(observations.shape, DTYPE),
+        tf.TensorSpec(particles.shape, DTYPE), transition_sample=transition_sample,
+        observation_log_density=observation_log_density, seed=seed,
+        ess_threshold_ratio=ess_threshold_ratio, jit_compile=jit_compile,
+        transport_method=transport_method, epsilon=sinkhorn_epsilon,
+        sinkhorn_iterations=sinkhorn_iterations, sinkhorn_tolerance=sinkhorn_tolerance,
+        annealed_scaling=annealed_scaling, annealed_convergence_threshold=annealed_convergence_threshold,
+        retained_teacher_warmstart_fn=retained_teacher_warmstart_fn)
+    total, history = call(observations, particles)
+    means, variances, ess, _, _ = history
+    diagnostics = particle_ot_reports(history, call, jit_compile=jit_compile)
+    finite = bool(tf.reduce_all(tf.stack([tf.reduce_all(tf.math.is_finite(value))
+        for value in (total, means, variances, ess)])).numpy())
+    method_suffix = {"annealed_transport": "annealed_transport_tf",
+        "fixed_target_sinkhorn": "fixed_target_sinkhorn_local_comparator_tf",
+        "retained_teacher_sinkhorn_warmstart": "retained_teacher_sinkhorn_warmstart_tf"}.get(transport_method, transport_method)
+    return ParticleFilterTFResult(f"ot_dpf_{method_suffix}", int(seed), int(num_particles), total,
+        means, variances, ess, sum(int(row["resampled"]) for row in diagnostics), diagnostics, finite)
 
 
 def _resample_particles(
@@ -172,7 +111,7 @@ def _resample_particles(
             tf.cast(particles, DTYPE),
             tf.cast(weights, DTYPE),
             float(epsilon),
-            int(time_index),
+            time_index,
         )
         result = sinkhorn_resample_tf(
             particles,

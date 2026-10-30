@@ -1,0 +1,203 @@
+{
+  "plan": "/home/chakwong/BayesFilter-SQMC/docs/plans/ledh-independent-validation-20261008.md",
+  "result": "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/ledh-independent-validation-results-20261008.md",
+  "git_commit": "ae4d41ba25abd755fb1ff0f65fd63a69f3beec92",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_ledh_independent_validation.py",
+    "prepare"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "data_seeds": [
+    26100831,
+    26100832
+  ],
+  "designs": {
+    "26100831": [
+      261008301,
+      261008302,
+      261008303,
+      261008304,
+      261008305,
+      261008306,
+      261008307,
+      261008308
+    ],
+    "26100832": [
+      261008401,
+      261008402,
+      261008403,
+      261008404,
+      261008405,
+      261008406,
+      261008407,
+      261008408
+    ]
+  },
+  "models": [
+    "lgssm",
+    "ksc",
+    "predator_prey",
+    "sir_d18"
+  ],
+  "particles": 1008,
+  "horizon": 50,
+  "dtype": "float64",
+  "jit_compile": true,
+  "tf32": false,
+  "cpu_only": false,
+  "cuda_visible_devices": "1",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "budget_seconds": 86400,
+  "max_attempts": 40,
+  "wall_cap_seconds": 43200,
+  "source_sha256": {
+    "docs/benchmarks/run_ledh_independent_validation.py": "fb9bae4193884f1fb683ed8fb941445e478c65d63dc87d04605f83f30e773b96",
+    "docs/plans/ledh-independent-validation-20261008.md": "cf9c2aabb24933fbcfaaac00f089c10ea650f9cf772029f326f2b6a9d2a444d8",
+    "docs/benchmarks/run_ledh_matched_comparison.py": "83b7930618e091f61059fe15901f310faf0ed336051a9b2aa7ec8b2971951a06",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "docs/plans/ledh-matched-comparison-20261008.md": "f74e28bfe17d56729761e2b36ed11b885fdf8d3dab363ef8dfc18b2911953e0d",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "909d74e0f911bab47310bec18c5886ffe045cc663239d90d5706988ff4b0fba4",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "d367b2a40289bbeda12f0831967f14d971108498432068543bed37059b5c6e3b",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae"
+  },
+  "frozen_tuning": {
+    "lgssm": {
+      "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/lgssm-tuning/tuning.json",
+      "sha256": "4538dc4d9a41466832e65dfc99e2282901235dfa26cb093e7d17861ba6f5546b",
+      "snapshot": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/lgssm-tuning.json",
+      "beta": [
+        0.1,
+        0.5657152171420792,
+        0.33428478285792074
+      ]
+    },
+    "ksc": {
+      "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/ksc-tuning/tuning.json",
+      "sha256": "cbf46922934da6e0ab5a3645f9e2715c6113e13aae7fc8d90aae84c6441b11ff",
+      "snapshot": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/ksc-tuning.json",
+      "beta": [
+        0.1,
+        0.8999999999999999,
+        0.0
+      ]
+    },
+    "predator_prey": {
+      "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/predator_prey-tuning/tuning.json",
+      "sha256": "6be8f035cfb815bd6f5c682da34ad13f1fa9b5f3cfa913daee91ee3467f79548",
+      "snapshot": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/predator_prey-tuning.json",
+      "beta": [
+        0.1,
+        0.9000000000000001,
+        0.0
+      ]
+    },
+    "sir_d18": {
+      "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-matched-comparison-20261008-01/sir_d18-tuning/tuning.json",
+      "sha256": "cdd7fd26ccfc2117a83acf6f948d36c176d9d175e029c03562decf13b1cbc996",
+      "snapshot": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/frozen/sir_d18-tuning.json",
+      "beta": [
+        0.1,
+        0.04913405758312983,
+        0.8508659424168701
+      ]
+    }
+  },
+  "data": [
+    {
+      "model": "lgssm",
+      "data_seed": 26100831,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/lgssm-d26100831",
+      "sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+      "observation_sha256": "fe6970ebbadb51570283d194a269878680853d32fd5bf21a2b7ac2c940053b48",
+      "target_id": "sqmc_lgssm_p44_d3_predict_first_v2"
+    },
+    {
+      "model": "lgssm",
+      "data_seed": 26100832,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/lgssm-d26100832",
+      "sha256": "b8b1a6ad5e344d31297d3333f36b443a2f06147d14be30eb0249b3916cd15c1e",
+      "observation_sha256": "74be7a94287450befa27fe2cf75d07eb94f8fbff8cab69541e2f0f1dd889fef8",
+      "target_id": "sqmc_lgssm_p44_d3_predict_first_v2"
+    },
+    {
+      "model": "ksc",
+      "data_seed": 26100831,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/ksc-d26100831",
+      "sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+      "observation_sha256": "9cae9eaad1039b6f787973ed0aa99e673a02fd1dccbe9310020d80d954c833c7",
+      "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1"
+    },
+    {
+      "model": "ksc",
+      "data_seed": 26100832,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/ksc-d26100832",
+      "sha256": "bf3b416d1b9499d5542a26c410a9439dbc2d4578f1506020a2a6044acded3343",
+      "observation_sha256": "71c33042332cde1d59ce5f198cb558146de60e0874e414038304b6d427b10d10",
+      "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1"
+    },
+    {
+      "model": "predator_prey",
+      "data_seed": 26100831,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/predator_prey-d26100831",
+      "sha256": "5798daf584595804a87dbfc620a49fc1c992289724b2b240b7431971e4eabb37",
+      "observation_sha256": "bdc9584d58f5f42a6302f775332d899390439c8fa4789cebda0a62eb6b251073",
+      "target_id": "canonical_predator_prey_x0_then_transition_observe_v1"
+    },
+    {
+      "model": "predator_prey",
+      "data_seed": 26100832,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/predator_prey-d26100832",
+      "sha256": "ce1ab3ee1b0daecda8483e5ad9783c5eda222771a179709dc3308578113f2706",
+      "observation_sha256": "5c7a8d9cbf90a08200ff771798105bc7fd38019c8f5f58dabc5851b1aa4a486b",
+      "target_id": "canonical_predator_prey_x0_then_transition_observe_v1"
+    },
+    {
+      "model": "sir_d18",
+      "data_seed": 26100831,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831",
+      "sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+      "observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    },
+    {
+      "model": "sir_d18",
+      "data_seed": 26100832,
+      "path": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100832",
+      "sha256": "f6cb97aecc77bc03434cf8b719ba7de7648030dfc121deae1489cd8f94084ed7",
+      "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    }
+  ],
+  "wall_seconds": 5.511369378073141
+}

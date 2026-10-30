@@ -1,0 +1,36 @@
+...............................F.........F....................           [100%]
+=================================== FAILURES ===================================
+________________ test_extended_maximum_requires_explicit_resume ________________
+
+    def test_extended_maximum_requires_explicit_resume():
+        original = tuning_config("resume-policy-test")
+>       with pytest.raises(ValueError):
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_hmc_tensorflow_resume.py:20: Failed
+________________ test_combined_post_warmup_maximum[2250-10000] _________________
+
+verification = 2250, retained = 10000
+
+    @pytest.mark.parametrize("verification,retained", [(2250,10000),(10000,10000),(15000,5000),(19000,1000),(20000,0)])
+    def test_combined_post_warmup_maximum(verification, retained):
+        from bayesfilter.inference.surrogate_hmc_resume_program import retained_capacity
+>       assert retained_capacity(verification) == retained
+E       assert 17750 == 10000
+E        +  where 17750 = <function retained_capacity at 0x745eac3263e0>(2250)
+
+tests/test_hmc_tensorflow_resume.py:160: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_hmc_tensorflow_resume.py::test_extended_maximum_requires_explicit_resume
+FAILED tests/test_hmc_tensorflow_resume.py::test_combined_post_warmup_maximum[2250-10000]
+2 failed, 60 passed, 2 warnings in 30.38s

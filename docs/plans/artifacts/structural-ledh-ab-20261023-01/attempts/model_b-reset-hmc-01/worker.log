@@ -1,0 +1,53 @@
+2026-10-24 14:22:30.337409: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792822950.348956 1200261 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792822950.351940 1200261 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792822950.360333 1200261 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792822950.360381 1200261 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792822950.360383 1200261 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792822950.360384 1200261 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792822952.551908 1200261 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792822953.155035 1200261 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792822953.241412 1200261 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792822963.419669 1200261 service.cc:152] XLA service 0x8680abc0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792822963.419718 1200261 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792822983.615839 1200261 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-24 14:24:40.381357: E external/local_xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %reduce.15476 = f32[4,4032]{1,0} reduce(f32[1,4,4032]{2,1,0} %broadcast.266898, f32[] %constant.176216), dimensions={0}, to_apply=%while_Min_6-reduction.234223, metadata={op_type="Min" op_name="while/Min_6" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-24 14:24:40.389310: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2.463310107s
+Constant folding an instruction is taking > 1s:
+
+  %reduce.15476 = f32[4,4032]{1,0} reduce(f32[1,4,4032]{2,1,0} %broadcast.266898, f32[] %constant.176216), dimensions={0}, to_apply=%while_Min_6-reduction.234223, metadata={op_type="Min" op_name="while/Min_6" source_file="/home/chakwong/anaconda3/envs/tf-gpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1200}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-24 14:32:07.908246: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_47170__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1097479] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-24 15:18:26.306345: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 48m20.588880953s
+
+********************************
+[Compiling module a_inference_run_47170__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.1097479] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792826306.313156 1200261 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+HMC sequential {'warmup': 250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1000, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 0} RUNNING {'bulk': [1.0032157839800626, 1.0025594424301347, 1.0048478207302871, 1.004091943299532, 1.0028134546640641, 1.007062335348093, 1.004091943299532, 1.0028134546640641, 1.007062335348093], 'folded': [1.0020767999493552, 1.0019145725058796, 1.0008991434310672, 1.0016954369117657, 1.0020006352741204, 1.0015211965312927, 1.0002124881465089, 1.0010095731471476, 1.001889873998392], 'maximum': [1.0032157839800626, 1.0025594424301347, 1.0048478207302871, 1.004091943299532, 1.0028134546640641, 1.007062335348093, 1.004091943299532, 1.0028134546640641, 1.007062335348093]}
+HMC sequential {'warmup': 2000, 'verification': 250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1000} VERIFIED {'bulk': [1.0029419704786398, 1.002934128849624, 1.0022363045953642, 1.0030101439718346, 1.0028494483488861, 0.9998403680664975, 1.0030101439718346, 1.0028494483488861, 0.9998403680664975], 'folded': [1.0032023149602514, 1.001896227515469, 1.0057032481835468, 1.0038582895582826, 1.002088559024571, 1.0026488814456107, 1.0020794240442614, 1.0011618180401212, 1.0026028074247277], 'maximum': [1.0032023149602514, 1.002934128849624, 1.0057032481835468, 1.0038582895582826, 1.0028494483488861, 1.0026488814456107, 1.0030101439718346, 1.0028494483488861, 1.0026028074247277]}
+I0000 00:00:1792836830.388660 1200261 service.cc:152] XLA service 0x79921b757c00 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792836830.388747 1200261 service.cc:160]   StreamExecutor device (0): Host, Default Version

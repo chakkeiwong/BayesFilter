@@ -18,6 +18,7 @@ historical records. Reader-facing links should point to the official source or
 
 - Pruned second-order direct-factor SRUKF: `docs/reference/pruned-direct-factor-srukf.md` and the square-root sigma-point guide chapter.
 - HMC interfaces and candidate-set validation: `docs/chapters/ch21b_hmc_tuning_interfaces.tex`
+- HMC chain batches, process/core budgets and machine benchmarks: [execution reference](docs/reference/hmc-chain-execution.md)
 - NeuTra and fixed-transport restart selection: `docs/chapters/ch26b_neutra_transport_hmc.tex`
 - Runnable candidate-selection example: `docs/examples/fixed_transport_candidate_selection.py`
 

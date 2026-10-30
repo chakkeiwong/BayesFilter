@@ -20,9 +20,10 @@ sys.path.insert(0, os.path.join(ROOT, "docs", "benchmarks"))
 import numpy as np, tensorflow as tf
 from run_n4_step_localization_20260819 import case_with_steps
 from run_adapted_engine_validation_20260820 import kalman_hint_factory
+from bayesfilter.highdim.gaussian_moment_hints_tf import prepare_lgssm_moment_hints
 from bayesfilter.highdim.squared_tt_engine_v0_tf import EngineConfig
 from bayesfilter.highdim.squared_tt_engine_adapted_tf import (
-    run_value_filter_branch_axis_adapted,
+    run_value_filter_branch_axis_adapted_reference as run_value_filter_branch_axis_adapted,
 )
 from bayesfilter.highdim.squared_tt_engine_adapted_xla_tf import (
     run_value_filter_branch_axis_adapted_xla,
@@ -32,7 +33,7 @@ if __name__ == "__main__":
     HORIZON = 8
     # parity gate: n=2, r=6
     n = 2
-    adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
+    adapter, ys, kalman_steps, model = case_with_steps(n, 42 + n, include_model=True)
     config = EngineConfig(basis_degree=12, rank=6, row_count=8192, sweeps=3,
         ridge=1e-10, tau=1e-6, coordinate_half_width=3.0, seed=91026,
         row_design="sobol")
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     v_e, _de = run_value_filter_branch_axis_adapted(
         adapter, ys, config, predictive_moment_hint=hint_e)
     we = time.time() - t0
-    hint_x, obs0_x = kalman_hint_factory(n, 42 + n); obs0_x(ys[0].numpy())
+    _, hint_x = prepare_lgssm_moment_hints(ys, *model).callbacks()
     t0 = time.time()
     v_x, _dx = run_value_filter_branch_axis_adapted_xla(
         adapter, ys, config, predictive_moment_hint=hint_x)
@@ -53,11 +54,11 @@ if __name__ == "__main__":
 
     # wall check: n=4, r=8 under XLA
     n = 4
-    adapter, ys, kalman_steps = case_with_steps(n, 42 + n)
+    adapter, ys, kalman_steps, model = case_with_steps(n, 42 + n, include_model=True)
     config = EngineConfig(basis_degree=12, rank=8, row_count=8192, sweeps=3,
         ridge=1e-10, tau=1e-6, coordinate_half_width=3.0, seed=91048,
         row_design="sobol")
-    hint, obs0 = kalman_hint_factory(n, 42 + n); obs0(ys[0].numpy())
+    _, hint = prepare_lgssm_moment_hints(ys, *model).callbacks()
     t0 = time.time()
     v4, d4 = run_value_filter_branch_axis_adapted_xla(
         adapter, ys, config, predictive_moment_hint=hint)

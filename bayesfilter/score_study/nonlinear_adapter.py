@@ -23,6 +23,7 @@ def evaluate_nonlinear(row,context):
     runtime=configure_runtime(device=settings["device"],tf32=settings["tf32"],jit_compile=settings["jit_compile"])
     import tensorflow as tf
     from .nonlinear_tf import make_data_kernel,make_grid_reference,make_ledh_kernel,make_moment_filter,make_particle_filter
+    from .input_execution_tf import make_score_inputs
     dtype=tf.as_dtype(settings["dtype"]);N,T=settings["particles"],settings["horizon"]
     theta=tf.constant(settings["theta"],dtype)
     def seed(stream,replicate=None,group=None):
@@ -59,19 +60,27 @@ def evaluate_nonlinear(row,context):
     with tf.device("/GPU:0" if settings["device"]=="GPU" else "/CPU:0"):
         obs=tf.cast(observations64,dtype)
         diagnostics["executed_observation_digest"]=digest(obs.numpy().tolist())
-        initial=tf.random.stateless_normal([N,1],seed("initial"),dtype=dtype)
-        process=tf.random.stateless_normal([T,N,1],seed("process"),dtype=dtype)
-        uniforms=tf.random.stateless_uniform([T,N],seed("resampling"),dtype=dtype)
-        design=tf.random.stateless_normal([N,1],seed("reset_design"),dtype=dtype)
+        if proposal in ("iapf","kdm_covariance"):
+            initial=tf.random.stateless_normal([N,1],seed("initial"),dtype=dtype)
+            process=tf.random.stateless_normal([T,N,1],seed("process"),dtype=dtype)
+            uniforms=tf.random.stateless_uniform([T,N],seed("resampling"),dtype=dtype)
+            design=tf.random.stateless_normal([N,1],seed("reset_design"),dtype=dtype)
+        else:
+            input_kernel=make_score_inputs(1,N,T,settings["dtype"],settings["jit_compile"])
+            initial,process,uniforms,design=input_kernel(tf.constant(
+                [seed("initial"),seed("process"),seed("resampling"),seed("reset_design")],tf.int32))
         started=time.monotonic();calls=1
         if proposal=="grid_reference":
             # A reference row stays on the CPU reference backend and declares it.
             value,score=oracle[:2];kernel=grid
         elif proposal in ("ekf","ukf"):
-            kernel=make_moment_filter(T,c,b,proposal,settings["dtype"],settings["jit_compile"])
-            outputs=[kernel(theta,direction,obs) for direction in tf.unstack(tf.eye(6,dtype=dtype))]
-            value=outputs[0][0];score=tf.stack([x[1] for x in outputs]);calls=6
-            diagnostics["minimum_covariance"]=min(float(x[2].numpy()) for x in outputs)
+            kernel=make_moment_filter(T,c,b,proposal,settings["dtype"],settings["jit_compile"],all_directions=True)
+            assembled=kernel(theta,tf.eye(6,dtype=dtype),obs)
+            tf.debugging.assert_equal(assembled["valid"],True,message="nonlinear score validity veto")
+            tf.debugging.assert_equal(assembled["value_invariant"],True,message="directional value invariance veto")
+            value,score=assembled["value"],assembled["score"]
+            diagnostics["minimum_covariance"]=float(tf.reduce_min(assembled["outputs"][2]).numpy())
+            diagnostics["direction_execution"]="enclosing_tensorflow_loop"
         elif proposal in ("bootstrap","prior_sis","local_linear"):
             kernel=make_particle_filter(N,T,c,b,proposal=="local_linear",proposal!="prior_sis",settings["dtype"],settings["jit_compile"])
             value,score,ess=kernel(theta,obs,initial,process,uniforms)
@@ -91,18 +100,19 @@ def evaluate_nonlinear(row,context):
             control={"ledh":1.,"sgqf":row.get("sgqf_level",2),"kdm_covariance":row.get("within_fraction",.5)}[proposal]
             collect_diagnostics=row.get("collect_control_diagnostics",False)
             kernel=make_ledh_kernel(N,T,tuple(sorted(controls.items())),c,b,proposal,control,settings["dtype"],settings["jit_compile"],
-                                   return_diagnostics=collect_diagnostics)
-            outputs=[kernel(theta,direction,obs,initial,process,design) for direction in tf.unstack(tf.eye(6,dtype=dtype))]
-            values=tf.stack([x[0] for x in outputs]);value=values[0];score=tf.stack([x[1] for x in outputs]);calls=6
-            tf.debugging.assert_near(values,tf.fill([6],value))
+                                   return_diagnostics=collect_diagnostics,all_directions=True)
+            assembled=kernel(theta,tf.eye(6,dtype=dtype),obs,initial,process,design)
             if collect_diagnostics:
                 from .control_diagnostics_tf import materialize_control_diagnostics
-                diagnostics["control_diagnostics"]=materialize_control_diagnostics(outputs[0][2])
+                diagnostics["control_diagnostics"]=materialize_control_diagnostics(assembled["first_auxiliary"][0])
+            tf.debugging.assert_equal(assembled["valid"],True,message="nonlinear score validity veto")
+            tf.debugging.assert_equal(assembled["value_invariant"],True,message="directional value invariance veto")
+            value,score=assembled["value"],assembled["score"]
             diagnostics.update(controls=controls,reset_contract_id="contract_e_chol_v1",
                 chunk_policy="dpf_transport_exact_divisor_cap3000_v1",chunk_size=N,
                 derivative_semantics="analytical_total_initial_law_flow_genut_contract_e",
                 score_consumer="nonlinear model -> shared LEDH executor with "+proposal,
-                candidate_configuration=candidate_configuration(row))
+                candidate_configuration=candidate_configuration(row),direction_execution="enclosing_tensorflow_loop")
         tf.debugging.assert_all_finite(value,"nonlinear value");tf.debugging.assert_all_finite(score,"nonlinear score")
         if value.shape!=() or score.shape!=(6,):raise ValueError("nonlinear output shape veto")
         value_number,score_numbers=float(value.numpy()),score.numpy().tolist()

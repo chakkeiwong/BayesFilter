@@ -1,0 +1,61 @@
+{
+  "chart": "phi=-.95+1.9*sigmoid(z), Jacobian once",
+  "chunk_extent": 1024,
+  "comparisons": {
+    "B_vs_R": "NOT_RUN",
+    "C_vs_D": "NOT_RUN",
+    "C_vs_R": "NOT_RUN",
+    "D_vs_R": "NOT_RUN"
+  },
+  "continuation_vetoes": [
+    "wrong target",
+    "nonfinite accepted state",
+    "cross-chain coupling",
+    "nondeterministic field",
+    "mutating endpoint",
+    "invalid status"
+  ],
+  "controls_status": "warm_start_hypothesis_not_selected_or_admitted",
+  "data_partition": "diagnostic",
+  "data_replicate": 0,
+  "endpoint": "same-law FP64 Kalman posterior",
+  "explanatory_only": [
+    "force discrepancy",
+    "filter discrepancy",
+    "acceptance",
+    "runtime"
+  ],
+  "family": "M01",
+  "force": "full canonical analytical DCTR; frozen proposal field, not admitted exact score",
+  "horizon": 10,
+  "id": "M01-LG1-T10-N1024-attempt4",
+  "inference_attempt": 4,
+  "law": "x0~N(0,1/(1-phi^2)); xt=phi*xprev+N(0,1); yt=xt+N(0,.5)",
+  "mechanics_only": false,
+  "nonclaims": [
+    "posterior recovery",
+    "convergence",
+    "DCTR likelihood accuracy",
+    "default readiness"
+  ],
+  "parameter_dimension": 1,
+  "parameters": [
+    "phi"
+  ],
+  "particle_count": 1024,
+  "precision": {
+    "device": "GPU",
+    "endpoint": "float64",
+    "force": "float32",
+    "force_tf32": true,
+    "integrator": "float64",
+    "jit_compile": true,
+    "momentum": "float64",
+    "reference": "float64"
+  },
+  "precision_classification": "FP64_INTEGRATOR_FP32_DCTR",
+  "prior": "Uniform(-.95,.95)",
+  "stage": "P2-finite-reference",
+  "state_dimension": 1,
+  "truth": 0.8
+}

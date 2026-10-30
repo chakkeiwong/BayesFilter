@@ -1,0 +1,78 @@
+{
+  "status": "FAIL",
+  "scope": "AUTHOR_SOURCE_PORT_LOCALIZATION",
+  "replication": "INCOMPLETE",
+  "scientific_verdict": "NOT_CHECKED",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "jit_compile": true,
+  "tf32": false,
+  "dtype": "float64",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "checks": [
+    {
+      "name": "six_cases",
+      "passed": true
+    },
+    {
+      "name": "sixteen_refinements",
+      "passed": true
+    },
+    {
+      "name": "source_replay_case0",
+      "passed": true
+    }
+  ],
+  "comparisons": [],
+  "fits": [],
+  "trace_counts": {},
+  "input_sha256": "80cddfd5e324914813d3f52d83c1b4cdb382dbe5b450df3d0da8e3229c6dc23f",
+  "implementation_sha256": "c5c7f59363ca35ac235a5f53cb1e4e5fb3fefa5ecdf46e5352a5b81e57cbc036",
+  "endpoints": [
+    "MultivariateGaussianControlledSMC.regress -> _regress",
+    "MultivariateGaussianControlledSMC.cloud_weights -> _cloud_weights",
+    "MultivariateGaussianControlledSMC.fit -> _fit"
+  ],
+  "nonclaims": [
+    "complete replication",
+    "cause of attempt76 failure",
+    "solver superiority",
+    "common-random-draw forward parity",
+    "precision repair",
+    "default readiness"
+  ],
+  "exception": "InvalidArgumentError: Could not satisfy device specification '/job:localhost/replica:0/task:0/device:GPU:0'. enable_soft_placement=0. Supported device types [CPU]. All available devices [/job:localhost/replica:0/task:0/device:GPU:0, /job:localhost/replica:0/task:0/device:GPU:1, /job:localhost/replica:0/task:0/device:CPU:0]. [Op:DecodeRaw]",
+  "algorithm_seconds": 4.7032602520193905
+}

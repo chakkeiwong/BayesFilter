@@ -1,0 +1,35 @@
+{
+  "updated_utc": "2026-10-13T12:31:15.785314+00:00",
+  "cpu_only": true,
+  "cpu_choice": "CUDA_VISIBLE_DEVICES=-1; no framework import",
+  "pilot": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/final-scope-advance-01/lgssm/mechanics/lgssm/pilot.json",
+  "consumer": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/final-scope-advance-01/lgssm/consumer-cost/lgssm/consumer-cost.json",
+  "pilot_timing_audit": {
+    "status": "INITIAL_FORCE_INCLUDED_IN_SHORT_CHUNK",
+    "role": "explanatory_timing_only",
+    "steps_per_chain": 2,
+    "initial_force_evaluations_per_chunk": 1,
+    "leapfrog_steps_per_transition": 1,
+    "expected_force_evaluations_per_chunk": 3,
+    "measured_chunk_seconds": 121.33392467699014,
+    "measured_chunk_average_seconds": 60.66696233849507,
+    "raw_short_chunk_extrapolation_hours": 33.7038679658306,
+    "long_chain_rate_measured": false,
+    "warmup_lower_bound_established": false,
+    "interpretation": "The pilot initializes its retained force on every call. Dividing a two-step chunk by two includes half an extra force call per transition. Its 2000-step extrapolation is not a warmup lower bound; use the separately measured force/endpoint cost model with explicit limitations.",
+    "source": "sample_neural_force_hmc: one initial force plus one per L=1 transition"
+  },
+  "consumer_cost_model": {
+    "status": "DESCRIPTIVE_L1_COST_MODEL",
+    "role": "explanatory_timing_only",
+    "initial_force_seconds": 40.36842954857275,
+    "force_seconds_per_transition": 40.36842954857275,
+    "endpoint_seconds_per_transition": 0.08565274300053716,
+    "modeled_seconds_per_four_chain_transition": 40.454082291573286,
+    "modeled_2000_transition_hours_including_one_initial_force": 22.48570361463754,
+    "long_chain_rate_measured": false,
+    "warmup_lower_bound_established": false,
+    "limitations": "Fixed-position timings, few repeats, L=1 only; no adaptation, tuned trajectory length, changing-position costs or convergence claim."
+  },
+  "tests_returncode": 0
+}

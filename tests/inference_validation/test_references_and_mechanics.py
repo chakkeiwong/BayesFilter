@@ -8,9 +8,20 @@ from bayesfilter.testing.inference_validation.references import analytic
 from bayesfilter.testing.inference_validation.targets import ValidationTarget
 
 
-@pytest.mark.parametrize("target", [t for t, spec in TARGETS.items() if spec.available])
+@pytest.mark.parametrize("target", [t for t, spec in TARGETS.items()
+                                     if spec.available and spec.reference.kind != "reference_unavailable"])
 def test_every_target_density_score_against_independent_reference(design, tmp_path, target):
-    result = run(design(target=target), tmp_path)
+    options = None
+    if target.startswith("ssm_campaign_"):
+        from bayesfilter.testing.inference_validation.ssm_campaign_profiles import generate_data
+        options = {"data": generate_data(target, (20260926, 71))}
+    elif target.startswith("ssm_lgssm_"):
+        # These named profiles are actual filter targets and therefore require
+        # their frozen observation panel at the mechanics boundary.  The
+        # generic fixture does not invent data when a profile is selected.
+        from bayesfilter.testing.inference_validation.ssm_targets import get_ssm_profile
+        options = {"data": list(get_ssm_profile(target).default_observations)}
+    result = run(design(target=target, **({"options": options} if options is not None else {})), tmp_path)
     assert result["finding"] == "mechanics_passed", result
 
 

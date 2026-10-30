@@ -1,0 +1,64 @@
+{
+  "schema": "observation_parent_attempts_v1",
+  "budget_seconds": 7200,
+  "report_reserve_seconds": 300,
+  "attempts": [
+    {
+      "id": "initial_default_tests",
+      "status": "passed",
+      "test_seconds": 33.01
+    },
+    {
+      "id": "unsupported_model_fixture",
+      "status": "failed_then_repaired",
+      "test_seconds": 5.34,
+      "cause": "wrong KSC fixture constructor",
+      "repair": "use repository KSCSpec"
+    },
+    {
+      "id": "regression01",
+      "status": "failed_then_repaired",
+      "test_seconds": 110.19,
+      "cause": "fixture constructor and stopped-row parent-index diagnostic discrepancy",
+      "repair": "correct fixture and mask stopped rows only"
+    },
+    {
+      "id": "regression02",
+      "status": "passed",
+      "test_seconds": 108.5
+    },
+    {
+      "id": "original_parity",
+      "status": "passed",
+      "test_seconds": 18.77
+    },
+    {
+      "id": "guide_compatibility",
+      "status": "passed",
+      "test_seconds": 14.34
+    },
+    {
+      "id": "pilot01",
+      "status": "infrastructure_failure",
+      "cause": "memory policy helper ran after GPU initialization",
+      "repair": "configure immediately after TensorFlow import",
+      "wall_seconds_recorded": null,
+      "wall_seconds_budget_charge": 30
+    },
+    {
+      "id": "advisory_review",
+      "status": "unavailable",
+      "cause": "Claude login error",
+      "wall_seconds_recorded": null,
+      "wall_seconds_budget_charge": 30
+    },
+    {
+      "id": "compatibility_regression",
+      "status": "passed",
+      "test_seconds": 11.12,
+      "purpose": "original call-chain and guided pilot after explicit policy migration"
+    }
+  ],
+  "timing_note": "pytest durations are recorded; startup/review attempts lack persisted timer, each conservatively charged 30s; successful numerical run wall times come from manifests; reporting reserve also covers startup/reporting overhead",
+  "non_run_budget_charge_seconds": 361.2699999999999
+}

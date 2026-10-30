@@ -1,0 +1,70 @@
+# M13 public tuning and fresh verification — 2026-09-26
+
+This is the next stage of the master program for testing surrogate HMC. It uses
+the repository-issued M13 control selection, the public `tune_hmc_kernel`
+artifact authority, and `VerifiedTensorFlowHMCConfig`. The canonical analytical
+DCTR field remains a deterministic position-only proposal force; the independent
+FP64 full-support trajectory-importance endpoint remains the MH potential.
+The consumer never claims that the force is the endpoint gradient.
+
+The selected control artifact must come from the bounded fresh-partition repair
+or the original control pass after a common materiality pair has passed. Its
+scope, source hashes and evidence are rechecked before tuning. The pilot data
+are M13 data1704/T20 (d=4, y=2, two parameters, N=4096, chunk=2048), FP32/TF32
+GPU/XLA force, fixed Contract-E reset and full R2 prior support. Confirmation
+stream3701 remains untouched.
+
+Nomination uses mass windows128/256,256 adaptation transitions,128 screening
+transitions, L in{1,2,4} through `max_leapfrog_steps=4`, target acceptance .7,
+and prior-scale geometry only as a warm start. The initial normalized step .2,
+10% prior shrinkage and zero additive jitter are scoped hypotheses. The positive
+prior term gives C=.9E+.1P0 >= .1P0 for PSD E; the actual regularizer is tested
+on healthy and rank-deficient metrics. Four dispersed prior-scale starts are
+used. Warmup500 is archived and excluded; fresh verification has1000 draws per
+chain and must pass finite-state/endpoint/energy/movement checks and R-hat <=1.01.
+A failed nomination or verification is a tuning repair trigger, not a posterior
+or research-direction rejection.
+
+The stage has a72,000 CPU-worker/62,000 GPU-second reservation from the approved
+continuation. It writes a fresh versioned output and re-loads the verified
+artifact before declaring `M13_PUBLIC_TUNING_VERIFIED`. That status qualifies
+only the frozen tuning handoff. It does not establish posterior correctness,
+ESS beyond the verification checks, speed, superiority, default readiness, or
+all-model validity. Retained chunks, MCSE-calibrated posterior comparison, and
+constructed cheap baselines remain required.
+
+| Decision | Criterion | Veto | Uncertainty | Next action | Not concluded |
+|---|---|---|---|---|---|
+| Freeze tuning | Public artifact reload passes all checks | Nonfinite state/endpoint/energy, no movement, R-hat, fallback, provenance | Short fresh verification | Retained posterior and baselines | Posterior correctness |
+
+Exact command is issued by the master after control selection:
+
+```
+/home/chakwong/anaconda3/envs/tftwogpu/bin/python scripts/run_surrogate_hmc_program.py --stage closure --closure-stages m13-public-tuning --output docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-public-tuning-01
+```
+
+Pre-run skeptical audit and local repair: the initial master attempt stopped
+before GPU use because the generic explicit watchdog ceiling was eight hours,
+less than the approved 62,000-second allocation. Its 18.105269 CPU seconds
+remain charged. The default watchdog remains four hours; explicitly supplied
+campaign ceilings may now reach 24 hours and still require both ledger
+reservations. The M13 worker is capped at 71,600 CPU seconds to leave room for
+review and orchestration within 72,000; no total allocation increased. Retry
+uses public-tuning-02. The control worker source reconciliation is recorded in
+its source-change-review.json and checked by the consumer.
+
+The audit verifies the separately bound endpoint/force, own-target geometry
+adaptation, honest scope and downstream nonclaims, fresh verification streams,
+and finite/energy/movement/R-hat checks. Inherited adaptation counts are bounded
+hypotheses: failure triggers the planned repair rather than posterior rejection.
+The first passing L is a nominated kernel, not an efficiency ranking. Complete
+source freezing applies throughout the worker run; future code is drafted in
+new files until this run ends.
+
+Attempt02 passed 36 review tests, reloaded the scoped selection, then failed
+before tuning at JSON serialization of the immutable target manifest. It cost
+22.674773 CPU / 5.25673802 GPU seconds. The manifest is now materialized as a
+plain dictionary only at the reporting boundary; a real MappingProxyType is
+used by the consumer regression. Retry03 also clips its watchdog to the
+remaining stage allocation, so previous GPU setup time cannot be hidden or
+accidentally prevent a valid bounded retry. No numerical path was changed.

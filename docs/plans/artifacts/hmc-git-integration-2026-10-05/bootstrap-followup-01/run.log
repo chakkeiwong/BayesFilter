@@ -1,0 +1,126 @@
+FF
+=================================== FAILURES ===================================
+_____________ test_both_q20_consumers_call_shared_repair[pricing] ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-1217/test_both_q20_consumers_call_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x74ddc1d9a2c0>
+consumer = 'pricing'
+
+    @pytest.mark.parametrize("consumer", ["pricing", "classical_tuning"])
+    def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
+        from bayesfilter.inference import hmc_preparation, q20_production_hmc, q20_master_stages
+        from tests.test_q20_production_repair import tiny_protocol, four_dimensional_bridge
+        class ReachedPreparation(Exception):
+            pass
+        def prepare(**kwargs):
+            assert kwargs["initialize_bootstrap"] is True
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            assert isinstance(kwargs["bootstrap_execution"], CheckpointedBootstrapRunner)
+            assert callable(kwargs["progress_callback"])
+            assert kwargs["initial_position"].shape == (4,)
+            raise ReachedPreparation
+        monkeypatch.setattr(hmc_preparation, "prepare_operational_windowed_mass_handoff", prepare)
+        with pytest.raises(ReachedPreparation):
+            if consumer == "pricing":
+>               q20_master_stages.price_preparation(tiny_protocol(), four_dimensional_bridge(),
+                    tmp_path / "pricing", beta=1., max_seconds=30.)
+
+tests/test_hmc_bootstrap_initialization.py:183: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_master_stages.py:253: in price_preparation
+    execution = CheckpointedBootstrapRunner(root / "bootstrap-checkpoints", sources=source_snapshot(),
+                                                                                    ^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_production_training.py:28: in source_snapshot
+    return snapshot(Path(__file__).resolve().parents[2])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_campaign_runtime.py:42: in source_snapshot
+    return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+                                                     ^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/bayesfilter-hmc-v7-merge-20261005/docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/bayesfilter-hmc-v7-merge-20261005/docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py'
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+----------------------------- Captured stderr call -----------------------------
+2026-10-05 09:30:21.521065: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+_________ test_both_q20_consumers_call_shared_repair[classical_tuning] _________
+
+tmp_path = PosixPath('/tmp/pytest-of-ubuntu/pytest-1217/test_both_q20_consumers_call_s1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x74ddb61a08a0>
+consumer = 'classical_tuning'
+
+    @pytest.mark.parametrize("consumer", ["pricing", "classical_tuning"])
+    def test_both_q20_consumers_call_shared_repair(tmp_path, monkeypatch, consumer):
+        from bayesfilter.inference import hmc_preparation, q20_production_hmc, q20_master_stages
+        from tests.test_q20_production_repair import tiny_protocol, four_dimensional_bridge
+        class ReachedPreparation(Exception):
+            pass
+        def prepare(**kwargs):
+            assert kwargs["initialize_bootstrap"] is True
+            from bayesfilter.inference.hmc_bootstrap_checkpoint import CheckpointedBootstrapRunner
+            assert isinstance(kwargs["bootstrap_execution"], CheckpointedBootstrapRunner)
+            assert callable(kwargs["progress_callback"])
+            assert kwargs["initial_position"].shape == (4,)
+            raise ReachedPreparation
+        monkeypatch.setattr(hmc_preparation, "prepare_operational_windowed_mass_handoff", prepare)
+        with pytest.raises(ReachedPreparation):
+            if consumer == "pricing":
+                q20_master_stages.price_preparation(tiny_protocol(), four_dimensional_bridge(),
+                    tmp_path / "pricing", beta=1., max_seconds=30.)
+            else:
+>               q20_production_hmc.tune_scope(tiny_protocol(), four_dimensional_bridge(),
+                    tmp_path / "tune", method="classical", initial_position=tf.zeros([4, 4], tf.float64))
+
+tests/test_hmc_bootstrap_initialization.py:186: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/q20_production_hmc.py:170: in tune_scope
+    sources = source_snapshot()
+              ^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_production_training.py:28: in source_snapshot
+    return snapshot(Path(__file__).resolve().parents[2])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/q20_campaign_runtime.py:42: in source_snapshot
+    return {str(p.relative_to(repo)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+                                                     ^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_abc.py:625: in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/bayesfilter-hmc-v7-merge-20261005/docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/tmp/bayesfilter-hmc-v7-merge-20261005/docs/benchmarks/diagnose_q20_hmc_status_reuse_2026_09_16.py'
+
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_hmc_bootstrap_initialization.py::test_both_q20_consumers_call_shared_repair[pricing]
+FAILED tests/test_hmc_bootstrap_initialization.py::test_both_q20_consumers_call_shared_repair[classical_tuning]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 2 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+2 failed, 381 warnings in 3.47s

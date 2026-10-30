@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import product
 from types import MappingProxyType
 from typing import Mapping
@@ -14,6 +14,13 @@ import tensorflow_probability as tfp
 from bayesfilter import StatePartition
 from bayesfilter.diagnostics import TFFilterDiagnostics, TFRegularizationDiagnostics
 from bayesfilter.highdim.models import StochasticVolatilitySSM
+from bayesfilter.highdim.sv_direct_sgqf_native_tf import direct_sgqf_program
+from bayesfilter.highdim.sv_panel_quadrature_native_tf import (
+    augmented_sgqf_program,
+    mixture_program,
+    raise_panel_sgqf_failure,
+    validate_cloud_mass,
+)
 from bayesfilter.linear.compiled_recurrence_tf import compiled_tensor_recurrence
 from bayesfilter.nonlinear.fixed_sgqf_derivatives_tf import (
     TFFixedSGQFDerivatives,
@@ -33,7 +40,6 @@ from bayesfilter.nonlinear.sigma_points_tf import (
     tf_svd_sigma_point_log_likelihood_with_rule,
     tf_unit_sigma_point_rule,
 )
-from bayesfilter.nonlinear.svd_cut_tf import tf_svd_cut4_filter
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
     TFStructuralFirstDerivatives,
     tf_principal_sqrt_ukf_score,
@@ -347,17 +353,12 @@ class KSCMixtureTransformedSVSSM:
         transformed_observation = tf.reshape(tf.convert_to_tensor(y_t, dtype=tf.float64), [1])
         parameters = self.physical_parameters(theta)
         loc_base = tf.math.log(tf.square(parameters["beta"])) + values[:, 0]
-        component_log_terms = []
-        for component in range(self.mixture.component_count):
-            component_log_terms.append(
-                tf.math.log(self.mixture.weights[component])
-                + _normal_log_prob(
-                    transformed_observation[0],
-                    loc_base + self.mixture.means[component],
-                    tf.sqrt(self.mixture.variances[component]),
-                )
-            )
-        return tf.reduce_logsumexp(tf.stack(component_log_terms, axis=0), axis=0)
+        component_log_terms = tf.math.log(self.mixture.weights[:, None]) + _normal_log_prob(
+            transformed_observation[0],
+            loc_base[None, :] + self.mixture.means[:, None],
+            tf.sqrt(self.mixture.variances[:, None]),
+        )
+        return tf.reduce_logsumexp(component_log_terms, axis=0)
 
     def observation_log_density_parameter_score(
         self,
@@ -371,25 +372,14 @@ class KSCMixtureTransformedSVSSM:
         transformed_observation = tf.reshape(tf.convert_to_tensor(y_t, dtype=tf.float64), [1])
         parameters = self.physical_parameters(theta)
         loc_base = tf.math.log(tf.square(parameters["beta"])) + values[:, 0]
-        component_log_terms = []
-        component_residual_terms = []
-        for component in range(self.mixture.component_count):
-            loc = loc_base + self.mixture.means[component]
-            residual = transformed_observation[0] - loc
-            variance = self.mixture.variances[component]
-            component_log_terms.append(
-                tf.math.log(self.mixture.weights[component])
-                + _normal_log_prob(
-                    transformed_observation[0],
-                    loc,
-                    tf.sqrt(variance),
-                )
-            )
-            component_residual_terms.append(residual / variance)
-        component_log_weights = tf.stack(component_log_terms, axis=0)
+        loc = loc_base[None, :] + self.mixture.means[:, None]
+        residual = transformed_observation[0] - loc
+        variance = self.mixture.variances[:, None]
+        component_log_weights = tf.math.log(self.mixture.weights[:, None]) + _normal_log_prob(
+            transformed_observation[0], loc, tf.sqrt(variance))
         normalized_weights = tf.nn.softmax(component_log_weights, axis=0)
         weighted_residual_precision = tf.reduce_sum(
-            normalized_weights * tf.stack(component_residual_terms, axis=0),
+            normalized_weights * residual / variance,
             axis=0,
         )
         beta_score = 2.0 * weighted_residual_precision
@@ -661,6 +651,7 @@ def exact_transformed_sv_independent_panel_fixed_sgqf_filter(
     sigma: float | tf.Tensor,
     sparse_level: int = 2,
     cloud: TFFixedSGQFCloud | None = None,
+    jit_compile: bool = True,
 ) -> ExactTransformedSVPanelFilterResult:
     """Independent-panel Fixed-SGQF filter for the exact transformed SV target.
 
@@ -685,65 +676,19 @@ def exact_transformed_sv_independent_panel_fixed_sgqf_filter(
 
     scalar_weights = tf.convert_to_tensor(cloud.weights, dtype=tf.float64)
     scalar_nodes = tf.reshape(tf.convert_to_tensor(cloud.points, dtype=tf.float64), [-1])
-    log_terms = []
-    mean_terms = []
-    variance_terms = []
-
-    for axis in range(dim):
-        model = ExactTransformedSVSSM(sigma=sigma_vector[axis])
-        theta = model.unconstrained_from_physical(gamma=gamma_vector[axis], beta=beta_vector[axis])
-        current_mean = tf.constant(0.0, dtype=tf.float64)
-        current_variance = tf.square(sigma_vector[axis]) / (1.0 - tf.square(gamma_vector[axis]))
-        axis_log_terms = []
-        axis_means = []
-        axis_variances = []
-        for time_index in range(int(z.shape[0])):
-            if time_index > 0:
-                current_mean = gamma_vector[axis] * current_mean
-                current_variance = tf.square(gamma_vector[axis]) * current_variance + tf.square(
-                    sigma_vector[axis]
-                )
-            predicted_points = current_mean + tf.sqrt(current_variance) * scalar_nodes
-            observation_log = model.observation_log_density(
-                theta,
-                predicted_points[:, tf.newaxis],
-                z[time_index, axis : axis + 1],
-                t=time_index,
-            )
-            log_normalizer = tf.reduce_logsumexp(
-                tf.math.log(scalar_weights) + observation_log
-            )
-            normalized_weights = tf.exp(
-                tf.math.log(scalar_weights) + observation_log - log_normalizer
-            )
-            filtered_mean = tf.reduce_sum(normalized_weights * predicted_points)
-            filtered_second = tf.reduce_sum(normalized_weights * tf.square(predicted_points))
-            filtered_variance = filtered_second - tf.square(filtered_mean)
-            current_mean = filtered_mean
-            current_variance = filtered_variance
-            axis_log_terms.append(log_normalizer)
-            axis_means.append(filtered_mean)
-            axis_variances.append(filtered_variance)
-        axis_log_terms_tensor = tf.stack(axis_log_terms)
-        log_terms.append(axis_log_terms_tensor)
-        mean_terms.append(tf.stack(axis_means))
-        variance_terms.append(tf.stack(axis_variances))
-
-    stacked_log_terms = tf.stack(log_terms, axis=0)
-    stacked_means = tf.transpose(tf.stack(mean_terms, axis=0))
-    stacked_variances = tf.transpose(tf.stack(variance_terms, axis=0))
-    covariance_path = tf.stack(
-        [tf.linalg.diag(stacked_variances[time_index]) for time_index in range(int(z.shape[0]))],
-        axis=0,
-    )
+    program = direct_sgqf_program(int(z.shape[0]), dim, int(cloud.point_count),
+                                 jit_compile=jit_compile)
+    stacked_log_terms, _, stacked_means, covariance_path = program(
+        z, gamma_vector, beta_vector, sigma_vector, scalar_nodes, scalar_weights)
     return ExactTransformedSVPanelFilterResult(
         log_likelihood=tf.reduce_sum(stacked_log_terms),
-        log_normalizers=tf.reduce_sum(stacked_log_terms, axis=0),
+        log_normalizers=tf.reduce_sum(stacked_log_terms, axis=1),
         mean_path=stacked_means,
         covariance_path=covariance_path,
         diagnostics=MappingProxyType(
             {
                 "backend": "fixed_sgqf_independent_panel_exact_transformed_sv",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "target": "factorized coordinatewise exact transformed SV",
                 "fixed_sgqf_sparse_level": int(cloud.sparse_level),
@@ -769,6 +714,7 @@ def exact_transformed_sv_independent_panel_fixed_sgqf_score(
     sigma: float | tf.Tensor,
     sparse_level: int = 2,
     cloud: TFFixedSGQFCloud | None = None,
+    jit_compile: bool = True,
 ) -> ActualTransformedSVPanelScoreResult:
     """Manual score for the Lane-A exact-transformed direct SGQF actual-SV value."""
 
@@ -788,125 +734,11 @@ def exact_transformed_sv_independent_panel_fixed_sgqf_score(
         raise ValueError("exact transformed SV SGQF score path requires a one-dimensional cloud")
 
     scalar_weights = tf.convert_to_tensor(cloud.weights, dtype=tf.float64)
-    scalar_log_weights = tf.math.log(scalar_weights)
     scalar_nodes = tf.reshape(tf.convert_to_tensor(cloud.points, dtype=tf.float64), [-1])
-    log_terms = []
-    score_terms = []
-    mean_terms = []
-    variance_terms = []
-    standard_normal_density = _STD_NORMAL.prob(_STD_NORMAL.quantile(gamma_vector))
-
-    for axis in range(dim):
-        gamma_axis = gamma_vector[axis]
-        beta_axis = beta_vector[axis]
-        sigma_axis = sigma_vector[axis]
-        log_beta_axis = tf.math.log(beta_axis)
-        d_gamma = standard_normal_density[axis]
-
-        current_mean = tf.constant(0.0, dtype=tf.float64)
-        current_variance = tf.square(sigma_axis) / (1.0 - tf.square(gamma_axis))
-        current_d_mean = tf.zeros([2], dtype=tf.float64)
-        current_d_variance = tf.stack(
-            [
-                2.0
-                * tf.square(sigma_axis)
-                * gamma_axis
-                * d_gamma
-                / tf.square(1.0 - tf.square(gamma_axis)),
-                tf.constant(0.0, dtype=tf.float64),
-            ]
-        )
-
-        axis_log_terms = []
-        axis_score_terms = []
-        axis_means = []
-        axis_variances = []
-        for time_index in range(int(z.shape[0])):
-            if time_index > 0:
-                predicted_mean = gamma_axis * current_mean
-                predicted_variance = tf.square(gamma_axis) * current_variance + tf.square(sigma_axis)
-                predicted_d_mean = tf.stack(
-                    [
-                        d_gamma * current_mean + gamma_axis * current_d_mean[0],
-                        gamma_axis * current_d_mean[1],
-                    ]
-                )
-                predicted_d_variance = tf.stack(
-                    [
-                        2.0 * gamma_axis * d_gamma * current_variance
-                        + tf.square(gamma_axis) * current_d_variance[0],
-                        tf.square(gamma_axis) * current_d_variance[1],
-                    ]
-                )
-            else:
-                predicted_mean = current_mean
-                predicted_variance = current_variance
-                predicted_d_mean = current_d_mean
-                predicted_d_variance = current_d_variance
-
-            predicted_scale = tf.sqrt(predicted_variance)
-            predicted_d_scale = 0.5 * predicted_d_variance / predicted_scale
-            predicted_points = predicted_mean + predicted_scale * scalar_nodes
-            d_predicted_points = predicted_d_mean[:, tf.newaxis] + predicted_d_scale[:, tf.newaxis] * scalar_nodes[
-                tf.newaxis, :
-            ]
-
-            residual = z[time_index, axis] - 2.0 * log_beta_axis - predicted_points
-            observation_log = exact_log_chi_square_log_density(residual)
-            log_normalizer = tf.reduce_logsumexp(scalar_log_weights + observation_log)
-            normalized_weights = tf.exp(scalar_log_weights + observation_log - log_normalizer)
-
-            d_residual = -d_predicted_points + tf.stack(
-                [
-                    tf.zeros_like(scalar_nodes),
-                    -2.0 * tf.ones_like(scalar_nodes),
-                ],
-                axis=0,
-            )
-            d_observation_log = 0.5 * (1.0 - tf.exp(residual))[tf.newaxis, :] * d_residual
-            d_log_normalizer = tf.reduce_sum(normalized_weights[tf.newaxis, :] * d_observation_log, axis=1)
-            centered_d_observation_log = d_observation_log - d_log_normalizer[:, tf.newaxis]
-
-            filtered_mean = tf.reduce_sum(normalized_weights * predicted_points)
-            filtered_second = tf.reduce_sum(normalized_weights * tf.square(predicted_points))
-            filtered_variance = filtered_second - tf.square(filtered_mean)
-            d_filtered_mean = tf.reduce_sum(
-                normalized_weights[tf.newaxis, :]
-                * (d_predicted_points + centered_d_observation_log * predicted_points[tf.newaxis, :]),
-                axis=1,
-            )
-            d_filtered_second = tf.reduce_sum(
-                normalized_weights[tf.newaxis, :]
-                * (
-                    2.0 * predicted_points[tf.newaxis, :] * d_predicted_points
-                    + centered_d_observation_log * tf.square(predicted_points)[tf.newaxis, :]
-                ),
-                axis=1,
-            )
-            d_filtered_variance = d_filtered_second - 2.0 * filtered_mean * d_filtered_mean
-
-            current_mean = filtered_mean
-            current_variance = filtered_variance
-            current_d_mean = d_filtered_mean
-            current_d_variance = d_filtered_variance
-            axis_log_terms.append(log_normalizer)
-            axis_score_terms.append(d_log_normalizer)
-            axis_means.append(filtered_mean)
-            axis_variances.append(filtered_variance)
-
-        log_terms.append(tf.stack(axis_log_terms))
-        score_terms.append(tf.reduce_sum(tf.stack(axis_score_terms), axis=0))
-        mean_terms.append(tf.stack(axis_means))
-        variance_terms.append(tf.stack(axis_variances))
-
-    stacked_log_terms = tf.stack(log_terms, axis=0)
-    score = tf.reshape(tf.stack(score_terms, axis=0), [-1])
-    stacked_means = tf.transpose(tf.stack(mean_terms, axis=0))
-    stacked_variances = tf.transpose(tf.stack(variance_terms, axis=0))
-    covariance_path = tf.stack(
-        [tf.linalg.diag(stacked_variances[time_index]) for time_index in range(int(z.shape[0]))],
-        axis=0,
-    )
+    program = direct_sgqf_program(int(z.shape[0]), dim, int(cloud.point_count),
+                                 with_score=True, jit_compile=jit_compile)
+    stacked_log_terms, score, stacked_means, covariance_path = program(
+        z, gamma_vector, beta_vector, sigma_vector, scalar_nodes, scalar_weights)
     return ActualTransformedSVPanelScoreResult(
         log_likelihood=tf.reduce_sum(stacked_log_terms),
         score=score,
@@ -917,6 +749,7 @@ def exact_transformed_sv_independent_panel_fixed_sgqf_score(
         diagnostics=MappingProxyType(
             {
                 "backend": "fixed_sgqf_independent_panel_exact_transformed_sv_score",
+                "jit_compile": bool(jit_compile),
                 "wrapper_score_contract": "manual_forward_sensitivity_direct_likelihood_reweighting",
                 "derivative_method": "manual_forward_sensitivity_closed_form_recurrence",
                 "parameterization": "theta=[probit_gamma, log_beta] per coordinate",
@@ -975,64 +808,25 @@ def actual_transformed_sv_independent_panel_augmented_noise_fixed_sgqf_filter(
         predictive_epsilon=1e-10,
         innovation_epsilon=1e-10,
     )
-    log_terms = []
-    mean_terms = []
-    variance_terms = []
-
-    for axis in range(dim):
-        current_mean = tf.constant(0.0, dtype=tf.float64)
-        current_variance = tf.square(sigma_vector[axis]) / (1.0 - tf.square(gamma_vector[axis]))
-        axis_log_terms = []
-        axis_means = []
-        axis_variances = []
-        for time_index in range(int(y.shape[0])):
-            model = _actual_transformed_sv_augmented_noise_fixed_sgqf_model(
-                current_mean=current_mean,
-                current_variance=current_variance,
-                gamma=gamma_vector[axis],
-                beta=beta_vector[axis],
-                sigma=sigma_vector[axis],
-                time_index=time_index,
-                observation_variance_floor=observation_variance_floor,
-            )
-            result = tf_fixed_sgqf_filter(
-                y[time_index : time_index + 1, axis : axis + 1],
-                model,
-                cloud=cloud,
-                branch_config=branch_config,
-                return_filtered=True,
-                jit_compile=jit_compile,
-            )
-            if result.failure is not None:
-                failure = result.failure
-                raise ValueError(
-                    "actual_transformed_sv_augmented_noise_fixed_sgqf_failure"
-                    f": stage={failure.stage}, time_index={failure.time_index}, reason={failure.reason}"
-                )
-            current_mean = result.filtered_means[0, 0]
-            current_variance = result.filtered_covariances[0, 0, 0]
-            axis_log_terms.append(result.log_likelihood)
-            axis_means.append(current_mean)
-            axis_variances.append(current_variance)
-        log_terms.append(tf.stack(axis_log_terms))
-        mean_terms.append(tf.stack(axis_means))
-        variance_terms.append(tf.stack(axis_variances))
-
-    stacked_log_terms = tf.stack(log_terms, axis=0)
-    stacked_means = tf.transpose(tf.stack(mean_terms, axis=0))
-    stacked_variances = tf.transpose(tf.stack(variance_terms, axis=0))
-    covariance_path = tf.stack(
-        [tf.linalg.diag(stacked_variances[time_index]) for time_index in range(int(y.shape[0]))],
-        axis=0,
+    label = "actual_transformed_sv_augmented_noise_fixed_sgqf_failure"
+    validate_cloud_mass(cloud, label)
+    program = augmented_sgqf_program(
+        int(y.shape[0]), dim, cloud.point_count, branch_config,
+        jit_compile=jit_compile,
     )
+    output = program(y, gamma_vector, beta_vector, sigma_vector,
+                     cloud.points, cloud.weights,
+                     tf.convert_to_tensor(observation_variance_floor, tf.float64))
+    raise_panel_sgqf_failure(output, label)
     return ActualTransformedSVPanelFilterResult(
-        log_likelihood=tf.reduce_sum(stacked_log_terms),
-        log_normalizers=tf.reduce_sum(stacked_log_terms, axis=0),
-        mean_path=stacked_means,
-        covariance_path=covariance_path,
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
         diagnostics=MappingProxyType(
             {
                 "backend": "fixed_sgqf_independent_panel_actual_transformed_sv_augmented_noise_gaussian_closure",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "target": "raw actual SV augmented-noise Gaussian-closure approximate likelihood",
                 "fixed_sgqf_sparse_level": int(cloud.sparse_level),
@@ -1257,6 +1051,7 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_filter(
     config,
     fixture_id: str = "p41.exact-transformed-sv.factorized-zhaocui-tt.v1",
     branch_seed_prefix: str = "p41-exact-transformed-sv-factorized-tt",
+    jit_compile: bool = True,
 ) -> ExactTransformedSVPanelResult:
     """Run scalar fixed-design TT lanes per coordinate for exact transformed SV.
 
@@ -1265,7 +1060,7 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_filter(
     """
 
     from bayesfilter.highdim.filtering import (
-        scalar_nonlinear_fixed_design_tt_value_path,
+        _scalar_retained_value_report,
     )
 
     z = exact_transformed_sv_observations(observations)
@@ -1274,29 +1069,30 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_filter(
     beta_vector = _as_panel_parameter(beta, dim, "beta")
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
+    output, scalar = _evaluate_retained_sv_panel(
+        z, gamma_vector, beta_vector, sigma_vector, config, jit_compile=jit_compile)
     results = []
-    log_terms = []
+    # Coordinate identities describe completed histories; no numerical filter
+    # or score calculation occurs in this reporting loop.
     for axis in range(dim):
         model = ExactTransformedSVSSM(sigma=sigma_vector[axis])
-        theta = model.unconstrained_from_physical(gamma=gamma_vector[axis], beta=beta_vector[axis])
-        result = scalar_nonlinear_fixed_design_tt_value_path(
-            model,
-            theta,
-            z[:, axis : axis + 1],
-            config,
+        result = _scalar_retained_value_report(
+            scalar, tf.nest.map_structure(lambda value, index=axis: value[index], output["coordinates"]),
+            model, output["theta"][axis], z[:, axis:axis+1], config,
             fixture_id=f"{fixture_id}.coord{axis}",
             branch_seed_prefix=f"{branch_seed_prefix}:coord{axis}",
+            jit_compile=jit_compile,
         )
         results.append(result)
-        log_terms.append(tf.stack([step.log_normalizer for step in result.steps]))
-    stacked_log_terms = tf.stack(log_terms, axis=0)
     return ExactTransformedSVPanelResult(
-        log_likelihood=tf.reduce_sum(stacked_log_terms),
-        log_normalizers=tf.reduce_sum(stacked_log_terms, axis=0),
+        log_likelihood=output["log_likelihood"],
+        log_normalizers=output["log_normalizers"],
         coordinate_results=tuple(results),
         diagnostics=MappingProxyType(
             {
                 "backend": "factorized_scalar_zhaocui_tt_exact_transformed_sv",
+                "jit_compile": bool(jit_compile),
+                "execution_role": "runtime" if jit_compile else "graph_reference_exception",
                 "panel_dim": dim,
                 "target": "factorized coordinatewise exact transformed SV",
                 "transform_offset": 0.0,
@@ -1322,12 +1118,9 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_score(
     derivative_config,
     fixture_id: str = "p41.exact-transformed-sv.factorized-zhaocui-tt-score.v1",
     branch_seed_prefix: str = "p41-exact-transformed-sv-factorized-tt-score",
+    jit_compile: bool = True,
 ) -> SVPanelMixtureScoreResult:
     """Analytical fixed-branch TT score for exact transformed SV independent panels."""
-
-    from bayesfilter.highdim.filtering import (
-        scalar_nonlinear_fixed_design_tt_score_path,
-    )
 
     z = exact_transformed_sv_observations(observations)
     dim = int(z.shape[1])
@@ -1335,38 +1128,11 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_score(
     beta_vector = _as_panel_parameter(beta, dim, "beta")
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
-    score_terms = []
-    log_terms = []
-    for axis in range(dim):
-        model = ExactTransformedSVSSM(sigma=sigma_vector[axis])
-        theta = model.unconstrained_from_physical(gamma=gamma_vector[axis], beta=beta_vector[axis])
-        local_config = derivative_config
-        if len(tuple(derivative_config.parameter_indices)) != int(theta.shape[0]):
-            local_config = type(derivative_config)(
-                parameter_indices=tuple(range(int(theta.shape[0]))),
-                finite_difference_h=derivative_config.finite_difference_h,
-                derivative_ridge_floor=derivative_config.derivative_ridge_floor,
-                solve_condition_number_veto=derivative_config.solve_condition_number_veto,
-                allow_parameter_dependent_coordinate_map=derivative_config.allow_parameter_dependent_coordinate_map,
-                allow_moving_basis=derivative_config.allow_moving_basis,
-                dtype=derivative_config.dtype,
-            )
-        result = scalar_nonlinear_fixed_design_tt_score_path(
-            model,
-            theta,
-            z[:, axis : axis + 1],
-            config,
-            local_config,
-            fixture_id=f"{fixture_id}.coord{axis}",
-            initial_target_id=f"{fixture_id}.coord{axis}.initial",
-            transition_target_id=f"{fixture_id}.coord{axis}.transition",
-            branch_seed_prefix=f"{branch_seed_prefix}:coord{axis}",
-        )
-        score_terms.append(result.score)
-        log_terms.append(result.log_likelihood)
+    output, _ = _evaluate_retained_sv_panel(z, gamma_vector, beta_vector, sigma_vector,
+        config, derivative_config=derivative_config, jit_compile=jit_compile)
     return SVPanelMixtureScoreResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        score=tf.reshape(tf.concat(score_terms, axis=0), [-1]),
+        log_likelihood=output["log_likelihood"],
+        score=output["score"],
         mean_path=None,
         covariance_path=None,
         d_mean_path=None,
@@ -1374,6 +1140,8 @@ def exact_transformed_sv_independent_panel_zhaocui_tt_score(
         diagnostics=MappingProxyType(
             {
                 "backend": "factorized_scalar_zhaocui_tt_exact_transformed_sv_score",
+                "jit_compile": bool(jit_compile),
+                "execution_role": "runtime" if jit_compile else "graph_reference_exception",
                 "panel_dim": dim,
                 "wrapper_score_contract": "analytic_fixed_branch_scalar_score_aggregation",
                 "target_derivative_backend": "model_parameter_score_methods_only",
@@ -1403,6 +1171,7 @@ def independent_panel_sv_mixture_zhaocui_tt_filter(
     transform_offset: float | tf.Tensor = 1e-8,
     fixture_id: str = "p47.ksc-mixture-sv.factorized-zhaocui-tt.v1",
     branch_seed_prefix: str = "p47-ksc-mixture-sv-factorized-tt",
+    jit_compile: bool = True,
 ) -> SVPanelMixtureFilterResult:
     """Run scalar fixed-design TT lanes per coordinate for the KSC mixture target.
 
@@ -1411,10 +1180,6 @@ def independent_panel_sv_mixture_zhaocui_tt_filter(
     not a coupled multivariate TT implementation, and not native generalized SV.
     """
 
-    from bayesfilter.highdim.filtering import (
-        scalar_nonlinear_fixed_design_tt_value_path,
-    )
-
     mixture = mixture or ksc_1998_log_chi_square_mixture()
     z = transformed_sv_panel_observations(observations, offset=transform_offset)
     dim = int(z.shape[1])
@@ -1422,54 +1187,24 @@ def independent_panel_sv_mixture_zhaocui_tt_filter(
     beta_vector = _as_panel_parameter(beta, dim, "beta")
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
-    results = []
-    log_terms = []
-    mean_terms = []
-    variance_terms = []
-    for axis in range(dim):
-        model = KSCMixtureTransformedSVSSM(
-            sigma=sigma_vector[axis],
-            mixture=mixture,
-            transform_offset=(
-                transform_offset
-                if tf.convert_to_tensor(transform_offset, dtype=tf.float64).shape.rank == 0
-                else tf.convert_to_tensor(transform_offset, dtype=tf.float64)[axis]
-            ),
-        )
-        theta = model.unconstrained_from_physical(gamma=gamma_vector[axis], beta=beta_vector[axis])
-        result = scalar_nonlinear_fixed_design_tt_value_path(
-            model,
-            theta,
-            z[:, axis : axis + 1],
-            config,
-            fixture_id=f"{fixture_id}.coord{axis}",
-            branch_seed_prefix=f"{branch_seed_prefix}:coord{axis}",
-        )
-        results.append(result)
-        log_terms.append(tf.stack([step.log_normalizer for step in result.steps]))
-        mean_terms.append(tf.concat([step.diagnostics["retained_mean"] for step in result.steps], axis=0))
-        variance_terms.append(tf.stack([step.diagnostics["retained_variance"] for step in result.steps]))
-    stacked_log_terms = tf.stack(log_terms, axis=0)
-    stacked_means = tf.transpose(tf.stack(mean_terms, axis=0))
-    stacked_variances = tf.transpose(tf.stack(variance_terms, axis=0))
-    covariance_path = tf.stack(
-        [tf.linalg.diag(stacked_variances[time_index]) for time_index in range(int(z.shape[0]))],
-        axis=0,
-    )
+    output, _ = _evaluate_retained_sv_panel(z, gamma_vector, beta_vector, sigma_vector,
+        config, mixture=mixture, jit_compile=jit_compile)
     return SVPanelMixtureFilterResult(
-        log_likelihood=tf.reduce_sum(stacked_log_terms),
-        log_normalizers=tf.reduce_sum(stacked_log_terms, axis=0),
-        mean_path=stacked_means,
-        covariance_path=covariance_path,
+        log_likelihood=output["log_likelihood"],
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
         component_weights=tf.zeros([int(z.shape[0]), 0], dtype=tf.float64),
         diagnostics=MappingProxyType(
             {
                 "backend": "factorized_scalar_zhaocui_tt_transformed_sv_gaussian_mixture",
+                "jit_compile": bool(jit_compile),
+                "execution_role": "runtime" if jit_compile else "graph_reference_exception",
                 "panel_dim": dim,
                 "target": "factorized coordinatewise transformed SV finite Gaussian mixture",
                 "transform_offset": _manifest_value(transform_offset),
                 "value_path": "scalar_nonlinear_fixed_design_tt_value_path_per_coordinate",
-                "coordinate_result_count": len(results),
+                "coordinate_result_count": dim,
                 "mixture": mixture.manifest_payload(),
                 "target_scope": "independent_product_transformed_sv_panel_tiny_fixture",
                 "m1_route_label": "documented-deviation fixed-design substitute",
@@ -1497,12 +1232,9 @@ def independent_panel_sv_mixture_zhaocui_tt_score(
     transform_offset: float | tf.Tensor = 1e-8,
     fixture_id: str = "p47.ksc-mixture-sv.factorized-zhaocui-tt-score.v1",
     branch_seed_prefix: str = "p47-ksc-mixture-sv-factorized-tt-score",
+    jit_compile: bool = True,
 ) -> SVPanelMixtureScoreResult:
     """Analytical fixed-branch TT score for the factorized KSC mixture target."""
-
-    from bayesfilter.highdim.filtering import (
-        scalar_nonlinear_fixed_design_tt_score_path,
-    )
 
     mixture = mixture or ksc_1998_log_chi_square_mixture()
     z = transformed_sv_panel_observations(observations, offset=transform_offset)
@@ -1511,46 +1243,11 @@ def independent_panel_sv_mixture_zhaocui_tt_score(
     beta_vector = _as_panel_parameter(beta, dim, "beta")
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
-    score_terms = []
-    log_terms = []
-    for axis in range(dim):
-        model = KSCMixtureTransformedSVSSM(
-            sigma=sigma_vector[axis],
-            mixture=mixture,
-            transform_offset=(
-                transform_offset
-                if tf.convert_to_tensor(transform_offset, dtype=tf.float64).shape.rank == 0
-                else tf.convert_to_tensor(transform_offset, dtype=tf.float64)[axis]
-            ),
-        )
-        theta = model.unconstrained_from_physical(gamma=gamma_vector[axis], beta=beta_vector[axis])
-        local_config = derivative_config
-        if len(tuple(derivative_config.parameter_indices)) != int(theta.shape[0]):
-            local_config = type(derivative_config)(
-                parameter_indices=tuple(range(int(theta.shape[0]))),
-                finite_difference_h=derivative_config.finite_difference_h,
-                derivative_ridge_floor=derivative_config.derivative_ridge_floor,
-                solve_condition_number_veto=derivative_config.solve_condition_number_veto,
-                allow_parameter_dependent_coordinate_map=derivative_config.allow_parameter_dependent_coordinate_map,
-                allow_moving_basis=derivative_config.allow_moving_basis,
-                dtype=derivative_config.dtype,
-            )
-        result = scalar_nonlinear_fixed_design_tt_score_path(
-            model,
-            theta,
-            z[:, axis : axis + 1],
-            config,
-            local_config,
-            fixture_id=f"{fixture_id}.coord{axis}",
-            initial_target_id=f"{fixture_id}.coord{axis}.initial",
-            transition_target_id=f"{fixture_id}.coord{axis}.transition",
-            branch_seed_prefix=f"{branch_seed_prefix}:coord{axis}",
-        )
-        score_terms.append(result.score)
-        log_terms.append(result.log_likelihood)
+    output, _ = _evaluate_retained_sv_panel(z, gamma_vector, beta_vector, sigma_vector,
+        config, mixture=mixture, derivative_config=derivative_config, jit_compile=jit_compile)
     return SVPanelMixtureScoreResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        score=tf.reshape(tf.concat(score_terms, axis=0), [-1]),
+        log_likelihood=output["log_likelihood"],
+        score=output["score"],
         mean_path=None,
         covariance_path=None,
         d_mean_path=None,
@@ -1558,6 +1255,8 @@ def independent_panel_sv_mixture_zhaocui_tt_score(
         diagnostics=MappingProxyType(
             {
                 "backend": "factorized_scalar_zhaocui_tt_transformed_sv_gaussian_mixture_score",
+                "jit_compile": bool(jit_compile),
+                "execution_role": "runtime" if jit_compile else "graph_reference_exception",
                 "panel_dim": dim,
                 "wrapper_score_contract": "analytic_fixed_branch_scalar_score_aggregation",
                 "target_derivative_backend": "model_parameter_score_methods_only",
@@ -1578,6 +1277,28 @@ def independent_panel_sv_mixture_zhaocui_tt_score(
             }
         ),
     )
+
+
+def _evaluate_retained_sv_panel(z, gamma, beta, sigma, config, *, mixture=None,
+                                derivative_config=None, jit_compile=True):
+    from bayesfilter.highdim.diagnostics import HighDimStatus
+    from bayesfilter.highdim.sv_panel_retained_native_tf import (
+        make_sv_panel_retained_program,
+        validate_panel_history,
+    )
+
+    if derivative_config is not None:
+        # Preserve the panel API's established local-column selection rule.
+        if len(derivative_config.parameter_indices) != 2:
+            derivative_config = replace(derivative_config, parameter_indices=(0, 1))
+        status = derivative_config.unsupported_status()
+        if status.status is not HighDimStatus.OK:
+            raise ValueError(status.status.value)
+    program, scalar = make_sv_panel_retained_program(config, z.shape, mixture=mixture,
+        derivative_config=derivative_config, jit_compile=jit_compile)
+    output = program(z, gamma, beta, sigma)
+    validate_panel_history(scalar, output["coordinates"]["history"])
+    return output, scalar
 
 
 def transformed_sv_observations(
@@ -1638,6 +1359,7 @@ def independent_panel_sv_mixture_kalman_filter(
     sigma: float | tf.Tensor,
     mixture: SVLogChiSquareGaussianMixture | None = None,
     transform_offset: float | tf.Tensor = 1e-8,
+    jit_compile: bool = True,
 ) -> SVPanelMixtureFilterResult:
     """Exact Kalman-mixture oracle for independent transformed-SV panels.
 
@@ -1653,61 +1375,19 @@ def independent_panel_sv_mixture_kalman_filter(
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
     component_tuples = _component_tuples(mixture.component_count, dim)
-    mean = tf.zeros([dim], dtype=tf.float64)
-    covariance = tf.linalg.diag(tf.square(sigma_vector) / (1.0 - tf.square(gamma_vector)))
-    log_terms = []
-    means = []
-    covariances = []
-    component_weights_by_time = []
-
-    for time_index in range(int(z.shape[0])):
-        if time_index > 0:
-            transition_matrix = tf.linalg.diag(gamma_vector)
-            mean = tf.linalg.matvec(transition_matrix, mean)
-            covariance = _symmetrize(
-                transition_matrix @ covariance @ tf.transpose(transition_matrix)
-                + tf.linalg.diag(tf.square(sigma_vector))
-            )
-        component_log_weights = []
-        component_means = []
-        component_covariances = []
-        for component_tuple in component_tuples:
-            component_index = tf.constant(component_tuple, dtype=tf.int32)
-            mixture_weight = tf.reduce_sum(tf.math.log(tf.gather(mixture.weights, component_index)))
-            observation_offset = tf.math.log(tf.square(beta_vector)) + tf.gather(
-                mixture.means,
-                component_index,
-            )
-            observation_covariance = tf.linalg.diag(tf.gather(mixture.variances, component_index))
-            log_increment, component_mean, component_covariance = _kalman_update_identity_observation(
-                mean,
-                covariance,
-                z[time_index],
-                observation_offset,
-                observation_covariance,
-            )
-            component_log_weights.append(mixture_weight + log_increment)
-            component_means.append(component_mean)
-            component_covariances.append(component_covariance)
-        log_normalizer, mean, covariance, normalized_weights = _collapse_gaussian_components(
-            component_log_weights,
-            component_means,
-            component_covariances,
-        )
-        log_terms.append(log_normalizer)
-        means.append(mean)
-        covariances.append(covariance)
-        component_weights_by_time.append(normalized_weights)
+    output = _evaluate_mixture_panel(z, gamma_vector, beta_vector, sigma_vector,
+        mixture, component_tuples, method="kalman", jit_compile=jit_compile)
 
     return SVPanelMixtureFilterResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        log_normalizers=tf.stack(log_terms),
-        mean_path=tf.stack(means),
-        covariance_path=tf.stack(covariances),
-        component_weights=tf.stack(component_weights_by_time),
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
+        component_weights=output["component_weights"],
         diagnostics=MappingProxyType(
             {
                 "backend": "kalman_independent_panel_transformed_sv_gaussian_mixture",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "component_tuple_count": len(component_tuples),
                 "component_tuples": tuple(component_tuples),
@@ -1734,6 +1414,7 @@ def independent_panel_sv_mixture_cut4_filter(
     mixture: SVLogChiSquareGaussianMixture | None = None,
     transform_offset: float | tf.Tensor = 1e-8,
     innovation_floor: float = 1e-12,
+    jit_compile: bool = True,
 ) -> SVPanelMixtureFilterResult:
     """Component-enumerated CUT4 filter for independent transformed-SV panels."""
 
@@ -1745,74 +1426,24 @@ def independent_panel_sv_mixture_cut4_filter(
     sigma_vector = _as_panel_parameter(sigma, dim, "sigma")
     _validate_panel_parameters(gamma_vector, beta_vector, sigma_vector)
     component_tuples = _component_tuples(mixture.component_count, dim)
-    mean = tf.zeros([dim], dtype=tf.float64)
-    covariance = tf.linalg.diag(tf.square(sigma_vector) / (1.0 - tf.square(gamma_vector)))
-    log_terms = []
-    means = []
-    covariances = []
-    component_weights_by_time = []
-    cut4_point_counts = []
-    cut4_augmented_dims = []
-    cut4_polynomial_degrees = []
-
-    for time_index in range(int(z.shape[0])):
-        component_log_weights = []
-        component_means = []
-        component_covariances = []
-        component_point_counts = []
-        for component_tuple in component_tuples:
-            component_index = tf.constant(component_tuple, dtype=tf.int32)
-            mixture_weight = tf.reduce_sum(tf.math.log(tf.gather(mixture.weights, component_index)))
-            structural = _panel_transformed_sv_component_structural_model(
-                current_mean=mean,
-                current_covariance=covariance,
-                gamma=gamma_vector,
-                beta=beta_vector,
-                sigma=sigma_vector,
-                mixture_means=tf.gather(mixture.means, component_index),
-                mixture_variances=tf.gather(mixture.variances, component_index),
-                time_index=time_index,
-            )
-            cut4 = tf_svd_cut4_filter(
-                z[time_index : time_index + 1],
-                structural,
-                innovation_floor=tf.constant(innovation_floor, dtype=tf.float64),
-                return_filtered=True,
-            )
-            component_log_weights.append(mixture_weight + cut4.log_likelihood)
-            component_means.append(cut4.filtered_means[0])
-            component_covariances.append(cut4.filtered_covariances[0])
-            point_count = int(cut4.diagnostics.extra["point_count"].numpy())
-            component_point_counts.append(point_count)
-            cut4_augmented_dims.append(int(cut4.diagnostics.extra["augmented_dim"].numpy()))
-            cut4_polynomial_degrees.append(int(cut4.diagnostics.extra["polynomial_degree"].numpy()))
-        log_normalizer, mean, covariance, normalized_weights = _collapse_gaussian_components(
-            component_log_weights,
-            component_means,
-            component_covariances,
-        )
-        log_terms.append(log_normalizer)
-        means.append(mean)
-        covariances.append(covariance)
-        component_weights_by_time.append(normalized_weights)
-        cut4_point_counts.append(tuple(component_point_counts))
+    output = _evaluate_mixture_panel(z, gamma_vector, beta_vector, sigma_vector,
+        mixture, component_tuples, method="cut4", innovation_floor=innovation_floor,
+        jit_compile=jit_compile)
 
     return SVPanelMixtureFilterResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        log_normalizers=tf.stack(log_terms),
-        mean_path=tf.stack(means),
-        covariance_path=tf.stack(covariances),
-        component_weights=tf.stack(component_weights_by_time),
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
+        component_weights=output["component_weights"],
         diagnostics=MappingProxyType(
             {
                 "backend": "cut4_independent_panel_transformed_sv_gaussian_mixture",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "component_tuple_count": len(component_tuples),
                 "component_tuples": tuple(component_tuples),
-                "cut4_point_counts": tuple(cut4_point_counts),
-                "max_cut4_point_count": max(max(row) for row in cut4_point_counts),
-                "cut4_augmented_dims": tuple(cut4_augmented_dims),
-                "cut4_polynomial_degrees": tuple(cut4_polynomial_degrees),
+                **_cut4_panel_diagnostics(int(z.shape[0]), dim, len(component_tuples)),
                 "transform_offset": _manifest_value(transform_offset),
                 "mixture": mixture.manifest_payload(),
                 "target_scope": "independent_product_transformed_sv_panel_tiny_fixture",
@@ -1839,6 +1470,7 @@ def independent_panel_sv_mixture_fixed_sgqf_filter(
     sparse_level: int = 2,
     cloud: TFFixedSGQFCloud | None = None,
     branch_config: TFFixedSGQFBranchConfig | None = None,
+    jit_compile: bool = True,
 ) -> SVPanelMixtureFilterResult:
     """Component-enumerated Fixed-SGQF filter for independent transformed-SV panels."""
 
@@ -1856,56 +1488,20 @@ def independent_panel_sv_mixture_fixed_sgqf_filter(
     )
     cloud = cloud or tf_fixed_sgqf_cloud(dim=dim, sparse_level=sparse_level)
     branch_identity = branch_config.branch_identity(cloud)
-    mean = tf.zeros([dim], dtype=tf.float64)
-    covariance = tf.linalg.diag(tf.square(sigma_vector) / (1.0 - tf.square(gamma_vector)))
-    log_terms = []
-    means = []
-    covariances = []
-    component_weights_by_time = []
-
-    for time_index in range(int(z.shape[0])):
-        component_log_weights = []
-        component_means = []
-        component_covariances = []
-        for component_tuple in component_tuples:
-            component_index = tf.constant(component_tuple, dtype=tf.int32)
-            mixture_weight = tf.reduce_sum(tf.math.log(tf.gather(mixture.weights, component_index)))
-            component_result = _fixed_sgqf_component_update(
-                observation=z[time_index],
-                current_mean=mean,
-                current_covariance=covariance,
-                gamma=gamma_vector,
-                beta=beta_vector,
-                sigma=sigma_vector,
-                mixture_means=tf.gather(mixture.means, component_index),
-                mixture_variances=tf.gather(mixture.variances, component_index),
-                time_index=time_index,
-                cloud=cloud,
-                branch_config=branch_config,
-                branch_identity=branch_identity,
-            )
-            component_log_weights.append(mixture_weight + component_result.log_likelihood)
-            component_means.append(component_result.filtered_means[0])
-            component_covariances.append(component_result.filtered_covariances[0])
-        log_normalizer, mean, covariance, normalized_weights = _collapse_gaussian_components(
-            component_log_weights,
-            component_means,
-            component_covariances,
-        )
-        log_terms.append(log_normalizer)
-        means.append(mean)
-        covariances.append(covariance)
-        component_weights_by_time.append(normalized_weights)
+    output = _evaluate_mixture_panel(z, gamma_vector, beta_vector, sigma_vector,
+        mixture, component_tuples, cloud=cloud, branch_config=branch_config,
+        jit_compile=jit_compile)
 
     return SVPanelMixtureFilterResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        log_normalizers=tf.stack(log_terms),
-        mean_path=tf.stack(means),
-        covariance_path=tf.stack(covariances),
-        component_weights=tf.stack(component_weights_by_time),
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
+        component_weights=output["component_weights"],
         diagnostics=MappingProxyType(
             {
                 "backend": "fixed_sgqf_independent_panel_transformed_sv_gaussian_mixture",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "component_tuple_count": len(component_tuples),
                 "component_tuples": tuple(component_tuples),
@@ -1938,6 +1534,7 @@ def independent_panel_sv_mixture_fixed_sgqf_score(
     sparse_level: int = 2,
     cloud: TFFixedSGQFCloud | None = None,
     branch_config: TFFixedSGQFBranchConfig | None = None,
+    jit_compile: bool = True,
 ) -> SVPanelMixtureScoreResult:
     """Component-enumerated analytical Fixed-SGQF score for transformed-SV panels."""
 
@@ -1955,81 +1552,21 @@ def independent_panel_sv_mixture_fixed_sgqf_score(
     cloud = cloud or tf_fixed_sgqf_cloud(dim=dim, sparse_level=sparse_level)
     branch_identity = branch_config.branch_identity(cloud)
     component_tuples = _component_tuples(mixture.component_count, dim)
-    parameter_dim = 2 * dim
-
-    mean = tf.zeros([dim], dtype=tf.float64)
-    covariance = tf.linalg.diag(tf.square(sigma_vector) / (1.0 - tf.square(gamma_vector)))
-    d_mean = tf.zeros([parameter_dim, dim], dtype=tf.float64)
-    d_covariance = _gamma_seed_covariance_derivatives(gamma_vector, sigma_vector)
-
-    log_terms = []
-    score_terms = []
-    means = []
-    covariances = []
-    d_means = []
-    d_covariances = []
-
-    for time_index in range(int(z.shape[0])):
-        component_log_weights = []
-        component_scores = []
-        component_means = []
-        component_covariances = []
-        component_d_means = []
-        component_d_covariances = []
-        for component_tuple in component_tuples:
-            component_index = tf.constant(component_tuple, dtype=tf.int32)
-            mixture_weight = tf.reduce_sum(tf.math.log(tf.gather(mixture.weights, component_index)))
-            component_result = _fixed_sgqf_component_score_update(
-                observation=z[time_index],
-                current_mean=mean,
-                current_covariance=covariance,
-                d_current_mean=d_mean,
-                d_current_covariance=d_covariance,
-                gamma=gamma_vector,
-                beta=beta_vector,
-                sigma=sigma_vector,
-                mixture_means=tf.gather(mixture.means, component_index),
-                mixture_variances=tf.gather(mixture.variances, component_index),
-                time_index=time_index,
-                cloud=cloud,
-                branch_config=branch_config,
-                branch_identity=branch_identity,
-            )
-            component_log_weights.append(mixture_weight + component_result.log_likelihood)
-            component_scores.append(component_result.score)
-            component_means.append(component_result.filtered_mean)
-            component_covariances.append(component_result.filtered_covariance)
-            component_d_means.append(component_result.d_filtered_mean)
-            component_d_covariances.append(component_result.d_filtered_covariance)
-
-        normalized_weights = tf.exp(tf.convert_to_tensor(component_log_weights, dtype=tf.float64) - tf.reduce_logsumexp(tf.convert_to_tensor(component_log_weights, dtype=tf.float64)))
-        log_normalizer = tf.reduce_logsumexp(tf.convert_to_tensor(component_log_weights, dtype=tf.float64))
-        score_increment = tf.reduce_sum(tf.convert_to_tensor(component_scores, dtype=tf.float64) * normalized_weights[:, tf.newaxis], axis=0)
-        mean, covariance, d_mean, d_covariance = _collapse_gaussian_components_with_derivatives(
-            normalized_weights=normalized_weights,
-            component_means=component_means,
-            component_covariances=component_covariances,
-            component_d_means=component_d_means,
-            component_d_covariances=component_d_covariances,
-            component_scores=component_scores,
-        )
-        log_terms.append(log_normalizer)
-        score_terms.append(score_increment)
-        means.append(mean)
-        covariances.append(covariance)
-        d_means.append(d_mean)
-        d_covariances.append(d_covariance)
+    output = _evaluate_mixture_panel(z, gamma_vector, beta_vector, sigma_vector,
+        mixture, component_tuples, cloud=cloud, branch_config=branch_config,
+        with_score=True, jit_compile=jit_compile)
 
     return SVPanelMixtureScoreResult(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        score=tf.reduce_sum(tf.stack(score_terms), axis=0),
-        mean_path=tf.stack(means),
-        covariance_path=tf.stack(covariances),
-        d_mean_path=tf.stack(d_means),
-        d_covariance_path=tf.stack(d_covariances),
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        score=output["score"],
+        mean_path=output["mean_path"],
+        covariance_path=output["covariance_path"],
+        d_mean_path=output["d_mean_path"],
+        d_covariance_path=output["d_covariance_path"],
         diagnostics=MappingProxyType(
             {
                 "backend": "fixed_sgqf_independent_panel_transformed_sv_gaussian_mixture_score",
+                "jit_compile": bool(jit_compile),
                 "panel_dim": dim,
                 "component_tuple_count": len(component_tuples),
                 "component_tuples": tuple(component_tuples),
@@ -2049,6 +1586,43 @@ def independent_panel_sv_mixture_fixed_sgqf_score(
             }
         ),
     )
+
+
+def _evaluate_mixture_panel(z, gamma, beta, sigma, mixture, component_tuples, *,
+                            method="sgqf", cloud=None, branch_config=None,
+                            with_score=False, scalar_collapse=False,
+                            innovation_floor=1e-12, jit_compile=True):
+    dates, width = map(int, z.shape)
+    label = "fixed_sgqf_component_score_failure" if with_score else "fixed_sgqf_component_failure"
+    if method == "sgqf":
+        if cloud.dim != width:
+            raise ValueError("cloud dimension must match model state dimension")
+        validate_cloud_mass(cloud, label)
+        nodes, weights = cloud.points, cloud.weights
+    else:
+        nodes, weights = tf.zeros([0, width], tf.float64), tf.zeros([0], tf.float64)
+    program = mixture_program(dates, width, mixture.component_count, int(nodes.shape[0]),
+        branch_config, method=method, with_score=with_score, scalar_collapse=scalar_collapse,
+        jit_compile=jit_compile)
+    output = program(z, gamma, beta, sigma, mixture.weights, mixture.means,
+        mixture.variances, tf.constant(component_tuples, tf.int32), nodes, weights,
+        tf.convert_to_tensor(innovation_floor, tf.float64))
+    if method == "sgqf":
+        raise_panel_sgqf_failure(output, label)
+    return output
+
+
+def _cut4_panel_diagnostics(dates, width, tuple_count):
+    """Serialize the immutable quadrature metadata shared by all components."""
+    from bayesfilter.nonlinear.cut_tf import tf_cut4g_sigma_point_rule
+
+    augmented_dim = max(3, 2 * width)
+    rule = tf_cut4g_sigma_point_rule(augmented_dim)
+    point_count = int(rule.offsets.shape[0])
+    return {"cut4_point_counts": ((point_count,) * tuple_count,) * dates,
+            "max_cut4_point_count": point_count,
+            "cut4_augmented_dims": (augmented_dim,) * (dates * tuple_count),
+            "cut4_polynomial_degrees": (rule.polynomial_degree,) * (dates * tuple_count)}
 
 
 def independent_panel_sv_mixture_ukf_filter(
@@ -2153,7 +1727,8 @@ def independent_panel_sv_mixture_ukf_score(
     )
 
 
-def _compiled_panel_mixture_ukf(z, gamma, beta, sigma, mixture, component_indices, *, with_score):
+def _compiled_panel_mixture_ukf(z, gamma, beta, sigma, mixture, component_indices, *, with_score,
+                               jit_compile=True):
     """XLA numerical closure of the tiny component-enumerated UKF comparator.
 
     Component mapping is a diagnostic comparator, not a NeuTra training target.
@@ -2182,6 +1757,7 @@ def _compiled_panel_mixture_ukf(z, gamma, beta, sigma, mixture, component_indice
                     gamma=gamma, beta=beta, sigma=sigma,
                     mixture_means=tf.gather(mixture.means, index),
                     mixture_variances=tf.gather(mixture.variances, index), time_index=t,
+                    jit_compile=jit_compile,
                 )
                 trace = result.trace[0]
                 return (mixture_weight + result.log_likelihood, result.score,
@@ -2195,6 +1771,7 @@ def _compiled_panel_mixture_ukf(z, gamma, beta, sigma, mixture, component_indice
             result = tf_svd_sigma_point_filter(
                 z[t][None], model, backend='tf_svd_ukf',
                 innovation_floor=tf.constant(1e-12, tf.float64), return_filtered=True,
+                jit_compile=jit_compile,
             )
             return (mixture_weight + result.log_likelihood, tf.zeros([parameter_dim], tf.float64),
                     result.filtered_means[0], result.filtered_covariances[0],
@@ -2215,7 +1792,8 @@ def _compiled_panel_mixture_ukf(z, gamma, beta, sigma, mixture, component_indice
                         for history, value in zip(histories, values, strict=True))
         return (t + 1, mean, covariance, d_mean, d_covariance, *updated)
 
-    result = compiled_tensor_recurrence(body, (mean, covariance, d_mean, d_covariance, *histories), dates)
+    result = compiled_tensor_recurrence(body, (mean, covariance, d_mean, d_covariance, *histories),
+                                       dates, jit_compile=jit_compile)
     return result[5:]
 
 
@@ -2269,6 +1847,10 @@ def _manifest_value(value: float | tf.Tensor) -> float | tuple[float, ...]:
 
 def _symmetrize(matrix: tf.Tensor) -> tf.Tensor:
     matrix = tf.convert_to_tensor(matrix, dtype=tf.float64)
+    # Avoid TF 2.19's nested-loop dead outputs when Grappler removes a scalar
+    # matrix transpose. Keep the same add-and-scale arithmetic.
+    if matrix.shape[-2:] == (1, 1):
+        return 0.5 * (matrix + matrix)
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
 
 
@@ -2720,15 +2302,10 @@ def _actual_transformed_sv_augmented_noise_ukf_structural_derivatives(
         if previous.shape.rank == 1:
             previous = previous[tf.newaxis, :]
         point_count = tf.shape(previous)[0]
-        if int(time_index) == 0:
-            matrix = tf.constant([[1.0, 0.0], [0.0, 0.0]], dtype=tf.float64)
-        else:
-            matrix = tf.stack(
-                [
-                    tf.stack([tf.reshape(tf.convert_to_tensor(gamma, dtype=tf.float64), []), tf.constant(0.0, dtype=tf.float64)]),
-                    tf.constant([0.0, 0.0], dtype=tf.float64),
-                ]
-            )
+        matrix = tf.linalg.diag(tf.stack([
+            tf.where(tf.equal(time_index, 0), tf.constant(1., tf.float64),
+                     tf.reshape(tf.convert_to_tensor(gamma, tf.float64), [])),
+            tf.constant(0., tf.float64)]))
         return tf.broadcast_to(matrix[tf.newaxis, :, :], [point_count, 2, 2])
 
     def transition_innovation_jacobian_fn(previous_state: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
@@ -2737,7 +2314,8 @@ def _actual_transformed_sv_augmented_noise_ukf_structural_derivatives(
         if previous.shape.rank == 1:
             previous = previous[tf.newaxis, :]
         point_count = tf.shape(previous)[0]
-        matrix = tf.constant([[0.0, 0.0], [0.0, 1.0]], dtype=tf.float64) if int(time_index) == 0 else tf.constant([[1.0, 0.0], [0.0, 1.0]], dtype=tf.float64)
+        matrix = tf.linalg.diag(tf.stack([
+            tf.cast(tf.not_equal(time_index, 0), tf.float64), tf.constant(1., tf.float64)]))
         return tf.broadcast_to(matrix[tf.newaxis, :, :], [point_count, 2, 2])
 
     def d_transition_fn(previous_state: tf.Tensor, innovation: tf.Tensor) -> tf.Tensor:
@@ -2745,10 +2323,8 @@ def _actual_transformed_sv_augmented_noise_ukf_structural_derivatives(
         previous = tf.convert_to_tensor(previous_state, dtype=tf.float64)
         if previous.shape.rank == 1:
             previous = previous[tf.newaxis, :]
-        derivative = tf.zeros([parameter_dim, tf.shape(previous)[0], 2], dtype=tf.float64)
-        if int(time_index) == 0:
-            return derivative
         gamma_derivative = _gamma_theta_derivative(tf.reshape(tf.convert_to_tensor(gamma, dtype=tf.float64), []))
+        gamma_derivative = tf.where(tf.equal(time_index, 0), tf.zeros_like(gamma_derivative), gamma_derivative)
         return tf.einsum("p,r,n->prn", tf.constant([1., 0.], tf.float64),
                          gamma_derivative * previous[:, 0], tf.constant([1., 0.], tf.float64))
 
@@ -2798,12 +2374,6 @@ def _actual_transformed_sv_augmented_noise_fixed_sgqf_derivatives(
     d_initial_mean = tf.convert_to_tensor(d_current_mean, dtype=tf.float64)
     d_initial_covariance = tf.convert_to_tensor(d_current_covariance, dtype=tf.float64)
     d_process_covariance = tf.zeros([parameter_dim, 2, 2], dtype=tf.float64)
-    if int(time_index) > 0:
-        d_process_covariance = tf.tensor_scatter_nd_update(
-            d_process_covariance,
-            indices=[[0, 0, 0], [1, 0, 0]],
-            updates=[tf.constant(0.0, dtype=tf.float64), tf.constant(0.0, dtype=tf.float64)],
-        )
     d_observation_covariance = tf.zeros([parameter_dim, 1, 1], dtype=tf.float64)
     del sigma, observation_variance_floor
 
@@ -2814,7 +2384,8 @@ def _actual_transformed_sv_augmented_noise_fixed_sgqf_derivatives(
         point_count = tf.shape(values)[0]
         first_row = tf.stack(
             [
-                tf.reshape(tf.convert_to_tensor(gamma if int(time_index) > 0 else 1.0, dtype=tf.float64), []),
+                tf.where(tf.equal(time_index, 0), tf.constant(1., tf.float64),
+                         tf.reshape(tf.convert_to_tensor(gamma, tf.float64), [])),
                 tf.constant(0.0, dtype=tf.float64),
             ]
         )
@@ -2826,15 +2397,10 @@ def _actual_transformed_sv_augmented_noise_fixed_sgqf_derivatives(
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
-        derivative = tf.zeros([parameter_dim, tf.shape(values)[0], 2], dtype=tf.float64)
-        if int(time_index) == 0:
-            return derivative
         gamma_derivative = _gamma_theta_derivative(tf.reshape(tf.convert_to_tensor(gamma, dtype=tf.float64), []))
-        return tf.tensor_scatter_nd_update(
-            derivative,
-            indices=[[0, row, 0] for row in range(int(values.shape[0]))],
-            updates=tf.reshape(gamma_derivative * values[:, 0], [-1]),
-        )
+        gamma_derivative = tf.where(tf.equal(time_index, 0), tf.zeros_like(gamma_derivative), gamma_derivative)
+        return tf.einsum("p,r,n->prn", tf.constant([1., 0.], tf.float64),
+                         gamma_derivative * values[:, 0], tf.constant([1., 0.], tf.float64))
 
     def observation_state_jacobian_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
@@ -2843,26 +2409,15 @@ def _actual_transformed_sv_augmented_noise_fixed_sgqf_derivatives(
         beta_scalar = tf.reshape(tf.convert_to_tensor(beta, dtype=tf.float64), [])
         jac_x = 0.5 * beta_scalar * tf.exp(0.5 * values[:, 0]) * values[:, 1]
         jac_eps = beta_scalar * tf.exp(0.5 * values[:, 0])
-        return tf.stack(
-            [
-                tf.stack([jac_x[row], jac_eps[row]], axis=0)
-                for row in range(int(values.shape[0]))
-            ],
-            axis=0,
-        )[:, tf.newaxis, :]
+        return tf.stack([jac_x, jac_eps], axis=-1)[:, tf.newaxis, :]
 
     def d_observation_fn(points: tf.Tensor) -> tf.Tensor:
         values = tf.convert_to_tensor(points, dtype=tf.float64)
         if values.shape.rank == 1:
             values = values[tf.newaxis, :]
         beta_scalar = tf.reshape(tf.convert_to_tensor(beta, dtype=tf.float64), [])
-        derivative = tf.zeros([parameter_dim, tf.shape(values)[0], 1], dtype=tf.float64)
         beta_component = beta_scalar * tf.exp(0.5 * values[:, 0]) * values[:, 1]
-        return tf.tensor_scatter_nd_update(
-            derivative,
-            indices=[[1, row, 0] for row in range(int(values.shape[0]))],
-            updates=tf.reshape(beta_component, [-1]),
-        )
+        return tf.constant([0., 1.], tf.float64)[:, None, None] * beta_component[None, :, None]
 
     return TFFixedSGQFDerivatives(
         d_initial_mean=d_initial_mean,
@@ -2900,24 +2455,14 @@ def _actual_transformed_sv_augmented_noise_fixed_sgqf_model(
     observation_variance_floor: float,
 ) -> TFFixedSGQFNonlinearModel:
     latent_variance = tf.reshape(tf.convert_to_tensor(current_variance, dtype=tf.float64), [])
-    if int(time_index) == 0:
-        transition_matrix = tf.constant([[1.0, 0.0], [0.0, 0.0]], dtype=tf.float64)
-        process_covariance = tf.linalg.diag(tf.constant([0.0, 1.0], dtype=tf.float64))
-    else:
-        transition_matrix = tf.stack(
-            [
-                tf.stack([tf.reshape(tf.convert_to_tensor(gamma, dtype=tf.float64), []), tf.constant(0.0, dtype=tf.float64)]),
-                tf.constant([0.0, 0.0], dtype=tf.float64),
-            ]
-        )
-        process_covariance = tf.linalg.diag(
-            tf.stack(
-                [
-                    tf.square(tf.reshape(tf.convert_to_tensor(sigma, dtype=tf.float64), [])),
-                    tf.constant(1.0, dtype=tf.float64),
-                ]
-            )
-        )
+    transition_matrix = tf.linalg.diag(tf.stack([
+        tf.where(tf.equal(time_index, 0), tf.constant(1., tf.float64),
+                 tf.reshape(tf.convert_to_tensor(gamma, tf.float64), [])),
+        tf.constant(0., tf.float64)]))
+    process_covariance = tf.linalg.diag(tf.stack([
+        tf.where(tf.equal(time_index, 0), tf.constant(0., tf.float64),
+                 tf.square(tf.reshape(tf.convert_to_tensor(sigma, tf.float64), []))),
+        tf.constant(1., tf.float64)]))
     return TFFixedSGQFNonlinearModel(
         initial_mean=tf.stack([tf.reshape(tf.convert_to_tensor(current_mean, dtype=tf.float64), []), tf.constant(0.0, dtype=tf.float64)]),
         initial_covariance=tf.linalg.diag(
@@ -2950,12 +2495,9 @@ def _panel_transformed_sv_component_fixed_sgqf_model(
     time_index: int,
 ) -> TFFixedSGQFAffineModel:
     dim = int(current_mean.shape[0])
-    if int(time_index) == 0:
-        transition_matrix = tf.eye(dim, dtype=tf.float64)
-        process_covariance = tf.zeros([dim, dim], dtype=tf.float64)
-    else:
-        transition_matrix = tf.linalg.diag(gamma)
-        process_covariance = tf.linalg.diag(tf.square(sigma))
+    initial_date = tf.equal(time_index, 0)
+    transition_matrix = tf.where(initial_date, tf.eye(dim, dtype=tf.float64), tf.linalg.diag(gamma))
+    process_covariance = tf.where(initial_date, tf.zeros([dim, dim], tf.float64), tf.linalg.diag(tf.square(sigma)))
     return TFFixedSGQFAffineModel(
         initial_mean=tf.reshape(current_mean, [dim]),
         initial_covariance=tf.reshape(current_covariance, [dim, dim]),
@@ -2979,12 +2521,9 @@ def _panel_transformed_sv_component_fixed_sgqf_nonlinear_model(
     time_index: int,
 ) -> TFFixedSGQFNonlinearModel:
     dim = int(current_mean.shape[0])
-    if int(time_index) == 0:
-        transition_matrix = tf.eye(dim, dtype=tf.float64)
-        process_covariance = tf.zeros([dim, dim], dtype=tf.float64)
-    else:
-        transition_matrix = tf.linalg.diag(gamma)
-        process_covariance = tf.linalg.diag(tf.square(sigma))
+    initial_date = tf.equal(time_index, 0)
+    transition_matrix = tf.where(initial_date, tf.eye(dim, dtype=tf.float64), tf.linalg.diag(gamma))
+    process_covariance = tf.where(initial_date, tf.zeros([dim, dim], tf.float64), tf.linalg.diag(tf.square(sigma)))
     observation_offset = tf.math.log(tf.square(beta)) + mixture_means
     return TFFixedSGQFNonlinearModel(
         initial_mean=tf.reshape(current_mean, [dim]),
@@ -3061,19 +2600,11 @@ def _panel_transformed_sv_component_fixed_sgqf_derivatives(
     parameter_dim = 2 * dim
     d_process_covariance = tf.zeros([parameter_dim, dim, dim], dtype=tf.float64)
     d_observation_covariance = tf.zeros([parameter_dim, dim, dim], dtype=tf.float64)
-    if int(time_index) == 0:
-        transition_matrix = tf.eye(dim, dtype=tf.float64)
-        d_transition_matrix = tf.zeros([parameter_dim, dim, dim], dtype=tf.float64)
-    else:
-        transition_matrix = tf.linalg.diag(gamma)
-        d_transition_matrix = tf.zeros([parameter_dim, dim, dim], dtype=tf.float64)
-        for axis in range(dim):
-            row = 2 * axis
-            d_transition_matrix = tf.tensor_scatter_nd_update(
-                d_transition_matrix,
-                indices=[[row, axis, axis]],
-                updates=[_gamma_theta_derivative(gamma[axis])],
-            )
+    initial_date = tf.equal(time_index, 0)
+    transition_matrix = tf.where(initial_date, tf.eye(dim, dtype=tf.float64), tf.linalg.diag(gamma))
+    directions = tf.transpose(tf.one_hot(2 * tf.range(dim), parameter_dim, dtype=tf.float64))
+    d_transition_matrix = tf.where(initial_date, tf.zeros([parameter_dim, dim, dim], tf.float64),
+                                  tf.linalg.diag(directions * _gamma_theta_derivative(gamma)[None]))
     d_observation_offset = _affine_observation_offset_theta_derivatives(beta)
     transition_state_jacobian_fn = lambda points: tf.broadcast_to(
         transition_matrix[tf.newaxis, :, :],
@@ -3343,6 +2874,7 @@ def _ukf_component_score_update(
     mixture_means: tf.Tensor,
     mixture_variances: tf.Tensor,
     time_index: int,
+    jit_compile: bool = True,
 ):
     structural = _panel_transformed_sv_component_ukf_structural_model(
         current_mean=current_mean,
@@ -3368,6 +2900,7 @@ def _ukf_component_score_update(
         innovation_floor=tf.constant(1e-12, dtype=tf.float64),
         spectral_gap_tolerance=tf.constant(1e-8, dtype=tf.float64),
         allow_fixed_null_support=False,
+        jit_compile=jit_compile,
     )
 
 
@@ -3472,6 +3005,7 @@ def scalar_sv_mixture_cut4_filter(
     mixture: SVLogChiSquareGaussianMixture | None = None,
     transform_offset: float = 1e-8,
     innovation_floor: float = 1e-12,
+    jit_compile: bool = True,
 ) -> SVMixtureCut4Result:
     """Component-wise CUT4 recursion for transformed scalar SV mixture observations."""
 
@@ -3481,76 +3015,22 @@ def scalar_sv_mixture_cut4_filter(
     gamma = parameters["gamma"]
     beta = parameters["beta"]
     sigma = parameters["sigma"]
-    mean = tf.constant([0.0], dtype=tf.float64)
-    covariance = tf.reshape(tf.square(sigma) / (1.0 - tf.square(gamma)), [1, 1])
-    log_terms = []
-    means = []
-    variances = []
-    component_weights_by_time = []
-    cut4_point_counts = []
-    cut4_augmented_dims = []
-    cut4_polynomial_degrees = []
-
-    for time_index in range(int(z.shape[0])):
-        component_log_weights = []
-        component_means = []
-        component_covariances = []
-        component_point_counts = []
-        for component in range(mixture.component_count):
-            structural = _transformed_sv_component_structural_model(
-                predictive_mean=mean,
-                predictive_covariance=covariance,
-                gamma=gamma,
-                sigma=sigma,
-                beta=beta,
-                mixture_mean=mixture.means[component],
-                mixture_variance=mixture.variances[component],
-                time_index=time_index,
-            )
-            cut4 = tf_svd_cut4_filter(
-                z[time_index : time_index + 1],
-                structural,
-                innovation_floor=tf.constant(innovation_floor, dtype=tf.float64),
-                return_filtered=True,
-            )
-            component_log_weights.append(tf.math.log(mixture.weights[component]) + cut4.log_likelihood)
-            component_means.append(cut4.filtered_means[0])
-            component_covariances.append(cut4.filtered_covariances[0])
-            point_count = int(cut4.diagnostics.extra["point_count"].numpy())
-            component_point_counts.append(point_count)
-            cut4_augmented_dims.append(int(cut4.diagnostics.extra["augmented_dim"].numpy()))
-            cut4_polynomial_degrees.append(int(cut4.diagnostics.extra["polynomial_degree"].numpy()))
-        component_log_weights_tensor = tf.convert_to_tensor(component_log_weights, dtype=tf.float64)
-        log_normalizer = tf.reduce_logsumexp(component_log_weights_tensor)
-        normalized_component_weights = tf.exp(component_log_weights_tensor - log_normalizer)
-        stacked_means = tf.convert_to_tensor(component_means, dtype=tf.float64)
-        stacked_covariances = tf.convert_to_tensor(component_covariances, dtype=tf.float64)
-        mean = tf.linalg.matvec(tf.transpose(stacked_means), normalized_component_weights)
-        second = tf.reduce_sum(
-            normalized_component_weights
-            * (tf.reshape(stacked_covariances[:, 0, 0], [-1]) + tf.square(stacked_means[:, 0]))
-        )
-        variance = second - tf.square(mean[0])
-        covariance = tf.reshape(variance, [1, 1])
-        log_terms.append(log_normalizer)
-        means.append(mean[0])
-        variances.append(variance)
-        component_weights_by_time.append(normalized_component_weights)
-        cut4_point_counts.append(tuple(component_point_counts))
+    output = _evaluate_mixture_panel(z, tf.reshape(gamma, [1]), tf.reshape(beta, [1]),
+        tf.reshape(sigma, [1]), mixture, _component_tuples(mixture.component_count, 1),
+        method="cut4", scalar_collapse=True, innovation_floor=innovation_floor,
+        jit_compile=jit_compile)
 
     return SVMixtureCut4Result(
-        log_likelihood=tf.reduce_sum(tf.stack(log_terms)),
-        log_normalizers=tf.stack(log_terms),
-        mean_path=tf.stack(means),
-        variance_path=tf.stack(variances),
-        component_weights=tf.stack(component_weights_by_time),
+        log_likelihood=tf.reduce_sum(output["log_normalizers"]),
+        log_normalizers=output["log_normalizers"],
+        mean_path=output["mean_path"][:, 0],
+        variance_path=output["covariance_path"][:, 0, 0],
+        component_weights=output["component_weights"],
         diagnostics=MappingProxyType(
             {
                 "backend": "cut4_transformed_sv_gaussian_mixture",
-                "cut4_point_counts": tuple(cut4_point_counts),
-                "max_cut4_point_count": max(max(row) for row in cut4_point_counts),
-                "cut4_augmented_dims": tuple(cut4_augmented_dims),
-                "cut4_polynomial_degrees": tuple(cut4_polynomial_degrees),
+                "jit_compile": bool(jit_compile),
+                **_cut4_panel_diagnostics(int(z.shape[0]), 1, mixture.component_count),
                 "cut4_padding": "one inert innovation coordinate because CUT4-G implementation requires augmented dim >= 3",
                 "transform_offset": float(transform_offset),
                 "mixture": mixture.manifest_payload(),
@@ -3582,14 +3062,12 @@ def _transformed_sv_component_structural_model(
         deterministic_indices=(),
         innovation_dim=2,
     )
-    if int(time_index) == 0:
-        transition_matrix = tf.eye(1, dtype=tf.float64)
-        innovation_matrix = tf.zeros([1, 2], dtype=tf.float64)
-        innovation_covariance = tf.eye(2, dtype=tf.float64)
-    else:
-        transition_matrix = tf.reshape(gamma, [1, 1])
-        innovation_matrix = tf.constant([[1.0, 0.0]], dtype=tf.float64)
-        innovation_covariance = tf.linalg.diag(tf.stack([tf.square(sigma), tf.constant(1.0, dtype=tf.float64)]))
+    initial_date = tf.equal(time_index, 0)
+    transition_matrix = tf.where(initial_date, tf.eye(1, dtype=tf.float64), tf.reshape(gamma, [1, 1]))
+    innovation_matrix = tf.where(initial_date, tf.zeros([1, 2], tf.float64),
+                                tf.constant([[1.0, 0.0]], tf.float64))
+    innovation_covariance = tf.where(initial_date, tf.eye(2, dtype=tf.float64),
+        tf.linalg.diag(tf.stack([tf.square(sigma), tf.constant(1.0, dtype=tf.float64)])))
     return make_affine_structural_tf(
         partition=partition,
         initial_mean=tf.reshape(predictive_mean, [1]),
@@ -3629,10 +3107,8 @@ def _legendre_interval_nodes_weights(
 
 
 def _legendre_gauss_nodes_weights(order: int) -> tuple[tf.Tensor, tf.Tensor]:
-    import numpy as np
-
-    nodes, weights = np.polynomial.legendre.leggauss(int(order))
-    return tf.constant(nodes, dtype=tf.float64), tf.constant(weights, dtype=tf.float64)
+    from bayesfilter.ops.quadrature_tf import gauss_legendre
+    return gauss_legendre(int(order))
 
 
 def _logsumexp_weighted(log_values: tf.Tensor, weights: tf.Tensor) -> tf.Tensor:

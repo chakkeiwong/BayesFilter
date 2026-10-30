@@ -1,0 +1,706 @@
+.......................................F.F..........FF......FF..FFFFFF   [100%]
+=================================== FAILURES ===================================
+________________ test_dry_run_has_no_framework_import_or_files _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_dry_run_has_no_framework_0')
+
+    def test_dry_run_has_no_framework_import_or_files(tmp_path):
+        output=tmp_path/"uncreated"
+        code="""import sys, runpy
+    sys.argv=['scripts/run_surrogate_hmc_program.py','--output',sys.argv[1],'--dry-run']
+    try:
+        runpy.run_path('scripts/run_surrogate_hmc_program.py',run_name='__main__')
+    except SystemExit as exc:
+        assert exc.code==0
+    assert 'tensorflow' not in sys.modules
+    assert 'numpy' not in sys.modules
+    """
+>       result=subprocess.run([sys.executable,"-c",code,str(output)],cwd=ROOT,text=True,capture_output=True,check=True)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_program.py:195: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', "import sys, runpy\nsys.argv=['scripts/run_surrogate_hmc_...assert 'numpy' not in sys.modules\n", '/tmp/pytest-of-chakwong/pytest-192/test_dry_run_has_no_framework_0/uncreated'],)
+kwargs = {'cwd': PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917'), 'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['/home/chakwong/anaconda3/envs/tftwogpu/bin/pyt...>
+stdout = ''
+stderr = 'Traceback (most recent call last):\n  File "<string>", line 4, in <module>\n  File "<frozen runpy>", line 291, in run...chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', "import sys, runpy\nsys.argv=['scripts/run_surrogate_hmc_program.py','--output',sys.argv[1],'--dry-run']\ntry:\n    runpy.run_path('scripts/run_surrogate_hmc_program.py',run_name='__main__')\nexcept SystemExit as exc:\n    assert exc.code==0\nassert 'tensorflow' not in sys.modules\nassert 'numpy' not in sys.modules\n", '/tmp/pytest-of-chakwong/pytest-192/test_dry_run_has_no_framework_0/uncreated']' returned non-zero exit status 1.
+
+../anaconda3/envs/tftwogpu/lib/python3.11/subprocess.py:571: CalledProcessError
+_________ test_reference_stage_is_cpu_only_and_cannot_launch_sampling __________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_reference_stage_is_cpu_on0')
+
+    def test_reference_stage_is_cpu_only_and_cannot_launch_sampling(tmp_path):
+        command = [sys.executable, "scripts/run_surrogate_hmc_program.py", "--stage", "P2-reference",
+                   "--scope", "LG1", "--output", str(tmp_path / "uncreated"), "--dry-run"]
+>       result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=True)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_program.py:220: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', 'scripts/run_surrogate_hmc_program.py', '--stage', 'P2-reference', '--scope', 'LG1', ...],)
+kwargs = {'cwd': PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917'), 'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['/home/chakwong/anaconda3/envs/tftwogpu/bin/pyt...>
+stdout = ''
+stderr = 'Traceback (most recent call last):\n  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scrip...chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', 'scripts/run_surrogate_hmc_program.py', '--stage', 'P2-reference', '--scope', 'LG1', '--output', '/tmp/pytest-of-chakwong/pytest-192/test_reference_stage_is_cpu_on0/uncreated', '--dry-run']' returned non-zero exit status 1.
+
+../anaconda3/envs/tftwogpu/lib/python3.11/subprocess.py:571: CalledProcessError
+_________________ test_master_all_continues_C_after_B_failure __________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_master_all_continues_C_af0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758ae8079a90>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b7d6325d0>
+
+    def test_master_all_continues_C_after_B_failure(tmp_path, monkeypatch, capsys):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(directory.name)
+            record = dict(status="FAILED" if directory.name == "P2-tune-job" else "COMPLETED")
+            ledger["jobs"].append(record)
+            return record
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "retained_forecast", lambda *args: dict(
+            gpu_seconds=1, cpu_worker_seconds=1, eligible_arms=["C"]))
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path / "campaign"
+>       assert program.main(["--stage", "all", "--output", str(output)]) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:124: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+________ test_standalone_forecast_failure_preserves_a_reviewable_result ________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_standalone_forecast_failu0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b281b4310>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b281b60d0>
+
+    def test_standalone_forecast_failure_preserves_a_reviewable_result(tmp_path, monkeypatch, capsys):
+        monkeypatch.setattr(program, "run_job", lambda *args, **kwargs: pytest.fail("must not launch"))
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        monkeypatch.setattr(program, "retained_forecast", lambda *args: dict(
+            gpu_seconds=4000, cpu_worker_seconds=4800, eligible_arms=["C"]))
+        output = tmp_path / "blocked"
+        args = ["--stage", "P2-C-sample", "--output", str(output),
+                "--reference-root", str(tmp_path / "reference"),
+                "--selection", str(tmp_path / "controls/selection.json"),
+                "--endpoint-root", str(tmp_path / "endpoint"),
+                "--finite-reference-root", str(tmp_path / "D"),
+                "--tuning-root", str(tmp_path / "C-tuning")]
+>       assert program.main(args) == 1
+               ^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:147: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+_ test_sv20_reference_result_does_not_promote_hmc[reference-QUALIFIED_LIKELIHOOD_PROBES-False] _
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_reference_result_doe0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758ae833c190>
+capsys = <_pytest.capture.CaptureFixture object at 0x758ae833fb10>
+stage = 'reference', status = 'QUALIFIED_LIKELIHOOD_PROBES'
+posterior_qualified = False
+
+    @pytest.mark.parametrize("stage,status,posterior_qualified", [
+        ("reference", "QUALIFIED_LIKELIHOOD_PROBES", False),
+        ("posterior", "QUALIFIED_MODEL_POSTERIOR_REFERENCE", True)])
+    def test_sv20_reference_result_does_not_promote_hmc(tmp_path, monkeypatch, capsys, stage, status, posterior_qualified):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(command)
+            target = Path(command[command.index("--output")+1])
+            target.mkdir(parents=True)
+            (target/"report.json").write_text(json.dumps(dict(
+                status=status, qualified=True)))
+            return dict(status="COMPLETED")
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path/"sv20"
+        args = ["--stage", "P3-SV20-"+stage, "--scope", "SV20", "--output", str(output)]
+        if stage == "posterior":
+            args += ["--reference-root", str(tmp_path/"prior-likelihood")]
+>       assert program.main(args) == 2
+               ^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+_ test_sv20_reference_result_does_not_promote_hmc[posterior-QUALIFIED_MODEL_POSTERIOR_REFERENCE-True] _
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_reference_result_doe1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b2835e210>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b2835d150>
+stage = 'posterior', status = 'QUALIFIED_MODEL_POSTERIOR_REFERENCE'
+posterior_qualified = True
+
+    @pytest.mark.parametrize("stage,status,posterior_qualified", [
+        ("reference", "QUALIFIED_LIKELIHOOD_PROBES", False),
+        ("posterior", "QUALIFIED_MODEL_POSTERIOR_REFERENCE", True)])
+    def test_sv20_reference_result_does_not_promote_hmc(tmp_path, monkeypatch, capsys, stage, status, posterior_qualified):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(command)
+            target = Path(command[command.index("--output")+1])
+            target.mkdir(parents=True)
+            (target/"report.json").write_text(json.dumps(dict(
+                status=status, qualified=True)))
+            return dict(status="COMPLETED")
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path/"sv20"
+        args = ["--stage", "P3-SV20-"+stage, "--scope", "SV20", "--output", str(output)]
+        if stage == "posterior":
+            args += ["--reference-root", str(tmp_path/"prior-likelihood")]
+>       assert program.main(args) == 2
+               ^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:201: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+______________ test_sv20_family_budget_blocks_cross_stage_overrun ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_family_budget_blocks0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b28226ed0>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b28224490>
+
+    def test_sv20_family_budget_blocks_cross_stage_overrun(tmp_path, monkeypatch, capsys):
+        real_charge = program.charge_previous_runs
+        path = tmp_path/"surrogate-hmc-all-models-sv20-earlier/accounting.json"
+        path.parent.mkdir()
+        path.write_text(json.dumps(dict(charged_this_run=dict(gpu_seconds=50., cpu_worker_seconds=12600.))))
+        monkeypatch.setattr(program, "charge_previous_runs", lambda ledger, paths: real_charge(ledger, [path]))
+        launched = []
+        monkeypatch.setattr(program, "run_job", lambda *args, **kwargs: launched.append(args))
+        output = tmp_path/"blocked"
+>       assert program.main(["--stage", "P3-SV20-reference", "--scope", "SV20", "--output", str(output)]) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:265: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+_____________ test_sv20_failed_reference_blocks_only_its_posterior _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_failed_reference_blo0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b4826ac10>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b4826b650>
+
+    def test_sv20_failed_reference_blocks_only_its_posterior(tmp_path, monkeypatch, capsys):
+        launched = []
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(directory.name)
+            return dict(status="FAILED")
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path/"failed-sv20"
+>       assert program.main(["--stage", "all", "--scope", "SV20", "--output", str(output)]) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:281: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+________ test_sv20_consumer_mechanics_never_promotes_retained_inference ________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_consumer_mechanics_n0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b283a1d90>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b283a0b10>
+
+    def test_sv20_consumer_mechanics_never_promotes_retained_inference(tmp_path, monkeypatch, capsys):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(command)
+            target = Path(command[command.index('--output')+1])
+            target.mkdir(parents=True)
+            (target/'report.json').write_text(json.dumps(dict(
+                status='QUALIFIED_CONSUMER_MECHANICS', qualified=True, original_force_healthy=False)))
+            return dict(status='COMPLETED')
+    
+        monkeypatch.setattr(program, 'run_job', fake_run)
+        monkeypatch.setattr(program, 'source_inventory', lambda: {})
+        posterior = tmp_path/'posterior'
+        posterior.mkdir()
+        (posterior/'report.json').write_text(json.dumps(dict(status='QUALIFIED_MODEL_POSTERIOR_REFERENCE', qualified=True)))
+        output = tmp_path/'consumer'
+>       assert program.main(['--stage', 'P3-SV20-qualify', '--scope', 'SV20', '--output', str(output),
+                             '--reference-root', str(tmp_path/'reference'), '--posterior-root', str(posterior)]) == 2
+
+tests/test_surrogate_hmc_dependency_execution.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+________ test_sv20_control_cost_deferral_preserves_qualified_references ________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_sv20_control_cost_deferra0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758ac8304ed0>
+capsys = <_pytest.capture.CaptureFixture object at 0x758ac83041d0>
+
+    def test_sv20_control_cost_deferral_preserves_qualified_references(tmp_path, monkeypatch, capsys):
+        def fake_run(command, directory, ledger, **kwargs):
+            assert Path(command[1]).name == 'calibrate_surrogate_hmc_sv_controls.py'
+            target = Path(command[command.index('--output')+1])
+            target.mkdir(parents=True)
+            (target/'report.json').write_text(json.dumps(dict(verdict='SELECTED_FOR_PROPOSAL_EXPERIMENT',
+                forecast=dict(status='UNDER_BUDGETED_INITIAL_ALLOCATION', inference_authorized=False))))
+            return dict(status='COMPLETED')
+    
+        monkeypatch.setattr(program, 'run_job', fake_run)
+        monkeypatch.setattr(program, 'source_inventory', lambda: {})
+        posterior = tmp_path/'posterior'
+        posterior.mkdir()
+        (posterior/'report.json').write_text(json.dumps(dict(status='QUALIFIED_MODEL_POSTERIOR_REFERENCE', qualified=True)))
+        qualification = tmp_path/'qualification'
+        qualification.mkdir()
+        (qualification/'report.json').write_text(json.dumps(dict(status='QUALIFIED_CONSUMER_MECHANICS', qualified=True)))
+        (qualification/'run-manifest.json').write_text(json.dumps(dict(posterior_reference=str(posterior))))
+        output = tmp_path/'controls'
+>       assert program.main(['--stage', 'P3-SV20-controls', '--scope', 'SV20', '--output', str(output),
+            '--reference-root', str(tmp_path/'reference'), '--qualification-root', str(qualification)]) == 2
+
+tests/test_surrogate_hmc_dependency_execution.py:338: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+_________ test_failed_LG1_does_not_cancel_LG2_or_promote_qualification _________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_failed_LG1_does_not_cance0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b283308d0>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b28331a90>
+
+    def test_failed_LG1_does_not_cancel_LG2_or_promote_qualification(tmp_path, monkeypatch, capsys):
+        launched = []
+    
+        def fake_run(command, directory, ledger, **kwargs):
+            launched.append(directory.name)
+            target = Path(command[command.index("--output") + 1])
+            program.write_json(target / "report.json", {"qualified": True})
+            return dict(status="FAILED" if directory.name == "P1-LG1" else "COMPLETED",
+                        exit_code=1 if directory.name == "P1-LG1" else 0, job_name=directory.name)
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        output = tmp_path / "campaign"
+>       assert program.main(["--stage", "all", "--output", str(output)]) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:363: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+_____________ test_all_merges_C_outcomes_without_erasing_B_result ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-192/test_all_merges_C_outcomes_wit0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x758b48326ad0>
+capsys = <_pytest.capture.CaptureFixture object at 0x758b48326fd0>
+
+    def test_all_merges_C_outcomes_without_erasing_B_result(tmp_path, monkeypatch, capsys):
+        def fake_run(command, directory, ledger, **kwargs):
+            target = Path(command[command.index("--output") + 1])
+            if directory.name == "P2-sample-job":
+                program.write_json(target / "report.json", {"comparisons": {"B/R": "INCONCLUSIVE", "C/D": "NOT_RUN"}})
+            if directory.name == "P2-C-sample-job":
+                program.write_json(target / "report.json", {"comparisons": {"B/R": "NOT_RUN", "C/D": "EQUIVALENT", "C/R": "INCONCLUSIVE"}})
+            return dict(status="COMPLETED", exit_code=0, job_name=directory.name)
+    
+        monkeypatch.setattr(program, "run_job", fake_run)
+        monkeypatch.setattr(program, "source_inventory", lambda: {})
+        monkeypatch.setattr(program, "retained_forecast", lambda *args: dict(
+            gpu_seconds=1, cpu_worker_seconds=1, eligible_arms=["B", "C"]))
+        output = tmp_path / "campaign"
+>       assert program.main(["--stage", "all", "--scope", "LG1", "--output", str(output)]) == 2
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_dependency_execution.py:388: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/inference/surrogate_hmc_program.py:1447: in main
+    charge_previous_runs(ledger, [*campaign_accounting_paths(ROOT / "docs/plans/artifacts"),
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+artifacts = PosixPath('/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts')
+
+    def campaign_accounting_paths(artifacts: Path) -> list[Path]:
+        """Discover incremental campaign receipts across both master entry points.
+    
+        Only top-level receipts count: a parent's receipt already charges its
+        children. An unfinished closure attempt must be reconciled before launch.
+        """
+        paths = list(artifacts.glob("surrogate-hmc-all-models-*/accounting.json"))
+        for directory in artifacts.glob("surrogate-hmc-closure-*"):
+            if not directory.is_dir():
+                continue
+            path = directory / "accounting.json"
+            if not path.is_file():
+>               raise ValueError(f"prior closure attempt lacks accounting; reconcile before retry: {directory}")
+E               ValueError: prior closure attempt lacks accounting; reconcile before retry: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-05
+
+bayesfilter/inference/surrogate_hmc_program.py:427: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_program.py::test_dry_run_has_no_framework_import_or_files
+FAILED tests/test_surrogate_hmc_program.py::test_reference_stage_is_cpu_only_and_cannot_launch_sampling
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_master_all_continues_C_after_B_failure
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_standalone_forecast_failure_preserves_a_reviewable_result
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[reference-QUALIFIED_LIKELIHOOD_PROBES-False]
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[posterior-QUALIFIED_MODEL_POSTERIOR_REFERENCE-True]
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_failed_reference_blocks_only_its_posterior
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_consumer_mechanics_never_promotes_retained_inference
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_sv20_control_cost_deferral_preserves_qualified_references
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_failed_LG1_does_not_cancel_LG2_or_promote_qualification
+FAILED tests/test_surrogate_hmc_dependency_execution.py::test_all_merges_C_outcomes_without_erasing_B_result
+12 failed, 58 passed, 2 warnings in 18.73s

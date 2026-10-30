@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import fields
 import json
+from dataclasses import fields
 from types import SimpleNamespace
 
 import numpy as np
@@ -9,6 +9,7 @@ import pytest
 import tensorflow as tf
 
 import bayesfilter.inference.sequential_map_covariance as sequential
+import bayesfilter.inference.sequential_selection_tf as sequential_selection
 from bayesfilter.inference import (
     SEQUENTIAL_MAP_COVARIANCE_NONCLAIMS,
     SequentialMapCovarianceConfig,
@@ -419,34 +420,57 @@ def test_policy_switch_preserves_transactional_center_and_radius(
         delta = values - 1.0
         return -0.5 * delta**2, (-delta)[:, None]
 
-    monkeypatch.setattr(
-        sequential,
-        "_antithetic_cloud",
-        lambda sample_count, dimension, radius, seed: tf.zeros(
-            [sample_count, dimension], tf.float64
-        ),
-    )
-    monkeypatch.setattr(
-        sequential,
-        "_solve_trust_region_tf",
-        lambda precision, linear, radius: {
-            "step": np.array([0.01]),
-            "boundary_active": False,
-            "predicted_improvement": 0.00995,
-        },
-    )
-    monkeypatch.setattr(
-        sequential,
-        "_fit_score_curvature",
-        lambda *args, **kwargs: (
-            {
-                "status": "usable",
-                "projected_precision_z": np.eye(1),
-                "projection_relative_frobenius": 0.0,
-            },
-            kwargs["evaluations"],
-        ),
-    )
+    def zero_cloud_program(sample_count, dimension, orthogonal):
+        @tf.function(input_signature=[tf.TensorSpec([], tf.float64), tf.TensorSpec([2], tf.int32)],
+                     jit_compile=True, autograph=False)
+        def cloud(radius, seed):
+            return tf.zeros([sample_count, dimension], tf.float64)
+
+        return cloud
+
+    # Keep the same zero-cloud acceptance fixture at the native search boundary.
+    monkeypatch.setattr(sequential_selection, "cloud_program", zero_cloud_program)
+    from bayesfilter.inference import sequential_proposal_tf
+
+    def fixed_proposal_solve(dimension, *, jit_compile=True):
+        @tf.function(input_signature=[tf.TensorSpec([dimension, dimension], tf.float64),
+            tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([], tf.float64)],
+            jit_compile=jit_compile, autograph=False)
+        def solve(precision, linear, radius):
+            return tf.constant([.01], tf.float64), tf.constant(False), tf.constant(.00995, tf.float64)
+
+        return solve
+
+    # Preserve the same step, boundary and predicted-improvement fixture at
+    # the native numerical boundary. All transactional assertions stay fixed.
+    monkeypatch.setattr(sequential_proposal_tf, "trust_region_program", fixed_proposal_solve)
+    from bayesfilter.inference import sequential_refinement_tf
+
+    def fixed_fit_program(scalar, batched, dimension, config, *, jit_compile=True):
+        # Same synthetic usable identity fit, no fit evaluations and no cloud
+        # incumbent. Inject at the boundary the enclosing controller executes.
+        @tf.function(input_signature=[tf.TensorSpec([dimension], tf.float64),
+            tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([dimension], tf.float64),
+            tf.TensorSpec([], tf.float64), tf.TensorSpec([2], tf.int32)],
+            jit_compile=jit_compile, autograph=False)
+        def fit(center, score, scale, radius, seed):
+            record = {"status": tf.constant(1), "rank": tf.constant(dimension),
+                "train_score_rmse": tf.constant(0., tf.float64),
+                "holdout_score_relative_rmse": tf.constant(0., tf.float64),
+                "raw_eigenvalues": tf.ones([dimension], tf.float64),
+                "projected_eigenvalues": tf.ones([dimension], tf.float64),
+                "projection_relative_frobenius": tf.constant(0., tf.float64),
+                "projected_precision_z": tf.eye(dimension, dtype=tf.float64),
+                "best_index": tf.constant(-1), "best_value": tf.constant(float('-inf'), tf.float64),
+                "best_position": center, "best_score": score}
+            return {"usable": tf.constant(True), "projection": record["projection_relative_frobenius"],
+                "has_best": tf.constant(False), "best_value": record["best_value"],
+                "best_position": center, "best_score": score, "evaluations": tf.constant(0),
+                "seed": seed, "record": record}
+
+        return fit
+
+    monkeypatch.setattr(sequential_refinement_tf, "terminal_program", fixed_fit_program)
 
     def run(policy: str):
         return estimate_sequential_map_covariance(
@@ -608,6 +632,8 @@ def test_budget_rejection_reports_highest_exact_candidate(
 ) -> None:
     """A rejected locator run still reports the exact incumbent, not start 0."""
 
+    from bayesfilter.inference import sequential_locator_tf as locator
+
     def no_op_locator(function, initial_position, **_kwargs):
         del function
         initial = tf.convert_to_tensor(initial_position, tf.float64)
@@ -620,7 +646,7 @@ def test_budget_rejection_reports_highest_exact_candidate(
         )
 
     monkeypatch.setattr(
-        sequential.tfp.optimizer, "lbfgs_minimize", no_op_locator
+        locator.tfp.optimizer, "lbfgs_minimize", no_op_locator
     )
 
     def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
@@ -746,13 +772,17 @@ def test_no_finite_start_fails_closed() -> None:
 
 
 def test_locator_uses_start_centered_standardized_coordinates() -> None:
-    visited = []
+    # Observe every eager or compiled callback without a host callback inside
+    # the numerical target. The original box-bound assertion is unchanged.
+    maximum_visited = tf.Variable(0.0, dtype=tf.float64)
+    start_tf = tf.constant([900.0, 0.9e-3], tf.float64)
 
     def target(theta: tf.Tensor) -> tuple[tf.Tensor, tf.Tensor]:
         theta = tf.convert_to_tensor(theta, tf.float64)
-        visited.append(np.asarray(theta.numpy(), dtype=float))
         mode = tf.constant([1000.0, 1.0e-3], tf.float64)
         scale = tf.constant([100.0, 1.0e-4], tf.float64)
+        maximum_visited.assign(tf.maximum(maximum_visited,
+            tf.reduce_max(tf.abs((theta - start_tf) / scale))))
         delta = (theta - mode) / scale
         return -0.5 * tf.reduce_sum(delta**2), -delta / scale
 
@@ -770,10 +800,7 @@ def test_locator_uses_start_centered_standardized_coordinates() -> None:
     assert result.diagnostics["locator"][0]["coordinate_system"] == (
         "start_centered_prior_standardized_smooth_box"
     )
-    start = np.array([900.0, 0.9e-3])
-    scale = np.array([100.0, 1.0e-4])
-    standardized = np.asarray([(row - start) / scale for row in visited])
-    assert np.max(np.abs(standardized)) <= 4.0 + 1.0e-12
+    assert 0.0 < float(maximum_visited) <= 4.0 + 1.0e-12
 
 
 def test_batched_cloud_route_matches_scalar_result() -> None:

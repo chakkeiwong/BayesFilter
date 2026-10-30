@@ -1,0 +1,34 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791077625.421861 4117779 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791077625.424487 4117779 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791077625.431070 4117779 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791077625.431111 4117779 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791077625.431117 4117779 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791077625.431119 4117779 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791077628.670166 4117779 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/symmetric_sylvester_tf.py", line 15, in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/load_library.py", line 54, in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.NotFoundError: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py", line 308, in <module>
+    elif args.worker:worker(args.worker,args.dtype)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/measure.py", line 173, in worker
+    from bayesfilter.highdim.ledh_range_bearing_target_tf import M13LikelihoodTarget,make_range_bearing_model
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/highdim/__init__.py", line 76, in <module>
+    from bayesfilter.highdim.filtering import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/highdim/filtering.py", line 45, in <module>
+    from bayesfilter.ops.slogdet_tf import slogdet_tf
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/__init__.py", line 5, in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/symmetric_sylvester_tf.py", line 17, in <module>
+    raise ImportError(
+ImportError: Could not load BayesFilter symmetric Sylvester op at /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-score-before-after-20261004-01/source_after/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory

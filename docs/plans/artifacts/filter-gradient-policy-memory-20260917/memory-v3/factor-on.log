@@ -1,0 +1,96 @@
+2026-09-17 01:46:02.159348: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1789580762.175475  148742 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1789580762.180473  148742 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789580762.194455  148742 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580762.194484  148742 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580762.194488  148742 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580762.194491  148742 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-17 01:46:02.198270: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/h5py/__init__.py:36: UserWarning: h5py is running against HDF5 2.2.0 when it was built against 2.1.0, this may cause problems
+  _warn(("h5py is running against HDF5 {0} when it was built against {1}, "
+I0000 00:00:1789580765.020388  148742 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 46565 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4090, pci bus id: 0000:81:00.0, compute capability: 8.9
+I0000 00:00:1789580768.941239  148742 service.cc:152] XLA service 0x6409bec793e0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1789580768.941308  148742 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4090, Compute Capability 8.9
+2026-09-17 01:46:08.976301: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+2026-09-17 01:46:08.986373: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.007753: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater_1/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.012560: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater_2/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.209279: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.217694: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_equal/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.244492: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_1/Assert/AssertGuard/Assert
+2026-09-17 01:46:09.245760: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_equal_1/Assert/AssertGuard/Assert
+I0000 00:00:1789580769.320563  148742 cuda_dnn.cc:529] Loaded cuDNN version 91002
+I0000 00:00:1789580770.611754  148742 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+2026-09-17 01:46:11.326611: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.344610: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater_1/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.348786: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator assert_greater_2/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.523372: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.530961: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_equal/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.556708: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_1/Assert/AssertGuard/Assert
+2026-09-17 01:46:11.557632: W tensorflow/compiler/tf2xla/kernels/assert_op.cc:39] Ignoring Assert operator while/assert_greater_equal_1/Assert/AssertGuard/Assert
+{
+  "fixture_name": "factor",
+  "jit_compile": true,
+  "wall_seconds": 11.291648868002085,
+  "finite": true,
+  "trace_count": 1,
+  "stages": {
+    "before_tf_import": {
+      "VmHWM_kib": 19084,
+      "VmRSS_kib": 19084,
+      "resource_ru_maxrss_kib": 18432
+    },
+    "after_tf_import_before_fixture": {
+      "VmHWM_kib": 708752,
+      "VmRSS_kib": 708752,
+      "resource_ru_maxrss_kib": 702464
+    },
+    "after_fixture_and_inputs": {
+      "VmHWM_kib": 899128,
+      "VmRSS_kib": 899128,
+      "resource_ru_maxrss_kib": 874496,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 7168
+      }
+    },
+    "after_trace": {
+      "VmHWM_kib": 912488,
+      "VmRSS_kib": 912488,
+      "resource_ru_maxrss_kib": 886784,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 4096
+      }
+    },
+    "after_cold_outputs_live": {
+      "VmHWM_kib": 1042968,
+      "VmRSS_kib": 1042968,
+      "resource_ru_maxrss_kib": 1016980,
+      "gpu_allocator_bytes": {
+        "current": 6912,
+        "peak": 66816
+      }
+    },
+    "after_cold_outputs_released": {
+      "VmHWM_kib": 1042972,
+      "VmRSS_kib": 1042972,
+      "resource_ru_maxrss_kib": 1016980,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 66816
+      }
+    },
+    "after_warm_outputs_released": {
+      "VmHWM_kib": 1042984,
+      "VmRSS_kib": 1042984,
+      "resource_ru_maxrss_kib": 1016980,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 66816
+      }
+    }
+  }
+}

@@ -61,9 +61,9 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Should detect failure
         self.assertFalse(valid.numpy())
-        # Should return zeros, not NaN
+        # Should return a safe identity placeholder, not NaN
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
-        self.assertAllClose(chol, tf.zeros_like(chol))
+        self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_indefinite_matrix(self):
         """Safe Cholesky should fail gracefully on indefinite matrices."""
@@ -76,9 +76,9 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Should detect failure
         self.assertFalse(valid.numpy())
-        # Should return zeros, not NaN
+        # Should return a safe identity placeholder, not NaN
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
-        self.assertAllClose(chol, tf.zeros_like(chol))
+        self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_singular_matrix(self):
         """Safe Cholesky should fail gracefully on singular matrices."""
@@ -91,9 +91,9 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Should detect failure
         self.assertFalse(valid.numpy())
-        # Should return zeros, not NaN
+        # Should return a safe identity placeholder, not NaN
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
-        self.assertAllClose(chol, tf.zeros_like(chol))
+        self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_negative_definite_matrix(self):
         """Safe Cholesky should fail gracefully on negative definite matrices."""
@@ -106,9 +106,9 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Should detect failure
         self.assertFalse(valid.numpy())
-        # Should return zeros, not NaN
+        # Should return a safe identity placeholder, not NaN
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
-        self.assertAllClose(chol, tf.zeros_like(chol))
+        self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_zero_matrix(self):
         """Safe Cholesky should fail gracefully on zero matrix."""
@@ -118,9 +118,9 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Should detect failure
         self.assertFalse(valid.numpy())
-        # Should return zeros, not NaN
+        # Should return a safe identity placeholder, not NaN
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
-        self.assertAllClose(chol, tf.zeros_like(chol))
+        self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_batched_matrices(self):
         """Safe Cholesky should handle batched matrices correctly."""
@@ -139,7 +139,7 @@ class TestSafeCholesky(tf.test.TestCase):
 
         # Second matrix: invalid
         self.assertFalse(valid[1].numpy())
-        self.assertAllClose(chol[1], tf.zeros_like(chol[1]))
+        self.assertAllClose(chol[1], tf.eye(tf.shape(chol)[-1],dtype=chol.dtype))
 
         # Third matrix: valid
         self.assertTrue(valid[2].numpy())
@@ -187,8 +187,8 @@ class TestSafeCholesky(tf.test.TestCase):
         self.assertFalse(tf.reduce_any(tf.math.is_nan(chol)).numpy())
 
         if not valid.numpy():
-            # If invalid, should return zeros
-            self.assertAllClose(chol, tf.zeros_like(chol))
+            # If invalid, should return a safe identity placeholder
+            self.assertAllClose(chol, tf.eye(tf.shape(chol)[-1],batch_shape=tf.shape(chol)[:-2],dtype=chol.dtype))
 
     def test_xla_compilation(self):
         """Safe Cholesky should compile with XLA."""

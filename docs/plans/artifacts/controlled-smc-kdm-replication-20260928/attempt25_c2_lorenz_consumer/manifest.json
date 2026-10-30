@@ -1,0 +1,163 @@
+{
+  "schema": "controlled_smc_kdm_attempt_v1",
+  "phase": "c2_lorenz_consumer",
+  "status": "COMPLETE",
+  "resource": "gpu",
+  "cpu_only": false,
+  "gpu_intentionally_hidden": false,
+  "started_utc": "2026-09-29T08:20:47.625732+00:00",
+  "started_epoch": 1790670047.625761,
+  "timeout_seconds": 300,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt25_c2_lorenz_consumer/sources/diagnose_lorenz_consumer_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt25_c2_lorenz_consumer",
+    "--fixture",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt24_c1_lorenz_consumer/fixture.json"
+  ],
+  "plan": "docs/plans/controlled-smc-lorenz-consumer-repair-20260929.md",
+  "master": "docs/plans/controlled-smc-kdm-replication-master-program-20260928.md",
+  "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt25_c2_lorenz_consumer/summary.json",
+  "output_root": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt25_c2_lorenz_consumer",
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "source_sha256": {
+    "docs/benchmarks/diagnose_lorenz_consumer_tf.py": "4f317dc14f214d09e7dedd22fe9501f41a7deab19d7bef9627ccbd1f375868c7",
+    "scripts/run_controlled_smc_kdm.py": "1985fa0a9d676f0c8c3dc882c91d79877c9e7bd8eee2137e9142e0c118122946",
+    "scripts/run_replication_master.py": "cf8a7210efe5b0b3ea6bebca5cb42dd96746355eab3bd5e60cae29cf83a79929",
+    "docs/plans/controlled-smc-kdm-execution-20260929.md": "cce2f7be0c5bd2a9c712c48171694e4e2f8f7b8c8ad34cd26294a291eb16dd5d",
+    "docs/plans/controlled-smc-kdm-replication-master-program-20260928.md": "4daa0fe1c7e83c6ecdb08b7acefb85da3bca4d911b22a2263f6236390aa4bf87",
+    "docs/benchmarks/diagnose_controlled_smc_reference.py": "51d8859e35d0539158480e82162264cbc63ee6cf564e556707d8f30da0c26a75",
+    "docs/benchmarks/reference_controlled_smc.m": "e28dde174cf7fb5230510f335c2eb116b6d9c63a7a78d0e7d03ac8f317e9b024",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/replication/controlled_smc_tf.py": "c5485c7d4e7e0c0088eb60adad6dc1ef044054ca40a35897337c0e6c45e9df1b",
+    "docs/benchmarks/reference_lorenz_consumer.m": "956ad4f8eb35f2d772ae430b3f5f152544dfe07d5053829a0f2108585306ac09",
+    "docs/plans/controlled-smc-lorenz-consumer-repair-20260929.md": "856573f8a5fba64c6e9e6e4e3f01f5e6395c03b307b37d5a5f0d5b4f466ac0bf",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/Lorenz/cSMC_Resample.m": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/Lorenz/RungeKutta4.m": "ebd5db5f33fe8e344decac00e773ee41d8e382be58a969a7dbfa9e45533ace45",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/Lorenz/Systematic_Resampling.m": "abdc8359f62809d1c606334ed73c862cbfd1fd7d1d1119b498c01850624a6e23",
+    ".localresources/code/heng-controlled-smc/StateSpaceModels/Lorenz/cSMC_VaryF.m": "f57732be90c66bfa538af7a84f928fdec1e3b1dbb2157a83be60935675499968",
+    "bayesfilter/replication/multivariate_controlled_smc_tf.py": "859304d6eff2cf63d28fab8a7474fdfab72ff1ddbbcb50c325ac63d627d9fcd3"
+  },
+  "input_artifacts_sha256": {
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt24_c1_lorenz_consumer/fixture.json": "36dbd9a5c4129208f80f75484653c6b6d54c9794c53d9d5721b231810e24cec4",
+    "/home/chakwong/BayesFilter/.localresources/code/heng-controlled-smc/StateSpaceModels/Lorenz/SimulatedData.mat": "b2c2f93c2dccaa3dcfed4474564e562ac3525ba3579ef9375cbc811a997cc324"
+  },
+  "data_sha256": "b2c2f93c2dccaa3dcfed4474564e562ac3525ba3579ef9375cbc811a997cc324",
+  "seeds": [
+    20260929,
+    20260930
+  ],
+  "author_commit": "2696f6d611aae172d10102cb7bfbfd314bb6b88f",
+  "statistics_commit": "N/A: TensorFlow/PyTorch phase",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": null,
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "interpreter": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "supervisor_pid": 2334713,
+  "supervisor_identity": "50950597",
+  "pid": 2334718,
+  "process_identity": "50950610",
+  "artifact_error": null,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "jit_compile": true,
+  "device": "/device:GPU:0",
+  "ended_utc": "2026-09-29T08:21:16.206897+00:00",
+  "returncode": 0,
+  "wall_seconds": 27.126587448001374,
+  "charged_seconds": 27.126587448001374,
+  "decision": {
+    "status": "PASS",
+    "scope": "MULTIVARIATE_SOURCE_FORWARD_AND_FITTING_DIAGNOSTIC",
+    "replication": "INCOMPLETE"
+  },
+  "output_sha256": {
+    "common_target_qr_gram_eigenvalue_ratio.tensor": "5a2d67a1d9e666fb62275592ec074d27d84a57545776c03570061cce05e9249d",
+    "common_target_qr_c.tensor": "8cff4d6f948fe2a620907d2d119e2a16ac78b46fd37b9f2089eb6435ca10793e",
+    "common_target_normal_max_residual.tensor": "3e4ec407a28b854d48834d21837cdc79abc57f2b24cec29954afbbd37126eebf",
+    "centered_qr_c.tensor": "5924fbc8bc2cd83182ad4a3df9f6838114b80aa0f6ab19e563182f7e040dec28",
+    "centered_qr_b.tensor": "d42b6506e38ef5738a9768995f288517a01de5b654f7b8a7fd9056b31d80da02",
+    "source_normal_equations_c.tensor": "1598f5531cfa54e1ef02c1b8c7ae3997fd4b04911389ceed190503b2cb1aa9f7",
+    "common_target_normal_b.tensor": "2d87da08a2c70a446d4c79b34c086040e777a973a8180144daddd526c3ab7f02",
+    "common_target_qr_max_residual.tensor": "80cac98d4424ed085a5533391caf119aa4f3eabbae37256f55909469446b91fa",
+    "centered_qr_precision_margin.tensor": "14c24d30e968d7f7570dad7197b19c7fd56367d9d8e8364240a3394b3fce587b",
+    "common_target_qr_valid.tensor": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6",
+    "stage1_replay_logZ.tensor": "c049f5ea3924092652f772239237b63958e05afcb0a4e2ab4b2d5449e1577d63",
+    "centered_qr_valid.tensor": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6",
+    "source_normal_equations_A.tensor": "4f1a407a13d519481c61ed886b8e7b58b966879ca24a24adc6d80dc9ee645c65",
+    "centered_qr_gram_eigenvalue_ratio.tensor": "426e0c1e1329d43d188b7e50df4c9451ed99b88db9b7ad69569edf51ab74fd62",
+    "common_target_qr_b.tensor": "c374c3e4a83ba689d090094f17958d059cf72c218f875adc02c09b6ab834c89e",
+    "summary.json": "7e2538668d2899d4c99c763bc8996a30909e5282230c3e5ff83105dbbe474566",
+    "centered_qr_residual_sum_squares.tensor": "51f0cb9d1f9c715731b86caad43334248c3c51369843b6ebe457661c2ed7dfdb",
+    "centered_qr_A.tensor": "5485139ffdd58d2f77789eb0118e45947dbc786aa58a2fa4bb32df176cd79774",
+    "source_normal_equations_residual_sum_squares.tensor": "96c39fdda6456ad9a92a690222adbd6ffb607ae43e7e656f179e6ece7105dc27",
+    "common_target_normal_c.tensor": "8545a92a10b9a2c3f6ed27e509dacad21fb86f69a7fc6adc53e06002cb9c388a",
+    "stage0_replay_logZ.tensor": "244fda8d0f9a5ce639608514431bcecfd344eb5e7cf2fb30a272a978737ae5ad",
+    "source_normal_equations_precision_margin.tensor": "ae3c6d3b4ea5c554debd3a7c3dfc1c5f36c3d19e7ec20af53c8275d83e086e71",
+    "common_target_qr_A.tensor": "70057af29bb584d87c2a86abc9e9f397415d6c3ab1b8bea75fe107a36124c66c",
+    "common_target_normal_A.tensor": "303efaf1fe491d644692dc215be46dd790afb8ac9429999c9ba193e05abccf1e",
+    "common_target_normal_residual_sum_squares.tensor": "fee6d84480a5c5d36778e44b157ddf656e67f5229f555709727815f16af195a6",
+    "source_normal_equations_valid.tensor": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6",
+    "common_target_qr_residual_sum_squares.tensor": "bc6fe81027c9380dee6d5755d239aa589ecd86caa4d85f1dada57e7925c8d033",
+    "common_target_normal_valid.tensor": "370d7c6a50621349b3d5361620978b86edde7b00c870535381630cf7528f6dc6",
+    "common_target_normal_gram_eigenvalue_ratio.tensor": "970e36c7451a4e3b72c0db7a452c77bd23c448d7208852830c11c24111ad1256",
+    "source_normal_equations_b.tensor": "26801563ef06ebd27138c1c1a6a47586614e549f21a45f7161f01a93f755598c",
+    "command.log": "79c159c1b0f1aa6560d559715b0fa661f4d2fc23c02f01b2854d81b046c83059",
+    "source_normal_equations_gram_eigenvalue_ratio.tensor": "db75c9547efd599201ae528560c5ef32c122dae8c09a3ba0f9a2814efc00c6f2",
+    "sources/diagnose_lorenz_consumer_tf.py": "4f317dc14f214d09e7dedd22fe9501f41a7deab19d7bef9627ccbd1f375868c7",
+    "sources/reference_lorenz_consumer.m": "956ad4f8eb35f2d772ae430b3f5f152544dfe07d5053829a0f2108585306ac09",
+    "sources/reference_controlled_smc.m": "e28dde174cf7fb5230510f335c2eb116b6d9c63a7a78d0e7d03ac8f317e9b024",
+    "sources/controlled_smc_tf.py": "c5485c7d4e7e0c0088eb60adad6dc1ef044054ca40a35897337c0e6c45e9df1b",
+    "sources/cSMC_Resample.m": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+    "sources/multivariate_controlled_smc_tf.py": "859304d6eff2cf63d28fab8a7474fdfab72ff1ddbbcb50c325ac63d627d9fcd3",
+    "sources/run_controlled_smc_kdm.py": "1985fa0a9d676f0c8c3dc882c91d79877c9e7bd8eee2137e9142e0c118122946",
+    "sources/controlled-smc-lorenz-consumer-repair-20260929.md": "856573f8a5fba64c6e9e6e4e3f01f5e6395c03b307b37d5a5f0d5b4f466ac0bf",
+    "sources/Systematic_Resampling.m": "abdc8359f62809d1c606334ed73c862cbfd1fd7d1d1119b498c01850624a6e23",
+    "sources/controlled-smc-kdm-execution-20260929.md": "cce2f7be0c5bd2a9c712c48171694e4e2f8f7b8c8ad34cd26294a291eb16dd5d",
+    "sources/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "sources/diagnose_controlled_smc_reference.py": "51d8859e35d0539158480e82162264cbc63ee6cf564e556707d8f30da0c26a75",
+    "sources/cSMC_VaryF.m": "f57732be90c66bfa538af7a84f928fdec1e3b1dbb2157a83be60935675499968",
+    "sources/run_replication_master.py": "cf8a7210efe5b0b3ea6bebca5cb42dd96746355eab3bd5e60cae29cf83a79929",
+    "sources/controlled-smc-kdm-replication-master-program-20260928.md": "4daa0fe1c7e83c6ecdb08b7acefb85da3bca4d911b22a2263f6236390aa4bf87",
+    "sources/RungeKutta4.m": "ebd5db5f33fe8e344decac00e773ee41d8e382be58a969a7dbfa9e45533ace45"
+  }
+}

@@ -1,0 +1,27 @@
+........................................................................ [ 48%]
+........................................................................ [ 97%]
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+________________ test_saved_reset_decomposition_and_corruption _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-274/test_saved_reset_decomposition0')
+
+    def test_saved_reset_decomposition_and_corruption(tmp_path):
+>       case=runtime.load_case('lgssm',particles=16)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: load_case() got an unexpected keyword argument 'particles'
+
+tests/test_surrogate_hmc_reset_arithmetic_diagnostic.py:16: TypeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_reset_arithmetic_diagnostic.py::test_saved_reset_decomposition_and_corruption
+1 failed, 146 passed, 2 warnings in 2.61s

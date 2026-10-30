@@ -1,0 +1,151 @@
+{
+  "arms": [
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-ar2-validation-01/ar2-controls/validation/arm-0.json",
+      "sha256": "d90be510eda5b16ee0fbc8a12beced6b1630381ba8d6b9414a993ade0b505d8e"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-ar2-validation-01/ar2-controls/validation/arm-1.json",
+      "sha256": "88b16b818694d8c29a271120fbae2cd8d8c920909aef6d7d8bcab8af357bcfea"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-ar2-validation-01/ar2-controls/validation/arm-2.json",
+      "sha256": "7b808b266060799c4d124b543ac9fbec1136b08999d79d9879d42e72cb5452e3"
+    },
+    {
+      "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-ar2-validation-01/ar2-controls/validation/arm-3.json",
+      "sha256": "ee20378f87fac433066852365adfb1cfe0ab36b4bc29b2c4d5e605fceb6bb04e"
+    }
+  ],
+  "data_sha256": "23a7fc2841b46ce5d3de40081a334e5b9e81f74e4f2f1ec2b06d7796e1fa78b6",
+  "pairs": [
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 0.00011720035871771481,
+          "filtering_mean": 7.862401187432555e-05,
+          "post_reset_covariance": 0.00011083067271917676,
+          "post_reset_mean": 7.8481417874977e-05,
+          "score": 0.00011534846481034388,
+          "value": 1.990090842508228e-05
+        },
+        "stress": {
+          "filtering_covariance": 0.003928320114093462,
+          "filtering_mean": 0.0006729068930009756,
+          "post_reset_covariance": 0.0038453823457099603,
+          "post_reset_mean": 0.0006728133997134107,
+          "score": 0.003786315985241523,
+          "value": 0.0002829007690210852
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": true,
+      "normalized_maximum_change": 0.00011720035871771481,
+      "stress_safe": true,
+      "tolerance": 0.001
+    },
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 4.059596723941199e-05,
+          "filtering_mean": 5.4650156467842196e-05,
+          "post_reset_covariance": 7.32268808943431e-05,
+          "post_reset_mean": 5.621272009901327e-05,
+          "score": 5.486842243438254e-05,
+          "value": 8.634782960844627e-06
+        },
+        "stress": {
+          "filtering_covariance": 0.0002135878712646349,
+          "filtering_mean": 0.00010139446626126979,
+          "post_reset_covariance": 0.0010728725623130701,
+          "post_reset_mean": 0.00012005038960806332,
+          "score": 0.0003568427459608902,
+          "value": 3.509578799671246e-05
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": true,
+      "normalized_maximum_change": 7.32268808943431e-05,
+      "stress_safe": true,
+      "tolerance": 0.001
+    },
+    {
+      "component_changes": {
+        "nominal": {
+          "filtering_covariance": 9.790862627162035e-06,
+          "filtering_mean": 8.773152219885636e-06,
+          "post_reset_covariance": 4.4838717038343516e-05,
+          "post_reset_mean": 2.2125833609800592e-05,
+          "score": 2.61231449377389e-05,
+          "value": 7.1669212218927166e-06
+        },
+        "stress": {
+          "filtering_covariance": 6.7857073615231e-05,
+          "filtering_mean": 2.9080329237833817e-05,
+          "post_reset_covariance": 9.485267620276706e-05,
+          "post_reset_mean": 4.707080199573567e-05,
+          "score": 0.00024604801683941356,
+          "value": 2.9438233679368405e-05
+        }
+      },
+      "healthy_nominal": true,
+      "no_new_stress_failure": true,
+      "non_harm_passed": true,
+      "normalized_maximum_change": 4.4838717038343516e-05,
+      "stress_safe": true,
+      "tolerance": 0.001
+    }
+  ],
+  "scope": {
+    "attempt": 1,
+    "chunk_extent": 64,
+    "control_family": "full_canonical_geometric_protection_curve_v1",
+    "data_regime": "AR2 T10 independent calibration/validation/claim; once-rounded FP32 observations",
+    "draw_design": "scrambled_halton_gaussian",
+    "dtype": "float32",
+    "horizon": 10,
+    "initial_law": "N(0,I2)",
+    "innovation_dimension": 1,
+    "jit_compile": true,
+    "law": "F=[[.45,-.15],[1,0]]; Q=.09*exp(2*lambda_Q)*BB'; R=.04*exp(2*lambda_R); B=[1,0]'",
+    "model": "AR2",
+    "observation_dimension": 1,
+    "parameter_dimension": 2,
+    "particle_count": 64,
+    "prior": "independent N(0,log(2)^2) on both log scales",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "state_dimension": 2,
+    "tf32": true
+  },
+  "source_hashes": {
+    "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "188c1f63f8a517f2b3babbbe8ab384b05f2720c5b94603e45907fb6f9e78dcab",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "330fca673b12727e6c9936f5b0720a907a7f7601c626b5e4e618adf7453a6232",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_structural_ar2_target_tf.py": "2c2b60a393369a2970f584c3a2741cd308437b4a2ae35b7e6436a071b07dab74",
+    "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/testing/surrogate_hmc_ar2_consumer.py": "c6f34975eab26ae3ee36dac9f14e13d5fa5bd3b0665ff5026b4e97369947711f",
+    "bayesfilter/testing/surrogate_hmc_ar2_controls.py": "335b2741c8843cc3e8478f38fb84f8c3f6331b2cec0139f7acfe1f9183bf4ccf",
+    "bayesfilter/testing/surrogate_hmc_ar2_reference.py": "f34e99880413f76951c9b7232f6caa62228974dc20ecf928d0139746c776af0b",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f"
+  }
+}

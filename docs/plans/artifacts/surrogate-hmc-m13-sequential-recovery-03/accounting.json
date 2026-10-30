@@ -1,0 +1,142 @@
+{
+  "allocation": "incremental recovery",
+  "charged_this_run": {
+    "cpu_worker_seconds": 46996.602577,
+    "gpu_seconds": 45069.50225935201
+  },
+  "cumulative_recovery_charged": {
+    "cpu_worker_seconds": 47662.586245,
+    "gpu_seconds": 45384.54454863898
+  },
+  "historical_cpu_unknown": true,
+  "jobs": [
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_hmc_sequential_verification.py",
+        "tests/test_hmc_tensorflow_verified.py",
+        "tests/test_surrogate_hmc_worker_guard.py",
+        "tests/test_surrogate_hmc_program.py",
+        "tests/test_surrogate_hmc_recovery_program.py",
+        "tests/test_surrogate_hmc_selection_compatibility.py",
+        "tests/test_surrogate_hmc_m13_public_tuning.py",
+        "tests/test_surrogate_hmc_m13_initialization_repair.py",
+        "tests/test_surrogate_hmc_m13_retained.py",
+        "tests/test_surrogate_hmc_m13_posterior_assessment.py"
+      ],
+      "cpu_allowance_seconds": 600.0,
+      "cpu_worker_seconds": 46.965443,
+      "cpu_worker_seconds_observed_lower_bound": 46.85628,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "guard_pid": 675033,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 675031,
+        "start": "40356418"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 240.0,
+      "wall_seconds": 33.41758362395922,
+      "worker_pid": 675036
+    },
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_hmc_tensorflow_verified.py",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-recovery-03/gpu-smoke/qualification"
+      ],
+      "cpu_allowance_seconds": 600.0,
+      "cpu_worker_seconds": 60.774193000000004,
+      "cpu_worker_seconds_observed_lower_bound": 60.747824,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 51.78909844299778,
+      "guard_pid": 675637,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 675031,
+        "start": "40356418"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 240.0,
+      "wall_seconds": 51.78909844299778,
+      "worker_pid": 675638
+    },
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_recovery.py",
+        "worker",
+        "--phase",
+        "m13-preflight",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-recovery-03/m13-preflight"
+      ],
+      "cpu_allowance_seconds": 240.0,
+      "cpu_worker_seconds": 4.311298,
+      "cpu_worker_seconds_observed_lower_bound": 4.264811,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 4.111145581991877,
+      "guard_pid": 677152,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 675031,
+        "start": "40356418"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 120.0,
+      "wall_seconds": 4.111145581991877,
+      "worker_pid": 677153
+    },
+    {
+      "accounting_complete": true,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_recovery.py",
+        "worker",
+        "--phase",
+        "m13-public-tuning",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-recovery-03/m13-public-tuning"
+      ],
+      "cpu_allowance_seconds": 47201.965398,
+      "cpu_worker_seconds": 46884.551643,
+      "cpu_worker_seconds_observed_lower_bound": 46884.511003,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 45013.60201532702,
+      "guard_pid": 677284,
+      "max_timeout_seconds": 60000.0,
+      "owner": {
+        "pid": 675031,
+        "start": "40356418"
+      },
+      "status": "COMPLETED",
+      "timeout_seconds": 47201.965398,
+      "wall_seconds": 45013.60201532702,
+      "worker_pid": 677285
+    }
+  ],
+  "limits": {
+    "cpu_worker_seconds": 60000.0,
+    "gpu_seconds": 60000.0
+  }
+}

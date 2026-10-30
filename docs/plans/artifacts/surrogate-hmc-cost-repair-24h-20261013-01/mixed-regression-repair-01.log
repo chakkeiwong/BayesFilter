@@ -1,0 +1,42 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791885190.386876 1353104 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791885190.390546 1353104 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791885190.399228 1353104 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791885190.399292 1353104 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791885190.399299 1353104 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791885190.399301 1353104 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-10-13 17:53:12.585123: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791885192.862551 1353104 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+lgssm pre-optimization scaled differences {'value': 0.0, 'score': 9.017713864523103e-08, 'particles': 0.0, 'particle_tangent': 6.407499313354492e-07, 'trace': 5.960464477539063e-08, 'score_trace': 1.1920928955078125e-07}
+.ksc pre-optimization scaled differences {'value': 0.0, 'score': 1.1920928955078125e-07, 'particles': 0.0, 'particle_tangent': 3.5762786865234375e-07, 'trace': 1.4901161193847656e-08, 'score_trace': 1.1920928955078125e-07}
+.2026-10-13 17:54:37.752721: E external/local_xla/xla/service/slow_operation_alarm.cc:73] Constant folding an instruction is taking > 1s:
+
+  %call.174 = (f64[64,2,2]{2,1,0}, f64[64,2]{1,0}) call(%constant.1636), to_apply=%xla.Qr_f64_64_2_2_.243, metadata={op_type="MatrixSolve" op_name="while/MatrixSolve_6" source_file="/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1221}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+2026-10-13 17:54:37.860480: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 2.345079762s
+Constant folding an instruction is taking > 1s:
+
+  %call.174 = (f64[64,2,2]{2,1,0}, f64[64,2]{1,0}) call(%constant.1636), to_apply=%xla.Qr_f64_64_2_2_.243, metadata={op_type="MatrixSolve" op_name="while/MatrixSolve_6" source_file="/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/framework/ops.py" source_line=1221}
+
+This isn't necessarily a bug; constant-folding is inherently a trade-off between compilation time and speed at runtime. XLA has some guards that attempt to keep constant folding from taking too long, but fundamentally you'll always be able to come up with an input program that takes a long time.
+
+If you'd like to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+predator_prey pre-optimization scaled differences {'value': 0.0, 'score': 1.9014494512248348e-07, 'particles': 0.0, 'particle_tangent': 3.3974647521972656e-06, 'trace': 1.8960027148295922e-07, 'score_trace': 2.980232238769531e-07}
+.sir_d18 pre-optimization scaled differences {'value': 0.0, 'score': 7.600890057801735e-06, 'particles': 0.0, 'particle_tangent': 4.3392181396484375e-05, 'trace': 1.1086463928222656e-05, 'score_trace': 1.1086463928222656e-05}
+.range_bearing pre-optimization scaled differences {'value': 0.0, 'score': 2.9087066650390625e-05, 'particles': 0.0, 'particle_tangent': 1.3135373592376709e-05, 'trace': 2.6941299438476562e-05, 'score_trace': 2.6941299438476562e-05}
+......
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+10 passed, 2 warnings in 236.04s (0:03:56)

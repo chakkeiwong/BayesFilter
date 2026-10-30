@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/highdim/test_covariance_proposal.py"
+  ],
+  "environment_overrides": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "2",
+    "OMP_NUM_THREADS": "2",
+    "TF_CPP_MIN_LOG_LEVEL": "2"
+  },
+  "cpu_only": true,
+  "gpu_devices_intentionally_hidden": true,
+  "git_commit": "7ed1d1ecd339a2a9a6314a430f11d436a6e4aad1",
+  "candidate_source_sha256": "41407b43419f958316fbdcf6a32b0ed53f1978954f162eb723cbfea92b5e189c",
+  "repair": "docs/plans/artifacts/ledh-main-merge-20261009T053052Z/repair-01.json",
+  "plan": "docs/plans/ledh-main-merge-score-check-2026-10-09.md",
+  "timeout_seconds": 900
+}

@@ -80,6 +80,37 @@ def test_broad_cohort_retains_every_verified_candidate():
     assert result.replay_candidate(result.verified_candidate_ids[0]).candidate_record_hash
 
 
+def test_runtime_budget_preserves_candidate_identity_and_resume():
+    from bayesfilter.runtime.execution_budget import execution_budget
+    baseline = HMCTuningCandidateSetController(_scope(), _config()).run(_pass)
+    controller = HMCTuningCandidateSetController(_scope(), _config())
+    allowed = True
+    def observe(work, candidate):
+        nonlocal allowed
+        allowed = False
+        return _pass(work, candidate)
+    with execution_budget(check=lambda: allowed):
+        partial = controller.run(observe)
+    assert partial.completion_status == "partial_budget"
+    assert partial.config == baseline.config
+    resumed = HMCTuningCandidateSetController.from_result_payload(partial.payload()).run(_pass)
+    assert resumed.completion_status == "complete"
+    assert resumed.candidates == baseline.candidates
+    assert resumed.verified_candidate_ids == baseline.verified_candidate_ids
+
+
+def test_preparation_obeys_runtime_budget_without_config_clock(tmp_path):
+    from bayesfilter.runtime.execution_budget import execution_budget
+    from bayesfilter.inference.hmc_preparation import HMCPreparationBudgetExceeded, HMCPreparationProgress
+    with execution_budget(check=lambda: False):
+        with pytest.raises(HMCPreparationBudgetExceeded):
+            with HMCPreparationProgress(tmp_path):
+                pytest.fail("preparation started after allowance ended")
+    import json
+    record = json.loads((tmp_path / "preparation_progress.json").read_text())
+    assert record["failure"]["type"] == "HMCPreparationBudgetExceeded"
+
+
 def test_multiple_epsilons_at_one_l_are_distinct_and_retained():
     config = _config(
         grid=(3,),

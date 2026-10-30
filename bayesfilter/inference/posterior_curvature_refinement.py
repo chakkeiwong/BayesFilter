@@ -1,27 +1,24 @@
 """Fixed-center regional score curvature for an opt-in position initializer.
 
-The orchestration is bounded and eager; numerical work uses TensorFlow float64.
+The numerical controller executes as one TensorFlow float64 XLA program.
+Configuration validation and completed-result reporting remain on the host.
 It neither optimizes the center nor builds an HMC mass artifact. A successful
 regional quadratic fit is not evidence of posterior whitening or convergence.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
-from itertools import combinations
 import json
 import math
 import operator
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from typing import Any
 
 import tensorflow as tf
 
-from bayesfilter.inference.score_curvature_tf import (
-    _relative_response_rmse,
-    fit_dense_score_precision_tf,
-)
-
+from bayesfilter.inference.posterior_curvature_report import posterior_curvature_result
+from bayesfilter.inference.posterior_curvature_tf import posterior_curvature_controller
 
 POSTERIOR_CURVATURE_REFINEMENT_NONCLAIMS = (
     "fixed-center regional score-curvature initializer only",
@@ -130,25 +127,6 @@ class PosteriorCurvatureRefinementResult:
         })
 
 
-@dataclass
-class _EvaluationLedger:
-    physical_rows: int = 0
-    logical_rows: int = 0
-    padded_rows: int = 0
-    eligibility_batches: int = 0
-    callback_batches: int = 0
-    target_rows: int = 0
-    target_logical_rows: int = 0
-    completed_logical_rows: int = 0
-    role: str = "center"
-    partitions: list[dict[str, Any]] = field(default_factory=list)
-
-    def record(self, **counts: int) -> None:
-        for name, count in counts.items():
-            setattr(self, name, getattr(self, name) + count)
-            self.partitions[-1][name] = self.partitions[-1].get(name, 0) + count
-
-
 def refine_posterior_local_curvature(
     batched_value_and_score_fn: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
     center: Any,
@@ -171,11 +149,13 @@ def refine_posterior_local_curvature(
     and identify finite rejection sentinels. Programming errors propagate;
     numerical/support failures return a rejection with no usable geometry.
 
-    Call this eager orchestrator outside tf.function. A stable compiled target
-    is supported; compiling this orchestration or an HMC chain is not claimed.
+    Target and eligibility callbacks must support TensorFlow tracing. All
+    numerical control runs inside one XLA invocation, without host callbacks or
+    an eager fallback. Call this reporting API outside tf.function; tensor-only
+    consumers can compose the native posterior_curvature_controller directly.
     """
     if not tf.executing_eagerly():
-        raise RuntimeError("curvature refinement orchestration requires eager execution")
+        raise RuntimeError("completed curvature reports require eager execution")
     cfg = PosteriorCurvatureRefinementConfig() if config is None else config
     fixed_center = _vector(center, "center")
     dimension = int(fixed_center.shape[0])
@@ -183,264 +163,18 @@ def refine_posterior_local_curvature(
     rows = max(32, 4 * dimension) if cfg.rows_per_partition is None else cfg.rows_per_partition
     if rows < dimension:
         raise ValueError("rows_per_partition must be at least the dimension")
-    fit_partitions = 2 * cfg.replicate_count
-    planned_rows = cfg.batch_size + (fit_partitions + 2) * _padded_rows(rows, cfg.batch_size)
-    if planned_rows > cfg.max_physical_rows:
+    padded = ((rows + cfg.batch_size - 1) // cfg.batch_size) * cfg.batch_size
+    if cfg.batch_size + (2 * cfg.replicate_count + 2) * padded > cfg.max_physical_rows:
         raise ValueError("configured curvature refinement exceeds max_physical_rows before target calls")
-    ledger = _EvaluationLedger()
-    details: dict[str, Any] = {}
-
-    def finish(status: str, covariance=None, refined_factor=None, precision=None):
-        accepted = status == "eligible_for_local_position_factor"
-        diagnostics = {
-            name: getattr(ledger, name) for name in (
-                "physical_rows", "logical_rows", "padded_rows", "eligibility_batches",
-                "callback_batches", "target_rows", "target_logical_rows", "completed_logical_rows",
-            )
-        }
-        diagnostics.update({
-            "logical_rows_per_partition": rows,
-            "physical_rows_per_partition": _padded_rows(rows, cfg.batch_size),
-            "planned_physical_rows": planned_rows, "batch_size": cfg.batch_size,
-            "max_physical_rows": cfg.max_physical_rows, "seed": cfg.seed,
-            "partitions": ledger.partitions,
-            "failure_partition": None if accepted else ledger.role,
-            "center_held_fixed": True,
-            "fit_design": cfg.fit_design,
-            "pilot_coordinate_half_width": cfg.coordinate_half_width,
-            "proposal_distribution": "standard_normal_in_refined_factor_coordinates",
-            "lineage": json.loads(json.dumps(cfg.lineage, allow_nan=False)),
-            **details,
-        })
-        return PosteriorCurvatureRefinementResult(
-            accepted, status, fixed_center, factor,
-            refined_factor if accepted else None,
-            covariance if accepted else None,
-            precision if accepted else None, diagnostics,
-        )
-
-    def evaluate(theta, role, seed=None):
-        return _evaluate(
-            batched_value_and_score_fn, batched_eligibility_fn, theta,
-            batch_size=cfg.batch_size, ledger=ledger, role=role, seed=seed,
-        )
-
-    status, center_scores = evaluate(fixed_center[tf.newaxis, :], "center")
-    if status != "ok":
-        return finish(status)
-    center_score_z = tf.linalg.matvec(factor, center_scores[0], transpose_a=True)
-    if not _finite(center_score_z):
-        return finish("nonfinite_transformed_score")
-    training = []
-    selection = []
-    for partition in range(fit_partitions):
-        role = "training" if partition < cfg.replicate_count else "selection"
-        role = f"{role}_{partition % cfg.replicate_count}"
-        seed = _seed(cfg.seed, partition)
-        offsets = _draw_offsets(
-            rows, dimension, seed, cfg.coordinate_half_width, cfg.fit_design,
-        )
-        theta = fixed_center[tf.newaxis, :] + tf.matmul(offsets, factor, transpose_b=True)
-        status, scores = evaluate(theta, role, seed)
-        if status != "ok":
-            return finish(status)
-        scores_z = tf.matmul(scores, factor)
-        if not _finite(scores_z):
-            return finish("nonfinite_transformed_score")
-        destination = training if partition < cfg.replicate_count else selection
-        destination.append((offsets, scores_z))
-
-    ledger.role = "fit"
-    fits = []
-    details["replicates"] = fits
-    for replicate in range(cfg.replicate_count):
-        try:
-            fit = fit_dense_score_precision_tf(
-                center_score_z, *training[replicate],
-                selection_offsets=selection[replicate][0],
-                selection_scores=selection[replicate][1],
-            )
-        except tf.errors.InvalidArgumentError:
-            return finish("curvature_fit_numerical_failure")
-        metrics = {name: float(fit[name].numpy()) for name in (
-            "design_condition", "precision_condition", "selection_relative_rmse",
-        )}
-        valid = (
-            _finite(fit["raw_precision"]) and _finite(fit["raw_eigenvalues"])
-            and bool(fit["raw_spd"].numpy())
-            and int(fit["design_rank"].numpy()) == dimension
-            and _within(metrics["design_condition"], cfg.max_design_condition_number)
-            and _within(metrics["precision_condition"], cfg.max_precision_condition_number)
-            and _within(metrics["selection_relative_rmse"], cfg.selection_relative_rmse_cap)
-        )
-        fits.append({"precision_z": fit["raw_precision"], **metrics,
-                     "raw_spd": bool(fit["raw_spd"].numpy()),
-                     "design_rank": int(fit["design_rank"].numpy()), "accepted": valid})
-        if not valid:
-            return finish("curvature_fit_rejected")
-
-    ledger.role = "replicate_consensus"
-    try:
-        spread = _precision_spread(tuple(item["precision_z"] for item in fits))
-    except tf.errors.InvalidArgumentError:
-        return finish("replicate_numerical_failure")
-    details["replicate_generalized_eigenvalue_spread"] = spread
-    if not _within(spread, cfg.replicate_generalized_eigenvalue_spread_cap):
-        return finish("replicate_instability")
-    precision = _symmetric(tf.add_n([item["precision_z"] / cfg.replicate_count for item in fits]))
-    if not _finite(precision):
-        return finish("nonfinite_consensus_precision")
-
-    audit_seed = _seed(cfg.seed, fit_partitions)
-    offsets = _draw_offsets(
-        rows, dimension, audit_seed, cfg.coordinate_half_width, cfg.fit_design,
+    program = posterior_curvature_controller(
+        batched_value_and_score_fn, batched_eligibility_fn, dimension, cfg,
     )
-    theta = fixed_center[tf.newaxis, :] + tf.matmul(offsets, factor, transpose_b=True)
-    status, scores = evaluate(theta, "audit", audit_seed)
-    if status != "ok":
-        return finish(status)
-    audit_rmse = float(_relative_response_rmse(precision, center_score_z, offsets, scores @ factor).numpy())
-    details["audit_relative_rmse"] = audit_rmse
-    if not _within(audit_rmse, cfg.audit_relative_rmse_cap):
-        return finish("audit_rejected")
-
-    ledger.role = "factorization"
-    try:
-        precision_cholesky = tf.linalg.cholesky(precision)
-        if not _finite(precision_cholesky):
-            return finish("factorization_failed")
-        inverse_action = tf.linalg.triangular_solve(precision_cholesky, tf.transpose(factor))
-        covariance = _symmetric(tf.matmul(inverse_action, inverse_action, transpose_a=True))
-        if not _finite(covariance):
-            return finish("factorization_failed")
-        refined_factor = tf.linalg.cholesky(covariance)
-        if not _finite(refined_factor) or not bool(tf.reduce_all(tf.linalg.diag_part(refined_factor) > 0.0)):
-            return finish("factorization_failed")
-    except tf.errors.InvalidArgumentError:
-        return finish("factorization_failed")
-    reconstruction = refined_factor @ tf.transpose(refined_factor) - covariance
-    absolute_error = float(tf.reduce_max(tf.abs(reconstruction)).numpy())
-    covariance_scale = tf.reduce_max(tf.abs(covariance))
-    relative_error = float((tf.linalg.norm(reconstruction / covariance_scale) /
-                            tf.linalg.norm(covariance / covariance_scale)).numpy())
-    details.update(factor_reconstruction_abs=absolute_error, factor_reconstruction_rel=relative_error)
-    if not math.isfinite(absolute_error) or not math.isfinite(relative_error) or not (
-        absolute_error <= cfg.factor_absolute_tolerance or relative_error <= cfg.factor_relative_tolerance
-    ):
-        return finish("factor_reconstruction_failed")
-    normalized_center_score = tf.linalg.matvec(refined_factor, center_scores[0], transpose_a=True)
-    center_norm = _stable_norm(normalized_center_score)
-    details["center_score_refined_l2"] = center_norm
-    if not math.isfinite(center_norm):
-        return finish("nonfinite_refined_center_score")
-
-    proposal_seed = _seed(cfg.seed, fit_partitions + 1)
-    latent = tf.random.stateless_normal([rows, dimension], proposal_seed, dtype=tf.float64)
-    delta = tf.matmul(latent, refined_factor, transpose_b=True)
-    theta = fixed_center[tf.newaxis, :] + delta
-    status, scores = evaluate(theta, "proposal", proposal_seed)
-    if status != "ok":
-        return finish(status)
-    offsets = tf.transpose(tf.linalg.triangular_solve(factor, tf.transpose(delta)))
-    proposal_rmse = float(_relative_response_rmse(precision, center_score_z, offsets, scores @ factor).numpy())
-    details["proposal_relative_rmse"] = proposal_rmse
-    if not _within(proposal_rmse, cfg.proposal_relative_rmse_cap):
-        return finish("refined_proposal_rejected")
-    return finish("eligible_for_local_position_factor", covariance, refined_factor, precision)
-
-
-def _evaluate(value_score_fn, eligibility_fn, rows, *, batch_size, ledger, role, seed):
-    """Charge attempts before support/target calls, including failed batches."""
-    ledger.role = role
-    ledger.partitions.append({"role": role, "seed": None if seed is None else seed.numpy().tolist()})
-    collected = []
-    for start in range(0, int(rows.shape[0]), batch_size):
-        chunk = rows[start:start + batch_size]
-        count = int(chunk.shape[0])
-        padding = batch_size - count
-        chunk = tf.concat((chunk, tf.repeat(chunk[-1:], padding, axis=0)), axis=0)
-        ledger.record(physical_rows=batch_size, logical_rows=count, padded_rows=padding)
-        if not _finite(chunk):
-            return "nonfinite_position", None
-        ledger.record(eligibility_batches=1)
-        eligible = tf.convert_to_tensor(eligibility_fn(chunk))
-        if eligible.dtype != tf.bool:
-            raise TypeError(f"{role} eligibility callback must return bool")
-        if eligible.shape != (batch_size,):
-            raise ValueError(f"{role} eligibility callback must return [batch_size]")
-        if not bool(tf.reduce_all(eligible).numpy()):
-            return "ineligible_target_row", None
-        ledger.record(callback_batches=1, target_rows=batch_size, target_logical_rows=count)
-        values, scores = (tf.convert_to_tensor(item) for item in value_score_fn(chunk))
-        if values.dtype != tf.float64 or scores.dtype != tf.float64:
-            raise TypeError(f"{role} target callback must return float64 values and scores")
-        if values.shape != (batch_size,) or scores.shape != chunk.shape:
-            raise ValueError(f"{role} target callback returned an invalid batch shape")
-        if not _finite(values):
-            return "nonfinite_target_value", None
-        if not _finite(scores):
-            return "nonfinite_target_score", None
-        ledger.record(completed_logical_rows=count)
-        collected.append(scores[:count])
-    return "ok", tf.concat(collected, axis=0)
-
-
-def _precision_spread(precisions: tuple[tf.Tensor, ...]) -> float:
-    """Bound all pairwise generalized eigenvalues and their reciprocals."""
-    spread = 1.0
-    for first, second in combinations(precisions, 2):
-        cholesky = tf.linalg.cholesky(first)
-        solved = tf.linalg.triangular_solve(cholesky, second)
-        transformed = tf.transpose(tf.linalg.triangular_solve(cholesky, tf.transpose(solved)))
-        eigenvalues = tf.linalg.eigvalsh(_symmetric(transformed))
-        if not _finite(eigenvalues) or not bool(tf.reduce_all(eigenvalues > 0.0)):
-            return float("inf")
-        spread = max(spread, float(tf.reduce_max(tf.maximum(eigenvalues, 1.0 / eigenvalues)).numpy()))
-    return spread
-
-
-def _draw_offsets(rows, dimension, seed, width, design):
-    if design == "uniform_box":
-        return _uniform_offsets(rows, dimension, seed, width)
-    return _uniform_ball_offsets(rows, dimension, seed, width)
-
-
-def _uniform_offsets(rows, dimension, seed, width):
-    return tf.random.stateless_uniform([rows, dimension], seed, minval=-width, maxval=width, dtype=tf.float64)
-
-
-def _uniform_ball_offsets(rows, dimension, seed, radius):
-    """Draw z = radius U^(1/D) v, with v uniform on the unit sphere.
-
-    Normalizing a Gaussian gives the isotropic direction; an independently
-    seeded U^(1/D) radius gives uniform volume, with E[zz'] = radius^2 I/(D+2).
-    Normalizing a uniform box would bias directions. The radius controls probe
-    locations only and never multiplies the returned position covariance.
-    """
-    direction_seed = tf.random.experimental.stateless_fold_in(seed, 0)
-    radius_seed = tf.random.experimental.stateless_fold_in(seed, 1)
-    direction = tf.random.stateless_normal([rows, dimension], direction_seed, dtype=tf.float64)
-    norms = tf.linalg.norm(direction, axis=1, keepdims=True)
-    tf.debugging.assert_greater(norms, tf.constant(0.0, tf.float64))
-    unit = direction / norms
-    radial = tf.random.stateless_uniform(
-        [rows, 1], radius_seed, minval=0.0, maxval=1.0, dtype=tf.float64,
-    )
-    exponent = tf.constant(1.0 / dimension, tf.float64)
-    return unit * (radius * tf.pow(radial, exponent))
-
-
-def _within(value: float, cap: float) -> bool:
-    return math.isfinite(value) and value <= cap
+    record = program(fixed_center, factor, tf.constant(cfg.seed, tf.int32))
+    return posterior_curvature_result(record, fixed_center, factor, cfg)
 
 
 def _finite(value: tf.Tensor) -> bool:
     return bool(tf.reduce_all(tf.math.is_finite(value)).numpy())
-
-
-def _stable_norm(value: tf.Tensor) -> float:
-    scale = tf.reduce_max(tf.abs(value))
-    return float((scale * tf.linalg.norm(tf.math.divide_no_nan(value, scale))).numpy())
 
 
 def _json_ready(value: Any) -> Any:
@@ -481,18 +215,6 @@ def _factor(value: Any, dimension: int) -> tf.Tensor:
     if not bool(tf.reduce_all(tf.linalg.diag_part(tensor) > 0.0)):
         raise ValueError("pilot_factor must have a positive diagonal")
     return tensor
-
-
-def _symmetric(matrix: tf.Tensor) -> tf.Tensor:
-    return 0.5 * matrix + 0.5 * tf.transpose(matrix)
-
-
-def _padded_rows(rows: int, batch_size: int) -> int:
-    return ((rows + batch_size - 1) // batch_size) * batch_size
-
-
-def _seed(seed: int, role_index: int) -> tf.Tensor:
-    return tf.random.experimental.stateless_fold_in(tf.constant([seed, 0], tf.int32), role_index)
 
 
 __all__ = [

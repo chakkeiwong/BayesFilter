@@ -1,0 +1,39 @@
+...............F...........................                              [100%]
+=================================== FAILURES ===================================
+________________ test_dry_run_has_no_framework_import_or_files _________________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-89/test_dry_run_has_no_framework_0')
+
+    def test_dry_run_has_no_framework_import_or_files(tmp_path):
+        output=tmp_path/"uncreated"
+        code="""import sys, runpy
+    sys.argv=['scripts/run_surrogate_hmc_program.py','--output',sys.argv[1],'--dry-run']
+    try:
+        runpy.run_path('scripts/run_surrogate_hmc_program.py',run_name='__main__')
+    except SystemExit as exc:
+        assert exc.code==0
+    assert 'tensorflow' not in sys.modules
+    assert 'numpy' not in sys.modules
+    """
+        result=subprocess.run([sys.executable,"-c",code,str(output)],cwd=ROOT,text=True,capture_output=True,check=True)
+        payload=json.loads(result.stdout)
+        assert payload["inference_ready"] is False
+        assert not output.exists()
+>       assert not payload["scope_card"]["comparisons"]["B_vs_R"]=="PASS"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: 'NoneType' object is not subscriptable
+
+tests/test_surrogate_hmc_program.py:173: TypeError
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_program.py::test_dry_run_has_no_framework_import_or_files
+1 failed, 42 passed, 2 warnings in 5.37s

@@ -1,0 +1,51 @@
+{
+  "command": [
+    "docs/benchmarks/summarize_iapf_r_log_fit.py"
+  ],
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "cuda_visible_devices": "-1",
+  "role": "post_run_standard_library_diagnostics",
+  "data_seeds": [
+    68000020,
+    69000020
+  ],
+  "bootstrap_seed": 69000920,
+  "bootstrap_repetitions": 2000,
+  "wall_seconds": 0.12984438403509557,
+  "plan_file": "docs/plans/iapf-r-log-fit-repair-2026-09-20.md",
+  "result_file": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-repair-20260920-01/result.md",
+  "source_sha256": {
+    "docs/benchmarks/summarize_iapf_r_log_fit.py": "2e0f766ab8f0713f290cc33f996f90e4c1c858b1c066e902add97b2601c69bf1",
+    "docs/benchmarks/summarize_iapf_r_replication.py": "5eaa615fdb4872511439de7739a47589c5a70b59948dc48593a3493e207a7bde",
+    "docs/plans/iapf-r-log-fit-repair-2026-09-20.md": "d080985aeef7706190b0e5602726667a4778738a5908f92d06859aa28525afc6",
+    "tests/reference_iapf_paper.R": "2e12aa42ff31b25de22222b64ad76a0b8ed2a2329d4047186b05258fe732df21",
+    "tests/reference_iapf_relative_fit.R": "f7ea0e9677739d8957a9b2cbf818560b43e874be344a21361bd4bbab04f36431",
+    "tests/highdim/test_iapf_r_paper_reference.py": "a1bae2dc3aeabe0dece9f560b575471451d6b67798bcad8faa1de61d2b29f563"
+  },
+  "input_sha256": {
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt11-pilot-d20-log-quadratic/results/kalman.csv": "e28d7d05a84d23de0bb64379d2193933dfa9d5f8e738fd8a2c753e566ddf55e0",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt11-pilot-d20-log-quadratic/results/fits.csv": "67d9c5c4b2515dea172fa1c3bf2a5416f6d884f839df43b09098a6e14dd8ac1f",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt11-pilot-d20-log-quadratic/results/prefixes.csv": "89375f4cf9f1c89cb8f1df73583a956fa679e660a34fe66e0220b1e58af7c6b1",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt11-pilot-d20-log-quadratic/results/replicates.csv": "1d939c75de28a2b55718325b1e9e74092f59d4405aa726e1839be3876f8da85c",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt11-pilot-d20-log-quadratic/results/observations.csv": "3371b7f8a4e9f13e769a8591560bebf5d806462ac44a3ddd0748c6728571eed9",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt12-replication-d20-log-quadratic/results/kalman.csv": "a26bd8d71ab0fcf518016d2a35898b7f59b1ddc9938849be9a9b61bfdf630462",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt12-replication-d20-log-quadratic/results/fits.csv": "880559683b1c94e1e2102c567ad046512a38e4d67654ea8a7fd37bd9279370f3",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt12-replication-d20-log-quadratic/results/prefixes.csv": "6faa2fa97a7be269f9c380fe75694bb5c5a5f2e664caa13192e2518517a5ae59",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt12-replication-d20-log-quadratic/results/replicates.csv": "03d6d2d58b8336eecc022990169894bad32b1ece0f828fb80daddbec1fc7c02b",
+    "docs/plans/artifacts/iapf-r-reference-gap-repair-20260920-01/attempt12-replication-d20-log-quadratic/results/observations.csv": "c0babca85d5db6e04ded79a8c587ebcba6dda10ab71b9c96a9306708917fc240"
+  },
+  "final_verification": {
+    "command": "env CUDA_VISIBLE_DEVICES=-1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_iapf_r_paper_reference.py --basetemp docs/plans/artifacts/iapf-r-log-fit-repair-20260920-01/pytest-final",
+    "pytest_cases": 7,
+    "reference_R_checks": 88,
+    "alternative_R_checks": 33,
+    "reported_wall_seconds": 1.78,
+    "log": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-repair-20260920-01/tests.log",
+    "mechanics_total_charged_seconds": 55,
+    "mechanics_budget_seconds": 120,
+    "frozen_input_regression_manifest": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-log-fit-repair-20260920-01/mechanics01-frozen-inputs/manifest.json",
+    "git_diff_check": "pass"
+  }
+}

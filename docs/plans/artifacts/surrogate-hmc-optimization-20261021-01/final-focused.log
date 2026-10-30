@@ -1,0 +1,115 @@
+...............................F....                                     [100%]
+=================================== FAILURES ===================================
+___ test_all_directions_against_independent_finite_differences[True-dtype1] ____
+
+dtype = tf.float64, jacobian = True
+
+    @pytest.mark.parametrize("dtype", [tf.float32, tf.float64])
+    @pytest.mark.parametrize("jacobian", [False, True])
+    def test_all_directions_against_independent_finite_differences(dtype, jacobian):
+        # Include the regularization scale as well as ordinary ranges. Directions
+        # are small relative to each radius, so the FD ladder stays on one chart.
+        x = tf.constant([[3., 4., .7, -.3], [.2, -.4, 1., 2.],
+                         [1e-6, -2e-6, -1., .4]], dtype)
+        scale = tf.sqrt(tf.reduce_sum(x[:, :2]**2, -1))
+        dx = tf.random.stateless_normal([3, 3, 4], [261021, 91], dtype=dtype)
+        dx *= tf.concat([.1*scale[:, None]*tf.ones([3, 2], dtype),
+                         tf.ones([3, 2], dtype)], -1)[None]
+    
+        @tf.function(input_signature=[tf.TensorSpec(x.shape, dtype),
+                                      tf.TensorSpec(dx.shape, dtype)],
+                     jit_compile=True, autograph=False)
+        def evaluate(x, dx):
+            return polar_value_tangents(x, dx, jacobian=jacobian)
+    
+        value, tangent = evaluate(x, dx)
+        xx, dd = tf.cast(x, tf.float64), tf.cast(dx, tf.float64)
+        tolerance = 4e-5 if dtype == tf.float32 else 1e-8
+        tf.debugging.assert_near(tf.cast(value, tf.float64), reference_value(xx, jacobian),
+                                 atol=tolerance, rtol=tolerance)
+        for direction in range(3):
+            for step in (1e-3, 3e-4, 1e-4):
+                finite_difference = (reference_value(xx+step*dd[direction], jacobian)
+                                     -reference_value(xx-step*dd[direction], jacobian))/(2*step)
+>               tf.debugging.assert_near(tf.cast(tangent[direction], tf.float64),
+                    finite_difference, atol=tolerance, rtol=tolerance)
+
+tests/highdim/test_polar_all_parameter_tangents.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+condition = <tf.Tensor: shape=(), dtype=bool, numpy=False>
+data = ['', 'x and y not equal to tolerance rtol = tf.Tensor(1e-08, shape=(), dtype=float64), atol = tf.Tensor(1e-08, shape=(...,
+          0.00000000e+00],
+        [-1.40908783e+04, -4.80652164e+04,  0.00000000e+00,
+          0.00000000e+00]]])>]
+summarize = None, name = None
+
+    @tf_export("debugging.Assert", "Assert")
+    @dispatch.add_dispatch_support
+    @tf_should_use.should_use_result
+    def Assert(condition, data, summarize=None, name=None):
+      """Asserts that the given condition is true.
+    
+      If `condition` evaluates to false, print the list of tensors in `data`.
+      `summarize` determines how many entries of the tensors to print.
+    
+      Args:
+        condition: The condition to evaluate.
+        data: The tensors to print out when condition is false.
+        summarize: Print this many entries of each tensor.
+        name: A name for this operation (optional).
+    
+      Returns:
+        assert_op: An `Operation` that, when executed, raises a
+        `tf.errors.InvalidArgumentError` if `condition` is not true.
+        @compatibility(eager)
+        returns None
+        @end_compatibility
+    
+      Raises:
+        @compatibility(TF1)
+        When in TF V1 mode (that is, outside `tf.function`) Assert needs a control
+        dependency on the output to ensure the assertion executes:
+    
+      ```python
+      # Ensure maximum element of x is smaller or equal to 1
+      assert_op = tf.Assert(tf.less_equal(tf.reduce_max(x), 1.), [x])
+      with tf.control_dependencies([assert_op]):
+        ... code using x ...
+      ```
+    
+        @end_compatibility
+      """
+      if context.executing_eagerly():
+        if not condition:
+          xs = ops.convert_n_to_tensor(data)
+          data_str = [_summarize_eager(x, summarize) for x in xs]
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message="Expected '%s' to be true. Summarized data: %s" %
+              (condition, "\n".join(data_str)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b''
+E         b'x and y not equal to tolerance rtol = tf.Tensor(1e-08, shape=(), dtype=float64), atol = tf.Tensor(1e-08, shape=(), dtype=float64)'
+E         b'x (shape=(3, 2, 4) dtype=float64) = '
+E         0.14566911470810828, -0.10925183603108225, 0.0, ...
+E         b'y (shape=(3, 2, 4) dtype=float64) = '
+E         0.14566911194058285, -0.10925183482329848, 0.0, ...
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/control_flow_assert.py:102: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_polar_all_parameter_tangents.py::test_all_directions_against_independent_finite_differences[True-dtype1]
+1 failed, 35 passed, 2 warnings in 62.96s (0:01:02)

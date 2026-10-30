@@ -1,0 +1,32 @@
+{
+  "status": "STOPPED_INSUFFICIENT_REMAINING_COMPUTE",
+  "remaining_campaign_seconds": 11.009493154007941,
+  "remaining_campaign_attempts": 1,
+  "part_of_master_program": true,
+  "master_complete": false,
+  "posterior_sampling_complete": false,
+  "worker_active": false,
+  "compute_stop_reason": "11.009 seconds cannot complete a fresh tuning or mechanics phase; no extra GPU launch.",
+  "latest_scope": "predator_prey",
+  "latest_interpreted_status": "TUNING_TIME_LIMIT_REACHED",
+  "latest_artifact": "docs/plans/artifacts/surrogate-hmc-guard-advance-predator-20261013-01/advance.json",
+  "preserved_partial_evidence": "Candidate0 and1 complete files and per-seed precision checks are preserved; both pass. Candidate2 incomplete; no final selection.",
+  "next_actions": [
+    {
+      "action": "Complete fresh predator-prey tuning and conditional mechanics in a new output directory.",
+      "part_of_master": true,
+      "why_not_running": "Insufficient remaining compute; all three candidates must finish before a scope selection and dependent mechanics."
+    },
+    {
+      "action": "Reduce measured all-pairs transport/mixture cost and compare against practical baselines without changing the target silently.",
+      "part_of_master": true,
+      "why_not_running": "GPU cost and numerical-parity measurements need a new adequate compute allocation."
+    },
+    {
+      "action": "Resolve endpoint/prior scope, run target-specific HMC tuning, adaptive warmup and cumulative retained sampling.",
+      "part_of_master": true,
+      "why_not_running": "Mechanics evidence is insufficient; current measured cost exceeds remaining compute. Posterior references/prior adequacy remain unresolved."
+    }
+  ],
+  "approval_rule": "No renewed permission for routine CPU/reporting repairs; materially expanded compute requires owner authorization."
+}

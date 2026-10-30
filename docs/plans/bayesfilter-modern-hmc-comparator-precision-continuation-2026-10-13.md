@@ -252,3 +252,42 @@ qualification or posterior outcome is claimed. Next execute the comparator's
 existing remainder, audit its terminal evidence and costs, then refresh the
 remaining N5/N8 scope from the actual result. Do not treat these precision
 controls as completion of the master or permission to launch unfunded cells.
+
+## Terminal review, 14 October
+
+The fixed-HMC supervisor reached its total allocation at 11:21 China time.
+Before interpreting the terminal result, check the frozen source/input hashes,
+the complete eight-member tuning inventory, saved posterior decisions and
+committed chunk checksums. Use existing artifacts only: no new sampler run or
+changed posterior criterion. Save the audit and settled costs under
+`comparator-01/terminal-audit-01/` and link the result from the master.
+
+Skeptical pre-audit: the outer result inherits `posterior_assessment=not_run`
+from the search summary even when posterior rows exist. That field is wrong;
+the member results and posterior inventory must be checked before reporting
+completion. Repair the current driver's interruption summary and test timeout,
+completed-member preservation and interruption before any posterior work.
+Keep the immutable executed source and original results unchanged; record the
+correction in a separate audit. A time-limit stop is incomplete evidence, not
+a scientific rejection of the remaining candidates. Passing one member cannot
+establish all-member delivery, method superiority or release readiness.
+
+This is a localized reporting repair and read-only terminal audit within the
+held local-check reserve. Run focused CPU diagnostics with GPUs hidden and
+record measured command time. No GPU continuation is launched here. Hash or
+inventory mismatch stops interpretation pending diagnosis; no new thresholds,
+seeds, evidence counts or numerical defaults are introduced. The actual
+posterior/reference decisions remain the primary feasibility criteria; resource
+status and the stale summary are, respectively, a continuation-budget stop and
+a reporting repair trigger. Runtime, counts and margins are descriptive only.
+
+Terminal review completed: 197 source/input hashes, 896 qualification calls,
+all eight member exports, and 456 tensor checksums in 19 committed posterior
+chunks passed the artifact audit. One member passed the posterior/reference
+screens, the second has seven committed chunks, and six remain unstarted.
+Three focused reporting regressions pass. The
+[terminal result](bayesfilter-modern-hmc-fixed-terminal-2026-10-14.md) records
+the complete decision, source-preserving correction and settlement. The current
+launcher still needs integrated posterior continuation. No numerical restart
+occurred; the remaining 1579.592954 unallocated seconds and held local reserve
+must not be mistaken for a funded seven-member continuation.

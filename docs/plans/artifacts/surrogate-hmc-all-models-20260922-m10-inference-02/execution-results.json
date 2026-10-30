@@ -1,0 +1,60 @@
+{
+  "P3-M10-inference-job": {
+    "command": [
+      "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_nonlinear.py",
+      "--output",
+      "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260922-m10-inference-02/P3-M10-inference",
+      "--cpu-budget",
+      "3200.0",
+      "--wall-budget",
+      "3600.0"
+    ],
+    "cpu_allowance_seconds": 3200.0,
+    "cpu_worker_seconds": 1268.053855,
+    "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+    "depends_on": [],
+    "device": "gpu",
+    "exit_code": 0,
+    "gpu_intentionally_hidden": false,
+    "gpu_seconds": 1252.2171852609608,
+    "name": "P3-M10-inference-job",
+    "preflight": {
+      "family_remaining_before_job": {
+        "cpu_worker_seconds": 3312.1088248360015,
+        "gpu_seconds": 6380.766994151985
+      },
+      "inference_forecast": {
+        "C_D_requires_separate_endpoint_and_reference": true,
+        "additional_compilation_seconds": 240,
+        "analysis_seconds": 90,
+        "arms": [
+          "B"
+        ],
+        "authorizes_inference": false,
+        "heuristic_dominance": "NOT_RUN",
+        "includes_all_public_tuning_and_retained_stages": true,
+        "max_leapfrog_steps": 2,
+        "reference_cost_basis": "slowest steady single-row value/score/predictive probe times 8000 retained states",
+        "required": {
+          "cpu_worker_seconds": 3005.9182361639564,
+          "wall_seconds": 3028.1452732760226
+        },
+        "retained_looks": [
+          1000,
+          2000
+        ],
+        "retained_reference_functional_cost": {
+          "cpu_worker_seconds": 103.29302399999563,
+          "wall_seconds": 101.372423581779
+        },
+        "safety_factor": 1.5,
+        "trajectory_candidates": 2,
+        "transitions_per_four_chain_batch": 3778
+      }
+    },
+    "status": "COMPLETED",
+    "timeout_seconds": 3600.0,
+    "wall_seconds": 1252.2171852609608
+  }
+}

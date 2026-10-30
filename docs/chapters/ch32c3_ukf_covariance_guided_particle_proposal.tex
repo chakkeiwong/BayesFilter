@@ -1,0 +1,45 @@
+\chapter{UKF-Guided Particle Proposals and Covariance-Preserving Resets}
+\label{ch:bf-ukf-covariance-proposal}
+\chaptermark{UKF Proposals and Covariance Resets}
+
+Chapter~\ref{ch:bf-ledh-pfpf-ot-custom-gradient} requires the reset to preserve
+importance-weighted moments and the score to differentiate the same finite
+filtering computation. We now examine how a UKF covariance can guide the
+proposal while respecting those requirements. The distinction is between
+uncertainty conditional on one ancestor, uncertainty across the predictive
+mixture, and uncertainty represented by the importance-weighted posterior.
+Each covariance has a different role in the algorithm.
+
+The construction below is the covariance-guided proposal route evaluated in the
+five-model filter comparison that also supplied the surrogate-HMC endpoint.
+It combines a common UKF guide, conditional
+local flows, a marginal importance correction, a Cholesky reset that preserves
+the first two weighted moments under its stated assumptions, and an optional
+higher-moment correction. The original three-branch proposal is the baseline
+for the observation-conditioned extension developed here. In that extension,
+observation-weighted parents are the default, while uniform parents remain a
+competitive alternative. Chapter~\ref{ch:bf-dpf-observation-parent-failures}
+compares likelihood, score, and ESS across models, including cases where the
+weighted-parent score is less accurate. Those finite-filter comparisons are
+diagnostic evidence for the proposal choice; they do not establish uniformly
+better score accuracy or HMC suitability.
+
+The shared filtering recurrence is implemented in
+\path{make_batched_score_filter} in
+\path{bayesfilter/highdim/covariance_proposal_score_batch_tf.py}. The value and
+analytical total score differentiate the same finite filtering computation.
+Chapter~\ref{ch:bf-surrogate-hmc-five-models} separately reports the endpoint,
+Metropolis correction, and posterior diagnostics. The deterministic
+structural-completion route uses an innovation-space proposal and currently
+selects parents uniformly; the weighted-parent comparison does not cover that
+route. Particle matrices in this chapter have particles as columns,
+\(X\in\R^{d\times N}\), transposing the row-particle convention in the
+preceding chapter without changing the covariance or derivative identities.
+
+\begingroup
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
+keepspaces=true,breaklines=true,showstringspaces=false,
+frame=single,rulecolor=\color{black!25},xleftmargin=3pt,xrightmargin=3pt}
+\setlength{\emergencystretch}{2em}
+\input{chapters/ledh_covariance_proposal_body}
+\endgroup

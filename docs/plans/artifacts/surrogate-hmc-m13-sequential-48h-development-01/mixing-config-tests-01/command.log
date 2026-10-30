@@ -1,0 +1,72 @@
+FF.....                                                                  [100%]
+=================================== FAILURES ===================================
+_____ test_repair_is_scoped_to_nomination_and_disjoint_seeds[1-0.5-band0] ______
+
+attempt = 1, target = 0.5, band = (0.35, 0.65)
+
+    @pytest.mark.parametrize("attempt,target,band", [(1,.50,(.35,.65)), (2,.35,(.20,.50))])
+    def test_repair_is_scoped_to_nomination_and_disjoint_seeds(attempt,target,band):
+        original = tuning_config("M13-scope-fixture")
+        repaired, metadata = mixing_repair_config(original, attempt)
+        changed = {key for key, value in asdict(original).items()
+                   if value != asdict(repaired)[key]}
+        assert changed == {"nomination", "fresh_seed"}
+        assert repaired.nomination.target_accept_prob == target
+        assert repaired.nomination.acceptance_policy.overall_band == band
+        assert repaired.nomination.acceptance_policy.per_chain_band == (.05,1.)
+        assert repaired.nomination.verification_repair_rounds == 2
+        assert repaired.nomination.seed != repaired.fresh_seed
+        assert repaired.nomination.seed != original.nomination.seed
+        assert repaired.nomination.target_scope == original.nomination.target_scope
+        assert repaired.nomination.max_leapfrog_steps == original.nomination.max_leapfrog_steps
+        assert repaired.nomination.mass_window_results == original.nomination.mass_window_results
+        assert repaired.nomination.mass_shrinkage == original.nomination.mass_shrinkage
+        assert repaired.warmup_results == 2000 and repaired.verification_results == 1000
+        assert repaired.warmup_rhat_max == 1.05
+>       assert repaired.max_warmup_results == repaired.max_verification_results == 10000
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'VerifiedTensorFlowHMCConfig' object has no attribute 'max_warmup_results'
+
+tests/test_surrogate_hmc_m13_mixing_config.py:27: AttributeError
+_____ test_repair_is_scoped_to_nomination_and_disjoint_seeds[2-0.35-band1] _____
+
+attempt = 2, target = 0.35, band = (0.2, 0.5)
+
+    @pytest.mark.parametrize("attempt,target,band", [(1,.50,(.35,.65)), (2,.35,(.20,.50))])
+    def test_repair_is_scoped_to_nomination_and_disjoint_seeds(attempt,target,band):
+        original = tuning_config("M13-scope-fixture")
+        repaired, metadata = mixing_repair_config(original, attempt)
+        changed = {key for key, value in asdict(original).items()
+                   if value != asdict(repaired)[key]}
+        assert changed == {"nomination", "fresh_seed"}
+        assert repaired.nomination.target_accept_prob == target
+        assert repaired.nomination.acceptance_policy.overall_band == band
+        assert repaired.nomination.acceptance_policy.per_chain_band == (.05,1.)
+        assert repaired.nomination.verification_repair_rounds == 2
+        assert repaired.nomination.seed != repaired.fresh_seed
+        assert repaired.nomination.seed != original.nomination.seed
+        assert repaired.nomination.target_scope == original.nomination.target_scope
+        assert repaired.nomination.max_leapfrog_steps == original.nomination.max_leapfrog_steps
+        assert repaired.nomination.mass_window_results == original.nomination.mass_window_results
+        assert repaired.nomination.mass_shrinkage == original.nomination.mass_shrinkage
+        assert repaired.warmup_results == 2000 and repaired.verification_results == 1000
+        assert repaired.warmup_rhat_max == 1.05
+>       assert repaired.max_warmup_results == repaired.max_verification_results == 10000
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'VerifiedTensorFlowHMCConfig' object has no attribute 'max_warmup_results'
+
+tests/test_surrogate_hmc_m13_mixing_config.py:27: AttributeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_mixing_config.py::test_repair_is_scoped_to_nomination_and_disjoint_seeds[1-0.5-band0]
+FAILED tests/test_surrogate_hmc_m13_mixing_config.py::test_repair_is_scoped_to_nomination_and_disjoint_seeds[2-0.35-band1]
+2 failed, 5 passed, 2 warnings in 2.51s

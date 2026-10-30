@@ -1,0 +1,48 @@
+{
+  "schema": "zhao_cui_score_diagnostic_report.v1",
+  "created_utc": "2026-10-05T11:59:26.359362+00:00",
+  "command": [
+    "/usr/bin/python3",
+    "docs/benchmarks/summarize_zhao_cui_quadratic_reference.py",
+    "--run",
+    "docs/plans/artifacts/zhao-cui-publication-replication-20261004/pp-score-r20-small-radii-01",
+    "--run",
+    "docs/plans/artifacts/zhao-cui-publication-replication-20261004/pp-score-r20-n100000-01",
+    "--run",
+    "docs/plans/artifacts/zhao-cui-publication-replication-20261004/sir-score-r20-main-01",
+    "--run",
+    "docs/plans/artifacts/zhao-cui-publication-replication-20261004/sir-score-r40-small-radii-01",
+    "--bootstrap",
+    "docs/plans/artifacts/zhao-cui-reference-repair-20261003/saved-bootstrap-reference-summary.json",
+    "--output-root",
+    "docs/plans/artifacts/zhao-cui-publication-replication-20261004/report-score-final-01"
+  ],
+  "git_commit": "0b91a64f6d38009b5f081d7981f51fab958425c0",
+  "reporter_sha256": "fa0d00e0ad8a4a4a5ae1f6e36996e616b776266fd6250efc559e2944cc6b3deb",
+  "bootstrap_sha256": "0902a8faafc09ef90745d02160f0685cb0074b8ff6463e7bd737c44fddfaa8d2",
+  "sources": [
+    {
+      "directory": "docs/plans/artifacts/zhao-cui-publication-replication-20261004/pp-score-r20-small-radii-01",
+      "result_sha256": "d688d0e9332a3d33441877a5a6e56ea68b59fe20b3eba85be1a3383c40aee32a",
+      "manifest_sha256": "38fdc9f64a500854b5752d3930b6caef99eeb4c4209c35bff18b74b06ad2f4f0"
+    },
+    {
+      "directory": "docs/plans/artifacts/zhao-cui-publication-replication-20261004/pp-score-r20-n100000-01",
+      "result_sha256": "510457ac17f6374fda9e57d658a1305e225594eb8fc9c402713fa8f90d3d63a2",
+      "manifest_sha256": "fdb96e8ed3d8690744f2eacaa58a81d1aef2c0820f8ff56ba7c829ca45054fec"
+    },
+    {
+      "directory": "docs/plans/artifacts/zhao-cui-publication-replication-20261004/sir-score-r20-main-01",
+      "result_sha256": "d4cda9c88c42ca25f50b93ece3e2c4c10b4bcbd554c8685207d8796a6398bfa2",
+      "manifest_sha256": "151037a6b537091d49ec692d3f79b2c10f55fde69ee279b018c8cb50610ace24"
+    },
+    {
+      "directory": "docs/plans/artifacts/zhao-cui-publication-replication-20261004/sir-score-r40-small-radii-01",
+      "result_sha256": "780fd9534873a4310ceac4b34ff928dd8fb2347f9b5867001947681f911a3576",
+      "manifest_sha256": "5ff867e3e342f0281de3fcd5c6bc3601eefd41b8a36432e48fb44fe116896918"
+    }
+  ],
+  "aggregation": "arithmetic mean of independent-proposal finite-sample log-score estimates; no pooled-likelihood derivative claim",
+  "cpu_only": true,
+  "role": "post-run reporting only; cannot tune or admit a runtime method"
+}

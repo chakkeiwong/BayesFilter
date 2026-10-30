@@ -1,0 +1,63 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 41.051483999999995,
+    "gpu_seconds": 29.5334205629988
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 35445.538550000005,
+    "gpu_seconds": 33301.43067141179
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_reference.py",
+        "tests/test_wrapped_gaussian_tf.py",
+        "tests/test_surrogate_hmc_range_bearing_scope.py"
+      ],
+      "cpu_allowance_seconds": 180.0,
+      "cpu_worker_seconds": 7.88486,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 6.757310750002944
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-reference-trajectory",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-reference-03/m13-reference-trajectory/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 1800.0,
+      "cpu_worker_seconds": 33.104295,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 29.5334205629988,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 2400.0,
+      "wall_seconds": 29.5334205629988
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 35404.487066,
+    "gpu_seconds": 33271.89725084879
+  }
+}

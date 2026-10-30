@@ -1,20 +1,12 @@
-"""XLA-compiled C2 Gaussian-reference value filter (Phase A2 of the
-reviewed completion-campaign plan, 2026-08-24).
+"""Complete C2 Gaussian-reference TT filtering and diagnostic snapshots.
 
-Program identical to `run_value_filter_branch_axis_gaussian` (the
-REVIEWED C2 note incl. §3b row law and clamped τ); execution identical
-in structure to the adapted XLA engine: host filter loop + one
-jit-compiled transition step per branch-count signature, `_fit_als_graph`
-solve backend. Host side: hints, Christoffel rows/weights, τ clamp,
-increment accounting, diagnostics. Compiled side: target assembly with
-the row-dependent η-ratio conversion, retained re-expression, ALS fit,
-Gram contractions. Parity vs the eager Gaussian engine is a MEASURED
-Gate-A criterion (≤ 1e-12), not a bit-identity claim.
+The numerical recurrence, fit and defensive floor run in one XLA endpoint.
+Frozen tensor hints and row designs are prepared before evaluation. Snapshot
+construction and host vetoes consume completed tensor histories only.
 """
 
 from __future__ import annotations
 
-import math
 import hashlib
 import json
 import weakref
@@ -23,31 +15,20 @@ from typing import Callable, Mapping, NamedTuple, Sequence
 
 import tensorflow as tf
 
-from bayesfilter.highdim.filtering import AffineCoordinateMap
-from bayesfilter.highdim.fitting import FixedTTFitter
 from bayesfilter.highdim.retained_quadratic_form_tf import (
-    RetainedQuadraticForm,
     prefix_gram_matrix,
     prefix_row_vectors,
-    retained_quadratic_form_from_squared_tt,
     suffix_gram_matrix,
 )
 from bayesfilter.highdim.squared_tt_engine_gaussian_tf import (
-    _check_hint,
-    _christoffel_rows,
-    _clamped_tau,
     _hermite_product_basis,
     _log_eta,
     _log_student_t_ratio,
-    _logdet_lower,
 )
 from bayesfilter.highdim.squared_tt_engine_v0_tf import (
     DiscreteIndicatorBasis1D,
     EngineConfig,
-    _fixed_als_fit,
-    _initial_tt_cores,
 )
-from bayesfilter.highdim.squared_tt_engine_xla_tf import _fit_als_graph
 from bayesfilter.highdim.tt import TTCore
 from bayesfilter.highdim.bases import ProductBasis
 
@@ -356,339 +337,79 @@ def _transition_input_signature(
 
 
 def _run_value_filter_branch_axis_gaussian_xla(
-    adapter,
-    observations: tf.Tensor,
-    config: EngineConfig,
-    *,
-    predictive_moment_hint: Callable[[int, tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    initial_moment_hint: Callable[[tf.Tensor], tuple[tf.Tensor, tf.Tensor]],
-    defensive_nu: float | None = None,
-    capture_steps: frozenset[int] = frozenset(),
-    run_identity: str = "",
-    retained_proposal_capture: bool = False,
-) -> tuple[
-    tf.Tensor,
-    list[dict],
-    dict[
-        int,
-        GaussianXLAFrozenTransitionSnapshot | GaussianXLARetainedProposalSnapshot,
-    ],
-]:
-    if config.quadrature_order is not None:
-        raise ValueError("gaussian engine is defined for scattered rows only")
-    if predictive_moment_hint is None or initial_moment_hint is None:
-        raise ValueError("gaussian engine requires frozen moment hints")
-
-    n = adapter.state_dim
-    observations = tf.convert_to_tensor(observations, DTYPE)
-    horizon = int(observations.shape[0])
-    invalid_capture_steps = sorted(
-        step for step in capture_steps if step <= 0 or step >= horizon
-    )
-    if invalid_capture_steps:
-        raise ValueError(
-            "transition capture steps must be in [1, horizon); "
-            f"got {invalid_capture_steps}"
-        )
+    adapter, observations, config, *, predictive_moment_hint, initial_moment_hint,
+    defensive_nu=None, capture_steps=frozenset(), run_identity="", retained_proposal_capture=False,
+    jit_compile=True,
+):
+    """Run the complete native filter; serialize diagnostics only after it ends."""
+    from bayesfilter.highdim.squared_tt_gaussian_native_tf import make_gaussian_value_filter, REPORT_NAMES
+    observations = tf.convert_to_tensor(observations,DTYPE)
+    n,horizon = adapter.state_dim,int(observations.shape[0])
+    if any(step <= 0 or step >= horizon for step in capture_steps):
+        raise ValueError("transition capture steps must be in [1, horizon)")
     if capture_steps and not run_identity:
         raise ValueError("diagnostic capture requires a non-empty run_identity")
-    current_basis = _hermite_product_basis(n, config.basis_degree)
-    basis_dim = int(current_basis.bases[0].basis_dim)
-    ridge = tf.constant(config.ridge, DTYPE)
-    fitter = FixedTTFitter()
-    per_adapter = _STEP_CACHE.setdefault(adapter, {})
-    step_cache = per_adapter.setdefault(config, {})
-
-    def _make_transition_fit(
-        mixed_basis,
-        mixed_shapes,
-        prefix_shapes,
-        *,
-        capture_full: bool,
-    ):
-        input_signature = _transition_input_signature(
-            prefix_shapes,
-            mixed_shapes,
-            n=n,
-            row_count=config.row_count,
-        )
-
-        @tf.function(input_signature=input_signature, jit_compile=True)
-        def transition_fit(
-            prefix_values, gram, tau_abs_prev, u_rows, u_weights, core0_values,
-            y, m_c, l_cc, m_p, l_pc, l_pp, l_old, m_old,
-        ):
-            target = _assemble_transition_target(
-                adapter=adapter,
-                current_basis=current_basis,
-                prefix_shapes=prefix_shapes,
-                branch_gram_floor=config.branch_gram_floor,
-                defensive_nu=defensive_nu,
-                prefix_values=prefix_values,
-                gram=gram,
-                tau_abs_prev=tau_abs_prev,
-                u_rows=u_rows,
-                u_weights=u_weights,
-                y=y,
-                m_c=m_c,
-                l_cc=l_cc,
-                m_p=m_p,
-                l_pc=l_pc,
-                l_pp=l_pp,
-                l_old=l_old,
-                m_old=m_old,
-            )
-            cores, worst, rms = _fit_als_graph(
-                fitter,
-                mixed_basis,
-                target.expanded_rows,
-                target.sqrt_target,
-                target.fit_weights,
-                core0_values, mixed_shapes, config.sweeps, ridge,
-            )
-            new_gram = suffix_gram_matrix(
-                tuple(cores[n:]), mixed_basis, axis_offset=n
-            )
-            p_gram = prefix_gram_matrix(tuple(cores[:n]), mixed_basis)
-            z_h_new = tf.einsum("ab,ab->", p_gram, new_gram)
-            production_outputs = (
-                [c.values for c in cores[:n]],
-                new_gram,
-                z_h_new,
-                target.shift,
-                worst,
-                rms,
-                target.u_old_max,
-            )
-            if capture_full:
-                return production_outputs + (
-                    _transition_target_summary(target),
-                    tuple(c.values for c in cores),
-                )
-            # Preserve the original production graph exactly: even adding an
-            # otherwise-unused observability output can perturb this highly
-            # ill-conditioned ALS/XLA computation.  Retained capture copies
-            # these seven tensors on the host; full capture is the separate
-            # observability route above.
-            return production_outputs
-
-        return transition_fit
-
-    log_likelihood = tf.constant(0.0, DTYPE)
-    retained: RetainedQuadraticForm | None = None
-    diagnostics: list[dict] = []
-    snapshots: dict[
-        int,
-        GaussianXLAFrozenTransitionSnapshot | GaussianXLARetainedProposalSnapshot,
-    ] = {}
-    prefix_values = None
-    gram = None
-    zc = None
-
-    for t in range(horizon):
-        if t == 0:
-            # t=0: eager (cheap n-axis fit), identical to the eager engine
-            m_c0, l_cc0 = _check_hint(*initial_moment_hint(observations[0]), n)
-            map_c = AffineCoordinateMap(offset=m_c0, matrix=l_cc0)
-            rows, weights, row_ess = _christoffel_rows(
-                config, config.row_count, n, (config.seed, 17), config.basis_degree
-            )
-            x0 = m_c0[None, :] + tf.einsum("ij,nj->ni", l_cc0, rows)
-            conversion = _logdet_lower(l_cc0) - _log_eta(rows)
-            log_f = (
-                adapter.initial_log_density(x0)
-                + adapter.observation_log_density(x0, observations[t])
-                + conversion
-            )
-            shift = tf.reduce_logsumexp(log_f) - tf.math.log(
-                tf.cast(tf.shape(log_f)[0], DTYPE)
-            )
-            sqrt_target = tf.exp(0.5 * (log_f - shift))
-            cores, fit_diag = _fixed_als_fit(
-                current_basis, rows, sqrt_target, weights,
-                _initial_tt_cores(n, basis_dim, config.rank), config,
-            )
-            suffix_core = tf.zeros([int(cores[-1].right_rank), basis_dim, 1], DTYPE)
-            suffix_core = tf.tensor_scatter_nd_update(suffix_core, [[0, 0, 0]], [1.0])
-            extended = tuple(cores) + (TTCore(suffix_core),)
-            extended_basis = _hermite_product_basis(n + 1, config.basis_degree)
-            base = retained_quadratic_form_from_squared_tt(
-                extended, extended_basis, split_index=n, tau=0.0,
-                prefix_basis=current_basis, coordinate_map=map_c,
-            )
-            z_h_new = base.z_complete_ref
-            tau_t, eps_rel_sq = _clamped_tau(fit_diag["weighted_fit_rms"], z_h_new)
-            retained = RetainedQuadraticForm(
-                prefix_cores=base.prefix_cores, suffix_gram=base.suffix_gram,
-                tau=tau_t * z_h_new, z_complete_ref=(1.0 + tau_t) * z_h_new,
-                prefix_basis=base.prefix_basis, coordinate_map=base.coordinate_map,
-            )
-            prefix_values = [c.values for c in base.prefix_cores]
-            gram = base.suffix_gram
-            zc = retained.z_complete_ref
-            log_increment = shift + tf.math.log(retained.z_complete_ref)
-            log_likelihood += log_increment
-            diagnostics.append(
-                {
-                    "time_index": 0,
-                    "log_increment": float(log_increment.numpy()),
-                    "tau_t": float(tau_t.numpy()),
-                    "eps_rel_sq": eps_rel_sq,
-                    "row_ess": row_ess,
-                    "tie_flag": False,
-                    **fit_diag,
-                }
-            )
+    if predictive_moment_hint is None or initial_moment_hint is None:
+        raise ValueError("gaussian engine requires frozen moment hints")
+    initial_mean,initial_cov = initial_moment_hint(observations[0])
+    joint_means,joint_covariances = tf.map_fn(lambda t: predictive_moment_hint(t,observations[t]),
+        tf.range(1,horizon),fn_output_signature=(tf.TensorSpec([2*n],DTYPE),tf.TensorSpec([2*n,2*n],DTYPE)),
+        parallel_iterations=1)
+    full = bool(capture_steps) and not retained_proposal_capture
+    call = make_gaussian_value_filter(adapter,observations.shape,config,defensive_nu=defensive_nu,
+        full_capture=full,jit_compile=jit_compile)
+    log_likelihood,history = call(observations,initial_mean,initial_cov,joint_means,joint_covariances)
+    reports,prefix_history,gram_history,mean_history,chol_history = history[:5]
+    # Spectrum/ratio reports were observability only in the original route.
+    # They must not create additional numerical rejection thresholds.
+    if not bool(tf.reduce_all(tf.math.is_finite(reports[:,0])).numpy()):
+        raise ValueError("non-finite step increment or moment hint (fail-closed)")
+    if not bool(tf.reduce_all(reports[:,16] == 1.).numpy()):
+        raise ValueError("moment hint nonfinite or covariance not positive definite")
+    if bool((reports[0,4] > config.condition_number_veto).numpy()):
+        raise ValueError("condition number veto in fixed ALS fit")
+    if not bool(tf.math.is_finite(reports[0,5]).numpy()):
+        raise ValueError("non-finite initial fit residual")
+    diagnostics,snapshots = [],{}
+    for t,row in enumerate(reports.numpy().tolist()):
+        values = dict(zip(REPORT_NAMES,row))
+        target_summary = dict(zip(_TARGET_SUMMARY_NAMES,history[5][t].numpy().tolist())) if full and t in capture_steps else {}
+        report = {key:values[key] for key in ("log_increment","tau_t","eps_rel_sq","row_ess",
+            "worst_condition","weighted_fit_rms")}
+        report.update(time_index=t,tie_flag=False)
+        if t:
+            report.update({key:values[key] for key in ("u_old_max","gram_lambda_min","gram_lambda_max",
+                "gram_cond","gram_sym_err","eps_rel_sq_counting","branch_count")})
+            report.update({f"target_{key}":value for key,value in target_summary.items()})
+        diagnostics.append(report)
+        if t not in capture_steps:
             continue
-
-        # ---- host-side step setup (maps, rows, cache) ----
-        map_old = retained.coordinate_map
-        l_old = tf.convert_to_tensor(map_old.matrix, DTYPE)
-        m_old = tf.convert_to_tensor(map_old.offset, DTYPE)
-        joint_mean, joint_chol = _check_hint(
-            *predictive_moment_hint(t, observations[t]), 2 * n
-        )
-        m_c = joint_mean[:n]
-        m_p = joint_mean[n:]
-        l_cc = joint_chol[:n, :n]
-        l_pc = joint_chol[n:, :n]
-        l_pp = joint_chol[n:, n:]
-        map_c_new = AffineCoordinateMap(offset=m_c, matrix=l_cc)
-        u_rows, u_weights, row_ess = _christoffel_rows(
-            config, config.row_count, 2 * n, (config.seed, 100 + t),
-            config.basis_degree,
-        )
-        branch_count = retained.boundary_rank + 1
-        capture_retained = retained_proposal_capture and t in capture_steps
-        capture_full = not retained_proposal_capture and t in capture_steps
-        # Retained capture copies the original seven production outputs on the
-        # host.  It deliberately shares this graph/cache entry with the normal
-        # value path so capture cannot change the fitted finite program.
-        cache_key = (branch_count, defensive_nu, capture_full)
-        if cache_key not in step_cache:
-            mixed_basis = ProductBasis(
-                list(current_basis.bases)
-                + [DiscreteIndicatorBasis1D(branch_count)]
-                + list(_hermite_product_basis(n, config.basis_degree).bases),
-                current_basis.convention,
-            )
-            mixed_dims = [basis_dim] * n + [branch_count] + [basis_dim] * n
-            mixed_shapes = [
-                (
-                    1 if axis == 0 else config.rank,
-                    mixed_dims[axis],
-                    1 if axis == 2 * n else config.rank,
-                )
-                for axis in range(2 * n + 1)
-            ]
-            prefix_shapes = [tuple(v.shape.as_list()) for v in prefix_values]
-            step_cache[cache_key] = (
-                _make_transition_fit(
-                    mixed_basis,
-                    mixed_shapes,
-                    prefix_shapes,
-                    capture_full=capture_full,
-                ),
-                mixed_shapes,
-            )
-        transition_fit, mixed_shapes = step_cache[cache_key]
-        core0_values = [
-            0.3
-            * tf.random.stateless_normal(
-                list(shape),
-                tf.constant((config.seed, 7000 + 31 * t + axis), tf.int32),
-                dtype=DTYPE,
-            )
-            for axis, shape in enumerate(mixed_shapes)
-        ]
+        # Everything below is an artifact boundary. No host value is fed back
+        # into the filter; the saved tensors come from its completed recurrence.
+        previous_shapes = call.initial_shapes if t == 1 else call.prefix_shapes
+        prefix_values_previous = tuple(prefix_history[t-1,axis,:shape[0],:shape[1],:shape[2]]
+            for axis,shape in enumerate(previous_shapes))
+        prefix_values_new = tuple(prefix_history[t,axis,:shape[0],:shape[1],:shape[2]]
+            for axis,shape in enumerate(call.prefix_shapes))
+        previous_rank = previous_shapes[-1][-1]
+        gram_previous = gram_history[t-1,:previous_rank,:previous_rank]
+        gram_new = gram_history[t]
+        m_old,l_old = mean_history[t-1],chol_history[t-1]
+        m_c,l_cc = mean_history[t],chol_history[t]
+        z_h_new,zc_new = reports[t,13],reports[t,17]
+        log_increment,corrected_increment = reports[t,0],reports[t,14]
+        tau_abs_previous,z_complete_previous = reports[t-1,18],reports[t-1,17]
+        worst,rms,u_old_max,shift = reports[t,4],reports[t,5],reports[t,6],reports[t,15]
+        branch_count = previous_rank+1
+        dims = (config.basis_degree+1,)*n+(branch_count,)+(config.basis_degree+1,)*n
+        mixed_shapes = tuple((1 if axis == 0 else config.rank,dim,1 if axis == 2*n else config.rank)
+            for axis,dim in enumerate(dims))
+        capture_retained,capture_full = retained_proposal_capture,not retained_proposal_capture
         if capture_full:
-            prefix_values_previous = tuple(tf.identity(v) for v in prefix_values)
-            gram_previous = tf.identity(gram)
-            tau_abs_previous = tf.identity(retained.tau)
-            z_complete_previous = tf.identity(zc)
-        transition_outputs = transition_fit(
-            tuple(prefix_values),
-            gram,
-            retained.tau,
-            u_rows,
-            u_weights,
-            tuple(core0_values),
-            observations[t],
-            m_c,
-            l_cc,
-            m_p,
-            l_pc,
-            l_pp,
-            l_old,
-            m_old,
-        )
-        if capture_full:
-            (
-                prefix_values_new,
-                gram_new,
-                z_h_new,
-                shift,
-                worst,
-                rms,
-                u_old_max,
-                target_summary_tensor,
-                fitted_core_values,
-            ) = transition_outputs
-        else:
-            (
-                prefix_values_new,
-                gram_new,
-                z_h_new,
-                shift,
-                worst,
-                rms,
-                u_old_max,
-            ) = transition_outputs
-            target_summary = {}
-            fitted_core_values = None
-        if capture_full:
-            target_summary = {
-                name: float(value.numpy())
-                for name, value in zip(
-                    _TARGET_SUMMARY_NAMES, tf.unstack(target_summary_tensor)
-                )
-            }
-        # Class-A observability (n=4 diagnosis 2026-08-27): the retained-Gram
-        # spectrum decides whether the unpropagated branch_gram_floor can
-        # matter. A 1e-12 relative ridge only perturbs the quadratic form
-        # materially when cond(E) >~ 1e12; cond(E) was previously unrecorded
-        # (the manifest's cond_max is the ALS design-matrix condition).
-        # Computed eagerly, outside the jit_compile kernel, per the TF policy
-        # on keeping non-kernel validation out of the compiled hot path.
-        gram_new_eigvals = tf.linalg.eigvalsh(gram_new)
-        gram_lambda_min = float(gram_new_eigvals[0].numpy())
-        gram_lambda_max = float(gram_new_eigvals[-1].numpy())
-        gram_cond = gram_lambda_max / max(abs(gram_lambda_min), 1e-300)
-        gram_sym_err = float(
-            tf.linalg.norm(gram_new - tf.transpose(gram_new))
-            / tf.maximum(tf.linalg.norm(gram_new), tf.constant(1e-300, DTYPE))
-        )
-
-        tau_t, eps_rel_sq = _clamped_tau(float(rms.numpy()), z_h_new)
-
-        # Class-A observability: the branch axis repeats each physical row
-        # branch_count times and its Gram mass matrix is counting measure,
-        # while `rms` is normalized by the repeated-row weight total. The
-        # counting-measure residual is therefore branch_count x larger.
-        # RECORDED ONLY -- tau_t above is unchanged. Re-calibrating tau on
-        # eps_rel_sq_counting is a Class-C numerics-altering change that would
-        # move the veto threshold and break comparability with the n=2 verdict
-        # (r*(2)=6 was established under the current calibration), so it needs
-        # its own no-harm evaluation and owner decision. See the fix plan.
-        branch_count_diag = retained.boundary_rank + 1
-        eps_rel_sq_counting = eps_rel_sq * branch_count_diag
-
-        zc_new = (1.0 + tau_t) * z_h_new
-        log_increment = shift + tf.math.log(zc_new) - tf.math.log(zc)
-        corrected_increment = log_increment - tf.math.log1p(tau_t)
-        increment_value = float(log_increment.numpy())
-        if not math.isfinite(increment_value):
-            raise ValueError("non-finite step increment (fail-closed)")
+            fitted_core_values = tuple(history[6][t,axis,:shape[0],:shape[1],:shape[2]]
+                for axis,shape in enumerate(mixed_shapes))
+            joint_mean,joint_chol = joint_means[t-1],history[7][t]
+            u_rows,u_weights = call.prepared_rows[t-1],call.prepared_weights[t-1]
         if capture_retained:
             snapshots[t] = GaussianXLARetainedProposalSnapshot(
                 run_identity=run_identity,
@@ -710,7 +431,7 @@ def _run_value_filter_branch_axis_gaussian_xla(
                 ),
                 suffix_gram=tf.identity(gram_new),
                 z_h=tf.identity(z_h_new),
-                tau_abs=tf.identity(tau_t * z_h_new),
+                tau_abs=tf.identity(reports[t,18]),
                 z_complete=tf.identity(zc_new),
                 coordinate_offset=tf.identity(m_c),
                 coordinate_matrix=tf.identity(l_cc),
@@ -763,39 +484,6 @@ def _run_value_filter_branch_axis_gaussian_xla(
                 u_old_max=tf.identity(u_old_max),
                 target_summary=dict(target_summary),
             )
-        retained = RetainedQuadraticForm(
-            prefix_cores=tuple(TTCore(v) for v in prefix_values_new),
-            suffix_gram=gram_new,
-            tau=tau_t * z_h_new,
-            z_complete_ref=zc_new,
-            prefix_basis=current_basis,
-            coordinate_map=map_c_new,
-        )
-        prefix_values = list(prefix_values_new)
-        gram = gram_new
-        zc = zc_new
-        log_likelihood += log_increment
-        diagnostics.append(
-            {
-                "time_index": t,
-                "log_increment": increment_value,
-                "tau_t": float(tau_t.numpy()),
-                "eps_rel_sq": eps_rel_sq,
-                "row_ess": row_ess,
-                "tie_flag": False,
-                "worst_condition": float(worst.numpy()),
-                "weighted_fit_rms": float(rms.numpy()),
-                "u_old_max": float(u_old_max.numpy()),
-                # n=4 diagnosis 2026-08-27: Gram health and counting-measure RMS
-                "gram_lambda_min": gram_lambda_min,
-                "gram_lambda_max": gram_lambda_max,
-                "gram_cond": gram_cond,
-                "gram_sym_err": gram_sym_err,
-                "eps_rel_sq_counting": eps_rel_sq_counting,
-                "branch_count": branch_count_diag,
-                **{f"target_{key}": value for key, value in target_summary.items()},
-            }
-        )
     return log_likelihood, diagnostics, snapshots
 
 

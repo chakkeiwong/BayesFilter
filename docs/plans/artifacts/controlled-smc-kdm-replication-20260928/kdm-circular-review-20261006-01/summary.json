@@ -1,0 +1,85 @@
+{
+  "status": "PASS",
+  "scope": "COMPLETED_CIRCULAR_CONSUMER_AUDIT_NOT_FULL_PARITY",
+  "scientific_verdict": "FP64_CONSUMERS_MATCH_FP32_COMPATIBILITY_UNRESOLVED",
+  "replication": "INCOMPLETE",
+  "numerical_screen_passed": false,
+  "dtype_screen_passed": {
+    "float64": true,
+    "float32": false
+  },
+  "comparison_verdict": "FP64_PASS_FP32_FAIL_UNCHANGED_TOLERANCES",
+  "checks_total": 315,
+  "checks_passed": 311,
+  "gpu_failed_checks": [
+    {
+      "name": "float32_ordinary/resampling/raw_gradient/1",
+      "pass_check": false,
+      "max_absolute_error": 0.0001068115234375,
+      "max_scaled_error": 1.3438799381256104,
+      "tolerance": 1.52587890625e-05
+    },
+    {
+      "name": "float32_angular_seam/resampling/raw_gradient/1",
+      "pass_check": false,
+      "max_absolute_error": 0.00014495849609375,
+      "max_scaled_error": 2.5783627033233643,
+      "tolerance": 1.52587890625e-05
+    },
+    {
+      "name": "float32_angular_seam/resampling/raw_gradient/2",
+      "pass_check": false,
+      "max_absolute_error": 0.03692626953125,
+      "max_scaled_error": 4.034316062927246,
+      "tolerance": 1.52587890625e-05
+    },
+    {
+      "name": "float32_angular_seam/consumer/gradient/2",
+      "pass_check": false,
+      "max_absolute_error": 0.00011992454528808594,
+      "max_scaled_error": 2.616995096206665,
+      "tolerance": 1.52587890625e-05
+    }
+  ],
+  "cpu_failed_checks": [
+    {
+      "name": "float32_ordinary/resampling/raw_gradient/1",
+      "pass_check": false,
+      "max_absolute_error": 6.103515625e-05,
+      "max_scaled_error": 1.0079100131988525
+    },
+    {
+      "name": "float32_angular_seam/resampling/raw_gradient/1",
+      "pass_check": false,
+      "max_absolute_error": 0.0001430511474609375,
+      "max_scaled_error": 6.87563419342041
+    },
+    {
+      "name": "float32_angular_seam/resampling/raw_gradient/2",
+      "pass_check": false,
+      "max_absolute_error": 0.01019287109375,
+      "max_scaled_error": 1.1136046648025513
+    },
+    {
+      "name": "float32_far_tail/resampling/raw_gradient/1",
+      "pass_check": false,
+      "max_absolute_error": 9.5367431640625e-05,
+      "max_scaled_error": 1.2450319528579712
+    },
+    {
+      "name": "float32_far_tail/resampling/raw_gradient/2",
+      "pass_check": false,
+      "max_absolute_error": 0.00054931640625,
+      "max_scaled_error": 1.6477969884872437
+    }
+  ],
+  "cpu_numerical_screen_passed": false,
+  "gpu_charge_seconds": 37.76449583284557,
+  "cpu_charge_seconds": 5.536095131188631,
+  "remaining_seconds": {
+    "gpu": 664.9919998964178,
+    "cpu": 151416.64133572605
+  },
+  "status_means": "Audit completed; not a pass of the full numerical screen",
+  "source_scope": "actual author resample/weight/NLL methods; constructed model output/cloud; replayed samples"
+}

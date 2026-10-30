@@ -1,0 +1,118 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/scripts/trace_sir_n1008_runtime.py",
+    "--worker",
+    "--mode",
+    "determinant_off",
+    "--root",
+    "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-n1008-slowdown-trace-20261023/attempt-01/determinant_off",
+    "--particles",
+    "1008"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "git_commit": "90a3acebd3965da5bdd64cb165dfdfe2d8cf0649",
+  "source": "docs/plans/artifacts/ledh-sir-n1008-runtime-20261023/run-02/current-source",
+  "source_index_sha256": "eca930de03e8c978467e1dec45d40719f66a11c564a3a678b16030db1fa9c65d",
+  "input_sha256": {
+    "263103001": "392aaf9f98d4f5ef26bc06beb146e4dfa3dfbf55db48b5b622fbc7632e5f22ec",
+    "263103002": "7eaf97c8627ffdcd0ef816ef452b9befc0c519678dc571e53d8352099801a90f"
+  },
+  "input_file_sha256": "c628cbf169e8341e25f3ef4926fb0bb4579407a7ec2a05b2f88ad995ecb92ccc",
+  "particles": 1008,
+  "horizon": 5,
+  "state_dimension": 18,
+  "parameter_dimension": 3,
+  "parameter_batch_size": 1,
+  "guide": null,
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8.0,
+    "moment_safety": false
+  },
+  "chunk": {
+    "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+    "num_particles": 1008,
+    "row_chunk_size": 1008,
+    "col_chunk_size": 1008,
+    "row_blocks": 1,
+    "col_blocks": 1
+  },
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "xla_flags": "--xla_gpu_enable_command_buffer=",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_uuid": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "gpu_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "seeds": {
+    "calibration": 263103010,
+    "reset": 263103020,
+    "data": [
+      263103001,
+      263103002
+    ],
+    "particle": [
+      263103031,
+      263103032
+    ]
+  },
+  "custom_op_sha256": "661f11b9db1f6e9ab9ce4aae8ae86591779cdbdfe6fda777a7c87956ec2686fa",
+  "script_sha256": "162e9530c167a1cad059ed121500b57cf98fc8b21df5e4c7af1906df7a0d1118",
+  "plan": "docs/plans/ledh-sir-n1008-slowdown-trace-20261023.md",
+  "diagnostic_only": true,
+  "diagnostic_intervention": {
+    "mode": "determinant_off",
+    "diagnostic_only": true,
+    "runtime_candidate": false,
+    "trace_calls": [],
+    "guard_fixture_validity": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "result": "docs/plans/artifacts/ledh-sir-n1008-slowdown-trace-20261023/attempt-01/determinant_off/rows.jsonl"
+}

@@ -1,4 +1,5 @@
 \chapter{Particle-Flow Particle Filters and Proposal Correction}
+\chaptermark{Particle-Flow Filtering}
 \label{ch:bf-dpf-pfpf}
 
 The previous chapter developed particle flow as a transport construction.  The
@@ -8,12 +9,19 @@ no.  Outside exact special cases, the flow should be interpreted first as a
 proposal mechanism.  The role of the present chapter is to make that proposal
 interpretation explicit and to derive the corresponding importance correction.
 
-This chapter is therefore the mathematical bridge between raw flow transport and
-a more principled particle-based likelihood interpretation.  It does not yet
-introduce differentiable resampling or optimal transport relaxations.  Instead,
-it asks a prior question: once a particle has been moved by a deterministic flow
-map, what density does that transported particle actually have, and what
-importance weight is required to target the intended posterior law?
+The starting question is concrete: once a particle has been moved by a
+deterministic flow, what density does that particle have, and what weight
+corrects it to the filtering target? We first derive the ancestor-conditioned
+answer used by Li--Coates. We then derive BayesFilter's optional marginal-mixture
+answer and its analytical total derivative. The final recursion includes the
+UKF covariance lifecycle, Contract E--Chol transport reset, and dual-cap GenUT
+correction; the later transport chapters develop those reset operations in
+detail. The implementation and numerical evidence described in this chapter are the
+6 October 2026 PF-PF/marginal-extension snapshot.  It remains the derivation
+of the proposal-correction identities and their earlier diagnostic evidence;
+the later covariance-guided consumer and its surrogate-HMC use are audited in
+Chapter~\ref{ch:bf-ukf-covariance-proposal} and
+Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
 
 \section{Objects, assumptions, and source roles}
 \label{sec:bf-pfpf-objects}
@@ -86,8 +94,10 @@ Assume that for each fixed time step and observation, the flow map
 $\Phi_t: \mathbb{R}^{n_x} \to \mathbb{R}^{n_x}$ is a differentiable bijection on
 the region of interest and that its forward Jacobian
 $D\Phi_t(x_{t,0})$ is an $n_x\times n_x$ nonsingular matrix along the proposal
-paths being weighted.  Equivalently, the calculation below is a local
-diffeomorphism calculation on the support actually used by the proposal.  Let
+paths being weighted.  Local nonsingularity alone is insufficient if several pre-images map to the
+same endpoint: their density contributions would have to be summed. The affine
+maps used below are globally one-to-one whenever their matrices are
+nonsingular. Let
 the pre-flow proposal density be
 \begin{equation}
 \label{eq:bf-pfpf-preflo-density}
@@ -344,32 +354,29 @@ an extension and audited separately from the Li--Coates source algorithm.
 \subsection{Why the OT block begins here}
 \label{sec:bf-pfpf-ot-why-here}
 
-The next chapters do not reopen proposal correction.  By the end of the PF-PF
-stage, the object of record is already the weighted post-flow ensemble together
-with its carried particle-local state.  The remaining question is different: once
-that weighted object exists, what equal-weighting rule should act on it?  The OT
-block begins here because BayesFilter still needs a transport object that turns
-that weighted PF-PF output into an equally weighted downstream representation.
+After importance weighting, the filter has a weighted post-flow ensemble
+and particle-local covariances. To continue with equally weighted particles,
+the implemented algorithm applies entropic transport, the Contract E--Chol
+reset and the higher-moment correction. The transport chapters derive these
+operations; Section~\ref{sec:bf-pfpf-current-recursion} places them in the
+complete recursion together with either importance-weight policy.
 
 \subsection{What the later OT chapters inherit from PF-PF}
 \label{sec:bf-pfpf-ot-handoff}
 
-The next boundary can be stated sharply.  After
-PF-PF correction, the BayesFilter object handed to a later resampling layer is
-not a vague ``particle cloud.''  It is a weighted empirical ensemble together
-with any carried auxiliary state.  In the Algorithm~1 reading fixed above, the
-state handed forward is precisely the weighted triple
-\eqref{eq:bf-pfpf-alg1-resampling-triple}.  Thus a later optimal-transport
-layer does not merely need an OT scalar or distance certificate.  It needs a
-usable transport object that can act on the weighted ensemble:
+The input to resampling is the weighted ensemble together with its
+particle-local state. In Li--Coates Algorithm~1 this is the triple in
+\eqref{eq:bf-pfpf-alg1-resampling-triple}. A transport layer must produce an
+operation that acts on that ensemble, such as
 \begin{equation}
 \label{eq:bf-pfpf-transport-object-inventory}
-  \text{coupling matrix, barycentric transform, factorized transport operator,}
-  \text{ or directly transported equal-weight cloud.}
+\begin{gathered}
+ \text{a coupling matrix, barycentric transform, or factorized operator,}\\
+ \text{or a directly transported equally weighted cloud.}
+\end{gathered}
 \end{equation}
-A fast value of \(\operatorname{OT}(\mu,\nu)\) alone is not enough to continue the filtering
-recursion, because the filter must actually produce the next equal-weighted
-particle representation.
+A value of \(\operatorname{OT}(\mu,\nu)\) alone cannot continue the filtering
+recursion; the next particle locations and their covariances are required.
 
 Write the PF-PF output cloud schematically as
 \begin{equation}
@@ -382,12 +389,11 @@ with carried covariance or particle-local state attached to each support point.
 A deterministic OT equal-weighting layer or entropic OT/Sinkhorn layer, in the
 spirit of ensemble-transform and differentiable OT resampling
 \citep{reich2013nonparametric,corenflos2021differentiable}, then asks for a
-map from the weighted object \(\mu_t^N\) to an equal-weight object.  The next
-chapters will spell out that map through couplings, barycentric projections, and
-teacher-versus-numerical transport objects.  The present chapter's narrower role
-is only to make the handoff precise: PF-PF supplies the weighted source object,
-and any later OT resampling route must declare how that weighted object is
-actually transported rather than merely reporting a scalar transport score.
+map from \(\mu_t^N\) to an equally weighted ensemble. The following transport
+chapters derive couplings and barycentric projections. In the implemented
+filter, the Contract E--Chol reset additionally restores specified moments,
+and GenUT controls higher-moment discrepancies. These steps operate on the
+weights produced by the chosen importance correction.
 
 These details give a sharper audit checklist than the generic PF-PF equations:
 \begin{enumerate}[label=(\roman*)]
@@ -405,6 +411,8 @@ These details give a sharper audit checklist than the generic PF-PF equations:
   \item resampling, if used, resamples covariances together with states and
     weights.
 \end{enumerate}
+
+\input{chapters/ch19c_marginal_extension}
 
 \section{Jacobian determinant and log-determinant evolution}
 \label{sec:bf-pfpf-logdet}
@@ -531,8 +539,8 @@ value-side candidate in later HMC experiments.
     cloud with and without the determinant/proposal-density term to confirm that
     the diagnostic detects the expected discrepancy.
   \item \textbf{Path consistency}: on fixed random seeds, verify that the scalar
-    value and any autodiff gradient use the same proposal density, flow map, and
-    log-determinant path.
+    value and analytical total score use the same proposal density, flow map,
+    and log-determinant path; autodiff is a diagnostic comparator only.
 \end{enumerate}
 
 These are not tuning diagnostics.  They are algebraic and numerical checks of
@@ -557,17 +565,12 @@ flow-as-transport from flow-as-proposal.
 \section{What this chapter does and does not claim}
 \label{sec:bf-pfpf-chapter-boundary}
 
-This chapter derives the proposal-correction structure for flow-based particle
-methods.  It does \emph{not} yet claim:
-\begin{itemize}
-  \item that differentiable resampling has been resolved;
-  \item that the resulting method is already the final HMC target for nonlinear
-    DSGE or MacroFinance models;
-  \item that OT or learned transport relaxations have been introduced;
-  \item that finite-particle, discretization, and Jacobian numerical issues are
-    negligible.
-\end{itemize}
-Those belong to the later resampling and HMC-assessment chapters.  The role of
-this chapter is more specific: it explains mathematically how a particle flow is
-turned into a proposal-corrected particle method and what that correction does
-and does not restore.
+This chapter derives both ancestor-conditioned and marginal-mixture importance
+corrections, the analytical derivative of the implemented finite filter, and
+how the weighting step composes with the UKF, OT reset, and GenUT correction.
+The October experiments support a conditional partial repair of this
+proposal-correction construction.  The completed five-model surrogate-HMC
+campaign is now reported in Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
+That campaign establishes the declared finite targets and their retained-sample
+screens for one data set per model; it does not turn the nonlinear endpoint
+approximations into exact posterior or repeated-data coverage claims.
