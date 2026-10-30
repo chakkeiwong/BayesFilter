@@ -108,3 +108,27 @@ resolve all of them. At termination, preserve candidate failures, classify
 implementation versus statistical failures, settle cost, and refresh C4's
 separate tail qualification and C2/C5/C6 work. Do not call C4 or the master
 complete solely because this run finishes.
+
+## Launch record
+
+The reviewed C4 run launched at **17:30:03 Asia/Shanghai on 30 October 2026**
+on the original bound GPU0, with memory growth enabled. Detached supervisor
+1100045 and worker 1100048 use versioned root
+`N5/c4-fixed-count-20261030-01/posterior-01`. Source checks and original-evidence
+reload are progressing; no launch error is recorded. Exact live status is in
+that root's `manifest.json` and `evidence/progress.json`. The supervisor records
+60-second heartbeats and 30-minute capacity reassessments, and preserves chunks
+for source-matched recovery. This status is a launch snapshot, not completion.
+
+The typical measured projection is 10.86 hours; the 98,215-second reservation
+(27.28 hours) covers original maximum warmup and workload variation. With
+3,600 seconds withheld for this integration/preparation, the unreserved upper
+balance is 58,914.47980995933 seconds. Separate SIR remains 7,363.064379416s.
+The next review must settle supervisor wall once and inspect every member,
+including early-stop versus fixed-count reference outcomes.
+
+Merged-source checks pass: 72 C3/LEDH tests, 10 real MacroFinance tests, and
+139 additional numerical tests. The updated driver/recovery/reader preflight
+passes 38 tests; its final 11-test driver run includes the extra paired-prefix
+regression. Suites overlap; these counts must not be summed as distinct tests.
+

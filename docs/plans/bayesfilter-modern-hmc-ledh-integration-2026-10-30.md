@@ -73,3 +73,9 @@ existing allocation; the raw audit's 900-second allowance is included.
 Reserve 98,215 seconds for the next all-member run, leaving an upper
 58,914.47980995933 seconds unreserved. Unmeasured preparation is not silently
 converted into additional credit. SIR's separate allocation is unchanged.
+
+The reviewed continuation was committed as 6b8387efc and launched on GPU0
+at 17:30:03 Asia/Shanghai, supervisor 1100045, worker 1100048. Its source
+checks and original-evidence replay are progressing. The updated preflight
+passes 38 tests; the final driver-only run passes 11. Compact launch receipts
+and test XML are committed with the refreshed master.
