@@ -35,3 +35,41 @@ C3 has settled at 18,347.479901695042 seconds; remaining upper allocation is
 160,729.47980995933 seconds with preparation still withheld. Separate SIR
 funds remain 7,363.064379416 seconds. C4 diagnosis is next; new LEDH validation
 requires its own current scope and must not reuse older LEDH conclusions.
+
+## Integration and verification result
+
+The evaluated source was merged, scoped C3 work committed as f77bbc450, and
+remote main 9ee1b8d76 merged as 45a2e13cf. The only merge conflict was the
+active checkpoint document; retain the current C3 result and mark the older
+October 14 status historical. There were no numerical merge conflicts.
+
+The remote LEDH changes are present, including observation-weighted conditional
+parents/SIR (a6ef2ed0f), KSC/range-bearing extension (12449d91f), and structural
+scope guard (c11f1efa6). `bayesfilter/highdim`, `experiments/dpf_implementation`,
+the observation-parent score diagnostic and LEDH paper sources match remote
+main byte-for-byte. No unstaged shared-workspace edits were present in those
+LEDH directories; unrelated dirty work remains untouched. This establishes
+integration preservation, not new scientific LEDH admission.
+
+Initial test collection exposed a missing native Sylvester library in the
+new checkout. CMake built it from the merged source, using tfgpu Python,
+before retry. The generated binary is ignored and is not committed. The
+merged C3/reference/recovery/LEDH suite then passed 72 tests with one optional
+consumer-module skip. Configuring the frozen real MacroFinance consumer
+separately passed all ten of its tests. A further 139 numerical tests pass
+for stationary derivatives, stack QR, typed candidate execution and the
+optional batch-maximum estimator. These are CPU reference/engineering
+checks, with XLA where specified; they do not qualify merged GPU performance.
+
+The [C4 raw-draw audit](bayesfilter-modern-hmc-c4-raw-precision-result-2026-10-30.md)
+completed all seven candidates/31 quantities after a localized reader repair.
+Its eight focused tests pass. The prospective next execution is the
+[fixed-count C4 replication](bayesfilter-modern-hmc-c4-fixed-count-replication-2026-10-30.md),
+which keeps the original numerical source for a controlled comparison and
+does not substitute it for the newly integrated LEDH implementation.
+
+Withhold 3,600 seconds for this integration, audit and preparation inside the
+existing allocation; the raw audit's 900-second allowance is included.
+Reserve 98,215 seconds for the next all-member run, leaving an upper
+58,914.47980995933 seconds unreserved. Unmeasured preparation is not silently
+converted into additional credit. SIR's separate allocation is unchanged.

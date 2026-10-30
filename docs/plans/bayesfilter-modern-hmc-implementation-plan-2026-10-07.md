@@ -1,5 +1,31 @@
 # Implementation and validation plan for modern HMC methods
 
+## Active continuation — 30 October 2026
+
+Remote main, including the new LEDH conditional-parent, SIR, KSC and
+range-bearing changes, is merged in the isolated integration checkout
+`/tmp/BayesFilter-modern-hmc-integration-20261030`. LEDH source paths match
+remote byte-for-byte. The shared dirty workspace remains preserved. See the
+[integration record](bayesfilter-modern-hmc-ledh-integration-2026-10-30.md).
+
+C3 is complete: all seven members assessed, four pass all declared checks.
+The [C4 raw-draw audit](bayesfilter-modern-hmc-c4-raw-precision-result-2026-10-30.md)
+also completes: all seven members and all 31 quantities reproduce stored
+calculations and decisions, with all 643 original source/input hashes intact.
+The failed first reader confused active and model coordinates; its repair is
+regression-tested and does not alter C3 outcomes. Batch-scale sensitivity and
+finite-run/reference uncertainty remain open.
+
+Next: execute the reviewed [fixed-count replication](bayesfilter-modern-hmc-c4-fixed-count-replication-2026-10-30.md), one fresh, fixed-10,000-draw cohort
+for all seven members, preserving warmup/health checks and original outcomes.
+Compare its terminal estimates with replayed early-stop prefixes; neither
+reference values nor favorable candidates determine stopping. The existing
+C3 numerical source is the comparator, while new LEDH integration remains
+separate. No ranking, broad reliability, default or release claim follows.
+C2 wider migration/P19, C4 tail calibration, C5 independent SIR, and C6/N8
+release/book reconciliation remain open. Historical status snapshots below
+do not reopen completed work or supply additional budget.
+
 <!-- C3-AUTOMATIC-CONTINUATION -->
 ## C3 automatic continuation — 2026-10-29T21:04:02.386742+00:00
 
@@ -341,8 +367,8 @@ consumer qualification, power and affordability are still unproved.
 | C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
 | C1b | Closed for the frozen nine-candidate MacroFinance diagnostic: all 1,312 trials returned, seven candidates verified/exported/reloaded, and two candidates failed movement checks | Preserve the two failures as candidate-local outcomes; no ranking, posterior or consumer admission follows |
 | C2 | Public GPU engineering and scoped qualification complete; wider admission open | 1,248 trials, seven verified/exported/reloaded candidates and two movement rejections; all source/accounting checks pass. Legacy pin unchanged; wider consumer migration and missing P19 remain separate |
-| C3 | Public GPU prerequisite complete; posterior contract and assessment open | Seven fresh qualified members remain experimental. Define estimands, precision, independent-reference uncertainty, fresh streams and shared sequential assessment before posterior execution |
-| C4 | Arithmetic diagnosis closed; estimator/tail reliability open | All 288 generated validation endpoints and 5,376 tail profiles audited; original refusals preserved. Specify fresh tail-aware validation before sampling; lugsail already exists |
+| C3 | Complete for the seven-member frozen MacroFinance assessment | Four pass all declared screens; three remain incomplete. Preserve all seven outcomes and the frozen source. No ranking or release promotion |
+| C4 | Saved-scalar and raw-C3 arithmetic audits complete; estimator/tail reliability open | All seven C3 members and 31 quantities reproduce exactly within roundoff. Run a prospectively frozen fixed-count cohort, then separately qualify tail reliability; no threshold or default change |
 | C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
 | C6 / N8 | Guide repair complete; release reconciliation open | Reconcile examples, CI integration coverage, chapter/build and exclusions; no unsupported default promotion |
 

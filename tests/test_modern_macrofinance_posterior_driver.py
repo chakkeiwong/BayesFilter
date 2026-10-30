@@ -101,3 +101,67 @@ def test_price_scope_rejects_changed_target_and_unverified_source(tmp_path):
     with pytest.raises(ValueError,match='scope'):driver.validate_price_scope(price,manifest,launch,ref)
     with pytest.raises(ValueError,match='integrity'):
         driver.validate_price_scope({},manifest,launch,ref)
+
+
+def test_fixed_replication_uses_fresh_seeds_and_preserves_all_other_assessments():
+    from dataclasses import asdict
+    from bayesfilter.inference.hmc_posterior_assessment import validate_sequential_seeds
+    old_seeds=set()
+    for index,(L,epsilon) in enumerate(driver.PAIRS):
+        member=SimpleNamespace(step_size=epsilon,num_leapfrog_steps=L)
+        old=driver.posterior_config(member,index)
+        old_seeds.update(seed for _,_,seed in validate_sequential_seeds(old))
+        old_seeds.update(driver.roots(index).values())
+    used=set(old_seeds)
+    for index,(L,epsilon) in enumerate(driver.PAIRS):
+        member=SimpleNamespace(step_size=epsilon,num_leapfrog_steps=L)
+        old=driver.posterior_config(member,index)
+        new=driver.posterior_config(member,index,True)
+        assert new.retained_min_results==new.retained_max_results==10000
+        differences={k for k,v in asdict(old).items() if v!=asdict(new)[k]}
+        assert differences=={'warmup_seed','retained_seed','retained_min_results'}
+        inventory=validate_sequential_seeds(new,forbidden=used)
+        used.update(seed for _,_,seed in inventory);used.update(driver.roots(index,True).values())
+
+
+def test_prefix_selection_uses_internal_assessment_not_fixed_count_or_reference_verdict():
+    checks=[dict(completed_results_per_chain=n,health=dict(health_passed=True),
+                 modern_rhat=dict(passed=passed),passed=False,reference=dict(passed=False))
+            for n,passed in [(1000,False),(2000,True),(3000,True)]]
+    result=dict(warmup_passed=True,retained_checks=checks)
+    assert driver.earliest_internal_prefix(result)==2000
+    checks[1]['reference']['passed']=True
+    assert driver.earliest_internal_prefix(result)==2000
+    checks[0]['health']['health_passed']=False
+    assert driver.earliest_internal_prefix(result) is None
+    result['warmup_passed']=False
+    assert driver.earliest_internal_prefix(result) is None
+
+
+def test_prefix_refusal_remains_unavailable_and_never_selects_the_terminal_by_default():
+    result=dict(warmup_passed=True,retained_checks=[dict(completed_results_per_chain=10000,
+        health=dict(health_passed=True),modern_rhat=dict(passed=False),passed=False)])
+    assert driver.earliest_internal_prefix(result) is None
+
+
+def test_fixed_comparison_keeps_failed_terminal_and_assesses_only_selected_prefix(tmp_path,monkeypatch):
+    import tensorflow as tf
+    from bayesfilter.testing.inference_validation import modern_full_model_consumer
+    result=dict(warmup_passed=True,retained_results_per_chain=10000,hard_vetoes=[],
+        retained_checks=[dict(completed_results_per_chain=2000,health=dict(health_passed=True),
+                              modern_rhat=dict(passed=True),passed=False)])
+    driver.write(tmp_path/'result.json',result)
+    tf.io.write_file(str(tmp_path/'retained_raw.tensor'),
+                     tf.io.serialize_tensor(tf.ones([10000,4,31],tf.float64)))
+    row=dict(candidate_id='member',delivered=False,result_file=str(tmp_path/'result.json'),
+             reference=dict(passed=False))
+    seen=[]
+    def screen(values,reference,**kwargs):
+        seen.append(tuple(values.shape));return dict(passed=True)
+    monkeypatch.setattr(modern_full_model_consumer,'reference_screen',screen)
+    config=SimpleNamespace(assessment_policy=SimpleNamespace(precision='frozen'))
+    report=driver.fixed_count_comparisons(dict(rows=[row]),[('member',object())],reference(),lambda m,i:config)
+    assert seen==[(2000,4,31)]
+    assert report[0]['early_prefix_reference']['passed']
+    assert not report[0]['terminal_delivered'] and not report[0]['terminal_reference']['passed']
+    assert not row['delivered'] and report[0]['fixed_count_reached']

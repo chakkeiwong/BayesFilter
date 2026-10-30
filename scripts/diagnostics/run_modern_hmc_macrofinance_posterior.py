@@ -14,6 +14,7 @@ import time
 import traceback
 
 PLAN='docs/plans/bayesfilter-modern-hmc-c3-reference-continuation-2026-10-29.md'
+FIXED_PLAN='docs/plans/bayesfilter-modern-hmc-c4-fixed-count-replication-2026-10-30.md'
 PAIRS=((3,.4),(5,.4),(9,.4),(13,.4),(18,.4),(25,.2),(25,.4))
 NAMES=('S_log_diag_G','S_log_diag_Pi','S_lower_Pi_G','omega_unconstrained',
        'Q_log_cholesky_G','Q_lower_Pi_G','Q_log_cholesky_Pi','R_log_sd_mean','R_log_sd_contrast')
@@ -58,7 +59,10 @@ def validate_pairs(members):
     return rows
 
 
-def roots(index):
+def roots(index, fixed_count_replication=False):
+    if fixed_count_replication:
+        return dict(price=(20261030,30001+index),warmup=(20261030,1000000+200000*index),
+                    retained=(20261030,1100000+200000*index))
     return dict(price=(20261029,30001+index),warmup=(20261029,1000000+200000*index),
                 retained=(20261029,1100000+200000*index))
 
@@ -120,20 +124,62 @@ def make_transform(phase9,tf):
     return transform
 
 
-def posterior_config(member,index):
+def posterior_config(member,index,fixed_count_replication=False):
     from bayesfilter.inference import (HMCPrecisionTarget,HMCPrecisionPolicy,
         HMCPosteriorAssessmentPolicy,SequentialNeuTraHMCConfig)
     precision=HMCPrecisionPolicy(tuple(HMCPrecisionTarget(n,mcse_sd_ratio_max=.02) for n in QUANTITIES),
         method='lugsail',batch_size=None,min_batches=20,lugsail_r=3,lugsail_c=.5,jit_compile=True)
     assessment=HMCPosteriorAssessmentPolicy(warmup_bulk_ess_min=0.,warmup_tail_ess_min=0.,
         retained_bulk_ess_min=400.,retained_tail_ess_min=400.,warmup_consecutive_checks=1,precision=precision)
-    seed=roots(index)
+    seed=roots(index,fixed_count_replication)
     return SequentialNeuTraHMCConfig(step_size=member.step_size,num_leapfrog_steps=member.num_leapfrog_steps,
         warmup_seed=seed['warmup'],retained_seed=seed['retained'],warmup_chunk_results=1000,
         warmup_min_results=2000,warmup_check_window_results=1000,warmup_max_results=10000,
-        warmup_rhat_max=1.05,retained_chunk_results=1000,retained_min_results=1000,retained_max_results=10000,
+        warmup_rhat_max=1.05,retained_chunk_results=1000,
+        retained_min_results=10000 if fixed_count_replication else 1000,retained_max_results=10000,
         retained_rhat_max=1.01,minimum_chain_count=4,assessment_policy=assessment,jit_compile=True,
         energy_error_log_accept_threshold=-1000.,max_results_per_chain=10000,count_budget_reason=None)
+
+
+def earliest_internal_prefix(result):
+    """Replay C3's internal decision only; reference values never enter."""
+    if not result.get('warmup_passed'):
+        return None
+    for check in result['retained_checks']:
+        if check.get('health',{}).get('health_passed') is not True:
+            return None
+        diagnostic=check.get('modern_rhat')
+        if (check['completed_results_per_chain']>=1000 and diagnostic is not None
+                and diagnostic.get('passed') is True):
+            return check['completed_results_per_chain']
+    return None
+
+
+def fixed_count_comparisons(posterior,ordered,reference,config_factory):
+    """Add paired descriptive prefix results without replacing terminal outcomes."""
+    import tensorflow as tf
+    from bayesfilter.testing.inference_validation.modern_full_model_consumer import reference_screen
+    by_id={cid:(i,member) for i,(cid,member) in enumerate(ordered)}
+    comparisons=[]
+    for row in posterior['rows']:
+        item=dict(candidate_id=row['candidate_id'],terminal_delivered=row.get('delivered',False),
+                  paired_same_trajectory=True,scientific_ranking=None,coverage_calibrated=False)
+        path=Path(row['result_file']) if row.get('result_file') else None
+        if path is None or not path.is_file():
+            item['status']='assessment_unavailable';comparisons.append(item);continue
+        result=read(path);count=earliest_internal_prefix(result)
+        item.update(status='assessed',terminal_count=result['retained_results_per_chain'],
+                    fixed_count_reached=result['retained_results_per_chain']==10000,
+                    earliest_internal_pass_count=count,terminal_reference=row.get('reference'),
+                    terminal_hard_vetoes=result['hard_vetoes'])
+        if count is not None:
+            i,member=by_id[row['candidate_id']]
+            values=tf.io.parse_tensor(tf.io.read_file(str(path.parent/'retained_raw.tensor')),tf.float64)
+            if values.shape[0]<count:raise ValueError('prefix exceeds saved retained draws')
+            item['early_prefix_reference']=reference_screen(values[:count],reference,mcse_multiplier=3.,
+                normalized_tolerance=.1,precision_policy=config_factory(member,i).assessment_policy.precision)
+        comparisons.append(item)
+    return comparisons
 
 
 def load_continuation_helper():
@@ -199,13 +245,18 @@ def worker(args):
         helper=load_continuation_helper()
         sources.update(helper.tree_hashes(args.previous/'posterior'))
         previous_report=read(args.previous/'posterior/result.json')
-    report=dict(status='running',stage=args.stage,rows=[],posterior_qualified=False,release_qualified=False,
+    fixed=bool(getattr(args,'fixed_count_replication',False))
+    config_factory=lambda member,index:posterior_config(member,index,fixed)
+    report=dict(status='running',stage=args.stage,fixed_count_replication=fixed,rows=[],posterior_qualified=False,release_qualified=False,
                 method_ranking=None,tuning_membership_unchanged=True)
-    manifest=dict(plan=PLAN,command=[sys.executable,*sys.argv],started_utc=datetime.now(timezone.utc).isoformat(),
+    manifest=dict(plan=FIXED_PLAN if fixed else PLAN,fixed_count_replication=fixed,
+        command=[sys.executable,*sys.argv],started_utc=datetime.now(timezone.utc).isoformat(),
         git_commit=launch['commit'],source_sha256=sources,wall_seconds=args.wall_seconds,
         environment={k:os.environ.get(k) for k in ('CUDA_VISIBLE_DEVICES','TF_FORCE_GPU_ALLOW_GROWTH',
             'TF_NUM_INTRAOP_THREADS','TF_NUM_INTEROP_THREADS','OMP_NUM_THREADS','OPENBLAS_NUM_THREADS')},
-        seeds={str(i):roots(i) for i in range(7)},stage=args.stage)
+        seeds={str(i):roots(i,fixed) for i in range(7)},stage=args.stage)
+    if args.previous is not None and bool(previous_manifest.get('fixed_count_replication',False))!=fixed:
+        raise ValueError('posterior stopping mode changed across continuation')
     write(output/'manifest.json',manifest)
     def mark(stage,detail=None):
         write(output/'progress.json',dict(stage=stage,detail=detail,elapsed_seconds=time.monotonic()-started,
@@ -267,14 +318,18 @@ def worker(args):
                 for i,(_,m) in enumerate(ordered):
                     if m.claim_eligible or m.posterior_convergence_authority: raise ValueError('unsupported promotion')
                     # Public calls separately validate complete tuning inventories.
-                    inventory=validate_sequential_seeds(posterior_config(m,i),forbidden=used)
-                    used.update(seed for _,_,seed in inventory);used.update(roots(i).values())
+                    inventory=validate_sequential_seeds(config_factory(m,i),forbidden=used)
+                    used.update(seed for _,_,seed in inventory);used.update(roots(i,fixed).values())
                 if args.stage=='posterior':
                     posterior=execute_posterior_cohort(ordered=ordered,output=output/'posterior',
                         transform=transform,reference=reference,check_inputs=check,
-                        helper=load_continuation_helper(),previous_report=previous_report)
+                        helper=load_continuation_helper(),previous_report=previous_report,config_factory=config_factory)
                     report.update(status=posterior['status'],rows=posterior['rows'],
                         all_declared_checks_passed_count=posterior['delivered_count'])
+                    if fixed:
+                        comparison=fixed_count_comparisons(posterior,ordered,reference,config_factory)
+                        write(output/'fixed-count-comparison.json',dict(rows=comparison,
+                            all_seven_preserved=len(comparison)==7,scientific_ranking=None,coverage_calibrated=False))
                 for i,(cid,member) in enumerate(ordered if args.stage=='price' else ()):
                     require_execution_budget();check();destination=output/f'member-{i:02d}'
                     row=dict(candidate_id=cid,L=member.num_leapfrog_steps,epsilon=member.step_size,
@@ -283,7 +338,7 @@ def worker(args):
                     mark('member_'+args.stage,dict(index=i,**row));begin=time.monotonic()
                     if args.stage=='price':
                         try:
-                            result=member.run(num_results=1000,seed=roots(i)['price'],output_dir=destination)
+                            result=member.run(num_results=1000,seed=roots(i,fixed)['price'],output_dir=destination)
                         except ValueError:
                             archive=destination/'retained_archive.json'
                             if not archive.exists() or not read(archive).get('health_failures'): raise
@@ -313,7 +368,9 @@ def supervise(args):
     from bayesfilter.runtime.gpu_provenance import query_nvidia_smi_gpus
     args.output.mkdir(parents=True,exist_ok=False)
     started=time.monotonic();monitor=Reassessment();process=None
-    receipt=dict(status='selecting_device',active_run=True,plan=PLAN,stage=args.stage,
+    fixed=bool(getattr(args,'fixed_count_replication',False))
+    receipt=dict(status='selecting_device',active_run=True,plan=FIXED_PLAN if fixed else PLAN,
+        fixed_count_replication=fixed,stage=args.stage,
         command=[sys.executable,*sys.argv],wall_seconds=args.wall_seconds,observations=[],
         started_utc=datetime.now(timezone.utc).isoformat())
     def interrupt(signum,frame): raise InterruptedError('supervisor signal '+str(signum))
@@ -333,6 +390,7 @@ def supervise(args):
             '--wall-seconds',str(args.wall_seconds-(time.monotonic()-started)-30)]
         if args.price_result is not None: command.extend(('--price-result',str(args.price_result)))
         if args.previous is not None: command.extend(('--previous',str(args.previous)))
+        if fixed:command.append('--fixed-count-replication')
         env=dict(os.environ,**launch['environment'],CUDA_VISIBLE_DEVICES=launch['gpu_uuid'])
         with (args.output/'worker.log').open('x') as log:
             process=subprocess.Popen(command,env=env,cwd='/tmp',stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
@@ -371,6 +429,8 @@ def main():
     p.add_argument('--wall-seconds',type=float,required=True);p.add_argument('--worker',action='store_true')
     p.add_argument('--price-result',type=Path)
     p.add_argument('--previous',type=Path)
+    p.add_argument('--fixed-count-replication',action='store_true',
+                   help='C4 diagnostic: fresh seeds, all seven members, fixed 10000 retained draws')
     args=p.parse_args()
     for name in ('campaign','output','reference','quantity_fixture'): setattr(args,name,getattr(args,name).resolve())
     if args.price_result is not None: args.price_result=args.price_result.resolve()
