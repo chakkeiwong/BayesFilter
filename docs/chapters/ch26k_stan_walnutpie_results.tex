@@ -1,0 +1,559 @@
+\section[Stan comparisons]{From a banana benchmark to a source-matched comparison}
+\label{sec:sw-stan-results}
+
+\subsection{Cheap targets and hidden batched work}
+
+The first pilot used FP64 TFP NUTS, identity mass, four chains, 128 warmup
+and 256 retained transitions per chain, three seed/start repetitions and
+maximum depth six. The larger product-banana case used 32 chains and
+32 dimensions. Retained batch medians were as follows; warmup, cold
+compilation and file output are excluded.
+
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+Target & CPU seconds & GPU seconds & GPU/CPU\\
+\midrule
+Gaussian, $d=2$, four chains & .007285 & .090529 & 12.43\\
+Banana, $d=2$, four chains & .013889 & .190009 & 13.68\\
+Product banana, $d=32$, 32 chains & .202665 & .757104 & 3.74\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This nominated CPU/XLA for these small fixtures. Nonrandomized device order,
+short chains and different adaptation paths prevent a universal CPU claim.
+The subsequent finite-grid banana comparison selected fixed HMC $L=3$.
+For 4096 retained transitions in four chains, its median was $.0273044$
+seconds versus $.1405021$ for NUTS. The reported leapfrog counts were
+$3$ versus $4.8323$, but the selected NUTS candidate had one stationary
+chain, maximum R-hat $1.52671$ and an unavailable tail diagnostic. HMC's
+maximum R-hat was $1.00136$. The NUTS candidate failed the validity screen;
+the observed timing/ESS ratios cannot establish posterior efficiency.
+
+An instrumented replay explained why ``only 1.83 extra leapfrogs'' was
+misleading. TFP's batched loops continue while any chain remains active;
+the integrator evaluates the dense batch before masking completed rows.
+The following counters subtract bootstrap evaluation and were checked
+against uninstrumented outputs; instrumented calls were not timed.
+
+\begin{center}\small
+\begin{tabular}{lrr}
+\toprule
+Method / chain batch & Reported steps per chain & Dense gradient calls per transition\\
+\midrule
+HMC / 4 & 3.000 & 3.000\\
+NUTS / 1 & 4.782 & 4.782\\
+NUTS / 4 & 4.869 & 9.395\\
+NUTS / 16 & 4.920 & 16.532\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The counters identify additional executed work, not its complete cost.
+Tree bookkeeping, selection, random generation, synchronization and memory
+traffic remain. A broader identity-metric pilot tested Gaussian32, rotated
+Gaussian32 with covariance condition 1000, banana8, centered funnel10,
+an exact noncentered funnel control and regression512$\times$32. NUTS
+passed the short rotated-Gaussian screen when the selected fixed-HMC
+candidate did not; both failed the centered funnel; both passed the
+noncentered control. Thus the initial cheap-banana result was not a reason
+to reject adaptive trajectory lengths on harder geometry.
+
+\subsection{Tuning-inclusive Stan comparisons}
+
+The first Stan-style warmup comparison used installed CmdStan 2.37.0,
+checked native target values/scores and separately adapted metrics. Both
+engines passed all three seeds on five of six targets; both failed the
+centered funnel. TF/native paired elapsed ratios on the passing targets
+were $5.41$, $4.05$, $6.43$, $6.98$ and $2.71$ for Gaussian32, rotated
+Gaussian32, banana8, noncentered funnel10 and regression512$\times$32,
+respectively. Their reported approximate intervals excluded one, but the
+later adaptation audit repaired edge cases. Those timings retain their
+original source versions and are not measurements of the repaired code.
+
+The direct-port comparison then used seven targets, three seeds, FP64,
+four parallel scalar CPU chains, 1000 warmup and 2000 retained transitions
+per chain. The dense metric was used for the rotated Gaussian. Reusable
+TF kernels were already compiled. TF costs include initialization, search,
+adaptation and sampling; Stan process times include launch and CSV output.
+TF serialization and common diagnostics are recorded separately.
+
+\begin{center}\small
+\begin{tabular}{lrrrl}
+\toprule
+Target & Direct TF & Audited TFP & Native Stan & Passing seeds\\
+ & \multicolumn{3}{c}{Median seconds} & per engine\\
+\midrule
+Gaussian32 & 1.047 & .628 & .123 & 3/3\\
+Rotated Gaussian32 & 2.631 & 1.350 & .344 & 3/3\\
+Banana8 & 1.038 & .624 & .100 & 3/3\\
+Centered funnel10 & 2.151 & 1.068 & .231 & 0/3\\
+Noncentered funnel10 & .635 & .516 & .074 & 3/3\\
+Regression512$\times$32 & 1.293 & 1.010 & .344 & 3/3\\
+Regression4096$\times$64 & 7.160 & 9.972 & 3.732 & 3/3\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The direct port reproduced the tested transition rules but did not recover
+native Stan speed. Different RNGs and dynamic work also mean these totals
+are not fixed-work compiler comparisons. The associated public fixed-HMC
+procedure ran 21 fits and assessed all 216 verified candidate-set members;
+13 members passed in seven fits. Some target cohorts had no passing member,
+and one search exhausted its per-fit budget before finishing. This bounded
+exercise includes preparation/search costs but is not the best achievable
+fixed-HMC baseline or an isolated experiment on trajectory-length choice.
+
+After the native-TFP rewrite, the actual \texttt{TransitionKernel}/
+\texttt{sample\_chain} path was measured, rather than inferring its speed
+from an older manual loop. The same seven-target, three-seed design gave:
+
+\begin{center}\small
+\begin{tabular}{lrrl}
+\toprule
+Target & Native TFP seconds & Stan seconds & Passing seeds each\\
+\midrule
+Gaussian32 & .610 & .121 & 3/3\\
+Rotated Gaussian32 & 1.355 & .330 & 3/3\\
+Banana8 & .629 & .095 & 3/3\\
+Centered funnel10 & 1.082 & .168 & 0/3\\
+Noncentered funnel10 & .506 & .074 & 3/3\\
+Regression512$\times$32 & .972 & .353 & 3/3\\
+Regression4096$\times$64 & 9.414 & 3.810 & 3/3\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Contemporaneous direct controls were $.911$ seconds for Gaussian32 and
+$1.028$ for banana8, versus $.610$ and $.629$ for native TFP. The rewrite
+was descriptively faster on these controls, while native Stan remained
+lower in elapsed time. Three seeds and unequal process/I/O boundaries do
+not establish a general efficiency ranking. The centered-funnel result is
+failure of those finite-budget configurations, not proof that standard Stan
+tuning cannot sample a centered funnel.
+
+\subsection{Native wrapping and genuine GPU execution}
+
+The native bridge benchmark used four sequential native chains, 500 warmup
+and 500 retained transitions, with three alternating-order repetitions.
+The following are complete-fit milliseconds, excluding compilation. The
+native comparator is measured in the same GPU-enabled process as its bridge.
+
+\begin{center}\small
+\begin{tabular}{llrrr}
+\toprule
+Engine & Target & Native CPU & GPU XLA bridge & Ratio\\
+\midrule
+Stan & Gaussian10 & 36.092 & 36.921 & 1.0230\\
+Stan & Banana10 & 55.638 & 56.683 & 1.0188\\
+Stan & Centered funnel10 & 190.519 & 191.331 & 1.0043\\
+Walnutpie & Gaussian10 & 18.790 & 19.618 & 1.0441\\
+Walnutpie & Banana10 & 30.486 & 31.173 & 1.0225\\
+Walnutpie & Centered funnel10 & 36.249 & 37.099 & 1.0235\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The small observed staging overhead accompanies byte-identical tested
+outputs, not a speedup from GPU arithmetic. Both short centered-funnel
+fits mixed poorly: maximum R-hat was $1.1681$ for Stan and $1.4260$ for
+Walnutpie, with minimum bulk ESS $20.7$ and $8.6$. These are not valid
+posterior-efficiency comparisons.
+
+The genuine Stan TF/GPU programme retained the shared direct transition and
+changed execution structure: static per-chain RNG expansion removed a
+serial mapping loop, and command buffers reduced scheduling overhead.
+Measured complete-fit seconds for Gaussian10 were $1.4970$ (original GPU
+map), $.8253$ (GPU static) and $.5085$ (GPU static with command buffers),
+versus $.04475$ for four parallel CmdStan CPU processes. Banana10 gave
+$1.7993$, $.9914$, $.6264$ and $.04865$. The cheaper CPU TF Gaussian
+versions measured $.07511$ (map) and $.08851$ (static), so a GPU-oriented
+layout was not automatically a CPU optimization. GPU Gaussian and banana
+posterior screens passed; centered funnel failed in both implementations.
+Regression512$\times$32 passed the GPU screen but the short CmdStan run
+had R-hat $1.01173$, above the declared $1.01$ threshold. These experiments
+verify a generic compiled TF target path and nominate scheduling changes;
+they do not establish native-Stan speed or a universal device choice.
+
+\section[Walnutpie validation and execution]{Walnutpie implementation checks and execution improvements}
+\label{sec:sw-walnut-validation}
+
+The deterministic port replaced recursion by binary-carry storage without
+replacing the source's selection or refinement rules. On each CPU/GPU
+backend, 528 native-header comparisons covered 96 transitions, 96 macros,
+96 initializations and 240 lifecycle steps on Gaussian, banana, funnel
+and regression fixtures. Shared random tapes check discrete work and
+random consumption, with scaled FP64 tolerances of $2\times10^{-11}$.
+The default lifecycle ran without state resets. Extreme nondefault
+target-macro-one tests required complete exposed-input replay after
+accumulated roundoff exceeded the trajectory tolerance in two attempts.
+Those failures remain recorded: local replay agreement is not unrestricted
+long-trajectory identity across backends.
+
+The later initialization/control/R2P qualification passed 48 focused tests,
+144 identity-metric author macro fixtures, 144 diagonal conjugacy fixtures
+and 216 whole-tree comparisons across three layouts. Deterministic
+528-record regressions passed again on CPU and GPU. Whole-tree R2P
+comparisons used identity mass; diagonal macro conjugacy alone does not
+prove a separate nonidentity whole-tree oracle. Supplied-mass work added
+38 CPU regression checks and eight complete GPU cases covering
+deterministic/R2P, diagonal/dense and fixed/adaptive combinations.
+
+\subsection{Native C++ versus XLA workloads}
+
+The initial port used four chains and matched starts/data/default settings;
+Gaussian10, banana10 and centered funnel10 had 500 warmup plus 500 retained
+transitions, while regressions had 100 plus 100. Medians of seven
+synchronized fits exclude compilation and reporting.
+
+\begin{center}\small
+\begin{tabular}{lrrrr}
+\toprule
+Target & CPU XLA & GPU XLA & C++ serial & C++ four threads\\
+ & \multicolumn{4}{c}{Seconds}\\
+\midrule
+Gaussian10 & .1206 & .8735 & .0240 & .00849\\
+Banana10 & .0871 & .9707 & .0191 & .00869\\
+Centered funnel10 & .2028 & 2.1336 & .0322 & .01184\\
+Regression4096$\times$128 & 2.3639 & .8234 & 1.7273 & .6574\\
+Regression32768$\times$128 & --- & 2.8324 & 29.7394 & 18.3214\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+TF/native batches were not interleaved and their RNGs differ. The large
+regression deliberately recomputes its full design matrix at each score.
+Its observed GPU advantage over this Eigen/GCC build is therefore a
+workload result, not proof of faster Gaussian-regression inference: exact
+sufficient-statistic preprocessing changes the comparison substantially.
+
+For the declared quadratic fixture,
+\begin{align}
+ \log\pi(q)&=-\tfrac12q^\top q-\frac{(Xq-y)^\top(Xq-y)}{2n}\\
+ &=-\tfrac12q^\top q-\tfrac12q^\top Gq+q^\top b-\tfrac12c,
+ \qquad G=X^\top X/n,\ b=X^\top y/n,\ c=y^\top y/n.
+\end{align}
+The gradient is $-q-Gq+b$. Both C++ and TF arms implemented this same
+algebra, including the constant and nonzero-response term. In a later
+separate comparison, full-regression fit medians were $.53280$ seconds on GPU, $.70561$
+for generic C++ and $.50423$ for architecture-optimized C++. The
+sufficient-statistic medians in the same order were $.40908$, $.02879$
+and $.01952$. A nonlinear logistic fixture gave $.50235$, $1.01176$
+and $.82944$ seconds. The latter's mean log likelihood plus unit prior
+is a tempered synthetic workload, not a full-data posterior claim.
+
+\subsection{Packed storage, failed flattening, and batching}
+
+Packed storage combines twelve tree-span fields into one tensor of shape
+$[\text{depth}+1,C,8d+4]$. It reduces stack updates without changing
+field values or binary-carry order. The flat variant also replaces nested
+leaf/carry traversal by one scheduler. Flat passed numerical checks but
+failed its performance criterion on Gaussian and banana; fewer loops
+were not sufficient for lower runtime.
+
+The corrected paired experiment used seven seed blocks and balanced AB/BA
+orders, four repetitions per seed, four chains and 100 warmup plus 100
+retained transitions. Command buffers were enabled equally. Ratios are
+geometric means of block-median paired log ratios, with approximate 95\%
+Student-$t$ intervals over blocks.
+
+\begin{center}\small
+\begin{tabular}{lrrl}
+\toprule
+Target & Fieldwise s & Packed s & Fieldwise/packed ratio [interval]\\
+\midrule
+Gaussian10 & .18283 & .17216 & 1.0730 [1.0704, 1.0757]\\
+Banana10 & .20934 & .19744 & 1.0681 [1.0656, 1.0706]\\
+Centered funnel10 & .36861 & .35926 & 1.0536 [1.0467, 1.0606]\\
+Regression4096$\times$128 & .84282 & .81803 & 1.0302 [1.0295, 1.0309]\\
+Logistic4096$\times$128 & .74596 & .69624 & 1.0322 [1.0296, 1.0349]\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+An earlier harness retained both paired outputs and used unbalanced order;
+its second call was slower regardless of layout. That attempt is excluded.
+The corrected experiment releases timed outputs and compares correctness
+before timing. Its intervals support a local execution improvement for
+packed storage, not an ESS/second or universal performance claim.
+
+Increasing Gaussian chains from 1 to 4 to 16 raised observed throughput
+from 1651 to 4886 to 9408 chain-transitions/second, while latency rose
+from $.1212$ to $.1637$ to $.3401$ seconds. First-call costs rose from
+$6.81$ to $17.56$ to $114.14$ seconds. Static per-chain random generation
+increases graph size; more chains are not free parallelism.
+
+\section[Centered funnel replication]{Centered funnel: replication rather than extrapolation}
+\label{sec:sw-funnel}
+
+The author funnel with parameter $d=10$ has eleven total coordinates:
+$v\sim N(0,9)$ and $x_i\mid v\sim N(0,e^v)$ for $i=1,\ldots,10$.
+Earlier local ``funnel10'' fixtures had ten total coordinates. Let
+$m$ denote the number of conditional coordinates. Up to the constant
+normalization, the shared analytic evaluator is
+\begin{align}
+ \log\pi(v,x)&=-\frac{v^2}{18}-\frac m2v
+                     -\frac12e^{-v}\sum_i x_i^2,\label{eq:sw-funnel-density}\\
+ \partial_v\log\pi&=-v/9-m/2+\tfrac12e^{-v}\sum_i x_i^2,
+ \qquad \partial_{x_i}\log\pi=-e^{-v}x_i.
+\end{align}
+Expanding the normal densities gives these formulas and the constant
+$-\log3-(m+1)\log(2\pi)/2$. The Python reference includes this
+constant; TF omits it, leaving scores and transition probabilities
+unchanged. Density/gradient parity was checked against the original SciPy
+evaluator. Algebraic equality does not imply bitwise adaptive trajectories:
+floating-point changes alter subsequent random decisions and tuning.
+
+The published Figure 13 uses 200,000 iterations and a fixed-step NUTS
+comparator selected to approximately match gradient cost. Figure 14 includes
+a million-iteration diagnostic. The paper explicitly reports slow mixing
+for both methods while WALNUTS-R2P reaches the far neck. It does not assert
+that 500 or 2000 retained draws under every Stan configuration must pass
+our multi-chain precision screen. Nor are the paper's R2P settings the
+deterministic C++ Walnutpie variant used in the early bridge.
+
+\subsection{Author protocol and short replication}
+
+Nine original author files and their MIT licence were preserved unchanged.
+The reference adapter keeps the script's normal-with-mean-one start,
+1000-iteration Appendix C quantile tuning, last reported tuning parameters
+and restart from the original position. Seed zero gives $v=8.292$ in
+that start. Analytic tuning of the eleven-coordinate target produced
+$h=.3228754012$ and $\delta=.1544232653$, not the paper's rounded
+$.36/.21$. Identity mass, maximum depth 12, R2P probability $2/3$,
+jitter $.2$ and cap 10 were shared across the comparison arms.
+
+Four chains, 512 archived/excluded settling draws and 8192 retained draws
+gave the following short-run results. All rows failed the combined screen,
+despite finite states, movement and successful neck visitation.
+
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+Eleven-coordinate implementation & Max R-hat & Min bulk ESS & Min tail ESS\\
+\midrule
+Author original & 1.0192 & 308.6 & 501.5\\
+Author corrected & 1.0119 & 287.6 & 261.9\\
+TF GPU XLA & 1.0080 & 368.8 & 540.2\\
+TF CPU XLA & 1.0080 & 368.8 & 540.2\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The ten-coordinate corrected-author/TF-GPU runs also failed, with minimum
+bulk ESS $329.7/319.6$. The GPU paths reached $v=-9.13$ in eleven
+coordinates and $-10.87$ in ten. Tail visitation supports the local
+refinement mechanism; it does not establish stationary tail probabilities.
+
+\subsection{Completed million-iteration comparison}
+
+The first literal-SciPy campaign was stopped at the owner's request; its
+GPU arm separately recorded a CUDA launch failure. Partial evidence was
+preserved and not pooled with the restart. A five-repeat one-state
+diagnostic measured $153.48\,\mu$s for the SciPy evaluator versus
+$7.07\,\mu$s for the analytic one. This explains evaluator overhead,
+not a $21.71$-fold whole-chain prediction. Fresh analytic tuning was used
+for all four restarted methods, launched concurrently in separate processes.
+
+The final analytic campaign completed one million iterations per chain,
+four chains per method. Its primary author-style analysis discards zero
+sampling iterations after the tuning restart; exclusion of the first
+512 is a separately saved sensitivity. The reported diagnostic screen
+includes analytically whitened observables, R-hat and bulk/tail ESS.
+
+\begin{center}\small
+\begin{tabular}{lrrrr}
+\toprule
+Method & Max R-hat & Min bulk ESS & Min tail ESS & Sampling s\\
+\midrule
+Author original & 1.000254 & 37744.8 & 47093.8 & 4805.1\\
+Author corrected & 1.000073 & 36025.6 & 46880.9 & 4894.1\\
+TF CPU XLA & 1.000134 & 36259.0 & 45221.5 & 1698.3\\
+TF GPU XLA & 1.000145 & 36074.8 & 44373.4 & 15667.9\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All four passed the within-stream diagnostic screen. Nevertheless, the
+saved simultaneous comparison against analytic expectations detects three
+eligible differences in the original-author arm: mean $z_0$,
+$P(v<-3)$ and $P(v<-6)$. The latter differences are $-.0120075$
+with interval $[-.0175579,-.0064571]$ and $-.00351163$ with interval
+$[-.00550198,-.00152128]$. The corrected-author arm has one flagged
+whitened-coordinate mean, $z_2$, with difference $.00186362$ and
+interval $[.00010554,.00362169]$. Neither TF arm has an eligible flagged
+contrast in the saved family. The recorded normal threshold is $3.455413$
+for family size 91; the intervals use batch MCSE assumptions, with 50/100
+block sensitivities preserved.
+
+Thus ``all four are equivalent'' is unsupported even though R-hat and
+ESS look satisfactory. The original backward-weight omission is a concrete
+implementation concern, but this one comparison does not prove it causes
+every discrepancy. Original/corrected author runs share seeds, so their
+independent-SE pairwise intervals are explicitly ineligible for inference.
+The TF findings support compatibility under the checked observables and
+precision, not formal equality of stationary laws. Concurrent execution
+also prevents interpreting the runtime column as an isolated speed ranking.
+
+\section{CPU tree control with GPU models}
+\label{sec:sw-placement}
+
+The hybrid experiment used a nonlinear regression workload with 16,384
+observations, 128 latent bias coordinates, two width-128 tanh stages and
+four chains. Fixed generated weights are model data; this is not sampling
+all neural-network weights. FP64, TF32 off, identity mass and frozen
+$\epsilon=.2$ were common. The hybrid kept a resumable tree controller
+on CPU/XLA and complete R2P integration/refinement leaves on GPU/XLA.
+Python scheduled the compiled segments and tensor transfers. It was not
+one fused heterogeneous executable.
+
+Seven paired seed blocks, two repeats per block and rotated execution order
+gave medians of $18.154$ seconds for CPU/XLA with four threads, $1.826$
+for full GPU/XLA, and $2.063$ for the hybrid, per two transitions in each
+of four chains. The paired hybrid/GPU ratio was $1.13812$ with approximate
+95\% interval $[1.12254,1.15392]$. A separate eight-thread CPU sensitivity
+gave $10.633$ seconds. Full GPU was the supported execution choice for
+this workload; moving control to CPU did not improve speed.
+
+Each hybrid block made thirty leaf round trips carrying about $2.12$ MB
+in total, while model tensors stayed resident. Separate raw-copy and
+compiled-echo diagnostics took $11.70$ and $133.55$ ms, against an
+approximately $237$ ms hybrid/full-GPU difference. Dispatch and
+synchronization therefore matter in addition to byte volume; these
+measurements are not an additive causal decomposition. All fourteen
+primary blocks agreed in discrete work/RNG outputs, with maximum checked
+floating difference $1.82\times10^{-12}$.
+
+The later real q20 placement experiment used deterministic Walnutpie and
+its frozen NeuTra/filter target, four chains, four seed/start blocks and
+balanced execution order. It measured 80 synchronized invocations, each
+two transitions per chain, including boundary transfers and output reads.
+
+\begin{center}\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{.40\linewidth}r>{\raggedright\arraybackslash}p{.35\linewidth}}
+\toprule
+Placement & Median s & Paired time/full GPU [95\% interval]\\
+\midrule
+Full CPU/XLA & 57.529 & 11.3178 [11.0458, 11.5965]\\
+Full GPU/XLA & 5.047 & Reference\\
+CPU graph tree; GPU target per call & 5.175 & 1.0242 [1.0105, 1.0381]\\
+CPU graph tree; complete GPU macro & 5.074 & 1.0057 [.9997, 1.0118]\\
+Python tree; complete GPU macro & 5.177 & 1.0273 [.9961, 1.0596]\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The q20 hybrids use CPU TensorFlow graph/eager control, not the earlier
+resumable CPU/XLA tree. These designs must not be conflated. The corrected
+benchmark verified all 729 frozen closure hashes, trajectories, work and
+RNG counters. Its first attempt was excluded because nominal CPU sampler
+calls dispatched to GPU and hybrid RNG lowering differed. Explicit call-site
+placement and a shared compiled random primitive repaired that harness.
+The final CPU/GPU advantage is supported locally; neither macro hybrid
+is distinguishable from full GPU at this precision. These measurements
+do not establish the same speed ratio for full80.
+
+\section{Applications through frozen NeuTra transforms}
+\label{sec:sw-applications}
+
+\subsection{q20: completed execution without a qualified estimate}
+
+Placement success did not solve the q20 posterior problem. Subsequent
+controller repairs distinguished source macro-quality tuning from endpoint
+acceptance, preserved every frozen output including repeats, and continued
+the same state/RNG without silently retuning. The q20 owner's later
+correction made ESS diagnostic-only; its direct floor was removed, while
+R-hat, mean MCSE and negative-region-probability precision remained separate
+criteria. This q20 policy change does not retrospectively change the
+predeclared full80 comparison below.
+
+The final q20 attempt stopped normally at its 10,000-retained-draw limit
+per chain on 31 October, with 40,000 total draws. Maximum R-hat was
+$1.0816781$ against $1.01$; maximum mean MCSE/SD was $.1542893$
+against $.05$; negative-region probability MCSE was $.0469229$ against
+$.025$. The prior 8192-draw R-hat was $1.0723291$, so descriptive
+progress was not monotone. No q20 posterior estimate is promoted.
+This is insufficient mixing/precision in the bounded run, not evidence
+that the method or target is mathematically impossible.
+
+\subsection{Full80: compatibility with the saved fixed-HMC posterior}
+
+The requested MacroFinance ``BGL80'' case was resolved from the saved binding
+to DZ5 financial full80, not the separate BGL135 model. The frozen
+update5000 NeuTra map, data, physical parameter definitions and analytical
+score were preserved; no retraining occurred. Four FP64 GPU chains used
+TF32 off and exact identity mass in latent coordinates. The saved HMC
+reference used $L=5$, $\epsilon=.3363585661$, 2000 excluded warmup
+transitions and 1400 retained draws per chain.
+
+An initial $.70$ Walnutpie pilot passed target/cache/mass checks but reached
+its 1700-second cap while compiling retained sampling. Its two-transition
+warm chunk cost $115.823$ seconds. That pilot was not resumed: source
+review corrected the tuning target to $.80$ base-macro quality, initial
+step $.1$ plus search, and 50--1000 adaptation transitions checked every
+five. The granted additional budget was 70 GPU-worker hours. The corrected
+run froze after 105 transitions when relative step agreement reached
+$.08708$, below $.10$. Each chain retained its own step size and RNG.
+Tuning agreement was not treated as stationarity.
+
+The first posterior assessment at 1400 retained draws per chain passed.
+The worker finished at 12:46 Shanghai on 31 October 2026, with supervisor
+exit code zero. All warmup draws were excluded; all frozen outputs,
+including repeated states, were retained.
+
+\begin{center}\small
+\begin{tabular}{lrrl}
+\toprule
+Diagnostic & Saved HMC & Walnutpie & Required\\
+\midrule
+Maximum modern R-hat & 1.006456 & 1.005552 & $\leq1.01$\\
+Minimum bulk ESS & 948.49 & 1435.83 & $\geq400$\\
+Minimum tail ESS & 423.81 & 953.43 & $\geq400$\\
+Maximum controller MCSE/SD & .03506 & .02775 & $\leq.05$\\
+Recorded worker hours & 5.823 & 20.076 & Descriptive\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For each physical mean, the comparison formed
+\begin{equation}
+ Z_j=\frac{\widehat\mu_{W,j}-\widehat\mu_{H,j}}
+ {\sqrt{\widehat{\mathrm{MCSE}}_{W,j}^{2}+
+             \widehat{\mathrm{MCSE}}_{H,j}^{2}}}.
+ \label{eq:sw-mean-comparison}
+\end{equation}
+Both streams used the same reporting MCSE estimator, distinct from the
+controller's precision estimator. The two-sided Bonferroni normal
+threshold for 80 means and familywise $.05$ was $3.4205267$. No mean
+exceeded it; the largest absolute statistic was $3.1512966$ for
+\texttt{US\_Phi\_slope\_level}. The result is compatibility at available
+precision, not equality of distributions or proof against shared missed modes.
+
+Warmup and retained sampling each executed GPU/XLA with one qualified trace
+and no forbidden host callback. Every chunk passed endpoint cache and
+identity-mass checks; retained tuning stayed frozen. GPU allocation growth
+was verified. Peak TensorFlow allocator usage was $132.19$ MiB, while
+peak host RSS was $15.64$ GiB, reflecting substantial compilation/runtime
+overhead outside tensor storage. Excluding the first retained chunk, mean
+cost was $46.365$ seconds per transition across four chains. Useful
+evaluation counters averaged $16.241$ per chain-transition; inactive
+batched target work is not included in that count.
+
+The supervisor charged $72285.101$ seconds, or $20.079$ hours, leaving
+$49.921$ hours of the additional allowance unused. The earlier qualification
+remains a separate charge. The observed worker-time ratio to HMC is
+$3.447$, but HMC's recovery replayed 500 old warmup draws and the methods
+have different adaptation/compilation work. This is descriptive accounting,
+not a controlled speed ratio. Higher observed Walnutpie ESS does not by
+itself establish better ESS per second.
+
+A fresh saved-draw reconstruction reproduced the diagnostics exactly,
+verifying ten source snapshots and 2409 sample/checkpoint file hashes.
+Its first attempt was blocked by MacroFinance source edits made after
+the target graphs had been compiled. The successful review imported only
+the checksum-verified pinned diagnostic runtime and never reevaluated the
+changed model. The original process retained its compiled functions, but
+a fresh target replay from the changed worktree is not reproducible
+without recovering the bound source closure. This limitation is recorded
+rather than erased by changing expected hashes.

@@ -1,0 +1,223 @@
+\section{Using and reproducing the implementations}
+\label{sec:sw-reproduce}
+
+\subsection{A fixed identity metric for a TensorFlow model}
+
+The following small example illustrates the explicit tensor interface. Its
+short fixed counts are a mechanics example, not a posterior protocol. The
+Gaussian log density can be replaced by an independent-row TensorFlow model
+or by the frozen transformed density in equation~\eqref{eq:sw-neutra-target}.
+The factory supplies stable signatures and XLA compilation; the caller must
+choose a device, keep data placement explicit, and check validity. GPU use
+requires a compatible installed TensorFlow/CUDA environment.
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\scriptsize,breaklines=true]
+import os
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+import tensorflow as tf
+gpus = tf.config.list_physical_devices('GPU')
+if not gpus:
+    raise RuntimeError('This example requires a GPU')
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
+    assert tf.config.experimental.get_memory_growth(gpu)
+from docs.benchmarks.walnutpie_gpu_tf import (
+    Config, make_supplied_mass_functions)
+
+def log_density(q, location):
+    return -.5 * tf.reduce_sum((q-location)**2, axis=-1)
+
+cfg = Config(chains=4, dimension=10, warmup=20, draws=20,
+             adapt_mass=False)
+f = make_supplied_mass_functions(tf, log_density, cfg,
+    model_signature=[tf.TensorSpec([10], tf.float64)])
+with tf.device('/GPU:0'):
+    q = tf.ones([4, 10], tf.float64) * .2
+    keys = tf.constant([[101, 0], [102, 0],
+                        [103, 0], [104, 0]], tf.int32)
+    mass = tf.ones_like(q)
+    epsilon = tf.fill([4], tf.constant(.1, tf.float64))
+    fit = f.fit(q, keys, mass, epsilon,
+                tf.zeros([10], tf.float64))
+assert bool(tf.reduce_all(fit.valid).numpy())
+tf.debugging.assert_equal(fit.warmup.state.inverse_mass, mass)
+retained = fit.sampling.draws  # [20, 4, 10]; warmup excluded
+\end{lstlisting}
+
+Here \texttt{adapt\_mass=False} freezes the supplied momentum covariance,
+but step-size and minimum-work adaptation still operate during warmup.
+The factory's \texttt{adapt\_step=False} option skips only the initial
+step search; it does not disable warmup adaptation. To use already frozen
+R2P tuning, set zero warmup, provide the step explicitly, skip that search,
+and invoke sampling on the initialized state. A change of model data or
+target requires reinitialization of density/score caches and reassessment
+of tuning. Continuing an unchanged sampling state preserves the RNG and
+frozen tuning.
+
+The numerical state contains position, density, score, random keys and
+counters, step size, inverse mass, minimum work, adaptation iteration,
+Adam accumulators and discounted moments. Dense initialization additionally
+stores the fixed basis. Run-control checkpoints also contain iteration
+counts and log-density moments. Save this complete state for continuation;
+saving only the last position does not reproduce the run. Fixed-capacity
+chunk outputs carry a mask, and padded rows must never enter estimates.
+
+\subsection{Tuning and comparison protocol}
+
+For the standalone Stan-style route, first validate the unconstrained
+target and score, Jacobians, row isolation, finite starts and metric
+convention. Use the inspected Stan three-stage warmup, its metric-boundary
+step search and dual-averaging restart, then freeze adaptation before
+retaining samples. The adaptation-only wrapper rejects unsupported short
+budgets; the direct port separately preserves the pinned Stan short-budget
+fallback described in Section~\ref{sec:sw-stan-tuning}. These are different
+interface contracts. Source defaults nominate a starting configuration;
+they do not certify that a target is adequately explored.
+
+For Walnutpie, record the deterministic or R2P variant, base interval,
+refinement bounds, jitter, acceptance statistic, mass convention and
+initialization search limit. Its default Adam warmup is not Stan dual
+averaging, and R2P combined with that warmup is not the paper's Appendix C
+quantile algorithm. The author-replication driver runs Appendix C in the
+independent Python reference and transfers its frozen parameters into XLA.
+An upstream log-density stopping statistic or step/mass agreement can
+finish adaptation without establishing parameter convergence.
+
+Compare tuned fixed-length HMC with a declared search over step size and
+leapfrog count, charging its calibration and selection work. Compare
+NUTS with its complete adaptation and charge that work too. Use held-out
+retained streams for the posterior comparison. Report cold compilation,
+warmup, retained execution, diagnostics and total elapsed time separately;
+give the exact number of chains, device, dtype, model/gradient backend and
+work-counter meaning. For execution-layout comparisons, use common inputs,
+balanced order, synchronization and uncertainty over independent seed blocks.
+For different samplers, assess validity and posterior agreement before
+ranking effective information per unit time. Shared seeds do not justify
+an independent-stream standard-error formula.
+
+\subsection{Source and test map}
+
+The authoritative implementation and test locations, relative to the
+repository root, are listed below. Reported historical test totals refer
+to their recorded revisions, not a promise that a future suite has the
+same test count. Native-header tests require the pinned local sources;
+missing dependencies must not silently substitute a different reference.
+
+{\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{.24\linewidth}>{\raggedright\arraybackslash}p{.68\linewidth}}
+\toprule
+Component & Implementation and evidence\\
+\midrule
+\endhead
+Stan warmup & \path{docs/benchmarks/stan_nuts_warmup.py};
+\path{docs/reference/nuts-tuning.md}; adaptation code-audit result.\\
+Direct Stan and TFP & \path{docs/benchmarks/stan_nuts.py},
+\path{docs/benchmarks/stan_nuts_tfp.py};
+\path{tests/test_stan_nuts_tfp.py}; direct-port and native-TFP result notes.\\
+Native bridge & \path{docs/benchmarks/native_sampler_bridge/};
+native Stan/Walnutpie result note and source manifests.\\
+Stan GPU models & \path{docs/benchmarks/stan_gpu_tf/};
+\path{tests/test_stan_gpu_tf.py}.\\
+Walnutpie numerical core & \path{docs/benchmarks/walnutpie_gpu_tf/core.py},
+\path{api.py}, \path{r2p.py} in that package;
+\path{tests/test_walnutpie_gpu_tf.py}.\\
+Initialization, control, mass & \path{initialization.py},
+\path{control.py}, \path{mass_coordinates.py} in the same package;
+\path{tests/test_walnutpie_gap_closure.py},
+\path{tests/test_walnutpie_supplied_mass.py}.\\
+Funnel and hybrid studies & \path{author_reference/},
+\path{funnel_master.py}, \path{replication.py},
+\path{replication_analysis.py}, \path{hybrid_benchmark.py} in that package;
+\path{tests/test_walnutpie_hybrid.py}.\\
+Full80 application & \path{docs/benchmarks/full80_walnutpie_sampling.py},
+its support, controller-helper and report modules;
+\path{tests/test_full80_walnutpie.py}.\\
+\bottomrule
+\end{longtable}}
+
+The Walnutpie C++ oracle is also saved under
+\path{docs/benchmarks/walnutpie_gpu_tf/prebuilt/linux-x86_64/20261029/}.
+Its executable is 249,008 bytes (243.2 KiB); the matching source archive
+is about 1 MiB. Checksums, compiler flags, pinned headers, Eigen 3.4.0 and
+licences accompany it. It requires Linux x86-64, glibc 2.34 or newer and
+libstdc++ symbols through \texttt{GLIBCXX\_3.4.29}/\texttt{CXXABI\_1.3.9}.
+It has no TensorFlow or CUDA dependency. It emits 528 deterministic JSON
+oracle records and implements the supplied analytic targets, not arbitrary
+user TensorFlow models. The recorded generic build took 7.33 seconds.
+Platform-specific compilation remains necessary elsewhere, and each new
+TensorFlow model signature still requires XLA compilation.
+
+For a bounded CPU correctness check with the prebuilt reference, use a fresh
+output directory and the installed TensorFlow environment:
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize,breaklines=true]
+CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true \
+python -m docs.benchmarks.walnutpie_gpu_tf.worker \
+  --mode validate --device cpu --execution-layout packed \
+  --oracle docs/benchmarks/walnutpie_gpu_tf/prebuilt/linux-x86_64/20261029/oracle \
+  --output /tmp/walnutpie-validation-new
+
+CUDA_VISIBLE_DEVICES=-1 TF_FORCE_GPU_ALLOW_GROWTH=true \
+python -m pytest -q tests/test_full80_walnutpie.py
+\end{lstlisting}
+
+Do not pass the tracked executable as a build destination: the original
+master's build, qualify and all phases rebuild that path. Worker validation
+or the master's validate/benchmark phase can consume the prebuilt directly.
+Full GPU benchmarks and million-iteration replications are separate,
+budgeted experiments; their launch commands, source pins and stop conditions
+belong to the saved plans, rather than this small correctness example.
+
+\subsection{Result records and reproducibility limits}
+
+The result-note index below gives filenames under \path{docs/plans/}.
+Each note links its run manifests, exact commands, seeds, environment,
+timing boundaries and structured diagnostics. The monograph evidence
+snapshot under \path{docs/reference/stan-walnutpie-evidence-20261031/}
+preserves selected completed-result JSON files, their original locations
+and SHA-256 hashes. Large raw draws, machine-local source installations
+and financial-model inputs remain at the recorded experiment locations;
+the compact snapshot is not a replacement for those inputs.
+
+{\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{.23\linewidth}>{\raggedright\arraybackslash}p{.69\linewidth}}
+\toprule
+Study & Result note or completed record\\
+\midrule
+\endhead
+Early devices/HMC & \path{bayesfilter-nuts-xla-benchmark-result-2026-10-27.md};
+\path{bayesfilter-nuts-fixed-hmc-result-2026-10-27.md};
+\path{bayesfilter-nuts-geometry-overhead-result-2026-10-27.md}.\\
+Stan transfer/audit & \path{bayesfilter-stan-nuts-transplant-result-2026-10-27.md};
+\path{bayesfilter-stan-adaptation-code-audit-result-2026-10-27.md};
+\path{bayesfilter-full-stan-nuts-port-result-2026-10-27.md}.\\
+TFP and GPU Stan & \path{bayesfilter-stan-tfp-native-result-2026-10-28.md};
+\path{bayesfilter-native-stan-walnutpie-result-2026-10-28.md};
+\path{bayesfilter-stan-gpu-tf-result-2026-10-28.md}.\\
+Walnutpie transfer & \path{bayesfilter-walnutpie-gpu-tf-result-2026-10-28.md};
+\path{bayesfilter-walnutpie-gap-closure-result-2026-10-29.md};
+\path{bayesfilter-walnutpie-supplied-mass-result-2026-10-29.md}.\\
+Optimization/hybrid & \path{bayesfilter-walnutpie-optimization-result-2026-10-29.md};
+\path{bayesfilter-walnutpie-hybrid-large-model-result-2026-10-29.md}.\\
+Author funnel & \path{bayesfilter-walnuts-author-funnel-result-2026-10-29.md};
+million-run \path{REPORT.md} and \path{comparison.json} in
+\path{docs/benchmarks/artifacts/walnuts-million-analytic-20261029-01/}.\\
+q20 & \path{bayesfilter-q20-walnutpie-placement-results-2026-10-29.md};
+\path{bayesfilter-q20-walnutpie-estimation-results-2026-10-29.md},
+including its 31 October terminal update.\\
+Full80 & \path{bayesfilter-full80-walnutpie-result-2026-10-30.md};
+\path{comparison-01/} and \path{terminal-review-02/} under
+\path{docs/benchmarks/artifacts/full80-walnutpie-20261030/}.\\
+\bottomrule
+\end{longtable}}
+
+The remaining limits are specific. Appendix C tuning has not been
+transferred to a native TensorFlow kernel. The exact extreme-start
+$v=-30$ transient study is incomplete. Dense supplied-mass adaptation is
+diagonal in a fixed basis. The C++ bridge does not fuse arbitrary TF
+models, and the pure TensorFlow port does not reproduce upstream random
+streams bit for bit. CPU/GPU preference depends on model cost, batching
+and compiler behaviour. The full80 saved-draw comparison is complete, but
+fresh target replay requires recovery of its bound MacroFinance source
+closure; q20 still lacks an accepted posterior estimate. These distinctions
+identify what further evidence is needed without discarding the completed
+source checks, execution measurements or posterior comparisons.

@@ -1,0 +1,341 @@
+\chapter[Stan and Walnutpie]{Stan and Walnutpie: Source Transfer, XLA Execution, and Evidence}
+\label{ch:stan-walnutpie}
+\begingroup
+\emergencystretch=2em
+% Permit long source paths to wrap locally without changing other chapters.
+\expandafter\def\expandafter\UrlBreaks\expandafter{\UrlBreaks
+\do\a\do\b\do\c\do\d\do\e\do\f\do\g\do\h\do\i\do\j
+\do\k\do\l\do\m\do\n\do\o\do\p\do\q\do\r\do\s\do\t
+\do\u\do\v\do\w\do\x\do\y\do\z\do\-\do\_}
+
+This chapter records the standalone sampler programme completed between
+27 and 31 October 2026. Its motivating question was practical: can an
+adaptive HMC implementation accept a TensorFlow filtering model, compile
+the repeated numerical work with XLA, and approach the execution efficiency
+of native Stan? The subsequent experiments also asked whether local
+step-size refinement helps difficult geometry, whether CPU tree control
+should be combined with GPU model evaluation, and whether Walnutpie can
+recover a saved financial posterior through a frozen NeuTra transform.
+
+These questions have different answers. The supported Stan algorithm and
+Walnutpie mechanisms were transferred and checked against pinned sources.
+Native C++ calls can be embedded in an XLA graph, but that does not move
+their computation onto the GPU. The separate TensorFlow implementations do
+evaluate the model and sampler numerics on the selected XLA device. Cheap
+analytic targets often favour CPU execution; expensive batched models can
+favour GPU execution. The full80 financial comparison passed its declared
+posterior checks, whereas the separate q20 application did not. Neither
+source agreement nor successful compilation alone establishes posterior
+accuracy or a performance advantage.
+
+The scope is the owner-authorized standalone work in
+\path{docs/benchmarks/}. It does not restore excluded public NUTS routes,
+replace the repository's public HMC tuning procedures, or make these
+experimental interfaces new production defaults. Historical and failed
+attempts remain part of the evidence.
+
+\section{Which implementation is being compared?}
+\label{sec:sw-implementations}
+
+Stan 2.37.0 is the native reference throughout this programme, not a claim
+about the latest Stan release. Its source was installed locally from a
+checksummed release archive. The relevant authority is the C++ Euclidean
+multinomial NUTS implementation and its service-level initialization and
+adaptation, rather than the original slice-based NUTS pseudocode alone
+\citep{swStan237,swNUTS2014}. TensorFlow 2.20.0 and TFP 0.25.0 were the
+tested framework versions. The following implementations must be kept distinct.
+
+\begin{description}[style=nextline]
+\item[Stan-style warmup around TFP NUTS.]
+\path{stan_nuts_warmup.py} transfers step-size search, dual averaging and
+windowed diagonal/dense metric learning, while TFP supplies the transition.
+Its arithmetic helpers are reusable TensorFlow functions; its controller
+is specifically wired to TFP NUTS. It is not Stan's tree implementation.
+\item[Direct Stan algorithm port.]
+\path{stan_nuts.py} translates the pinned Euclidean multinomial tree,
+integrator, metric, adaptation and flat-coordinate initialization into
+TensorFlow. Native Stan is an oracle and comparator, not a runtime dependency.
+\item[Native TFP interface.]
+The first \path{stan_nuts_tfp.py} wrapped the direct tree in TFP's
+\texttt{TransitionKernel} protocol. On 28 October it was replaced by stock
+TFP NUTS and \texttt{sample\_chain}, with the checked Stan-style warmup and
+fixed-metric transformations. An API wrapper alone did not accelerate the
+direct tree; the rewrite changed the numerical implementation.
+\item[Native C++ XLA bridge.]
+\path{native_sampler_bridge/} calls native Stan or Walnutpie C++ from an
+XLA custom call. Its GPU entry stages inputs to host, executes the CPU
+sampler, and returns outputs to device. This preserves native computation
+but is not GPU sampler execution.
+\item[TensorFlow models inside GPU/XLA samplers.]
+\path{stan_gpu_tf/} reuses the direct Stan authority with explicit model
+tensor operands; \path{walnutpie_gpu_tf/} implements Walnutpie numerics
+in TensorFlow. These paths contain the model, its position score and the
+sampler loops in compiled functions, without a CPU sampler callback.
+\end{description}
+
+All paths above are relative to \path{docs/benchmarks/}. Transferring this
+supported sampler is not transferring the whole Stan compiler, constrained
+parameter language, Math library, CSV/service conventions, RNG stream or
+all HMC variants. In particular, a C++ callback cannot generally invoke an
+arbitrary TensorFlow graph and thereby become fused GPU computation.
+
+\section{Stan adaptation: mathematics, order, and audit}
+\label{sec:sw-stan-tuning}
+
+Let $q\in\mathbb R^d$, $U(q)=-\log\pi(q)$, and let $C$ denote the
+inverse momentum covariance. The convention used by the direct Stan port is
+\begin{equation}
+ H(q,p)=U(q)+\tfrac12p^\top Cp,\qquad
+ p\sim N(0,C^{-1}),\qquad \dot q=Cp.
+ \label{eq:sw-hamiltonian}
+\end{equation}
+Unit, diagonal and dense positive-definite $C$ are supported. Momentum
+generation, velocity and kinetic energy must use the same convention.
+If $C=AA^\top$, $q=Az$ and $p=A^{-\top}p_z$, then
+$p^\top dq=p_z^\top dz$ and the kinetic energy is $p_z^\top p_z/2$.
+This gives the constant-metric coordinate change used around unit-mass
+TFP NUTS. The constant log determinant does not affect the fixed-metric
+transition; at a metric update the physical position must be preserved,
+the new $z$ solved for, and density/gradient caches rebuilt. Reusing a cache
+from the old coordinates would be wrong.
+
+\subsection{Three warmup stages}
+
+Stan's initial fast interval learns step size, expanding slow intervals
+learn metric and step size, and a terminal fast interval learns step size
+under the final metric. The inherited buffers are 75 initial, 25 in the
+first slow window and 50 terminal transitions. For 1000 warmup transitions,
+the zero-based metric-update indices are $99,149,249,449,949$. These are
+source-derived starting choices, not universal adequacy claims.
+
+Within a slow window, Welford updates estimate its covariance $S_n$. For
+$n>1$ the regularized inverse metric is
+\begin{equation}
+ C_n=\frac{n}{n+5}S_n+\frac{5}{n+5}10^{-3}I.
+ \label{eq:sw-metric-shrinkage}
+\end{equation}
+The diagonal route uses only the diagonal. A one-observation window retains
+the previous covariance estimate before the same shrinkage, following the
+pinned source. The accumulator resets at a window boundary; it does not
+pool every warmup observation. A fresh reasonable-step search follows the
+metric installation, then dual averaging restarts in the new geometry.
+
+For target acceptance $\delta$, observed trajectory-average Metropolis
+probability $\alpha_t$, and shrinkage centre $\mu$, the transferred
+dual-averaging recursion is
+\begin{align}
+ \bar H_t&=\left(1-\frac1{t+t_0}\right)\bar H_{t-1}
+             +\frac{\delta-\alpha_t}{t+t_0},\label{eq:sw-dual-h}\\
+ \log\epsilon_t&=\mu-\frac{\sqrt t}{\gamma}\bar H_t,\\
+ \log\bar\epsilon_t&=t^{-\kappa}\log\epsilon_t
+                   +(1-t^{-\kappa})\log\bar\epsilon_{t-1}.
+\end{align}
+The source defaults are $\delta=.8$, $\gamma=.05$, $\kappa=.75$ and
+$t_0=10$. Retained sampling freezes the final smoothed step size and
+metric. The statistic $\alpha_t$ averages over trajectory leapfrogs;
+it is not the fraction of transitions whose selected position changed.
+Rejected nonfinite leaves contribute zero acceptance while a valid retained
+state remains usable.
+
+Initial and window-boundary ordering matters. The initial service sets
+$\mu=\log(10\epsilon_{\rm supplied})$ before its first search; at a
+metric boundary the centre uses the newly searched step. The search
+brackets a one-leapfrog acceptance probability of $.8$ by doubling or
+halving with the source's momentum-refresh and repeated-probe cadence.
+Its $.8$ bracket is separate from configurable $\delta$. Short warmup
+also has pinned-version semantics: fewer than 20 transitions do not learn
+a metric, and the inspected 2.37 fallback for shortened buffers returns
+without restarting the fresh window counter. The port preserves that
+behaviour instead of silently replacing it with a more convenient schedule.
+
+\subsection{What the tests establish}
+
+The adaptation audit compiled the actual Stan headers, rather than testing
+against another transcription. It checked covariance and singleton-window
+arithmetic, dual-averaging updates/restarts, initial search ties and failures,
+and native adapter replay at each metric boundary. Dense-coordinate
+orientation was checked against the native leapfrog integrator. State,
+density and score caches were independently recomputed around transitions;
+continuation, per-chain separation, invalid inputs and final freezing were
+covered. The reported audit suite passed 64 tests with zero skips; CPU and
+GPU XLA execution was separately qualified.
+
+The direct port additionally checks recursive tree behaviour through
+supplied momenta and uniform random tapes: proposal selection, early return,
+work/acceptance counters, strict energy thresholds, direction ties, the
+three momentum-based U-turn checks and RNG consumption. Sources include
+\path{stan/src/stan/mcmc/hmc/nuts/base_nuts.hpp},
+\path{mcmc/hmc/base_hmc.hpp}, \path{mcmc/stepsize_adaptation.hpp},
+the windowed variance/covariance adapters and service initialization.
+The combined direct-port record reports 128 tests. These fixtures establish
+the checked source behaviour, not universal correctness over all targets.
+
+The generic target returns FP64 log densities of shape $[C]$ from positions
+of shape $[C,d]$, with independent rows. It owns constraints and Jacobians.
+Flat supplied/partial/random starts, initialization retries, jitter,
+adaptation-off, zero warmup, thinning and retained continuation are supported
+within the documented interface. TF Philox keys/counters replace Stan's
+random engine: identical numeric seeds do not imply identical trajectories.
+Arbitrary Python exceptions cannot run inside XLA, so compiled validity
+flags must be checked at host boundaries. The reusable guides are
+\path{docs/reference/nuts-tuning.md}, \path{nuts-direct-stan.md},
+\path{nuts-stan-tfp.md} and \path{nuts-stan-coverage.md} in that directory.
+
+\section{Walnutpie and the WALNUTS paper}
+\label{sec:sw-walnuts}
+
+The deterministic C++ authority is Walnutpie commit
+\texttt{5710b0334ba6}; the paper experiments
+use the separate author WALNUTS repository at
+\texttt{895a9b7a595b}
+\citep{swWalnutpieSource,swWalnutsAuthor}. Full commit hashes appear in the bibliography and source manifests.
+These are related sources, not interchangeable implementations. The published account is
+\citet{swWalnuts2026}, particularly Sections 3.1--3.4, 4.1, 4.3,
+Remark 13, equations (13)--(14), and Appendices A--C.
+
+\subsection{Local refinement and reverse recoverability}
+
+A macro interval of length $h$ is subdivided into microsteps. In the local
+deterministic code, with minimum count $m$ and refinement exponent $k$,
+there are $m2^k$ leapfrogs of size $h/2^k$; the macro duration is therefore
+$mh$. Each candidate is accepted locally only after its energy test and
+coarser reverse-trajectory checks. Merely shrinking the step in a difficult
+region without checking reverse selection does not reproduce this sampler.
+The optimized source uses absolute endpoint energy error; the paper's
+Remark 13 explicitly permits that deterministic selector in place of the
+more conservative micro-trajectory energy envelope. Intermediate nonfinite
+states must still be handled.
+
+For randomized refinement, write $r_f$ and $r_b$ for the probabilities of
+selecting the realised microstep count from the forward and reverse endpoints.
+The paper's forward orbit-weight recursion can be written
+\begin{equation}
+ \log w_j=\log w_{j-1}-H_j+H_{j-1}+\log r_b-\log r_f.
+ \label{eq:sw-orbit-weight}
+\end{equation}
+The negative-index recursion has the corresponding directional probabilities.
+These cumulative factors are necessary: state-dependent integration is not
+just ordinary fixed-step HMC with a locally convenient epsilon. Zero reverse
+support gives zero weight. The implementation keeps the orbit geometry while
+representing zero probability by $-\infty$ in log space.
+
+In the R2P implementation, the critical refinement exponent $k_*$ is selected
+by a bounded energy search; exponent $k_*$ is chosen with probability $2/3$,
+and $k_*+1$ with probability $1/3$. The paper experiments also use $.2$
+jitter. The capped author selector can return its cap without satisfying
+the threshold, and the random finer choice may then use cap plus one.
+The port exposes this distinction rather than claiming the bound certifies
+all energy tests.
+
+An audit found a missing second cumulative backward log-weight update in
+the pinned author Python tree near line 462. The local R2P tree includes
+the term required by equations (13)--(14). Its oracle therefore combines
+the unmodified author macro with an independently written recursive tree
+using explicit orbit points and the paper equations. A negative control
+removes the disputed term. Literal original-author and corrected-author
+chains remain separate experiment arms. This is a documented source
+difference, not a claim of bitwise agreement with the original whole chain.
+
+\subsection{Adaptation and run control}
+
+Deterministic Walnutpie uses displacement U-turns, Barker selection within
+subtrees and biased Metropolis selection when extending the outer tree.
+Its base-macro quality statistic is $\exp(-|\Delta H|)$; the default
+target $.8$ feeds Adam at base-macro attempts. Discounted draw/score moments
+adapt the diagonal mass, and average macro work adapts the minimum microstep
+count. It does not substitute Stan's dual averaging or covariance windows.
+A fixed-HMC endpoint acceptance target such as $.70$ cannot be copied over
+as if it controlled the same quantity.
+
+The TensorFlow implementation adds supplied, zero and normal starts;
+supplied, unit and absolute-score diagonal masses; optional geometric mass
+averaging; supplied steps or source-style fixed-momentum initialization
+search. The default 64-update search safety bound can explicitly be removed;
+an uncapped compiled search has no internal wall-clock interruption.
+Invalid positions, steps, reciprocal masses and duplicate stream keys
+are rejected through validity outputs.
+
+Compiled controllers reproduce the pinned relative step/mass agreement
+statistics and legacy density-agreement statistic. Synchronized batched
+advancement replaces asynchronous C++ workers. Host deadlines, callbacks
+and cancellation are observed between compiled chunks. Thus a timeout
+boundary may include an in-flight compile or transition. Full checkpoints
+preserve random state, caches, Adam state, online moments and iteration
+counts; continuing retained sampling must not restart adaptation. A
+maximum-iteration stop or agreement of tuning parameters is not posterior
+convergence. Appendix C's paper quantile-tuning experiment remains a
+separate CPU reference procedure; optional Adam warmup around R2P does
+not claim to reproduce it.
+
+\subsection{Supplied mass and NeuTra}
+
+Walnutpie's supplied API takes momentum covariance $M$, whereas the Stan
+port takes its inverse $C$. Fixed mode retains $M$ exactly; adaptive
+diagonal mode seeds the existing draw/score estimator from it. For a dense
+supplied $M=LL^\top$, the implementation uses
+\begin{equation}
+ y=L^\top q,\qquad p=Lr,\qquad
+ \log\pi_y(y)=\log\pi(L^{-\top}y)-\log|\det L|.
+ \label{eq:sw-dense-mass}
+\end{equation}
+Substitution gives $p^\top dq=r^\top dy$ and
+$p^\top M^{-1}p=r^\top r$. Adaptive dense-interface mode learns
+$L\operatorname{diag}(m)L^\top$ in this fixed basis, not an unrestricted
+dense covariance. The physical displacement U-turn rule must also be
+transformed; naive reuse of a Euclidean $y$-space rule would change the
+specified algorithm. With adaptive inverse diagonal entries $D$ in the
+$y$ basis, the physical dot product becomes
+$r^\top D L^{-1}L^{-\top}\Delta y$.
+
+For a frozen learned transform $q=T(z)$, the latent target is
+\begin{equation}
+ \log\pi_z(z)=\log\pi_q(T(z))+\log|\det J_T(z)|.
+ \label{eq:sw-neutra-target}
+\end{equation}
+The requested full80 experiment fixes $M_z=I$ and adapts only the permitted
+step/work controls. Learning another ordinary metric is not a prerequisite.
+The Jacobian must appear exactly once, and the cached score must differentiate
+this same transformed density.
+
+\section{What full XLA execution means here}
+\label{sec:sw-xla}
+
+Both TensorFlow sampler families expose initialization, warmup, sampling
+and value/gradient functions with stable \texttt{input\_signature}s
+and \texttt{jit\_compile=True}. Model data are runtime tensor operands;
+changes in values with the same signature need not retrace. Shape or static
+configuration changes require a new compiled function. Independent-row
+batch semantics are checked: cross-chain normalization, mutable targets,
+random likelihood values or missing Jacobians violate the interface.
+Numerical loops use native TensorFlow control flow, without pfor or Python
+sample-by-sample target evaluation.
+
+The native bridge instead lowers a \texttt{BfNativeSamplerV1} custom call.
+GPU producer/bridge/consumer tests verify that staging composes correctly
+inside a GPU graph, but the sampler remains on CPU. Its fixed analytic
+target library is not a general fusion interface for arbitrary TensorFlow
+models. Native direct and CPU/GPU-bridge outputs were byte-identical on
+the tested fits; same-engine overhead is measured separately from
+cross-algorithm efficiency.
+
+For the genuine GPU implementations, optimized HLO, device output placement,
+runtime-data sensitivity, one-trace checks, absence of forbidden callbacks
+and device profiling establish the tested numerical execution. This does
+not imply one fused CUDA kernel, zero host scheduling, or gradients through
+the accept/reject sampler itself. Device BLAS/solver custom calls are not
+CPU sampler callbacks. TensorFlow's command-buffer and profiling modes may
+change scheduling: the inspected TF 2.20 profiler disables command buffers.
+Reported first-call times include tracing, compilation and an execution,
+unless a compiler-only alarm is explicitly quoted. Warmup and retained
+functions can incur separate cold compilations.
+
+The supplied GPU launchers configure and verify on-demand memory growth
+before initialization. CPU reference processes explicitly hide GPUs.
+All timing tables below identify their workload and boundary; GPU allocator
+peak, host RSS and driver reservation are different quantities.
+
+\input{chapters/ch26k_stan_walnutpie_results}
+\input{chapters/ch26k_stan_walnutpie_reproducibility}
+
+\clearpage
+\endgroup

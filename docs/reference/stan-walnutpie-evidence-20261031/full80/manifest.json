@@ -1,0 +1,655 @@
+{
+  "kind": "full80_walnutpie_comparison",
+  "status": "posterior_screens_passed",
+  "policy": {
+    "id": "full80_walnutpie_author_fixed_identity_v1",
+    "initial_step": 0.1,
+    "target_macro_quality": 0.8,
+    "warmup_min": 50,
+    "warmup_max": 1000,
+    "warmup_stride": 5,
+    "step_tolerance": 0.1,
+    "mass_tolerance": 1.0,
+    "chunk_size": 5,
+    "retained_min": 1400,
+    "retained_max": 10000,
+    "assessment_stride": 100,
+    "rhat_max": 1.01,
+    "bulk_ess_min": 400.0,
+    "tail_ess_min": 400.0,
+    "mcse_sd_max": 0.05
+  },
+  "started_utc": "2026-10-30T08:41:46.324143+00:00",
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/full80_walnutpie_sampling.py",
+    "--worker",
+    "--output",
+    "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/full80-walnutpie-20261030/comparison-01",
+    "--gpu",
+    "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+    "--wall-seconds",
+    "251900",
+    "--campaign-seconds",
+    "252000"
+  ],
+  "plan": "/home/ubuntu/python/BayesFilter/docs/plans/bayesfilter-full80-walnutpie-comparison-2026-10-30.md",
+  "result": "/home/ubuntu/python/BayesFilter/docs/benchmarks/artifacts/full80-walnutpie-20261030/comparison-01/result.json",
+  "wall_limit": 251900,
+  "campaign_limit": 252000,
+  "baseline": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-hmc-20261021/sample-repair-20261021T115311006662Z",
+  "resume": null,
+  "authorization": "Owner 2026-10-30: you have 70 hours more",
+  "authorized_additional_seconds": 252000,
+  "git_commit": "8821e8c0c431071578084164c6915cb95fbb3d82",
+  "python": "3.13.13 | packaged by Anaconda, Inc. | (main, Apr 14 2026, 06:19:41) [GCC 14.3.0]",
+  "gpu": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "trust_basis": "trusted_escalated_execution",
+  "mass": "fixed_identity",
+  "training_updates": 0,
+  "start_seed": [
+    20261021,
+    201
+  ],
+  "transition_seeds": [
+    [
+      202610400,
+      0
+    ],
+    [
+      202610401,
+      0
+    ],
+    [
+      202610402,
+      0
+    ],
+    [
+      202610403,
+      0
+    ]
+  ],
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "4",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OMP_NUM_THREADS": "4",
+    "OPENBLAS_NUM_THREADS": "4"
+  },
+  "source": {
+    "binding_sha256": "aea46ebcc19329de8473fc3c17966056b0be957a795a6f17c7e16ed5a12693a9",
+    "nonexecuted_source_drift": [
+      "scripts/dz5_successor_master.py"
+    ],
+    "local_import_closure": {
+      "dz5_financial_target_tf": "fa4baf4553bcb12f1388191a5289e019c16e5ec4a5c40dfd3246c1361cc1c775",
+      "dz5_financial_state_tf": "9cba31482fabd562e1a9cc1da65ee9158a2924da40a596dc3a45152d9f5ecbf8",
+      "two_currency_double_zlb_credit_primitives_tf": "4dcc07943ef4e592108c6e887514088ab8edd2b0e5816bc66fccf99e781dc4a7",
+      "dz5_financial_model_tf": "61e8492c0d8914efb8402c7772365cc52b5b22c90aad8b992eb078a9ecadf77f",
+      "dz5_financial_contract": "629d494d47606d8fe15136d5551569a21ec5cf45a306809b7a72a9ee428d5938",
+      "dz5_financial_support_tf": "bf09f30c835920f69249f61a721bcc2bf02fe41df60b22d77115f6e32cd27226",
+      "dz5_financial_filter_tf": "9a53c0d643f09911f0e035560142cd2c93b5e63cf1400361623e57425969669f",
+      "dz5_pricing_shared_partials_tf": "8298f1bcacce29c6e14d9ca2a3d74b7d2ae1c5a0a1516a258894244eb3f63ecf",
+      "dz5_financial_pricing_tf": "7f1df4af6c0979772c951fafb1c818f0292fd56e3dd45fe06305e8041e7aabf8",
+      "two_currency_double_zlb_commodity_primitives_tf": "ee4adbeb3707c80ca7de13f34fd7e272a5f119379c1287459d4bf9137d80c5f3",
+      "dz5_financial_equity_grid_tf": "114fcca1122cf104e3341fbae1cac2aabe1c79f71c5b685a88376e855dc04ada",
+      "dz5_financial_bonds_tf": "f44ad8ffd31c284fb6f59189cb9a089bbfd8590c50240bdade294ced0c75fda7",
+      "dz5_analytical_pricing_tf": "916c62655016f759253e7ba154fb6c5aadeb2d8f65c4c61a4adf38ca2c162ce4",
+      "dz5_bond_cumulant_fast_tf": "b781a9966f433819c2a7bb644dc0c08afe41bc41c05aba9d816ca4f2294b5691",
+      "dz5_bond_cumulant_tf": "828c06e1ed2149408b01fbe4ec1c014d3991da65ef35e34a57f7f91f46806d7d",
+      "dz5_financial_cir_prepared_tf": "5e68e3ac8544383649e2cc7bea0dbf90297f8e3e7e4c7c6c96a8946ce714dfb5",
+      "dz5_observation_prepared_tf": "25212108224fdbc2d51de8433f5796aec116ad7e420bce120c27cac25ff52496",
+      "dz5_pricing_prepared_tf": "59660a16eda47f27a734751a24007b3873499c66d65ace3c4176dcd548b2dd21",
+      "dz5_equity_mixture_tf": "c9c614155adc38702243f280e73ff8425da026486326d3a46ef7ba736b360603",
+      "dz5_floor_bond_tf": "b1f0b82382eeee4820efd88ae1c4ef665cd11dc6fe70c05e7dff0f048e360ad5",
+      "dz5_financial_coordinates_tf": "06c31ef218d16ed7fcc26b6698cab3643243cdc80cc8de76523751b8f68acbab",
+      "dz5_financial_specialist_tf": "ef25186a4d2c5a67fd015f36bc47f8a19f3b326d8d69f9068b98ca1eb2c29c62",
+      "dz5_full80_hmc_adapter": "a606839e6be5d792db79326c8dd49a740033ccd4a3dc6b0c9416bec36d22b130",
+      "dz5_full80_component_transport_tf": "f3e9c87636303a0be7b69ec5bcc2ddd75f1db7926808ea2dbe8bd4adf39bbb41",
+      "dz5_country_component_transport_tf": "43c0b675ccf586a552d01f083d8064047af682f019616e76e90f8d0d47ad264a",
+      "dz5_country_component_coordinates_tf": "de59e135863aeab4106852e478db0541c1d38290ada63ddbb8bd2835db7530ce"
+    }
+  },
+  "binding": {
+    "checkpoint": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/checkpoint-005000-20261020T165341520561Z.zip",
+    "checkpoint_sha256": "b5c987e014dfc168d7d1c73dff8409a5a7dc97b8265f15f1c532e99e586ca816",
+    "spec": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/prepare-elastic-probe-20261019T134528620053Z/spec.json",
+    "spec_sha256": "543f4b4cda4c7b95821791f0c13d4fcd3ae494417e73187549f466486825eb5b",
+    "training_binding": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/prepare-elastic-probe-20261019T134528620053Z/binding.json",
+    "training_binding_sha256": "6801d02bceb528b22726153155f51fb85b500873be4df2490ca70f74307a055b",
+    "panel": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-first-order-execution-20260929/F00-20260930T143501630110Z/result.panel.npz",
+    "panel_sha256": "ca794de86cd9972b940ec8e8b7e960afc7ee5fc10fe2f615e197bb21e1e4e352",
+    "confirmation": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/confirmation-0.npz",
+    "confirmation_sha256": "5260819ff636e5dc127b5688c89af43c808c7c80538ebfe1876bab8970ead63b",
+    "sources": {
+      "dz5_analytical_pricing_tf.py": "916c62655016f759253e7ba154fb6c5aadeb2d8f65c4c61a4adf38ca2c162ce4",
+      "dz5_bgl_joint_contract.py": "a23cd8f9d7e066769dbb82918a3cb3b51259b1b39b16aca9cd5a090ba05cad60",
+      "dz5_bond_cumulant_fast_tf.py": "b781a9966f433819c2a7bb644dc0c08afe41bc41c05aba9d816ca4f2294b5691",
+      "dz5_bond_cumulant_tf.py": "828c06e1ed2149408b01fbe4ec1c014d3991da65ef35e34a57f7f91f46806d7d",
+      "dz5_conditional_training_tf.py": "08aaa93b8ce9ee083f4d4c4a80cee0620071edb67a8aaa104a5a1cf1759de439",
+      "dz5_country_component_coordinates_tf.py": "de59e135863aeab4106852e478db0541c1d38290ada63ddbb8bd2835db7530ce",
+      "dz5_country_component_transport_tf.py": "43c0b675ccf586a552d01f083d8064047af682f019616e76e90f8d0d47ad264a",
+      "dz5_equity_mixture_tf.py": "c9c614155adc38702243f280e73ff8425da026486326d3a46ef7ba736b360603",
+      "dz5_financial_bonds_tf.py": "f44ad8ffd31c284fb6f59189cb9a089bbfd8590c50240bdade294ced0c75fda7",
+      "dz5_financial_cir_prepared_tf.py": "5e68e3ac8544383649e2cc7bea0dbf90297f8e3e7e4c7c6c96a8946ce714dfb5",
+      "dz5_financial_contract.py": "629d494d47606d8fe15136d5551569a21ec5cf45a306809b7a72a9ee428d5938",
+      "dz5_financial_coordinates_tf.py": "06c31ef218d16ed7fcc26b6698cab3643243cdc80cc8de76523751b8f68acbab",
+      "dz5_financial_equity_grid_tf.py": "114fcca1122cf104e3341fbae1cac2aabe1c79f71c5b685a88376e855dc04ada",
+      "dz5_financial_filter_tf.py": "9a53c0d643f09911f0e035560142cd2c93b5e63cf1400361623e57425969669f",
+      "dz5_financial_identification_campaign.py": "fb408d916821247b8875a3deb7ae38692823028dbf8bcf71fcfa619efc485136",
+      "dz5_financial_model_tf.py": "61e8492c0d8914efb8402c7772365cc52b5b22c90aad8b992eb078a9ecadf77f",
+      "dz5_financial_neutra_tf.py": "46ed40b37dedeb11e60dd8820e67325f87a369158b9049f8637c173bf627f5b5",
+      "dz5_financial_pricing_tf.py": "7f1df4af6c0979772c951fafb1c818f0292fd56e3dd45fe06305e8041e7aabf8",
+      "dz5_financial_science_campaign.py": "389c91aaacbfab3bf568596237ecebdde37d986669a6786e6e700287057666d0",
+      "dz5_financial_specialist_tf.py": "ef25186a4d2c5a67fd015f36bc47f8a19f3b326d8d69f9068b98ca1eb2c29c62",
+      "dz5_financial_state_tf.py": "9cba31482fabd562e1a9cc1da65ee9158a2924da40a596dc3a45152d9f5ecbf8",
+      "dz5_financial_support_tf.py": "bf09f30c835920f69249f61a721bcc2bf02fe41df60b22d77115f6e32cd27226",
+      "dz5_financial_synthetic.py": "8c396e96dafa84cc2c6962674aa8a22497946402c26b406f8ca66094631c93bf",
+      "dz5_financial_target_tf.py": "fa4baf4553bcb12f1388191a5289e019c16e5ec4a5c40dfd3246c1361cc1c775",
+      "dz5_floor_bond_tf.py": "b1f0b82382eeee4820efd88ae1c4ef665cd11dc6fe70c05e7dff0f048e360ad5",
+      "dz5_full80_component_transport_tf.py": "f3e9c87636303a0be7b69ec5bcc2ddd75f1db7926808ea2dbe8bd4adf39bbb41",
+      "dz5_neutra_sequential_campaign.py": "371ab72408b418289182a4a1cd2a5920b4f6cf577ed26dec416be9136084f15f",
+      "dz5_neutra_training_campaign.py": "00da9fde23c2bdfc32f16203b495742e142521377fff569b5aee33a486847d78",
+      "dz5_observation_prepared_tf.py": "25212108224fdbc2d51de8433f5796aec116ad7e420bce120c27cac25ff52496",
+      "dz5_pricing_prepared_tf.py": "59660a16eda47f27a734751a24007b3873499c66d65ace3c4176dcd548b2dd21",
+      "dz5_pricing_shared_partials_tf.py": "8298f1bcacce29c6e14d9ca2a3d74b7d2ae1c5a0a1516a258894244eb3f63ecf",
+      "dz5_us_component_coordinates_tf.py": "be4d319c5434f51088d1f43ed9d386b2c32eb5a1925d10a1fff7678f28bca059",
+      "dz5_us_component_transport_tf.py": "f010de95daa09609b6bcbbbaa40ef5dc4b333b5de68ae9a4e8474ad34cc94434",
+      "identification/dz5_financial_affine_oracle.py": "fb79b67a6d47eda92711bac7d04bdfab79d1118092aaa22b2fb51237a9341215",
+      "identification/four_checks.py": "c9bde359b4f69e1f9a36eab6b9173dae4977cd62fb5c434ec6302b9d29d649e6",
+      "scripts/check_dz5_full80_components.py": "28411f1092d521e0439c8d5342a6387c9b5f976e1265c6717dd8cde56069e3ff",
+      "scripts/dz5_full80_component_campaign.py": "369fc98624e81b88ef5abc1cb52d8fc2f40f985dc73ff89d7a840457e0432689",
+      "scripts/dz5_implementation_worker.py": "bddc3b3bcdf0bdd495353d6f86ff51c1e13eeb92c7238ef3339020d8f08c38f0",
+      "scripts/dz5_local_preparation.py": "d9b5277e5333588c4c11baf024ddc5934b51eaf01f9e866107c11cfc4543164e",
+      "scripts/dz5_neutra_campaign.py": "033768b7e02f02e8607d7f8d7d6ed298eefd145e867326d6fc023ed902c811e6",
+      "scripts/dz5_neutra_campaign_worker.py": "696cf5c12792880b340367dfec7a4baa4cb5067d1fd0446e7db3dfa518aa0c32",
+      "scripts/dz5_neutra_cost.py": "a594a384542d35f20fb0fd25e133910fbbbf23c7abf853520f447c2e6b58969d",
+      "scripts/dz5_neutra_runtime.py": "1bed775e312a5ec85f90e885cffe769c53cc00439844866df681ac19b78c3602",
+      "scripts/dz5_phase_execution.py": "4dd4bbf3716c5b996b8d197ec99ade1235bb8ebed48bbc38a495ecaa8a508cb3",
+      "scripts/dz5_sigma_trace_tf.py": "73bae072cfc2ca4b1d40115dd416f0515bb0233cc462efface417b08bd1d9e19",
+      "scripts/dz5_successor_master.py": "ef02955dabb5ea2a72404dfffa231cdc03d4b2c628b3fab28ae1d05a8ef70a05",
+      "scripts/dz5_two_gpu_targets.py": "033c16d148ae0ba146ed182a9f1e10a8aabe8613acf71e4e5cbf6c5724b1f56c",
+      "scripts/prepare_dz5_pca_bond_bank.py": "db0d18592e25b6a976e1365cc75265b25bf2743770ec080a214a26d1aa5ff1b2",
+      "scripts/qualify_dz5_financial_filter.py": "d1a319da8efb6a517f5181e74bbea4ab404da4630c0fd2bb8e8d2450a7809c5d",
+      "scripts/qualify_dz5_first_order.py": "a04051a4541ea7f0b3048bf9b7330f5bd5b1d58ecc6e8299c16e8c9efd00e17d",
+      "scripts/watch_dz5_campaign_progress.py": "aa8a644002ed1b12056860ad006627ae8c49f282e56c119333c68b55643a6714",
+      "two_currency_double_zlb_commodity_primitives_tf.py": "ee4adbeb3707c80ca7de13f34fd7e272a5f119379c1287459d4bf9137d80c5f3",
+      "two_currency_double_zlb_credit_primitives_tf.py": "4dcc07943ef4e592108c6e887514088ab8edd2b0e5816bc66fccf99e781dc4a7",
+      "docs/plans/artifacts/dz5-first-order-execution-20260929/F00-20260930T143501630110Z/result.panel.npz": "ca794de86cd9972b940ec8e8b7e960afc7ee5fc10fe2f615e197bb21e1e4e352",
+      "docs/plans/artifacts/dz5-first-order-execution-20260929/FLOC_SUPPORT-20261005T125337371466Z/geometry.json": "bbe672620e4510aab3073fc16d5316ec45ba9a092c382a32c4c2d85e5338c8be",
+      "docs/plans/dz5_full80_composition_repair_20261019.md": "dbe2424c14149d8f2d12b6b369ae9927c92792a63946ff65e370629f08635f21",
+      ".localresources/dz5-bayesfilter-20261012-conditional-r7/snapshot.json": "9eef97b68f42967b5afc88319522c770b92fe201c9af7f56e6bf68150ad72dad",
+      "docs/latex-papers/CIP_monograph/chapters/ch12f_five_block_neutra.tex": "8d85ff3c117e068982a5f6aba20f6f15c9a0f702827a9897d0c3ba4a46399f31",
+      "scripts/dz5_gpu_usage.py": "c79e09f51e9838c9ae959017c39d92e975cc07e163ab795391f08b5f7075d245",
+      "docs/plans/dz5_full80_elastic_gpu_20261019.md": "49263c5177e48da176bda28d2cfb45194c42736a2e49c34475d22c8020e19703",
+      "docs/plans/dz5_full80_elastic_probe_repair_20261019.md": "465912a2f9d1157c5b23a706cf492e22523288734b2a3400fc8b128f3dd28e41",
+      "dz5_full80_hmc_adapter.py": "a606839e6be5d792db79326c8dd49a740033ccd4a3dc6b0c9416bec36d22b130",
+      "scripts/dz5_full80_hmc_campaign.py": "3609052ddce88dbdc195c91bb129b4d09c8f305b814dbf3dea72394d4f6f56fe",
+      "dz5_step_initialization.py": "b1d142d2da0cfc6f1c6218ce3542625bed3037e7141cd535b4b8cfc6becc4bed"
+    },
+    "parent_ledger_sha256": "7ed7b137f77f3bfc48781aad1432324b88f6cebc340784080651efd6cd76594e",
+    "parent_spent_seconds": 181520.29361846345,
+    "limit_seconds": 81279.70638153655,
+    "plan": "/home/ubuntu/python/MacroFinance/docs/plans/dz5_full80_hmc_20261021.md",
+    "git_commit": "c2924f89ab24b478ef7f30d3274d2775f00d6cf3",
+    "runtime": "/home/ubuntu/python/MacroFinance/.localresources/dz5-bayesfilter-20261012-conditional-r7",
+    "pricing": "all_float64_reference",
+    "chains": 4,
+    "seed": 20261021
+  },
+  "binding_sha256": "aea46ebcc19329de8473fc3c17966056b0be957a795a6f17c7e16ed5a12693a9",
+  "author_sources": {
+    "config.hpp": "74f0be3f668fc3b65df6e51504d1057c3c7536ab093651f979e6cf7cd00bd548",
+    "adapt.hpp": "bc9ad084caaa140fe9c138558484e14ca7fe2d619701cf82f5763ad8e6237a9c",
+    "adaptive_walnuts.hpp": "f61ae21340a20b9cdf39093ab375590ff9482c2c5d3c79efac231c94b5fe2671",
+    "walnuts.hpp": "9a391225509c49e98103b831bf5e9e7deebc7c1f27ca72c59fe61023b1317993",
+    "adam.hpp": "76c4651e8b690ba09bbcade87d7d45320f770e684e1c8da14fb8271d1920e2ef"
+  },
+  "source_hashes": {
+    "walnutpie/core.py": "9fdccfc0dd0ff019a5dc18e45707dc1356ddc5aaad4c9e0bdf1905c8accfa008",
+    "walnutpie/api.py": "43b184079497ff2841159fdd46b73c3716aab8413bb0d9923a704699703f762b",
+    "walnutpie/initialization.py": "9578b9063d1d1b469f7cd8dd181dedf61840b0fb6264e080e24e0a93f9674d76",
+    "walnutpie/r2p.py": "e985677d06ff39f2290b8a79c389f53d959d8528c2391cdb63a020b1099f02ee",
+    "walnutpie/control.py": "252be65588e1903e67aa10ab1ff068bdc60436de5336e387f1271131ac47ea1c",
+    "full80_walnutpie_sampling.py": "21ec86c6d5c80dfb72544f84e58f259950c42dbcecde6a291054cc4d644b635e",
+    "full80_walnutpie_sampling_helpers.py": "fa7efaed981351bf0084cb87a93c948f42bf64e7a65e2befcda8abf1223dfa33",
+    "full80_walnutpie.py": "2feaa52e6d3f193bd700850c58b1d7c6f1a02d60cba265bcd71d1a41b3620f13",
+    "full80_walnutpie_support.py": "399c814101639d7d8936f28d86d347e9d609adbae9dee5444c48311a2b20acb8",
+    "full80_walnutpie_report.py": "446210ff04b8cf3cdcceec3c0c37eb39ab115186c7a57cee64cc8c39ce06b1bd"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0",
+  "hardware": "0, GPU-a1ea1946-07c0-8ed5-2ba1-d96f82c89cd3, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 0 %\n1, GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c, NVIDIA GeForce RTX 4080 SUPER, 18 MiB, 0 %\n2, GPU-4f1220f9-7ba2-21ad-3f9a-b24c2ca4ce91, NVIDIA GeForce RTX 4080 SUPER, 562 MiB, 2 %\n",
+  "target_scope": "4bd4f8f4c1f615478f00619cb566eebe9dab626761ba22c4514ba40ae39a1e6c",
+  "restored": {
+    "baseline": {
+      "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P20-20261019T104240505687Z/assembled-baseline.npz",
+      "block_rms": {
+        "EA": 0.9732423430970222,
+        "US": 1.5205629030280479,
+        "shared": 122.87710942050833
+      },
+      "completed": 0,
+      "importance_ess": 5.152874026034253,
+      "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+      "label": "assembled-baseline",
+      "loss": -20386.973265775992,
+      "precision": "all_float64",
+      "rms": 43.46002705395096,
+      "rms_interval95": [
+        37.17050508698192,
+        49.78052332257456
+      ],
+      "seconds": 71.12642254214734
+    },
+    "completed": 5000,
+    "events": [
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P20-20261019T104240505687Z/assembled-baseline.npz",
+        "block_rms": {
+          "EA": 0.9732423430970222,
+          "US": 1.5205629030280479,
+          "shared": 122.87710942050833
+        },
+        "completed": 0,
+        "importance_ess": 5.152874026034253,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "assembled-baseline",
+        "loss": -20386.973265775992,
+        "precision": "all_float64",
+        "rms": 43.46002705395096,
+        "rms_interval95": [
+          37.17050508698192,
+          49.78052332257456
+        ],
+        "seconds": 71.12642254214734
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P20-20261019T104240505687Z/canary-after64.npz",
+        "block_rms": {
+          "EA": 0.5947775945466718,
+          "US": 0.9184888140941767,
+          "shared": 0.8442995133542437
+        },
+        "completed": 64,
+        "importance_ess": 4.51065448063835,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "canary-after64",
+        "loss": -20466.796859563245,
+        "precision": "all_float64",
+        "rms": 0.7829175386270092,
+        "rms_interval95": [
+          0.6913885645366391,
+          0.8797914379217414
+        ],
+        "seconds": 111.25660852296278
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P25-20261019T134529163332Z/hardware-after64.npz",
+        "block_rms": {
+          "EA": 0.5947775945466718,
+          "US": 0.9184888140941767,
+          "shared": 0.8442995133542437
+        },
+        "completed": 64,
+        "importance_ess": 4.51065448063835,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "hardware-after64",
+        "loss": -20466.796859563245,
+        "precision": "all_float64",
+        "rms": 0.7829175386270092,
+        "rms_interval95": [
+          0.6913885645366391,
+          0.8797914379217414
+        ],
+        "seconds": 101.21172650111839
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-000500.npz",
+        "block_rms": {
+          "EA": 0.5612689358281577,
+          "US": 0.6872190966518892,
+          "shared": 0.7391931759055939
+        },
+        "completed": 500,
+        "importance_ess": 16.008834908172492,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-000500",
+        "loss": -20468.116144924825,
+        "precision": "all_float64",
+        "rms": 0.6424495816069817,
+        "rms_interval95": [
+          0.572560990308913,
+          0.7206826708642992
+        ],
+        "seconds": 253.92452534800395
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-001000.npz",
+        "block_rms": {
+          "EA": 0.5318657230973598,
+          "US": 0.6414187556575883,
+          "shared": 0.678413622125699
+        },
+        "completed": 1000,
+        "importance_ess": 10.40663768051999,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-001000",
+        "loss": -20468.434522286952,
+        "precision": "all_float64",
+        "rms": 0.6010711406511018,
+        "rms_interval95": [
+          0.5412162609931188,
+          0.672203679549065
+        ],
+        "seconds": 50.70272541511804
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-001500.npz",
+        "block_rms": {
+          "EA": 0.5296930085902781,
+          "US": 0.6148727188418944,
+          "shared": 0.5092883169379471
+        },
+        "completed": 1500,
+        "importance_ess": 23.210997305960092,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-001500",
+        "loss": -20469.810660349096,
+        "precision": "all_float64",
+        "rms": 0.5661962549338061,
+        "rms_interval95": [
+          0.5039059232495173,
+          0.6390420246199924
+        ],
+        "seconds": 50.6624864153564
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-002000.npz",
+        "block_rms": {
+          "EA": 0.5241548883088284,
+          "US": 0.606760732007743,
+          "shared": 0.3976279461292537
+        },
+        "completed": 2000,
+        "importance_ess": 17.854431261077565,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-002000",
+        "loss": -20470.046768443404,
+        "precision": "all_float64",
+        "rms": 0.548662834591873,
+        "rms_interval95": [
+          0.4876192458710983,
+          0.621159750778647
+        ],
+        "seconds": 50.66390718892217
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-002500.npz",
+        "block_rms": {
+          "EA": 0.5094362122900934,
+          "US": 0.5807218398841135,
+          "shared": 0.4699102927750285
+        },
+        "completed": 2500,
+        "importance_ess": 29.82156806984284,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-002500",
+        "loss": -20470.44329985445,
+        "precision": "all_float64",
+        "rms": 0.5372949105523832,
+        "rms_interval95": [
+          0.4828335599926325,
+          0.5998035370449704
+        ],
+        "seconds": 50.66523100575432
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-003000.npz",
+        "block_rms": {
+          "EA": 0.5009033388932816,
+          "US": 0.5702271011299564,
+          "shared": 0.481628227227444
+        },
+        "completed": 3000,
+        "importance_ess": 41.215675666398894,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-003000",
+        "loss": -20470.531382641202,
+        "precision": "all_float64",
+        "rms": 0.5301163322191107,
+        "rms_interval95": [
+          0.47785854819641005,
+          0.5969954259544628
+        ],
+        "seconds": 50.67169180093333
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-003500.npz",
+        "block_rms": {
+          "EA": 0.49642131856828153,
+          "US": 0.5690905944191053,
+          "shared": 0.3743839085524749
+        },
+        "completed": 3500,
+        "importance_ess": 55.2732320022003,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-003500",
+        "loss": -20470.7441194888,
+        "precision": "all_float64",
+        "rms": 0.5167454785278477,
+        "rms_interval95": [
+          0.4644924306743681,
+          0.5790713451116227
+        ],
+        "seconds": 50.674474004190415
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-004000.npz",
+        "block_rms": {
+          "EA": 0.5146192471403348,
+          "US": 0.5441823239779672,
+          "shared": 0.3570027370916504
+        },
+        "completed": 4000,
+        "importance_ess": 34.73667535342859,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-004000",
+        "loss": -20470.756246824043,
+        "precision": "all_float64",
+        "rms": 0.511228514669766,
+        "rms_interval95": [
+          0.4696509381204922,
+          0.5614084041103424
+        ],
+        "seconds": 50.664642428047955
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-004500.npz",
+        "block_rms": {
+          "EA": 0.5016357224041016,
+          "US": 0.5373363685162079,
+          "shared": 0.34033892861972065
+        },
+        "completed": 4500,
+        "importance_ess": 25.920442269564955,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-004500",
+        "loss": -20470.774309554912,
+        "precision": "all_float64",
+        "rms": 0.5008893695918873,
+        "rms_interval95": [
+          0.458428092390996,
+          0.5544050652891144
+        ],
+        "seconds": 100.76600408414379
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/development-005000.npz",
+        "block_rms": {
+          "EA": 0.5063745418782253,
+          "US": 0.5386980515378927,
+          "shared": 0.291222806645926
+        },
+        "completed": 5000,
+        "importance_ess": 54.567811047413535,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "development-005000",
+        "loss": -20470.837847713665,
+        "precision": "all_float64",
+        "rms": 0.49974348532354534,
+        "rms_interval95": [
+          0.4596771634714393,
+          0.547122756362664
+        ],
+        "seconds": 50.45351815316826
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/confirmation-0.npz",
+        "block_rms": {
+          "EA": 0.5093052243980093,
+          "US": 0.50566533177851,
+          "shared": 0.3177724155800935
+        },
+        "completed": 5000,
+        "importance_ess": 37.358643258525596,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "confirmation-0",
+        "loss": -20470.552334078264,
+        "precision": "all_float64",
+        "rms": 0.48782574320522326,
+        "rms_interval95": [
+          0.4616509049958566,
+          0.5150083750890365
+        ],
+        "seconds": 50.44684446975589
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/confirmation-1.npz",
+        "block_rms": {
+          "EA": 0.5129024985197804,
+          "US": 0.5107934590460624,
+          "shared": 0.3515942487059821
+        },
+        "completed": 5000,
+        "importance_ess": 15.65812196652167,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "confirmation-1",
+        "loss": -20470.632709229896,
+        "precision": "all_float64",
+        "rms": 0.49466463051942905,
+        "rms_interval95": [
+          0.4566181194380761,
+          0.5463602052501043
+        ],
+        "seconds": 50.43400608468801
+      },
+      {
+        "artifact": "/home/ubuntu/python/MacroFinance/docs/plans/artifacts/dz5-full80-components-20261018/P30-20261019T140442040202Z/confirmation-2.npz",
+        "block_rms": {
+          "EA": 0.5474667998856982,
+          "US": 0.49107811596048306,
+          "shared": 0.3413086974237891
+        },
+        "completed": 5000,
+        "importance_ess": 7.1434124708379985,
+        "interpretation": "Proposal geometry; importance ESS is not MCMC ESS or posterior convergence",
+        "label": "confirmation-2",
+        "loss": -20470.648562322596,
+        "precision": "all_float64",
+        "rms": 0.5011939834373601,
+        "rms_interval95": [
+          0.46775079170648953,
+          0.5410102420164049
+        ],
+        "seconds": 50.434388814959675
+      }
+    ],
+    "lr": {
+      "bad_checks": 0,
+      "best": -20470.837847713665,
+      "rate": 0.001
+    },
+    "seed": 20261018
+  },
+  "config": {
+    "chains": 4,
+    "dimension": 80,
+    "warmup": 5,
+    "draws": 5,
+    "max_depth": 5,
+    "max_halvings": 5,
+    "min_micro_steps": 1,
+    "max_error": 0.5,
+    "initial_step": 0.1,
+    "mass_smoothing": 1e-05,
+    "mass_init_count": 4.0,
+    "target_macro_steps": 15.0,
+    "target_accept": 0.8,
+    "learning_rate": 0.05,
+    "beta1": 0.8,
+    "beta2": 0.9,
+    "stabilization": 0.0001,
+    "learning_decay": 0.5,
+    "init_search_limit": 64,
+    "variant": "deterministic",
+    "r2p_probability": 0.6666666666666666,
+    "r2p_max_exponent": 10,
+    "r2p_jitter": 0.2,
+    "execution_layout": "packed",
+    "adapt_mass": false
+  },
+  "imported_source_hashes": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/inference/__init__.py": "596807d4be546384d3c592ea5ef311fcec8b24c768483144fe3f1eb17e5f5ecb",
+    "bayesfilter/inference/posterior_adapter.py": "911eccd6fb4e7d4807074695461e1f50e72dfbef6c491cdce785b1bce3b64b33",
+    "bayesfilter/nonlinear/__init__.py": "e9e08c353cd2f7996b808466842d451424b3d1c473ca301ce04f2df4f75d38a2",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/rectangular_factor_tf.py": "2a57c950c557e235771454a48bd702b09f6cb2b132209361241e888841fcec18",
+    "bayesfilter/linear/stack_qr_tf.py": "bda0f2c6d5e8ea93869bd88b119db00ef8e8fa8d27123076ddeda0eac12e4930",
+    "bayesfilter/linear/block_qr_conditional_tf.py": "02362e4cc7f68a8ac026d348a821ea2a81b8f715d342c0ebc0de672dd4ae68dc",
+    "bayesfilter/nonlinear/srukf_backend_policy.py": "9628eb27ca5f6f444f8b356d0fa3903ea36fac5f94c00e2eac1e8c60abcbd65f",
+    "bayesfilter/nonlinear/factor_srukf_tf.py": "0ba27d608d1caf65d25d8d1883b94a7f5774e58eb65a4e8c1a2eea9e845c5881",
+    "bayesfilter/nonlinear/rectangular_srukf_tf.py": "74bc55b4d9e930614cb9fed78c7ccf5ee278ef8c8bd8fbbebf1b108377ca0c5f",
+    "bayesfilter/inference/stationary_coordinates.py": "77b6a7420a462a60f85a17002c7a908c4553f268a367ce69668fa94be67799bd",
+    "bayesfilter/inference/batched_value_score.py": "902cab613b6fc700eee1828f6fe257b0b7b0494828dc4bcc3076539cc4eb27ef",
+    "bayesfilter/inference/hmc_verification.py": "26e015468296477a688f51b2499e1c2a9ef17a5d2113d5497d610a681b6c329d",
+    "bayesfilter/inference/hmc_status.py": "9c975f0eca5a162e23cf5b695621ef73b45385f665375f5d281a00ba7c1e680c",
+    "bayesfilter/inference/fixed_transport_hmc_mechanics_tf.py": "a86cbf4a7ad4d3ce7fdd461d71814bef126c2e2253736767f9aa24441be2d3ce",
+    "bayesfilter/inference/neutra_transport_core.py": "d44159b7158c126406b13d6178e4c64582c9d042d9cd4b0d0ebf4b9ff655b788",
+    "bayesfilter/inference/neutra_transport.py": "a72365116e03704cb297b553d6acf01400c27f26426b614fdddecd6fda7893ec",
+    "bayesfilter/inference/neutra_blockwise.py": "ae834d78c16063deef4e3bcb6ad4602928fc1221f1a5604e1322e439705f4d83",
+    "bayesfilter/inference/neutra_block_training.py": "905aa818c2525c4b653514b6171282ff47de299ce75fbb34b0acf79a306a156d"
+  },
+  "elapsed_seconds": 72273.931007421,
+  "host_peak_rss_kib": 16397780,
+  "cpu_seconds": 72258.132952
+}
