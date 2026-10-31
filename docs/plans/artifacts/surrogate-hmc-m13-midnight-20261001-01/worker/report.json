@@ -1,0 +1,602 @@
+{
+  "action": "resume_retained",
+  "all_models_complete": false,
+  "baseline_sha256": "dec45e052c2d13266eeefb11251a4986b5bf2ba4c14e9a88333e0149191357c9",
+  "binding_hash": "d46683cf0f042dcba99da8798405f749b7c7928143346372b01d61d28b19fbac",
+  "checks": {
+    "fresh_rhat": true,
+    "nomination_passed": true,
+    "sequential_health": true,
+    "verification_all_chains_moved": true,
+    "verification_endpoint_valid": true,
+    "verification_energy_valid": true,
+    "verification_finite": true,
+    "verification_no_divergences": true,
+    "verification_no_force_fallback": true,
+    "warmup_all_chains_moved": true,
+    "warmup_endpoint_valid": true,
+    "warmup_energy_valid": true,
+    "warmup_finite": true,
+    "warmup_no_divergences": true,
+    "warmup_no_force_fallback": true,
+    "warmup_readiness": true
+  },
+  "classical_comparator_qualified": false,
+  "counts": {
+    "verification": 9000,
+    "warmup": 9000
+  },
+  "coverage_sha256": "9892ad3ca3916abc60f3135f8a8e554d5b55aef4bbeeb01aa7bf08df4570d88c",
+  "data_seed": 1704,
+  "deadline": "2026-10-01T16:00:00+00:00",
+  "device": "gpu",
+  "endpoint_dtype": "float64",
+  "exact_likelihood_claim": false,
+  "final_verification_rhat": {
+    "bulk": [
+      1.007417492159436,
+      1.0054656975370928
+    ],
+    "folded": [
+      1.0046046194799012,
+      1.0004311200158023
+    ],
+    "maximum": [
+      1.007417492159436,
+      1.0054656975370928
+    ]
+  },
+  "force_dtype": "float32",
+  "gpu_devices": [
+    "/physical_device:GPU:0",
+    "/physical_device:GPU:1"
+  ],
+  "gpu_trust_basis": "escalated_local_gpu_execution",
+  "infrastructure_recovery": {
+    "action": "resume_retained",
+    "checkpoint_sha256": "337eae155ef2331a918456cd94f90e8e3556d97a34e15058ed796c1e991ee4c6",
+    "command_log_sha256": "c22a934f217f486a1a9a3029b45776d10bfc1ee7fe64f29a56f74376dab0c63d",
+    "full_public_artifact_validation_required": true,
+    "kind": "saved_manifest_path_reporting_failure",
+    "parent_failure_preserved": true,
+    "repeats_tuning": false,
+    "repeats_warmup": false
+  },
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+  "parent": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-01",
+  "parent_report_sha256": "0faa5a6fa962ec65030a5017c86dfb30754a692bcf1abd49136b7c2bf6528177",
+  "plan": "docs/plans/surrogate-hmc-midnight-extension-2026-10-01.md",
+  "post_warmup_draws_per_chain": 12750,
+  "post_warmup_maximum": 20000,
+  "posterior": {
+    "acceptance_per_chain": [
+      0.8197333333333333,
+      0.37093333333333334,
+      0.6848,
+      0.8584
+    ],
+    "acceptance_probability_per_chain": [
+      0.813973727694412,
+      0.37857323093452755,
+      0.6909338132170357,
+      0.8582663524753682
+    ],
+    "assessments": [
+      {
+        "assumption": "stationary-chain CLT and approximately independent long batches; scope coverage tested",
+        "bulk_ess": [
+          13.486819572198518,
+          79.75347605825233
+        ],
+        "comparison_families": 1,
+        "difference": [
+          -0.21867723141453754,
+          -0.12335189421910919,
+          0.3273062768910888,
+          -0.027646183318743467,
+          0.04949999999999999,
+          -0.02699999999999997,
+          -0.035250000000000004,
+          0.04049999999999998,
+          -0.0005000000000000004,
+          0.06225000000000003
+        ],
+        "draws_per_chain": 1000,
+        "family_alpha": 0.05,
+        "functions": 10,
+        "lower": [
+          -2.5862224296326515,
+          -0.869423254774851,
+          -0.8253174739187501,
+          -0.36772915375131743,
+          -0.7507842512201024,
+          -0.6131865350063792,
+          -0.3648746900914159,
+          -0.3105749978100358,
+          -0.47511651130454013,
+          -0.0968669550478383
+        ],
+        "margins": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "mcse": [
+          0.6087545262858406,
+          0.19181603205492326,
+          0.29505149003940123,
+          0.08319303599998173,
+          0.20545457729954167,
+          0.15069892722467096,
+          0.08442291849176184,
+          0.08920435340647152,
+          0.12202629498049453,
+          0.03985213440907606
+        ],
+        "method": "m13_ten_functions_guarded_lugsail_six_looks_v2",
+        "parameter_mixing": false,
+        "planned_looks": [
+          1000,
+          2000,
+          4000,
+          6000,
+          8000,
+          10000
+        ],
+        "practical_agreement": false,
+        "ranking_supported": false,
+        "reference_allowance_is_rigorous_bound": false,
+        "rhat": [
+          1.5662450261109055,
+          1.0794702075926041
+        ],
+        "status": "INCONCLUSIVE",
+        "tail_ess": [
+          19.768559197820338,
+          135.06986176361679
+        ],
+        "upper": [
+          2.148867966803576,
+          0.6227194663366327,
+          1.4799300277009277,
+          0.3124367871138305,
+          0.8497842512201024,
+          0.5591865350063794,
+          0.29437469009141587,
+          0.39157499781003574,
+          0.47411651130454013,
+          0.22136695504783835
+        ]
+      },
+      {
+        "assumption": "stationary-chain CLT and approximately independent long batches; scope coverage tested",
+        "bulk_ess": [
+          14.197328036495636,
+          27.274681227291882
+        ],
+        "comparison_families": 1,
+        "difference": [
+          -0.42395513763671466,
+          0.10732589488952174,
+          0.3252911721071863,
+          -0.0005179926295170167,
+          0.11725000000000002,
+          0.06074999999999997,
+          0.025499999999999967,
+          -0.03225,
+          -0.07587499999999997,
+          -0.033499999999999974
+        ],
+        "draws_per_chain": 2000,
+        "family_alpha": 0.05,
+        "functions": 10,
+        "lower": [
+          -2.824333261385484,
+          -0.8553281762083048,
+          -0.7261009687275295,
+          -0.2501366432650721,
+          -0.6502297000672932,
+          -0.45929193337180696,
+          -0.24725858908605014,
+          -0.30517501380570616,
+          -0.5373776411174094,
+          -0.3975270685615358
+        ],
+        "margins": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05
+        ],
+        "mcse": [
+          0.6171977357356019,
+          0.2475117447807497,
+          0.26901909505350596,
+          0.0599295226994913,
+          0.19701866451345842,
+          0.1336893943686883,
+          0.06979941499277291,
+          0.06910755506213967,
+          0.11865397433293164,
+          0.09254615965380016
+        ],
+        "method": "m13_ten_functions_guarded_lugsail_six_looks_v2",
+        "parameter_mixing": false,
+        "planned_looks": [
+          1000,
+          2000,
+          4000,
+          6000,
+          8000,
+          10000
+        ],
+        "practical_agreement": false,
+        "ranking_supported": false,
+        "reference_allowance_is_rigorous_bound": false,
+        "rhat": [
+          1.5128079922154911,
+          1.1889647629446476
+        ],
+        "status": "INCONCLUSIVE",
+        "tail_ess": [
+          25.18798371674023,
+          72.93911439447575
+        ],
+        "upper": [
+          1.9764229861120546,
+          1.0699799659873483,
+          1.376683312941902,
+          0.24910065800603806,
+          0.8847297000672933,
+          0.5807919333718069,
+          0.2982585890860501,
+          0.24067501380570616,
+          0.3856276411174095,
+          0.33052706856153585
+        ]
+      }
+    ],
+    "binding_hash": "d46683cf0f042dcba99da8798405f749b7c7928143346372b01d61d28b19fbac",
+    "chunk_size": 250,
+    "chunks": [
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-00/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "6b283d397c1268027f9f5321511b16387e607a40cbeb0a671ed541e871b0bc2b"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-01/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "f07742b574814d99132503e483012742c9eeea30e9d241fdf0b18f0eccf191ba"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-02/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "20fda6489f60dbec8a87a4e73add9e7ba92a98b04dc3c8796ffc16df9bc3b327"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-03/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "20e6704619ef0fb406bdcfe25698b2cdaec107bd59df99b158c5940aa3102af0"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-04/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "508cbd6ae7ec3171a4ba35f1d4d9e7d9a54c3a94252937d4d3fc80c682e4f7b4"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-05/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "a550ea976dd7a5a8acb013550f252cfb5f39dc6d5d8f55f687d45bc5b0d4a5f7"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-06/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "373ab5380de7e228448a80f876c9cb83d73cf28fbf6195efa4dc41d5b432b837"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-07/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "5475abcd64aa458559a1916dfd112019b258ae45ff11997cf63d82215c0da808"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-08/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "b22249d72a17fac2ad1a03638e061c6390e670c54aaae148aaa717e7c056aff4"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-09/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "c9527028738142383046bf77774204400d704fda5dab0450880c64008fc22171"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-10/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "2b5e2d1406c597b08b044561daa27bbd2d514fa5b82a1bc5709c411cbdc64844"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-11/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "604310c04079f792eada08dd874e662a76d9dee775aa52ac29bc96a1d0ffd3e4"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-12/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "2a852dd182649c0020f1f515bdca4d793ccc9fb5c5dcb1d2abb4843c2fc80e3a"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-13/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "7fb1910769df0c2c86c216eae6307014f3acc0e0ebb131432198bec625649299"
+      },
+      {
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "finite": true,
+          "no_divergences": true,
+          "no_force_fallback": true
+        },
+        "graph_trace_count": 1,
+        "health_passed": true,
+        "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-midnight-20261001-01/worker/posterior/chunk-14/manifest.json",
+        "no_force_fallback": true,
+        "sha256": "2d4a2523fcb7ce645cb662f0c6f561c2bcad5e984f57d7cc1d046b7f86040b5a"
+      }
+    ],
+    "continuation_veto": true,
+    "draws_per_chain": 3750,
+    "endpoint_role": "separately frozen full-support importance potential for MH",
+    "exact_endpoint_gradient_claim": false,
+    "force_semantics": "deterministic position-only analytical DCTR proposal field",
+    "jit_compile": true,
+    "maximum_absolute_energy_error": 62.884059131862536,
+    "next_action": "Existing master: resource allowance exhausted; preserve accumulated draws and assessments.",
+    "next_phase_plan": {
+      "changes_target": false,
+      "criterion": "modern Rhat<=1.01, bulk/tail ESS>=400, calibrated equivalence",
+      "maximum_per_chain": 10000,
+      "next_look": 4000,
+      "phase": "retained"
+    },
+    "numerical_backend": "tensorflow_only",
+    "plan": "docs/plans/surrogate-hmc-m13-retained-assessment-2026-09-26.md",
+    "planned_looks": [
+      1000,
+      2000,
+      4000,
+      6000,
+      8000,
+      10000
+    ],
+    "posterior_qualified": false,
+    "qualified": false,
+    "ranking_supported": false,
+    "reference_sha256": "4055592d76c0d116cc432d6055865c4e6226e76694fb1df941e01619083fbb82",
+    "retained_maximum": 10000,
+    "seed": [
+      20260926,
+      2910
+    ],
+    "status": "M13_RETAINED_BUDGET_EXHAUSTED",
+    "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+    "tuning_manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-01/worker/tuning/manifest.json",
+    "wall_seconds": 22272.32627374702,
+    "warmup_excluded": true
+  },
+  "qualified": false,
+  "ranking_supported": false,
+  "reference_sha256": "dd933278a5e7e4930ec0cb62219da96dd72bbec5a8b6ee7830ae4d8a2eb554a3",
+  "repeats_tuning": false,
+  "repeats_warmup": false,
+  "retained_draws_per_chain": 3750,
+  "retained_seed": [
+    20260926,
+    2910
+  ],
+  "scientific_attempt": 2,
+  "selection_path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json",
+  "selection_sha256": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+  "sequence_base_seed": [
+    20260929,
+    3202
+  ],
+  "status": "M13_RETAINED_BUDGET_EXHAUSTED",
+  "target_scope": "M13-data1704-selected-surrogate-HMC:2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32_enabled": true,
+  "tuning_manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-resume-20261001-01/worker/tuning/manifest.json",
+  "tuning_manifest_sha256": "337eae155ef2331a918456cd94f90e8e3556d97a34e15058ed796c1e991ee4c6",
+  "untouched_confirmation_seed_3701_used": false,
+  "verification_passed": true,
+  "wall_seconds": 22277.993386024027
+}

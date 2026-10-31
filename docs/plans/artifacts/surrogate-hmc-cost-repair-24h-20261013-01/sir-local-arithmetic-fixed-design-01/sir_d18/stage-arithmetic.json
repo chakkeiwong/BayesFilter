@@ -1,0 +1,5464 @@
+{
+  "schema": "surrogate_hmc_stage_arithmetic_v1",
+  "status": "STAGE_ARITHMETIC_LOCALIZED",
+  "evidence_role": "identical_input_primitive_arithmetic_localization_only",
+  "model": "sir_d18",
+  "particles": 4032,
+  "horizon": 10,
+  "state_dimension": 18,
+  "parameter_count": 3,
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.5,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "beta": [
+    0.10000000149011612,
+    0.06911444664001465,
+    0.830885648727417
+  ],
+  "parameter_positions": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.003499999875202775,
+      0.003499999875202775,
+      0.003499999875202775
+    ]
+  ],
+  "cpu_only": false,
+  "jit_compile": true,
+  "host_observation_loop": "diagnostic instrumentation only",
+  "posterior_complete": false,
+  "local_inputs": "FP64 obtained by exact casting of FP32 stage inputs",
+  "input_sha256": [
+    "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+    "2937241d7be6b45834813f96d27b730ff33a07b1552d8c3bb9a400a7ca585a1d",
+    "20525e40e0baab26770e9896c1612536dcbab5adbe97c590cf02a2f614f12edf",
+    "6c237168ae32838624d8483d919874d03f93fffe9184021bfcb72621a21954f1",
+    "e872073176961a562057df130cad33a17689667c17a6792246fb59723d1cbaf6",
+    "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2"
+  ],
+  "stages": [
+    {
+      "observation": 1,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 9.698146681103026e-05,
+            "maximum_scaled": 4.826388972797523e-07,
+            "per_row_maximum_absolute": [
+              9.698146681103026e-05,
+              9.377519006648072e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.708613737626231e-07,
+              4.826388972797523e-07
+            ],
+            "relative_l2": [
+              4.528730955217618e-08,
+              4.4630948515259004e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 9.984153955144848e-06,
+            "maximum_scaled": 3.2667836524780114e-06,
+            "per_row_maximum_absolute": [
+              9.164000438488529e-06,
+              9.984153955144848e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.222275759995341e-06,
+              3.2667836524780114e-06
+            ],
+            "relative_l2": [
+              9.839654886828212e-08,
+              1.0251407477063032e-07
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 0.000105563158001587,
+            "maximum_scaled": 5.53452938859115e-07,
+            "per_row_maximum_absolute": [
+              0.000105563158001587,
+              8.873149749888398e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.53452938859115e-07,
+              3.999975241606585e-07
+            ],
+            "relative_l2": [
+              4.572435552926899e-08,
+              4.398135192956016e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.0913642125132128e-05,
+            "maximum_scaled": 3.3223865427700616e-06,
+            "per_row_maximum_absolute": [
+              1.0891763452036685e-05,
+              1.0913642125132128e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.3223865427700616e-06,
+              3.1182779949290307e-06
+            ],
+            "relative_l2": [
+              1.2239566444470993e-07,
+              1.2385489783290607e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 4.4477352290073213e-07,
+            "maximum_scaled": 4.4477352290073213e-07,
+            "per_row_maximum_absolute": [
+              2.5828701954999644e-07,
+              4.4477352290073213e-07
+            ],
+            "per_row_maximum_scaled": [
+              2.5828701954999644e-07,
+              4.4477352290073213e-07
+            ],
+            "relative_l2": [
+              1.1369353364766265e-07,
+              1.7129115892229456e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 7.525120815808292e-07,
+            "maximum_scaled": 7.525120815808292e-07,
+            "per_row_maximum_absolute": [
+              7.525120815808292e-07,
+              7.180531606211168e-07
+            ],
+            "per_row_maximum_scaled": [
+              7.525120815808292e-07,
+              7.180531606211168e-07
+            ],
+            "relative_l2": [
+              8.790575528453514e-06,
+              7.406088629990612e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 2.18756190406566e-06,
+            "maximum_scaled": 7.294908638294745e-08,
+            "per_row_maximum_absolute": [
+              2.18756190406566e-06,
+              2.1346446779091366e-06
+            ],
+            "per_row_maximum_scaled": [
+              7.294908638294745e-08,
+              7.107500708969805e-08
+            ],
+            "relative_l2": [
+              3.046372540635581e-08,
+              2.8734251959223237e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 4.439762466112995e-06,
+            "maximum_scaled": 4.2943275209150755e-06,
+            "per_row_maximum_absolute": [
+              3.2155588992610618e-06,
+              4.439762466112995e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.2155588992610618e-06,
+              4.2943275209150755e-06
+            ],
+            "relative_l2": [
+              1.4421267726286766e-07,
+              2.71314166109299e-07
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 1.9319894235536594e-06,
+            "maximum_scaled": 6.453089892386806e-08,
+            "per_row_maximum_absolute": [
+              8.208178314816905e-07,
+              1.9319894235536594e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.7441389603624552e-08,
+              6.453089892386806e-08
+            ],
+            "relative_l2": [
+              2.7441389603624552e-08,
+              6.453089892386806e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 6.289672302983718e-07,
+            "maximum_scaled": 2.9298742143524237e-07,
+            "per_row_maximum_absolute": [
+              6.289672302983718e-07,
+              2.9298742143524237e-07
+            ],
+            "per_row_maximum_scaled": [
+              2.9020727676520863e-07,
+              2.9298742143524237e-07
+            ],
+            "relative_l2": [
+              9.632545533606942e-08,
+              4.738555557016328e-08
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 1.1250213091784644e-05,
+            "maximum_scaled": 1.3585100718036837e-06,
+            "per_row_maximum_absolute": [
+              1.1250213091784644e-05,
+              1.0076201867548207e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.3585100718036837e-06,
+              1.2574388236417504e-06
+            ],
+            "relative_l2": [
+              3.475366704583281e-07,
+              3.514476357911042e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0001334027523793857,
+            "maximum_scaled": 0.00011716350180079329,
+            "per_row_maximum_absolute": [
+              8.503789573133247e-05,
+              0.0001334027523793857
+            ],
+            "per_row_maximum_scaled": [
+              8.496443886085725e-05,
+              0.00011716350180079329
+            ],
+            "relative_l2": [
+              1.8073743188261675e-05,
+              1.8093433942722987e-05
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 3.607403937166964e-05,
+            "maximum_scaled": 3.314306018832737e-06,
+            "per_row_maximum_absolute": [
+              3.5710138547528913e-05,
+              3.607403937166964e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.8147510533179973e-06,
+              3.314306018832737e-06
+            ],
+            "relative_l2": [
+              2.6057332502047578e-08,
+              2.7543512343816776e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 3.26982056932934e-05,
+            "maximum_scaled": 4.430170958278411e-06,
+            "per_row_maximum_absolute": [
+              2.9530756359363863e-05,
+              3.26982056932934e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.2890779350363734e-06,
+              4.430170958278411e-06
+            ],
+            "relative_l2": [
+              2.12031936315353e-07,
+              2.0507617915259078e-07
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 1.3635978746151523e-06,
+          "maximum_scaled": 4.5545900623154997e-08,
+          "per_row_maximum_absolute": [
+            1.8425367898089462e-07,
+            1.3635978746151523e-06
+          ],
+          "per_row_maximum_scaled": [
+            6.159925996358586e-09,
+            4.5545900623154997e-08
+          ],
+          "relative_l2": [
+            6.159925996358586e-09,
+            4.5545900623154997e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 5.95243106360499e-07,
+          "maximum_scaled": 5.792284067940301e-07,
+          "per_row_maximum_absolute": [
+            5.95243106360499e-07,
+            7.38781479325823e-08
+          ],
+          "per_row_maximum_scaled": [
+            5.792284067940301e-07,
+            7.38781479325823e-08
+          ],
+          "relative_l2": [
+            1.1930335505566834e-07,
+            1.4055521778504517e-08
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -29.911670684814453,
+          -29.938980102539062
+        ],
+        [
+          [
+            -0.8914163112640381,
+            0.33532828092575073,
+            -7.228534698486328
+          ],
+          [
+            -0.9379401206970215,
+            0.35290658473968506,
+            -7.236368179321289
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -29.911670869068132,
+          -29.938981466136937
+        ],
+        [
+          [
+            -0.8914168904924449,
+            0.3353285393916572,
+            -7.2285352937294345
+          ],
+          [
+            -0.9379400468188736,
+            0.35290657889059923,
+            -7.236368250393951
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.20904354751110077,
+          0.00017757475143298507,
+          0.655064046382904,
+          5.960464477539062e-07
+        ],
+        [
+          0.20794473588466644,
+          0.00017754585132934153,
+          0.653918445110321,
+          4.76837158203125e-07
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.20904348518649796,
+          0.0001775764125405532,
+          0.655065498033355,
+          3.3306690738754696e-15
+        ],
+        [
+          0.20794421530510457,
+          0.00017754612008294733,
+          0.653901492897192,
+          2.55351295663786e-15
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/child.tensor",
+          "sha256": "5d114cb19d598f3984bd674fa0d51a1265d60eb1cf8d9aab981e1cf545c5e3c6",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/child_tangent.tensor",
+          "sha256": "68f18d7c165960b8f9935cf70e6e6638415ead14125c4316a9f941739ab3b143",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/log_weights.tensor",
+          "sha256": "4761506d6cd341e4f6736f6a7469c5c3cb65b3c4f5bce685648da4c66720744e",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/log_weight_tangent.tensor",
+          "sha256": "c0268217546008c2291effbd43f0f1321bbd3a7c504190faf1258aff965be86b",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/initial_or_recursive_state.tensor",
+          "sha256": "20525e40e0baab26770e9896c1612536dcbab5adbe97c590cf02a2f614f12edf",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/observation.tensor",
+          "sha256": "1335458195fee066d891e414eb056d9841f040d2ffc16a9816e742c13306a31a",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/innovations.tensor",
+          "sha256": "fbac28124b5912d62939f94a5d8bcd97edae795e71b236fe6e4a38fa2b2069f7",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/uniforms.tensor",
+          "sha256": "9501ea1f884c3309035d4170ce8197bb0c4d44a3cee7bd65b8efbd03bf0bea81",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-01/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 2,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 9.790046601665381e-05,
+            "maximum_scaled": 6.361714034726062e-07,
+            "per_row_maximum_absolute": [
+              9.790046601665381e-05,
+              8.527124185775392e-05
+            ],
+            "per_row_maximum_scaled": [
+              6.361714034726062e-07,
+              5.107171156292743e-07
+            ],
+            "relative_l2": [
+              4.3348113913047206e-08,
+              4.363028758318285e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 4.703477388545707e-05,
+            "maximum_scaled": 1.332490025873767e-05,
+            "per_row_maximum_absolute": [
+              4.703477388545707e-05,
+              3.413436677135451e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.139692017204652e-05,
+              1.332490025873767e-05
+            ],
+            "relative_l2": [
+              9.050827316671229e-08,
+              8.81621106305983e-08
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 9.645491945775575e-05,
+            "maximum_scaled": 8.259978257328277e-07,
+            "per_row_maximum_absolute": [
+              9.645491945775575e-05,
+              9.56880961666684e-05
+            ],
+            "per_row_maximum_scaled": [
+              8.259978257328277e-07,
+              6.416047879326965e-07
+            ],
+            "relative_l2": [
+              4.4063064556973155e-08,
+              4.4248725236581057e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 4.964811800789448e-05,
+            "maximum_scaled": 1.4733196678662352e-05,
+            "per_row_maximum_absolute": [
+              4.964811800789448e-05,
+              3.9684091930780596e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.0930809224873883e-05,
+              1.4733196678662352e-05
+            ],
+            "relative_l2": [
+              1.565171830080126e-07,
+              1.279760568209854e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 1.518437580116938e-06,
+            "maximum_scaled": 1.518437580116938e-06,
+            "per_row_maximum_absolute": [
+              1.518437580116938e-06,
+              8.115705959488295e-07
+            ],
+            "per_row_maximum_scaled": [
+              1.518437580116938e-06,
+              8.115705959488295e-07
+            ],
+            "relative_l2": [
+              4.1181706248757797e-07,
+              2.809737692588948e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.752614863888933e-06,
+            "maximum_scaled": 2.752614863888933e-06,
+            "per_row_maximum_absolute": [
+              2.752614863888933e-06,
+              2.184178325740152e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.752614863888933e-06,
+              2.184178325740152e-06
+            ],
+            "relative_l2": [
+              6.2087793500921585e-06,
+              4.271023252124559e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 6.0093914271419635e-06,
+            "maximum_scaled": 1.7173819611640255e-07,
+            "per_row_maximum_absolute": [
+              6.0093914271419635e-06,
+              4.568774507163198e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.7173819611640255e-07,
+              1.2692905582018928e-07
+            ],
+            "relative_l2": [
+              4.638518624950494e-08,
+              4.0391124410536376e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 2.8297806204946596e-05,
+            "maximum_scaled": 2.1284810050814507e-05,
+            "per_row_maximum_absolute": [
+              2.0578643526503182e-05,
+              2.8297806204946596e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.0578643526503182e-05,
+              2.1284810050814507e-05
+            ],
+            "relative_l2": [
+              7.915381659947044e-07,
+              1.4501079860656917e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 2.01727085169523e-06,
+            "maximum_scaled": 5.740418836346089e-08,
+            "per_row_maximum_absolute": [
+              2.01727085169523e-06,
+              9.689944633350933e-07
+            ],
+            "per_row_maximum_scaled": [
+              5.740418836346089e-08,
+              2.7582144535645042e-08
+            ],
+            "relative_l2": [
+              5.740418836346089e-08,
+              2.7582144535645042e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 5.539867596104919e-06,
+            "maximum_scaled": 5.539867596104919e-06,
+            "per_row_maximum_absolute": [
+              8.429184762959174e-07,
+              5.539867596104919e-06
+            ],
+            "per_row_maximum_scaled": [
+              8.429184762959174e-07,
+              5.539867596104919e-06
+            ],
+            "relative_l2": [
+              3.7889197312220095e-07,
+              2.5066314357258302e-06
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 1.2620547437336427e-05,
+            "maximum_scaled": 1.5433873783766185e-06,
+            "per_row_maximum_absolute": [
+              1.2050186629863902e-05,
+              1.2620547437336427e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.5129958982908054e-06,
+              1.5433873783766185e-06
+            ],
+            "relative_l2": [
+              3.654214836982167e-07,
+              3.509874921756703e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0009211402669375701,
+            "maximum_scaled": 0.0004005307669541214,
+            "per_row_maximum_absolute": [
+              0.0008955899312894644,
+              0.0009211402669375701
+            ],
+            "per_row_maximum_scaled": [
+              0.0004005307669541214,
+              0.0003564314382357159
+            ],
+            "relative_l2": [
+              4.708830041018377e-06,
+              4.668698853798513e-06
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.00011214229266442999,
+            "maximum_scaled": 4.165509353679254e-06,
+            "per_row_maximum_absolute": [
+              0.00011214229266442999,
+              9.519240342470425e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.826742555085922e-06,
+              4.165509353679254e-06
+            ],
+            "relative_l2": [
+              3.475628352102026e-08,
+              3.857009746238742e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022002106943148192,
+            "maximum_scaled": 0.002411958912063028,
+            "per_row_maximum_absolute": [
+              0.012666540084865119,
+              0.022002106943148192
+            ],
+            "per_row_maximum_scaled": [
+              0.002411958912063028,
+              0.0022546166161987458
+            ],
+            "relative_l2": [
+              3.937609949022948e-06,
+              4.861091563290987e-06
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 4.882720475052338e-06,
+          "maximum_scaled": 7.50573484258842e-08,
+          "per_row_maximum_absolute": [
+            4.882720475052338e-06,
+            2.2763497327105142e-06
+          ],
+          "per_row_maximum_scaled": [
+            7.50573484258842e-08,
+            3.4982981662022615e-08
+          ],
+          "relative_l2": [
+            7.50573484258842e-08,
+            3.4982981662022615e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 3.6576842081803562e-06,
+          "maximum_scaled": 3.6576842081803562e-06,
+          "per_row_maximum_absolute": [
+            3.6576842081803562e-06,
+            1.423539686573605e-06
+          ],
+          "per_row_maximum_scaled": [
+            3.6576842081803562e-06,
+            1.423539686573605e-06
+          ],
+          "relative_l2": [
+            9.57417416231613e-07,
+            3.096001843143365e-07
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -35.14152526855469,
+          -35.131221771240234
+        ],
+        [
+          [
+            1.4073209762573242,
+            -0.3595796227455139,
+            2.073514461517334
+          ],
+          [
+            0.9465526342391968,
+            -0.1787177324295044,
+            1.9991434812545776
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -35.14152615232421,
+          -35.1312219459899
+        ],
+        [
+          [
+            1.4073178978015228,
+            -0.35957789186260924,
+            2.073512360913176
+          ],
+          [
+            0.9465525748794555,
+            -0.17871915012010514,
+            1.9991428935093518
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.059462498873472214,
+          0.003352418541908264,
+          6.9477033615112305,
+          1.3828277587890625e-05
+        ],
+        [
+          0.05896119028329849,
+          0.003330752020701766,
+          6.928413391113281,
+          1.4483928680419922e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.0594628115687444,
+          0.0033524154479530077,
+          6.9476941819052165,
+          2.6756374893466273e-14
+        ],
+        [
+          0.058960744037364156,
+          0.0033307347549397857,
+          6.928404763242213,
+          2.4202861936828413e-14
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/child.tensor",
+          "sha256": "45bfdb79f115e3376b6bf08403da4f4367c9de36d1b4dc78d8c22852f7983268",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/child_tangent.tensor",
+          "sha256": "a41378072c804b1d0ab7f55b07104822a2339aeccf092b8c3f52fbef43c3c8d7",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/log_weights.tensor",
+          "sha256": "c5c1cc6f1848e62682e3aa95d55651e31cd7e254a0f2c3d97bf3712e2331f4d1",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/log_weight_tangent.tensor",
+          "sha256": "9a6c34d02be28ef20261f02f4851ecc66fe2d240a268e6ed80655187128a0a02",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/initial_or_recursive_state.tensor",
+          "sha256": "fddfc33948a0d8d0cf9c3209918250040d876056a473722377befde6905a0164",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/observation.tensor",
+          "sha256": "51a4fbf1f4dd666365225361fe5e81caac5f69d682e66add9917d3c9324f27d2",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/innovations.tensor",
+          "sha256": "6455eea864c3aeca0e6a3ecbd397d4f435543bae6f36631c1277e3f5a2bc2764",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/uniforms.tensor",
+          "sha256": "34d293d55114ce6e020bc7ca3e29c69a1ce8d89c4b96b2cbb08233450e83df0b",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-02/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 3,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 9.625128325296828e-05,
+            "maximum_scaled": 7.583458632412585e-07,
+            "per_row_maximum_absolute": [
+              9.625128325296828e-05,
+              8.890755123047711e-05
+            ],
+            "per_row_maximum_scaled": [
+              7.583458632412585e-07,
+              7.346155404495866e-07
+            ],
+            "relative_l2": [
+              4.763498207107565e-08,
+              4.7534698516176675e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0003926747642708506,
+            "maximum_scaled": 9.233027628852142e-05,
+            "per_row_maximum_absolute": [
+              0.0003926747642708506,
+              0.000234229883574244
+            ],
+            "per_row_maximum_scaled": [
+              9.233027628852142e-05,
+              5.2814485940189115e-05
+            ],
+            "relative_l2": [
+              1.081808773676928e-07,
+              1.0811419517924717e-07
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 0.00010471106759268878,
+            "maximum_scaled": 1.0951955078051338e-06,
+            "per_row_maximum_absolute": [
+              0.00010471106759268878,
+              9.083597393555465e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.0951955078051338e-06,
+              8.792601860636421e-07
+            ],
+            "relative_l2": [
+              5.168625441283198e-08,
+              4.877770563209588e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.00046937388742662733,
+            "maximum_scaled": 0.00016384088633003557,
+            "per_row_maximum_absolute": [
+              0.00046937388742662733,
+              0.0003025998897783211
+            ],
+            "per_row_maximum_scaled": [
+              0.00016384088633003557,
+              0.00010558399500837368
+            ],
+            "relative_l2": [
+              2.138772885820672e-07,
+              1.9819761841816257e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 4.4244302309648376e-06,
+            "maximum_scaled": 4.4244302309648376e-06,
+            "per_row_maximum_absolute": [
+              4.4244302309648376e-06,
+              2.496838364396403e-06
+            ],
+            "per_row_maximum_scaled": [
+              4.4244302309648376e-06,
+              2.496838364396403e-06
+            ],
+            "relative_l2": [
+              8.698442804655304e-07,
+              7.918873003740601e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 6.406998407162967e-06,
+            "maximum_scaled": 6.406998407162967e-06,
+            "per_row_maximum_absolute": [
+              5.793712470600343e-06,
+              6.406998407162967e-06
+            ],
+            "per_row_maximum_scaled": [
+              5.793712470600343e-06,
+              6.406998407162967e-06
+            ],
+            "relative_l2": [
+              6.904221515466221e-06,
+              6.87980461789222e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.0023306401762966e-05,
+            "maximum_scaled": 2.6551060155664296e-07,
+            "per_row_maximum_absolute": [
+              8.039628859535242e-06,
+              1.0023306401762966e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.0713013709532114e-07,
+              2.6551060155664296e-07
+            ],
+            "relative_l2": [
+              5.303669608948047e-08,
+              5.5697035353116766e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.00015859984370081293,
+            "maximum_scaled": 6.789635176129849e-05,
+            "per_row_maximum_absolute": [
+              0.00015859984370081293,
+              9.935073683209339e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.1493370543775896e-05,
+              6.789635176129849e-05
+            ],
+            "relative_l2": [
+              6.743430466691847e-07,
+              1.3877752983314949e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 1.64403705582572e-06,
+            "maximum_scaled": 4.676059809482706e-08,
+            "per_row_maximum_absolute": [
+              1.3312005364696233e-06,
+              1.64403705582572e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.786898393519259e-08,
+              4.676059809482706e-08
+            ],
+            "relative_l2": [
+              3.786898393519259e-08,
+              4.676059809482706e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 1.357331768347958e-05,
+            "maximum_scaled": 1.357331768347958e-05,
+            "per_row_maximum_absolute": [
+              1.3068904856972097e-05,
+              1.357331768347958e-05
+            ],
+            "per_row_maximum_scaled": [
+              7.3739737731315574e-06,
+              1.357331768347958e-05
+            ],
+            "relative_l2": [
+              7.200450360189909e-06,
+              5.125017255006441e-06
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 2.648531949489552e-05,
+            "maximum_scaled": 1.5847311289263363e-06,
+            "per_row_maximum_absolute": [
+              2.0090658367166725e-05,
+              2.648531949489552e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.5847311289263363e-06,
+              1.316389294112921e-06
+            ],
+            "relative_l2": [
+              1.822047284220873e-07,
+              1.8165917875088585e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.006570834338631926,
+            "maximum_scaled": 0.002142195695290283,
+            "per_row_maximum_absolute": [
+              0.006570834338631926,
+              0.004418163922380813
+            ],
+            "per_row_maximum_scaled": [
+              0.0009282149667519946,
+              0.002142195695290283
+            ],
+            "relative_l2": [
+              1.9621396881656286e-06,
+              1.6642429267473625e-06
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.0008974663982144193,
+            "maximum_scaled": 1.40128045553003e-05,
+            "per_row_maximum_absolute": [
+              0.0007471441740563023,
+              0.0008974663982144193
+            ],
+            "per_row_maximum_scaled": [
+              1.40128045553003e-05,
+              1.2805371701499489e-05
+            ],
+            "relative_l2": [
+              6.599663148603554e-08,
+              5.8696061207194504e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.2678994778916604,
+            "maximum_scaled": 0.016308205893295735,
+            "per_row_maximum_absolute": [
+              2.2678994778916604,
+              2.1750595925477683
+            ],
+            "per_row_maximum_scaled": [
+              0.006103811159761108,
+              0.016308205893295735
+            ],
+            "relative_l2": [
+              9.180395624337026e-05,
+              9.807462249378282e-05
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 5.72367355289316e-06,
+          "maximum_scaled": 5.710607692866991e-08,
+          "per_row_maximum_absolute": [
+            3.4533852044660307e-06,
+            5.72367355289316e-06
+          ],
+          "per_row_maximum_scaled": [
+            3.446286217533548e-08,
+            5.710607692866991e-08
+          ],
+          "relative_l2": [
+            3.446286217533548e-08,
+            5.710607692866991e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.00030284708195971177,
+          "maximum_scaled": 0.0001184343749263404,
+          "per_row_maximum_absolute": [
+            0.00014881665226407215,
+            0.00030284708195971177
+          ],
+          "per_row_maximum_scaled": [
+            0.0001184343749263404,
+            0.00011543522587350737
+          ],
+          "relative_l2": [
+            3.422294318369101e-05,
+            5.770773514870911e-05
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -35.152793884277344,
+          -35.15859603881836
+        ],
+        [
+          [
+            -1.77228844165802,
+            0.157795250415802,
+            0.4493536353111267
+          ],
+          [
+            -3.4347128868103027,
+            0.854137659072876,
+            0.4378196597099304
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -35.15279245494207,
+          -35.15859640619181
+        ],
+        [
+          [
+            -1.772433600626076,
+            0.15784984089525916,
+            0.4494059521066113
+          ],
+          [
+            -3.4344099350374604,
+            0.8540203912106181,
+            0.43793646863269864
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.023378942161798477,
+          0.017074601724743843,
+          20.948123931884766,
+          2.8252601623535156e-05
+        ],
+        [
+          0.023129833862185478,
+          0.01689896360039711,
+          20.970561981201172,
+          2.4437904357910156e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.02337884800548531,
+          0.017074568852967296,
+          20.948006394435158,
+          5.1514348342607263e-14
+        ],
+        [
+          0.02312978502428386,
+          0.016898840713017674,
+          20.970667136271594,
+          1.0125233984581428e-13
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/child.tensor",
+          "sha256": "c761037d2991fe2e484ee2aca65c2844975a268a5488c3f33dc5138a80e68152",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/child_tangent.tensor",
+          "sha256": "0ba3de48afe3277b7328aa4fac22fc9ea110b045153e317cec9710f998efa408",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/log_weights.tensor",
+          "sha256": "01dc439f010097f2413f6deeb552818d5fa45609382fc4a912818405225dd157",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/log_weight_tangent.tensor",
+          "sha256": "4fe5b8ed1b646bc0d1498f5095fad955322ba0f43de3cdf82168ff5e430a96e5",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/initial_or_recursive_state.tensor",
+          "sha256": "6ee0a4ffb012e5eb502a0d60422511dc0d6631cd0c44c9c2dd9799290b240b71",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/observation.tensor",
+          "sha256": "d0746c459f75d4215004b6f80276aed2c60723b9005db6e96e71eb63bcb539a2",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/innovations.tensor",
+          "sha256": "22c3e09dba4a6b5678f62c27effa73ea4b36edca1146db843abcc4275476f827",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/uniforms.tensor",
+          "sha256": "865a64c442912425101a600f8d2423e82ca1047892d19d386f55e774a4fbf689",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-03/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 4,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 9.834072824332907e-05,
+            "maximum_scaled": 9.784817508630155e-07,
+            "per_row_maximum_absolute": [
+              9.834072824332907e-05,
+              8.666886179753419e-05
+            ],
+            "per_row_maximum_scaled": [
+              9.784817508630155e-07,
+              6.177980232331263e-07
+            ],
+            "relative_l2": [
+              5.2494534597743016e-08,
+              5.424581509724479e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.0021874916455999482,
+            "maximum_scaled": 0.00038807803250762163,
+            "per_row_maximum_absolute": [
+              0.0021874916455999482,
+              0.0016899650231607666
+            ],
+            "per_row_maximum_scaled": [
+              0.00038807803250762163,
+              0.00012074781301648702
+            ],
+            "relative_l2": [
+              1.0343107134104732e-07,
+              1.1596234619536761e-07
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 0.00010518484475596779,
+            "maximum_scaled": 1.0523366714878465e-06,
+            "per_row_maximum_absolute": [
+              9.786808186618146e-05,
+              0.00010518484475596779
+            ],
+            "per_row_maximum_scaled": [
+              1.0523366714878465e-06,
+              6.58640856334728e-07
+            ],
+            "relative_l2": [
+              5.552522573613418e-08,
+              5.57223158948583e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.011437878874858143,
+            "maximum_scaled": 0.0003827646312331012,
+            "per_row_maximum_absolute": [
+              0.011437878874858143,
+              0.010260036725412647
+            ],
+            "per_row_maximum_scaled": [
+              0.0003827646312331012,
+              0.0002445723901018937
+            ],
+            "relative_l2": [
+              2.597734987110695e-07,
+              2.5509147504277526e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 8.988606927773368e-06,
+            "maximum_scaled": 8.988606927773368e-06,
+            "per_row_maximum_absolute": [
+              8.988606927773368e-06,
+              4.871529428407406e-06
+            ],
+            "per_row_maximum_scaled": [
+              8.988606927773368e-06,
+              4.871529428407406e-06
+            ],
+            "relative_l2": [
+              1.6075956174854693e-06,
+              1.3810977148681168e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.436946909721959e-05,
+            "maximum_scaled": 1.436946909721959e-05,
+            "per_row_maximum_absolute": [
+              1.2291833145022801e-05,
+              1.436946909721959e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.2291833145022801e-05,
+              1.436946909721959e-05
+            ],
+            "relative_l2": [
+              1.127588489324688e-05,
+              9.588738728839741e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.4584026665431793e-05,
+            "maximum_scaled": 3.9797170213690127e-07,
+            "per_row_maximum_absolute": [
+              1.032790499522207e-05,
+              1.4584026665431793e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.949402491674099e-07,
+              3.9797170213690127e-07
+            ],
+            "relative_l2": [
+              6.51206452055725e-08,
+              8.827271825550845e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.0007619789350883366,
+            "maximum_scaled": 0.00012567386797309756,
+            "per_row_maximum_absolute": [
+              0.0007619789350883366,
+              0.00045079431285444116
+            ],
+            "per_row_maximum_scaled": [
+              7.762539145916847e-05,
+              0.00012567386797309756
+            ],
+            "relative_l2": [
+              6.056115252574828e-07,
+              1.2211869868132252e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 9.271498768725905e-07,
+            "maximum_scaled": 2.6635246464111827e-08,
+            "per_row_maximum_absolute": [
+              8.444192474144074e-07,
+              9.271498768725905e-07
+            ],
+            "per_row_maximum_scaled": [
+              2.430964483135106e-08,
+              2.6635246464111827e-08
+            ],
+            "relative_l2": [
+              2.430964483135106e-08,
+              2.6635246464111827e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 3.8714856030908074e-05,
+            "maximum_scaled": 3.8714856030908074e-05,
+            "per_row_maximum_absolute": [
+              3.8714856030908074e-05,
+              1.885685627200928e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.8714856030908074e-05,
+              1.0339951013405013e-05
+            ],
+            "relative_l2": [
+              1.1711766203141933e-06,
+              5.307655100517477e-07
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 3.7401160170702497e-05,
+            "maximum_scaled": 1.5008345798888155e-06,
+            "per_row_maximum_absolute": [
+              3.7401160170702497e-05,
+              3.123729902654304e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.5008345798888155e-06,
+              1.4407721074695296e-06
+            ],
+            "relative_l2": [
+              1.3953084644951528e-07,
+              1.369110215731804e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.18067533473367803,
+            "maximum_scaled": 0.0021719402162309037,
+            "per_row_maximum_absolute": [
+              0.18067533473367803,
+              0.038504731282102966
+            ],
+            "per_row_maximum_scaled": [
+              0.0021719402162309037,
+              0.0009422089725319438
+            ],
+            "relative_l2": [
+              3.8586772243785614e-06,
+              2.3926603686412092e-06
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.0005111348307309527,
+            "maximum_scaled": 9.344995478991374e-06,
+            "per_row_maximum_absolute": [
+              0.00041587915069385417,
+              0.0005111348307309527
+            ],
+            "per_row_maximum_scaled": [
+              6.303367070858058e-06,
+              9.344995478991374e-06
+            ],
+            "relative_l2": [
+              8.510919411988184e-08,
+              1.0255022826558413e-07
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 7.431772244803142,
+            "maximum_scaled": 0.02712749770080336,
+            "per_row_maximum_absolute": [
+              7.431772244803142,
+              2.954509116214467
+            ],
+            "per_row_maximum_scaled": [
+              0.02712749770080336,
+              0.014130107483481424
+            ],
+            "relative_l2": [
+              3.498308277261489e-05,
+              5.8001290183234e-05
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 4.867680161169119e-06,
+          "maximum_scaled": 3.607239842603873e-08,
+          "per_row_maximum_absolute": [
+            4.867680161169119e-06,
+            4.578543865818574e-06
+          ],
+          "per_row_maximum_scaled": [
+            3.607239842603873e-08,
+            3.390561383373066e-08
+          ],
+          "relative_l2": [
+            3.607239842603873e-08,
+            3.390561383373066e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.00273730199116784,
+          "maximum_scaled": 0.0002017139670127697,
+          "per_row_maximum_absolute": [
+            0.00273730199116784,
+            0.0005301007391862456
+          ],
+          "per_row_maximum_scaled": [
+            0.0002017139670127697,
+            9.25716980211193e-05
+          ],
+          "relative_l2": [
+            8.207557899003027e-05,
+            1.4430706423481005e-05
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -34.73597717285156,
+          -34.80913543701172
+        ],
+        [
+          [
+            -34.06396484375,
+            15.238042831420898,
+            -0.9806311130523682
+          ],
+          [
+            -38.11022186279297,
+            17.11098289489746,
+            -0.9264450669288635
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -34.735970957751995,
+          -34.809128952746875
+        ],
+        [
+          [
+            -34.061076936967225,
+            15.236801855291976,
+            -0.9818276730006295
+          ],
+          [
+            -38.110192582129514,
+            17.110895313756664,
+            -0.9270913177729304
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.011631175875663757,
+          0.009331734851002693,
+          27.227907180786133,
+          4.565715789794922e-05
+        ],
+        [
+          0.011494320817291737,
+          0.009407274425029755,
+          27.70404815673828,
+          4.3392181396484375e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.011630796845712613,
+          0.009331659792431711,
+          27.228293407040983,
+          9.103828801926284e-14
+        ],
+        [
+          0.011494250378863133,
+          0.009407610883112164,
+          27.70437447272685,
+          1.0369483049998962e-13
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/child.tensor",
+          "sha256": "31dd94894410e2c587df18c7c7198b52d69a18b744efbe4eaa48627f03907ab5",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/child_tangent.tensor",
+          "sha256": "80d23df4accbf33d09e4c94f4a318988a23cd0ed5b2dcead4b82c2d5cefcf201",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/log_weights.tensor",
+          "sha256": "f9c6f4a3996a4581ea4f7ae486d79123017546a9fae0203112369ea76672a6b6",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/log_weight_tangent.tensor",
+          "sha256": "ad0debf0908a687f3305fc37b514fa83f3b52b52ef19bbbf03809dbb93d775c6",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/initial_or_recursive_state.tensor",
+          "sha256": "995329e8cbc9fdf93c6dd71833b5d1fd82c5fc90a9c0605716fb691e1ce500e3",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/observation.tensor",
+          "sha256": "daa61b26d0cee8d2bd3a0a3649e89bff0111e56de9c653cffe9821ebe1d76023",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/innovations.tensor",
+          "sha256": "785cedf08255f020cf8a99911b499db099884902e4b7e2dad959a8ac3d3bf4aa",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/uniforms.tensor",
+          "sha256": "d07ae4a652cd9062b498b8e9f5bd9d30e9f055f9eb1cc1d3cd8e88e143a09b8b",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-04/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 5,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 8.854032864746841e-05,
+            "maximum_scaled": 5.395883250525899e-07,
+            "per_row_maximum_absolute": [
+              8.854032864746841e-05,
+              8.71357978553533e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.513877487227803e-07,
+              5.395883250525899e-07
+            ],
+            "relative_l2": [
+              6.008898398018942e-08,
+              6.292009605861949e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.010263339689117856,
+            "maximum_scaled": 0.00035753826750806184,
+            "per_row_maximum_absolute": [
+              0.010263339689117856,
+              0.008664999921165872
+            ],
+            "per_row_maximum_scaled": [
+              0.00027693265030848124,
+              0.00035753826750806184
+            ],
+            "relative_l2": [
+              5.961861996075879e-08,
+              1.3684272907864285e-07
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 9.212725763063645e-05,
+            "maximum_scaled": 7.108415408510267e-07,
+            "per_row_maximum_absolute": [
+              9.212725763063645e-05,
+              9.003996456158347e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.060449920469847e-07,
+              7.108415408510267e-07
+            ],
+            "relative_l2": [
+              6.290010038032696e-08,
+              6.511309061694782e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.20955377097561723,
+            "maximum_scaled": 0.001871174577132706,
+            "per_row_maximum_absolute": [
+              0.20955377097561723,
+              0.07952261974423891
+            ],
+            "per_row_maximum_scaled": [
+              0.0006578849579454982,
+              0.001871174577132706
+            ],
+            "relative_l2": [
+              3.7874743735166123e-07,
+              4.0535746891892677e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 6.541748179822449e-06,
+            "maximum_scaled": 6.541748179822449e-06,
+            "per_row_maximum_absolute": [
+              3.5312373060092384e-06,
+              6.541748179822449e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.5312373060092384e-06,
+              6.541748179822449e-06
+            ],
+            "relative_l2": [
+              1.0937887378155779e-06,
+              1.4224576085170009e-06
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 9.505008114363278e-05,
+            "maximum_scaled": 5.956853276994911e-05,
+            "per_row_maximum_absolute": [
+              9.505008114363278e-05,
+              2.1178317403725e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.956853276994911e-05,
+              2.1178317403725e-05
+            ],
+            "relative_l2": [
+              1.9149626262841118e-05,
+              5.769870912484353e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.1858023697186582e-05,
+            "maximum_scaled": 3.3368696446071394e-07,
+            "per_row_maximum_absolute": [
+              9.153716476362206e-06,
+              1.1858023697186582e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.6576859538328624e-07,
+              3.3368696446071394e-07
+            ],
+            "relative_l2": [
+              7.199543241124901e-08,
+              9.360725638600172e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.012495415077864891,
+            "maximum_scaled": 0.00021327456320929805,
+            "per_row_maximum_absolute": [
+              0.010176036877055594,
+              0.012495415077864891
+            ],
+            "per_row_maximum_scaled": [
+              0.00011263472266818952,
+              0.00021327456320929805
+            ],
+            "relative_l2": [
+              2.3155856284059595e-06,
+              1.6198047644164478e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 2.2852995584798919e-07,
+            "maximum_scaled": 6.731366651481389e-09,
+            "per_row_maximum_absolute": [
+              2.3815957206352323e-08,
+              2.2852995584798919e-07
+            ],
+            "per_row_maximum_scaled": [
+              7.024256305631864e-10,
+              6.731366651481389e-09
+            ],
+            "relative_l2": [
+              7.024256305631864e-10,
+              6.731366651481389e-09
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 0.00018296952734786487,
+            "maximum_scaled": 7.597622209898347e-05,
+            "per_row_maximum_absolute": [
+              0.00018296952734786487,
+              3.882263984777978e-05
+            ],
+            "per_row_maximum_scaled": [
+              7.597622209898347e-05,
+              1.0767850312953797e-05
+            ],
+            "relative_l2": [
+              6.3906143089349085e-06,
+              1.3454308698088067e-06
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 2.9581864396277524e-05,
+            "maximum_scaled": 1.7846354230589324e-06,
+            "per_row_maximum_absolute": [
+              2.92744483374463e-05,
+              2.9581864396277524e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.5500948946870158e-06,
+              1.7846354230589324e-06
+            ],
+            "relative_l2": [
+              1.587223245300458e-07,
+              1.566493646605208e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.6272722887952114,
+            "maximum_scaled": 0.0151415621128979,
+            "per_row_maximum_absolute": [
+              0.6272722887952114,
+              0.12480697308274102
+            ],
+            "per_row_maximum_scaled": [
+              0.0151415621128979,
+              0.0017920297510645527
+            ],
+            "relative_l2": [
+              1.6996943850570883e-05,
+              1.4402116203487753e-06
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.0020841315098891755,
+            "maximum_scaled": 1.0541342103528761e-05,
+            "per_row_maximum_absolute": [
+              0.0004298466313912286,
+              0.0020841315098891755
+            ],
+            "per_row_maximum_scaled": [
+              3.354175881649427e-06,
+              1.0541342103528761e-05
+            ],
+            "relative_l2": [
+              1.1569782043572386e-07,
+              9.604227728723562e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 26.62325813336065,
+            "maximum_scaled": 0.05745321474182674,
+            "per_row_maximum_absolute": [
+              5.251334731972747,
+              26.62325813336065
+            ],
+            "per_row_maximum_scaled": [
+              0.028792976954911266,
+              0.05745321474182674
+            ],
+            "relative_l2": [
+              4.912897019651557e-05,
+              0.00013047509707100156
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 1.8990708241517495e-05,
+          "maximum_scaled": 1.124726937197638e-07,
+          "per_row_maximum_absolute": [
+            1.8990708241517495e-05,
+            5.870350946679537e-06
+          ],
+          "per_row_maximum_scaled": [
+            1.124726937197638e-07,
+            3.4738283439500446e-08
+          ],
+          "relative_l2": [
+            1.124726937197638e-07,
+            3.4738283439500446e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.37819548754248444,
+          "maximum_scaled": 0.00896943037406872,
+          "per_row_maximum_absolute": [
+            0.37819548754248444,
+            0.006167918381848381
+          ],
+          "per_row_maximum_scaled": [
+            0.00896943037406872,
+            8.325790676782025e-05
+          ],
+          "relative_l2": [
+            0.005868099144386532,
+            8.132738820374515e-05
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -33.90530776977539,
+          -33.950008392333984
+        ],
+        [
+          [
+            -26.135169982910156,
+            16.775203704833984,
+            0.5135268568992615
+          ],
+          [
+            -32.55192184448242,
+            19.773347854614258,
+            -0.2918434143066406
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -33.905318078106205,
+          -33.95001091522416
+        ],
+        [
+          [
+            -25.75971179735884,
+            16.63677467177119,
+            0.5606585049313839
+          ],
+          [
+            -32.5460836696602,
+            19.77076242823601,
+            -0.2908664364894675
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.00916486419737339,
+          0.0056912777945399284,
+          25.48141098022461,
+          3.695487976074219e-05
+        ],
+        [
+          0.008961647748947144,
+          0.005564968567341566,
+          25.885515213012695,
+          3.707408905029297e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.009164878395350868,
+          0.005691520084358451,
+          25.481930304679,
+          8.115730310009894e-14
+        ],
+        [
+          0.008961812933463539,
+          0.005565052633809742,
+          25.88573737363345,
+          1.0746958878371515e-13
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/child.tensor",
+          "sha256": "de1f09ae1c9d6066af58672223f152d016afc3fe6d28a7c66c0ce17ad92bba84",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/child_tangent.tensor",
+          "sha256": "546be407c1b85a9f222c71c22c2785af0c7f2762f7459f926282d48a51434c57",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/log_weights.tensor",
+          "sha256": "d8b9caaf167c5a2dda932a75c23264c05d37b8708839d94b74765c9fadf906a0",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/log_weight_tangent.tensor",
+          "sha256": "7251e5f52442997d5a7c132fdd71179784e09ed9b1b3892f6006bdbb33483c9b",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/initial_or_recursive_state.tensor",
+          "sha256": "c81e73aac087a4cd0ce6c5d1e7e7d43b02c656afc010f6a6bf9d94f62e9ffd25",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/observation.tensor",
+          "sha256": "18df6592f412a326111ebaf665f9eaf44c86fb9cddff6161d80e8485a47b382d",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/innovations.tensor",
+          "sha256": "e240a0b30f0be42f3268316378091edba53aee95b2c5625295ba2b532faeccbc",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/uniforms.tensor",
+          "sha256": "18ecd15b3fc3207680251f9d520026c2471ae1cd00df8ccb52c232fa763961ed",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-05/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 6,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 9.222272524311848e-05,
+            "maximum_scaled": 3.7057615487018236e-07,
+            "per_row_maximum_absolute": [
+              9.222272524311848e-05,
+              6.959921324778406e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.303580736258837e-07,
+              3.7057615487018236e-07
+            ],
+            "relative_l2": [
+              6.439059573920773e-08,
+              6.811150668077892e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.022124836752482224,
+            "maximum_scaled": 0.0005496658841366298,
+            "per_row_maximum_absolute": [
+              0.010682692693080753,
+              0.022124836752482224
+            ],
+            "per_row_maximum_scaled": [
+              0.0005496658841366298,
+              0.00022294041468740033
+            ],
+            "relative_l2": [
+              6.681885915916455e-08,
+              1.3673712286894125e-07
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 0.00010236277631747726,
+            "maximum_scaled": 3.493404361335294e-07,
+            "per_row_maximum_absolute": [
+              0.00010236277631747726,
+              8.100831394131092e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.493404361335294e-07,
+              3.168128384567447e-07
+            ],
+            "relative_l2": [
+              6.99307555551266e-08,
+              6.604598387808993e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.07685881658107974,
+            "maximum_scaled": 0.000606656881016275,
+            "per_row_maximum_absolute": [
+              0.07685881658107974,
+              0.033716031568474136
+            ],
+            "per_row_maximum_scaled": [
+              0.0005584104731042316,
+              0.000606656881016275
+            ],
+            "relative_l2": [
+              2.6465565041886344e-07,
+              1.601839992261898e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 2.0166352873163262e-06,
+            "maximum_scaled": 2.0166352873163262e-06,
+            "per_row_maximum_absolute": [
+              2.0166352873163262e-06,
+              1.25169308373696e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.0166352873163262e-06,
+              1.25169308373696e-06
+            ],
+            "relative_l2": [
+              4.992026653996048e-07,
+              4.80690615127203e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 8.013197942435824e-05,
+            "maximum_scaled": 2.7837421611842523e-05,
+            "per_row_maximum_absolute": [
+              8.013197942435824e-05,
+              3.0314065782022226e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.7837421611842523e-05,
+              1.6059249815170113e-05
+            ],
+            "relative_l2": [
+              9.417028320843637e-06,
+              6.124998325063383e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 2.3456389527609645e-05,
+            "maximum_scaled": 5.424138351912813e-07,
+            "per_row_maximum_absolute": [
+              1.82238087091946e-05,
+              2.3456389527609645e-05
+            ],
+            "per_row_maximum_scaled": [
+              5.035388579787967e-07,
+              5.424138351912813e-07
+            ],
+            "relative_l2": [
+              1.0533501938848111e-07,
+              1.8705776296399538e-07
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.023588019803355564,
+            "maximum_scaled": 0.0004700336662153415,
+            "per_row_maximum_absolute": [
+              0.023588019803355564,
+              0.008750276190312434
+            ],
+            "per_row_maximum_scaled": [
+              0.0004700336662153415,
+              0.0003698663564165733
+            ],
+            "relative_l2": [
+              1.7701266558354902e-06,
+              8.347762578633219e-07
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 4.100121699934789e-07,
+            "maximum_scaled": 1.1057229591818543e-08,
+            "per_row_maximum_absolute": [
+              1.13904569332135e-07,
+              4.100121699934789e-07
+            ],
+            "per_row_maximum_scaled": [
+              3.0776499181046216e-09,
+              1.1057229591818543e-08
+            ],
+            "relative_l2": [
+              3.0776499181046216e-09,
+              1.1057229591818543e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 0.0002464778346222829,
+            "maximum_scaled": 3.8295783179081e-06,
+            "per_row_maximum_absolute": [
+              0.0002464778346222829,
+              2.0615778637989024e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.6637201281321987e-06,
+              3.8295783179081e-06
+            ],
+            "relative_l2": [
+              2.1215263345607663e-06,
+              1.9936478662392712e-07
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 3.9968108779930844e-05,
+            "maximum_scaled": 1.5198701636817753e-06,
+            "per_row_maximum_absolute": [
+              3.9968108779930844e-05,
+              3.253131481528726e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.5198701636817753e-06,
+              1.474747678478492e-06
+            ],
+            "relative_l2": [
+              1.6179925604040038e-07,
+              1.5101489586401243e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 1.4937055061218416,
+            "maximum_scaled": 0.007117560031214946,
+            "per_row_maximum_absolute": [
+              1.4937055061218416,
+              0.5246134374219764
+            ],
+            "per_row_maximum_scaled": [
+              0.0049761288777432355,
+              0.007117560031214946
+            ],
+            "relative_l2": [
+              1.1390581215004193e-05,
+              1.0345770100377636e-05
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.0004942478735756595,
+            "maximum_scaled": 3.4830590246522986e-06,
+            "per_row_maximum_absolute": [
+              0.0004942478735756595,
+              0.0004607831266980611
+            ],
+            "per_row_maximum_scaled": [
+              3.4830590246522986e-06,
+              3.070886399600561e-06
+            ],
+            "relative_l2": [
+              6.356191283108207e-08,
+              8.052754101497986e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 11.044073866243707,
+            "maximum_scaled": 0.036726766462045334,
+            "per_row_maximum_absolute": [
+              11.044073866243707,
+              6.05752657391713
+            ],
+            "per_row_maximum_scaled": [
+              0.036726766462045334,
+              0.02828474324083885
+            ],
+            "relative_l2": [
+              4.004245234308258e-05,
+              5.7049290952782736e-05
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 3.8283701030650263e-05,
+          "maximum_scaled": 1.85971821534242e-07,
+          "per_row_maximum_absolute": [
+            3.8283701030650263e-05,
+            1.226962896794248e-05
+          ],
+          "per_row_maximum_scaled": [
+            1.85971821534242e-07,
+            5.954140535803377e-08
+          ],
+          "relative_l2": [
+            1.85971821534242e-07,
+            5.954140535803377e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.08588058711734448,
+          "maximum_scaled": 0.049373666844938685,
+          "per_row_maximum_absolute": [
+            0.058168282281352734,
+            0.08588058711734448
+          ],
+          "per_row_maximum_scaled": [
+            0.049373666844938685,
+            0.002184355116708346
+          ],
+          "relative_l2": [
+            0.0003446765678382018,
+            0.00042334055458405513
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -37.0102424621582,
+          -37.08091354370117
+        ],
+        [
+          [
+            -92.53167724609375,
+            71.27888488769531,
+            3.936478614807129
+          ],
+          [
+            -111.96311950683594,
+            80.00288391113281,
+            4.531465530395508
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -37.01025794045372,
+          -37.08091095912042
+        ],
+        [
+          [
+            -92.92064983110492,
+            71.44277478387735,
+            3.9486625456842694
+          ],
+          [
+            -111.88340683810046,
+            79.96958605399792,
+            4.527765096681638
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.012445908971130848,
+          0.01104242354631424,
+          27.98048973083496,
+          5.221366882324219e-05
+        ],
+        [
+          0.012255615554749966,
+          0.011601313948631287,
+          28.27366065979004,
+          3.0100345611572266e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.012445881347405565,
+          0.011040723999682154,
+          27.978272260194714,
+          1.0580425424677742e-13
+        ],
+        [
+          0.012255564501532255,
+          0.011601212826301723,
+          28.27334819649879,
+          8.970602038971265e-14
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/child.tensor",
+          "sha256": "784a3d8c77a09ddc595e3502894683fc2e87fadc6bf2136b003da398f11834bd",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/child_tangent.tensor",
+          "sha256": "efc90d03d4266695f8563bce6fbe3751c8abd3d74726485fc68a11cdac0f40e7",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/log_weights.tensor",
+          "sha256": "23794d76457dc0361a6785d62044fb2956414d3ad7c523bc9fce908177b5a15c",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/log_weight_tangent.tensor",
+          "sha256": "852b1a12550810fba5679c41a78e0db0c7e3139939ddf7b97285c1227b48d7c1",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/initial_or_recursive_state.tensor",
+          "sha256": "9f95455a15dd009bfdff4bca32ba8296a5e15b07e4c14b9ca3065b7a5952a7b7",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/observation.tensor",
+          "sha256": "54c97398ee109e48f3322d554f7756e7980bece623a48a4bba99083d73a349c2",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/innovations.tensor",
+          "sha256": "70a561897f3a477ace445befa84130262fab5ca4b0648a2879c20ac83366f8ff",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/uniforms.tensor",
+          "sha256": "28a4b079fdecf2f5ef9cd74b8d48f462c44b12b1b010f034bd812cb079b4755e",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-06/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 7,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 7.00720218560491e-05,
+            "maximum_scaled": 3.6693190566282953e-07,
+            "per_row_maximum_absolute": [
+              7.00720218560491e-05,
+              6.517215962276168e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.0549380687841245e-07,
+              3.6693190566282953e-07
+            ],
+            "relative_l2": [
+              6.57661423233852e-08,
+              7.440385556064291e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.009865600761258975,
+            "maximum_scaled": 0.0007330773828471138,
+            "per_row_maximum_absolute": [
+              0.009865600761258975,
+              0.004875373320828658
+            ],
+            "per_row_maximum_scaled": [
+              0.0007330773828471138,
+              0.00019703885398152506
+            ],
+            "relative_l2": [
+              6.143769755816856e-08,
+              6.43094881423663e-08
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 9.214683973368665e-05,
+            "maximum_scaled": 3.566814417580981e-07,
+            "per_row_maximum_absolute": [
+              9.214683973368665e-05,
+              7.341196413790385e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.47727425053552e-07,
+              3.566814417580981e-07
+            ],
+            "relative_l2": [
+              6.498847794568888e-08,
+              6.895056403801991e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.047329796845588135,
+            "maximum_scaled": 0.001098093281598267,
+            "per_row_maximum_absolute": [
+              0.047329796845588135,
+              0.019793162107816897
+            ],
+            "per_row_maximum_scaled": [
+              0.001098093281598267,
+              0.0003378951696504373
+            ],
+            "relative_l2": [
+              1.972929555155364e-07,
+              1.5305146535148998e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 9.86479921860628e-07,
+            "maximum_scaled": 9.86479921860628e-07,
+            "per_row_maximum_absolute": [
+              4.680427365677531e-07,
+              9.86479921860628e-07
+            ],
+            "per_row_maximum_scaled": [
+              4.680427365677531e-07,
+              9.86479921860628e-07
+            ],
+            "relative_l2": [
+              2.605004358360929e-07,
+              2.549342281700816e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 4.2185713630793487e-05,
+            "maximum_scaled": 3.723691784954483e-05,
+            "per_row_maximum_absolute": [
+              4.2185713630793487e-05,
+              1.5105167454204649e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.723691784954483e-05,
+              1.5105167454204649e-05
+            ],
+            "relative_l2": [
+              5.349498600916991e-06,
+              5.515730305891283e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.9519133388712362e-05,
+            "maximum_scaled": 4.959659588132652e-07,
+            "per_row_maximum_absolute": [
+              1.8518014044843767e-05,
+              1.9519133388712362e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.6645718522258376e-07,
+              4.959659588132652e-07
+            ],
+            "relative_l2": [
+              1.244692095592496e-07,
+              1.4042774156815e-07
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.02057483153475914,
+            "maximum_scaled": 0.00020927016459502956,
+            "per_row_maximum_absolute": [
+              0.02057483153475914,
+              0.01057705456446456
+            ],
+            "per_row_maximum_scaled": [
+              0.00011619066735879535,
+              0.00020927016459502956
+            ],
+            "relative_l2": [
+              5.520919086108619e-07,
+              1.9406322234048883e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 2.4850225983641394e-06,
+            "maximum_scaled": 6.601993863300721e-08,
+            "per_row_maximum_absolute": [
+              5.329563634859369e-08,
+              2.4850225983641394e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.4136688905830258e-09,
+              6.601993863300721e-08
+            ],
+            "relative_l2": [
+              1.4136688905830258e-09,
+              6.601993863300721e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 0.00012866288886304034,
+            "maximum_scaled": 4.3686414188526245e-05,
+            "per_row_maximum_absolute": [
+              0.00012866288886304034,
+              3.791665695374036e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.3686414188526245e-05,
+              1.7764777976337637e-06
+            ],
+            "relative_l2": [
+              2.986803372625402e-06,
+              8.286092469329044e-07
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 2.3783477871575087e-05,
+            "maximum_scaled": 1.6404521081987623e-06,
+            "per_row_maximum_absolute": [
+              2.3783477871575087e-05,
+              2.197842744067202e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.6404521081987623e-06,
+              1.5540828469324856e-06
+            ],
+            "relative_l2": [
+              2.110919746335598e-07,
+              2.068907732063229e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.6705032757208755,
+            "maximum_scaled": 0.008227928964537057,
+            "per_row_maximum_absolute": [
+              0.6705032757208755,
+              0.05528565997747137
+            ],
+            "per_row_maximum_scaled": [
+              0.008227928964537057,
+              0.0028706157375725737
+            ],
+            "relative_l2": [
+              1.4190557395256176e-06,
+              1.6821705961360411e-06
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 0.0002770707940271677,
+            "maximum_scaled": 1.2067814784073409e-06,
+            "per_row_maximum_absolute": [
+              0.00011195254000995192,
+              0.0002770707940271677
+            ],
+            "per_row_maximum_scaled": [
+              5.981588433655742e-07,
+              1.2067814784073409e-06
+            ],
+            "relative_l2": [
+              5.525499878387267e-08,
+              6.586274738432944e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.086267090333422,
+            "maximum_scaled": 0.04113852387263933,
+            "per_row_maximum_absolute": [
+              1.213712887110887,
+              2.086267090333422
+            ],
+            "per_row_maximum_scaled": [
+              0.04113852387263933,
+              0.016006316111435787
+            ],
+            "relative_l2": [
+              5.7002077429612735e-06,
+              2.1950124723196857e-05
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 2.5975531457334e-05,
+          "maximum_scaled": 1.0665039999773249e-07,
+          "per_row_maximum_absolute": [
+            2.5975531457334e-05,
+            3.7893712487857556e-06
+          ],
+          "per_row_maximum_scaled": [
+            1.0665039999773249e-07,
+            1.5548731710929794e-08
+          ],
+          "relative_l2": [
+            1.0665039999773249e-07,
+            1.5548731710929794e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.4224198116244575,
+          "maximum_scaled": 0.19821254056942,
+          "per_row_maximum_absolute": [
+            0.4224198116244575,
+            0.2820648779353405
+          ],
+          "per_row_maximum_scaled": [
+            0.19821254056942,
+            0.0013181977242430571
+          ],
+          "relative_l2": [
+            0.001959805422420986,
+            0.0011483768794310573
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -37.700225830078125,
+          -37.64048385620117
+        ],
+        [
+          [
+            -25.38846206665039,
+            40.20310592651367,
+            2.9450178146362305
+          ],
+          [
+            -28.208375930786133,
+            41.30397033691406,
+            6.976855754852295
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -37.700213521908566,
+          -37.64049615115614
+        ],
+        [
+          [
+            -25.22641128272692,
+            40.14330043459542,
+            3.3092693439793353
+          ],
+          [
+            -28.0121897326195,
+            41.220752076194465,
+            6.982958097304776
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.018348338082432747,
+          0.005729974247515202,
+          23.560340881347656,
+          2.9802322387695312e-05
+        ],
+        [
+          0.01821691356599331,
+          0.005624488927423954,
+          23.489532470703125,
+          2.956390380859375e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.018346667544414767,
+          0.005729409998521788,
+          23.557908294790575,
+          6.727951529228449e-14
+        ],
+        [
+          0.018216911179323517,
+          0.005624674688488509,
+          23.489861556477177,
+          5.873079800267078e-14
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/child.tensor",
+          "sha256": "ca0d2535a95b8d56a85b56872718df0818e31529e49b6c06694c0c65be1d25db",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/child_tangent.tensor",
+          "sha256": "76139c816740763a1ad5a85e521f220dd7984dfd9732cc55ef9d1171b9e81cbc",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/log_weights.tensor",
+          "sha256": "631b9029c6f73342eff2eeae04bc9b25e59f9690296ccc28abd1d17f4b3ecdc9",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/log_weight_tangent.tensor",
+          "sha256": "7e0b430694b95ff445f226033044378a16a6cb8727ae7e42f160ed2cab7aeca1",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/initial_or_recursive_state.tensor",
+          "sha256": "156d5006fb9bbcc7b24b4726b28936b28665bc018f4e8a98d6ca100bc39a2d1d",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/observation.tensor",
+          "sha256": "a6bac62730395175937ada614359a3d765de8bbdf088fa96b010d6605b9520a9",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/innovations.tensor",
+          "sha256": "c6efea1ae7c340f7184684914395630d79ee0bcbf1ad56e12cb2adcd84d6ee0c",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/uniforms.tensor",
+          "sha256": "720441dacfaee9154edbca56a381c91c6e87403c5440012da00da396486cb901",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-07/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 8,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 5.182125110536617e-05,
+            "maximum_scaled": 3.811462636365112e-07,
+            "per_row_maximum_absolute": [
+              4.814640129779946e-05,
+              5.182125110536617e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.427334924762355e-07,
+              3.811462636365112e-07
+            ],
+            "relative_l2": [
+              7.101936123724193e-08,
+              8.191593887888711e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.007309821929084137,
+            "maximum_scaled": 0.0003580674205068135,
+            "per_row_maximum_absolute": [
+              0.007309821929084137,
+              0.003432260076806415
+            ],
+            "per_row_maximum_scaled": [
+              0.0003580674205068135,
+              0.0003188177727793118
+            ],
+            "relative_l2": [
+              5.920235413011508e-08,
+              7.588388890269815e-08
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 4.914036151149048e-05,
+            "maximum_scaled": 3.506289507833763e-07,
+            "per_row_maximum_absolute": [
+              4.914036151149048e-05,
+              4.7755094612966786e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.499916817386525e-07,
+              3.506289507833763e-07
+            ],
+            "relative_l2": [
+              7.119634130250513e-08,
+              7.372908218696612e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.03387209345964948,
+            "maximum_scaled": 0.000767554016255012,
+            "per_row_maximum_absolute": [
+              0.03387209345964948,
+              0.0107356128628453
+            ],
+            "per_row_maximum_scaled": [
+              0.000767554016255012,
+              0.00042985254526684
+            ],
+            "relative_l2": [
+              1.2481830507498888e-07,
+              1.20189308728168e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 3.5815116372628353e-07,
+            "maximum_scaled": 3.5815116372628353e-07,
+            "per_row_maximum_absolute": [
+              3.5815116372628353e-07,
+              3.572933727769012e-07
+            ],
+            "per_row_maximum_scaled": [
+              3.5815116372628353e-07,
+              3.572933727769012e-07
+            ],
+            "relative_l2": [
+              1.429643287798113e-07,
+              1.6460027067938494e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 3.546226952622078e-05,
+            "maximum_scaled": 1.7390181379084435e-05,
+            "per_row_maximum_absolute": [
+              3.546226952622078e-05,
+              1.06508446060527e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.7390181379084435e-05,
+              1.06508446060527e-05
+            ],
+            "relative_l2": [
+              5.770468153238822e-06,
+              6.255043584085221e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.4403447529787172e-05,
+            "maximum_scaled": 4.2530560549872594e-07,
+            "per_row_maximum_absolute": [
+              1.3084843260458001e-05,
+              1.4403447529787172e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.951457632855452e-07,
+              4.2530560549872594e-07
+            ],
+            "relative_l2": [
+              1.0420215195507866e-07,
+              1.0676378712247696e-07
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.01162391214836589,
+            "maximum_scaled": 0.00025779928336155944,
+            "per_row_maximum_absolute": [
+              0.01162391214836589,
+              0.005056745798469819
+            ],
+            "per_row_maximum_scaled": [
+              0.00017147951647618505,
+              0.00025779928336155944
+            ],
+            "relative_l2": [
+              2.213040303434651e-06,
+              3.8181882663387375e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 2.8346528182510156e-06,
+            "maximum_scaled": 8.636499308822548e-08,
+            "per_row_maximum_absolute": [
+              1.2929864894317689e-06,
+              2.8346528182510156e-06
+            ],
+            "per_row_maximum_scaled": [
+              3.938929485929616e-08,
+              8.636499308822548e-08
+            ],
+            "relative_l2": [
+              3.938929485929616e-08,
+              8.636499308822548e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 0.0002120676005450406,
+            "maximum_scaled": 4.559685924571122e-05,
+            "per_row_maximum_absolute": [
+              0.0002120676005450406,
+              4.559685924571122e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.17716614239434e-05,
+              4.559685924571122e-05
+            ],
+            "relative_l2": [
+              2.2281013795609863e-05,
+              2.960278760850829e-05
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 1.1646100993800701e-05,
+            "maximum_scaled": 1.370276898080713e-06,
+            "per_row_maximum_absolute": [
+              1.1041288040303243e-05,
+              1.1646100993800701e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.3265059908273403e-06,
+              1.370276898080713e-06
+            ],
+            "relative_l2": [
+              3.8920439876451556e-07,
+              4.0013757427885534e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.17584187137390472,
+            "maximum_scaled": 0.008245214867167507,
+            "per_row_maximum_absolute": [
+              0.17584187137390472,
+              0.05792496942694925
+            ],
+            "per_row_maximum_scaled": [
+              0.008245214867167507,
+              0.00403347624137651
+            ],
+            "relative_l2": [
+              1.659272023196729e-05,
+              2.885599562452811e-05
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 6.421644189913422e-05,
+            "maximum_scaled": 3.355034603892113e-07,
+            "per_row_maximum_absolute": [
+              6.421644189913422e-05,
+              5.6489740757115214e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.355034603892113e-07,
+              2.4994146385759173e-07
+            ],
+            "relative_l2": [
+              5.566430715385751e-08,
+              5.535806332293984e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.17046722654777113,
+            "maximum_scaled": 0.0015702872771043985,
+            "per_row_maximum_absolute": [
+              0.17046722654777113,
+              0.10076960171136307
+            ],
+            "per_row_maximum_scaled": [
+              0.0010663845709046882,
+              0.0015702872771043985
+            ],
+            "relative_l2": [
+              1.4834771243330907e-06,
+              1.3076507533250715e-06
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 4.510358314746554e-05,
+          "maximum_scaled": 1.631919722271173e-07,
+          "per_row_maximum_absolute": [
+            4.510358314746554e-05,
+            1.7586641376965417e-05
+          ],
+          "per_row_maximum_scaled": [
+            1.631919722271173e-07,
+            6.359733396777164e-08
+          ],
+          "relative_l2": [
+            1.631919722271173e-07,
+            6.359733396777164e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.9178456083213575,
+          "maximum_scaled": 0.4408103258377909,
+          "per_row_maximum_absolute": [
+            0.8661395202927338,
+            0.9178456083213575
+          ],
+          "per_row_maximum_scaled": [
+            0.4408103258377909,
+            0.00426803977150582
+          ],
+          "relative_l2": [
+            0.004309830111367065,
+            0.003723194607188932
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -32.825836181640625,
+          -32.82177734375
+        ],
+        [
+          [
+            -6.6745285987854,
+            6.866806983947754,
+            -1.1584010124206543
+          ],
+          [
+            0.12672778964042664,
+            0.9958628416061401,
+            -1.1846039295196533
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -32.825840050903274,
+          -32.82176354647988
+        ],
+        [
+          [
+            -5.9596641954589185,
+            6.568689301362308,
+            -1.140010498207321
+          ],
+          [
+            -1.073186243092636,
+            1.5107225490384737,
+            -1.1821770800235534
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.029854150488972664,
+          0.0013418931048363447,
+          3.2550833225250244,
+          5.125999450683594e-06
+        ],
+        [
+          0.029651610180735588,
+          0.0012969763483852148,
+          3.192707061767578,
+          6.258487701416016e-06
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.02985247567448689,
+          0.0013418969609021087,
+          3.2555856367101548,
+          1.0436096431476471e-14
+        ],
+        [
+          0.029651527150265714,
+          0.0012970554121694506,
+          3.192744579775292,
+          1.3766765505351941e-14
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/child.tensor",
+          "sha256": "83a368a86100a8adb1b56ea1019efc963ac5cc0b21bc5ebd889f54e47bb1db3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/child_tangent.tensor",
+          "sha256": "4a02e0c24739377648e5f2e5f81e94b49a3d6ace2fce8fed33bd19522894b696",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/log_weights.tensor",
+          "sha256": "43929d6e9726d702c304ace4b0e53162626a8bfd13d6e027c9b160d12fcd32b7",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/log_weight_tangent.tensor",
+          "sha256": "55bb5141f0bccb63c50a11def5bb0e4b819046befbc70fd781c57eb1e08b8085",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/initial_or_recursive_state.tensor",
+          "sha256": "28432a0f6c8bcc44a051fcbdceff1aefb12ba6dc46cb6fe5cc0d513ae0b3372b",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/observation.tensor",
+          "sha256": "683b17578655e8f30469d153c2a221ac0af7a273bc9b1c5e764bbaf9d9f61631",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/innovations.tensor",
+          "sha256": "c7cecc5ff840720070d1b774987f18d0fa2484965000e8770e4736eb4e76f977",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/uniforms.tensor",
+          "sha256": "bbdc9c78c2755071ce6ec238d1d1ef6b84aa1788238a7d9c0928e4be1e0af698",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-08/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 9,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 4.7328264599855174e-05,
+            "maximum_scaled": 3.590793864709992e-07,
+            "per_row_maximum_absolute": [
+              4.487681329123916e-05,
+              4.7328264599855174e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.4692624996178087e-07,
+              3.590793864709992e-07
+            ],
+            "relative_l2": [
+              6.363223756334181e-08,
+              7.711606299521281e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.007863140453991946,
+            "maximum_scaled": 0.0003488023479576441,
+            "per_row_maximum_absolute": [
+              0.007863140453991946,
+              0.003147648498270428
+            ],
+            "per_row_maximum_scaled": [
+              0.0003488023479576441,
+              8.145056954589336e-05
+            ],
+            "relative_l2": [
+              6.649068284470355e-08,
+              6.834665663461968e-08
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 4.928742890797366e-05,
+            "maximum_scaled": 3.4213723248302465e-07,
+            "per_row_maximum_absolute": [
+              4.928742890797366e-05,
+              4.5545741727437417e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.9561009030588667e-07,
+              3.4213723248302465e-07
+            ],
+            "relative_l2": [
+              6.337987787327319e-08,
+              6.827513681853637e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.03191760400659405,
+            "maximum_scaled": 0.0005834645820641526,
+            "per_row_maximum_absolute": [
+              0.03191760400659405,
+              0.005368955222365912
+            ],
+            "per_row_maximum_scaled": [
+              0.0005834645820641526,
+              0.00011321952280241021
+            ],
+            "relative_l2": [
+              1.746472991800526e-07,
+              9.905354673301179e-08
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 4.1353518931419586e-07,
+            "maximum_scaled": 4.1353518931419586e-07,
+            "per_row_maximum_absolute": [
+              3.9428881870584576e-07,
+              4.1353518931419586e-07
+            ],
+            "per_row_maximum_scaled": [
+              3.9428881870584576e-07,
+              4.1353518931419586e-07
+            ],
+            "relative_l2": [
+              1.541636597909577e-07,
+              1.5391465601148967e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.2643699222224534e-05,
+            "maximum_scaled": 2.2643699222224534e-05,
+            "per_row_maximum_absolute": [
+              2.2643699222224534e-05,
+              8.586680326772012e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.2643699222224534e-05,
+              8.1376987247227e-06
+            ],
+            "relative_l2": [
+              6.27314157014432e-06,
+              7.10423167510605e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 1.5237343205853904e-05,
+            "maximum_scaled": 4.335198391757361e-07,
+            "per_row_maximum_absolute": [
+              1.0951566977723814e-05,
+              1.5237343205853904e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.051532782366436e-07,
+              4.335198391757361e-07
+            ],
+            "relative_l2": [
+              8.793062685807381e-08,
+              1.212311351452929e-07
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.01978886694450921,
+            "maximum_scaled": 0.00015342506047089088,
+            "per_row_maximum_absolute": [
+              0.01978886694450921,
+              0.0030541565597559384
+            ],
+            "per_row_maximum_scaled": [
+              0.00015342506047089088,
+              6.426394156355819e-05
+            ],
+            "relative_l2": [
+              7.383176507571074e-07,
+              1.4555924274363804e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 1.6162237059802465e-06,
+            "maximum_scaled": 4.698251357520693e-08,
+            "per_row_maximum_absolute": [
+              6.667978951213627e-07,
+              1.6162237059802465e-06
+            ],
+            "per_row_maximum_scaled": [
+              1.9476525491529236e-08,
+              4.698251357520693e-08
+            ],
+            "relative_l2": [
+              1.9476525491529236e-08,
+              4.698251357520693e-08
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 0.00015154362204405913,
+            "maximum_scaled": 2.1839299647830046e-05,
+            "per_row_maximum_absolute": [
+              0.00015154362204405913,
+              6.587079838027421e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.1839299647830046e-05,
+              5.441892489674305e-06
+            ],
+            "relative_l2": [
+              3.1726020401815316e-06,
+              1.595406009067862e-07
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 1.2971326619037882e-05,
+            "maximum_scaled": 1.6464082285831943e-06,
+            "per_row_maximum_absolute": [
+              1.2971326619037882e-05,
+              1.0764876314794947e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.6464082285831943e-06,
+              1.3204956076019452e-06
+            ],
+            "relative_l2": [
+              3.8973639515102057e-07,
+              3.957549949999897e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.19408510620087327,
+            "maximum_scaled": 0.003906289869793273,
+            "per_row_maximum_absolute": [
+              0.19408510620087327,
+              0.028020079961720512
+            ],
+            "per_row_maximum_scaled": [
+              0.003906289869793273,
+              0.002721330889706053
+            ],
+            "relative_l2": [
+              6.937336819011659e-06,
+              1.2803732310126577e-05
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 7.25278103175242e-05,
+            "maximum_scaled": 4.2219077358628163e-07,
+            "per_row_maximum_absolute": [
+              5.698487103700245e-05,
+              7.25278103175242e-05
+            ],
+            "per_row_maximum_scaled": [
+              4.2129770222018317e-07,
+              4.2219077358628163e-07
+            ],
+            "relative_l2": [
+              4.7331606740962515e-08,
+              4.972401585854669e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.601335496583488,
+            "maximum_scaled": 0.005279526404949664,
+            "per_row_maximum_absolute": [
+              2.601335496583488,
+              0.43572246646363055
+            ],
+            "per_row_maximum_scaled": [
+              0.005279526404949664,
+              0.0040053704221894955
+            ],
+            "relative_l2": [
+              1.0237354372519243e-05,
+              5.3458984968605384e-06
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 8.801778534461846e-05,
+          "maximum_scaled": 2.833619861814186e-07,
+          "per_row_maximum_absolute": [
+            8.801778534461846e-05,
+            2.7409030451508443e-05
+          ],
+          "per_row_maximum_scaled": [
+            2.833619861814186e-07,
+            8.815130593461425e-08
+          ],
+          "relative_l2": [
+            2.833619861814186e-07,
+            8.815130593461425e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 2.411916196984322,
+          "maximum_scaled": 0.2008772551906658,
+          "per_row_maximum_absolute": [
+            2.411916196984322,
+            0.6487780109007701
+          ],
+          "per_row_maximum_scaled": [
+            0.2008772551906658,
+            0.0030697939872683395
+          ],
+          "relative_l2": [
+            0.012104394787972133,
+            0.0029910923183253135
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -34.23597717285156,
+          -34.400535583496094
+        ],
+        [
+          [
+            -9.386877059936523,
+            -48.27599334716797,
+            -0.19170552492141724
+          ],
+          [
+            2.141709566116333,
+            -58.01408767700195,
+            0.030907273292541504
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -34.23600482826469,
+          -34.40053339050157
+        ],
+        [
+          [
+            -7.841094661199045,
+            -48.99164102810326,
+            -0.43163859556854234
+          ],
+          [
+            3.7083319932455563,
+            -58.67748865038331,
+            0.034328954998334486
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.05283237621188164,
+          0.001905134180560708,
+          5.341451644897461,
+          9.059906005859375e-06
+        ],
+        [
+          0.052376966923475266,
+          0.0019550512079149485,
+          5.536954879760742,
+          1.341104507446289e-05
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.052834324188032314,
+          0.0019051459162520178,
+          5.341442989752285,
+          2.2870594307278225e-14
+        ],
+        [
+          0.05237728984746813,
+          0.0019551018288331656,
+          5.5371302313212425,
+          2.020605904817785e-14
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/child.tensor",
+          "sha256": "5976a72e144738442bf553bcbd139caea42471a755c0a5f4876a371d26e6edc9",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/child_tangent.tensor",
+          "sha256": "64d95c42974e9434bee95c848199cf373fd972e0d80238c82de37c3cfaee014c",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/log_weights.tensor",
+          "sha256": "b4e688358c03a8eb0373f5f709ed44b9804ba80c340c6ddbdf5875bf4a3c04d4",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/log_weight_tangent.tensor",
+          "sha256": "d56f323d168caf8aaa9f432a9b67c5fb4c53a512f62fbb797cd4f980b2b1c65d",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/initial_or_recursive_state.tensor",
+          "sha256": "dba0d85b9b9c72f91d87ea355ebbccf73b2a424cfce582a367eae61292486391",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/observation.tensor",
+          "sha256": "5ed1cfb4fd1292cef622ff70b9d6a22fe3ba1054223e4af6908b3c866718a38c",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/innovations.tensor",
+          "sha256": "48344e8d37ed4c13bd64687c1dcb8757a28502b2a010d5317637f8cbd25bca54",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/uniforms.tensor",
+          "sha256": "2cb8d7a936bd90c774986dd62f8d444dec3f02219f21a04bffc8803bd937f107",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-09/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    },
+    {
+      "observation": 10,
+      "healthy": true,
+      "local": {
+        "proposal": {
+          "child": {
+            "finite": true,
+            "maximum_absolute": 4.0960181564742015e-05,
+            "maximum_scaled": 3.186813755849542e-07,
+            "per_row_maximum_absolute": [
+              3.4991980840004544e-05,
+              4.0960181564742015e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.6951319084637106e-07,
+              3.186813755849542e-07
+            ],
+            "relative_l2": [
+              5.633113323589201e-08,
+              7.296987105210811e-08
+            ]
+          },
+          "child_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.004849504133744631,
+            "maximum_scaled": 0.0001723406041378439,
+            "per_row_maximum_absolute": [
+              0.004849504133744631,
+              0.004193241791654145
+            ],
+            "per_row_maximum_scaled": [
+              0.0001723406041378439,
+              9.733648965948305e-05
+            ],
+            "relative_l2": [
+              6.255951224069768e-08,
+              7.641041380561837e-08
+            ]
+          },
+          "means": {
+            "finite": true,
+            "maximum_absolute": 3.227868455724092e-05,
+            "maximum_scaled": 2.5782146741300706e-07,
+            "per_row_maximum_absolute": [
+              2.9571447981879828e-05,
+              3.227868455724092e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.5261554799075966e-07,
+              2.5782146741300706e-07
+            ],
+            "relative_l2": [
+              5.566657828762382e-08,
+              6.291988771962388e-08
+            ]
+          },
+          "means_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.02237141889781924,
+            "maximum_scaled": 0.00028365179696579056,
+            "per_row_maximum_absolute": [
+              0.02237141889781924,
+              0.005417919677711325
+            ],
+            "per_row_maximum_scaled": [
+              0.00028365179696579056,
+              0.0002579634592643267
+            ],
+            "relative_l2": [
+              8.86943513809513e-08,
+              1.0348714168544032e-07
+            ]
+          },
+          "covariance": {
+            "finite": true,
+            "maximum_absolute": 5.827163940264057e-07,
+            "maximum_scaled": 5.827163940264057e-07,
+            "per_row_maximum_absolute": [
+              3.627173480458268e-07,
+              5.827163940264057e-07
+            ],
+            "per_row_maximum_scaled": [
+              3.627173480458268e-07,
+              5.827163940264057e-07
+            ],
+            "relative_l2": [
+              1.325312961458653e-07,
+              1.7442529024162202e-07
+            ]
+          },
+          "covariance_tangent": {
+            "finite": true,
+            "maximum_absolute": 2.1753224278997507e-05,
+            "maximum_scaled": 2.1753224278997507e-05,
+            "per_row_maximum_absolute": [
+              2.1753224278997507e-05,
+              8.69338230347072e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.1753224278997507e-05,
+              8.69338230347072e-06
+            ],
+            "relative_l2": [
+              5.199898400885754e-06,
+              5.104203119875434e-06
+            ]
+          },
+          "observation_density": {
+            "finite": true,
+            "maximum_absolute": 7.918716107724322e-06,
+            "maximum_scaled": 2.432706962393906e-07,
+            "per_row_maximum_absolute": [
+              7.918716107724322e-06,
+              6.886730801625163e-06
+            ],
+            "per_row_maximum_scaled": [
+              2.432706962393906e-07,
+              2.143462130188224e-07
+            ],
+            "relative_l2": [
+              6.050620125636426e-08,
+              6.071504530219356e-08
+            ]
+          },
+          "observation_score": {
+            "finite": true,
+            "maximum_absolute": 0.006712412132173995,
+            "maximum_scaled": 0.00015814619331289137,
+            "per_row_maximum_absolute": [
+              0.006712412132173995,
+              0.0030519826731278954
+            ],
+            "per_row_maximum_scaled": [
+              0.00011132984895767528,
+              0.00015814619331289137
+            ],
+            "relative_l2": [
+              7.044561742962455e-07,
+              1.372789368838877e-06
+            ]
+          }
+        },
+        "density": {
+          "increment": {
+            "finite": true,
+            "maximum_absolute": 1.7018862763507059e-06,
+            "maximum_scaled": 5.3193334534703444e-08,
+            "per_row_maximum_absolute": [
+              1.7018862763507059e-06,
+              2.8730173085023125e-07
+            ],
+            "per_row_maximum_scaled": [
+              5.3193334534703444e-08,
+              8.99344483260042e-09
+            ],
+            "relative_l2": [
+              5.3193334534703444e-08,
+              8.99344483260042e-09
+            ]
+          },
+          "score": {
+            "finite": true,
+            "maximum_absolute": 2.419400780517833e-05,
+            "maximum_scaled": 3.1229202679849593e-06,
+            "per_row_maximum_absolute": [
+              2.419400780517833e-05,
+              1.7123428504461913e-05
+            ],
+            "per_row_maximum_scaled": [
+              2.831411124271306e-06,
+              3.1229202679849593e-06
+            ],
+            "relative_l2": [
+              1.7028132820372501e-06,
+              1.730984303579227e-06
+            ]
+          },
+          "log_weights": {
+            "finite": true,
+            "maximum_absolute": 1.1422709082609117e-05,
+            "maximum_scaled": 1.3539852822847425e-06,
+            "per_row_maximum_absolute": [
+              1.1108182452090887e-05,
+              1.1422709082609117e-05
+            ],
+            "per_row_maximum_scaled": [
+              1.3176696814188103e-06,
+              1.3539852822847425e-06
+            ],
+            "relative_l2": [
+              3.9967676568210135e-07,
+              3.7957536963078554e-07
+            ]
+          },
+          "log_weight_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.059142427997812774,
+            "maximum_scaled": 0.004556968595366584,
+            "per_row_maximum_absolute": [
+              0.059142427997812774,
+              0.030560633147331373
+            ],
+            "per_row_maximum_scaled": [
+              0.004556968595366584,
+              0.0015188329051287752
+            ],
+            "relative_l2": [
+              8.45561833164005e-06,
+              1.0432618356353202e-05
+            ]
+          }
+        },
+        "reset": {
+          "particles": {
+            "finite": true,
+            "maximum_absolute": 4.175630024860766e-05,
+            "maximum_scaled": 3.1198940580627445e-07,
+            "per_row_maximum_absolute": [
+              4.175630024860766e-05,
+              3.5220149470660544e-05
+            ],
+            "per_row_maximum_scaled": [
+              3.1198940580627445e-07,
+              2.5332507543573565e-07
+            ],
+            "relative_l2": [
+              4.7900849929899234e-08,
+              4.171353648153821e-08
+            ]
+          },
+          "particle_tangent": {
+            "finite": true,
+            "maximum_absolute": 0.12044193279143656,
+            "maximum_scaled": 0.005956437962546389,
+            "per_row_maximum_absolute": [
+              0.12044193279143656,
+              0.051043759733147454
+            ],
+            "per_row_maximum_scaled": [
+              0.005956437962546389,
+              0.0005018230796007046
+            ],
+            "relative_l2": [
+              1.5385882570997191e-06,
+              9.078233831812391e-07
+            ]
+          }
+        }
+      },
+      "independent_trajectory": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 7.633646578142361e-05,
+          "maximum_scaled": 2.2280607250295473e-07,
+          "per_row_maximum_absolute": [
+            7.633646578142361e-05,
+            1.611104715948386e-05
+          ],
+          "per_row_maximum_scaled": [
+            2.2280607250295473e-07,
+            4.6987787100516525e-08
+          ],
+          "relative_l2": [
+            2.2280607250295473e-07,
+            4.6987787100516525e-08
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 3.826780099064223,
+          "maximum_scaled": 0.17482277787355405,
+          "per_row_maximum_absolute": [
+            3.826780099064223,
+            0.570235837023148
+          ],
+          "per_row_maximum_scaled": [
+            0.17482277787355405,
+            0.007947619838876534
+          ],
+          "relative_l2": [
+            0.020423512105264264,
+            0.002733793366814785
+          ]
+        }
+      },
+      "validity": {
+        "proposal32": [
+          true,
+          true
+        ],
+        "proposal64_local": [
+          true,
+          true
+        ],
+        "proposal64": [
+          true,
+          true
+        ],
+        "density32": [
+          true,
+          true
+        ],
+        "density32_local": [
+          true,
+          true
+        ],
+        "density64_local": [
+          true,
+          true
+        ],
+        "density64": [
+          true,
+          true
+        ],
+        "reset32": [
+          true,
+          true
+        ],
+        "reset64_local": [
+          true,
+          true
+        ],
+        "reset64": [
+          true,
+          true
+        ]
+      },
+      "density_input_note": {
+        "original_fp64_valid": [
+          true,
+          true
+        ],
+        "symmetrized_for_local_pair": false
+      },
+      "increments32": [
+        [
+          -31.99435043334961,
+          -31.945682525634766
+        ],
+        [
+          [
+            14.178606033325195,
+            9.369162559509277,
+            -6.7124342918396
+          ],
+          [
+            12.41464614868164,
+            5.483163356781006,
+            -2.725207805633545
+          ]
+        ]
+      ],
+      "increments64": [
+        [
+          -31.99434256672734,
+          -31.945690008920792
+        ],
+        [
+          [
+            15.593468028056456,
+            8.790781825423585,
+            -5.9678145639914675
+          ],
+          [
+            11.195628486060446,
+            5.998264312609556,
+            -2.7209934995035985
+          ]
+        ]
+      ],
+      "reset_diagnostics32": [
+        [
+          0.08192446082830429,
+          0.0006503657205030322,
+          2.725682497024536,
+          4.76837158203125e-06
+        ],
+        [
+          0.08119110763072968,
+          0.0006348381284624338,
+          2.6767475605010986,
+          6.198883056640625e-06
+        ]
+      ],
+      "reset_diagnostics64": [
+        [
+          0.08192882766043631,
+          0.0006503279390520556,
+          2.725773445316484,
+          5.218048215738236e-15
+        ],
+        [
+          0.08119084166195267,
+          0.0006348427690160527,
+          2.6767190615746554,
+          8.881784197001252e-15
+        ]
+      ],
+      "saved_reset_inputs": {
+        "child": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/child.tensor",
+          "sha256": "887e8dd1545757bfade7c11e1dfb42781a03a5f6f76e20dc23830553dfb316b6",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032,
+            18
+          ]
+        },
+        "child_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/child_tangent.tensor",
+          "sha256": "81ea8109cf2ba484a485a1117a83108d63a8a1a9e4c1c67fb69167cbb689977d",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032,
+            18
+          ]
+        },
+        "log_weights": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/log_weights.tensor",
+          "sha256": "9aaa3bdd61b67b732e020c61d4fd0de1c7dcfc7e47691d6feca7245316a6130d",
+          "dtype": "float32",
+          "shape": [
+            2,
+            4032
+          ]
+        },
+        "log_weight_tangent": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/log_weight_tangent.tensor",
+          "sha256": "acf7ace09c8879f5bbd87b1658bd8b12e25d2c1021953d271a330fefbafd7ae9",
+          "dtype": "float32",
+          "shape": [
+            3,
+            2,
+            4032
+          ]
+        }
+      },
+      "saved_proposal_inputs": {
+        "theta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/theta.tensor",
+          "sha256": "d42005aa523f1b5085771f6fe4d05b75ee7c189e58d0a2fb26a52c6c72bdbb3f",
+          "dtype": "float32",
+          "shape": [
+            2,
+            3
+          ]
+        },
+        "initial_or_recursive_state": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/initial_or_recursive_state.tensor",
+          "sha256": "f9944b06be8dfbfdf031232673ef4f7b4e55c525adbd46c523a37e9756a9e93a",
+          "dtype": "float32",
+          "shape": [
+            4,
+            2,
+            4032,
+            18
+          ]
+        },
+        "observation": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/observation.tensor",
+          "sha256": "0bdd90a6584c3f46b1b50f1541abff36101e219e2efa06473308c5754103940d",
+          "dtype": "float32",
+          "shape": [
+            9
+          ]
+        },
+        "innovations": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/innovations.tensor",
+          "sha256": "706f11827a3be5b4472cc7ce7d53580b60147c7712b795849f2587c3a5cbf2e3",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            18
+          ]
+        },
+        "uniforms": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/uniforms.tensor",
+          "sha256": "d122d0cd7dd3cf24b177387e14fb157937c0ff215d1e43483379288d2e2cf5e7",
+          "dtype": "float32",
+          "shape": [
+            4032,
+            2
+          ]
+        },
+        "beta": {
+          "path": "docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-local-arithmetic-fixed-design-01/sir_d18/step-10/beta.tensor",
+          "sha256": "6e6b3b709da22c269177bbd70a6c7937483ba67de382eaf036c826c774c5ccb2",
+          "dtype": "float32",
+          "shape": [
+            3
+          ]
+        }
+      }
+    }
+  ],
+  "fused_comparison": {
+    "float32": {
+      "passed": false,
+      "valid": true,
+      "differences": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 0.00070953369140625,
+          "maximum_scaled": 8.593663160377044e-05,
+          "per_row_maximum_absolute": [
+            0.00070953369140625,
+            0.0005340576171875
+          ],
+          "per_row_maximum_scaled": [
+            8.593663160377044e-05,
+            2.618252950748887e-05
+          ],
+          "relative_l2": [
+            4.895401201170415e-06,
+            2.7877660789627984e-06
+          ]
+        },
+        "particles": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "particle_tangent": {
+          "finite": true,
+          "maximum_absolute": 0.65625,
+          "maximum_scaled": 0.0448455810546875,
+          "per_row_maximum_absolute": [
+            0.65625,
+            0.40234375
+          ],
+          "per_row_maximum_scaled": [
+            0.0448455810546875,
+            0.032121896743774414
+          ],
+          "relative_l2": [
+            1.2396676856849128e-05,
+            1.3690270136467182e-05
+          ]
+        }
+      },
+      "staged_value": [
+        -342.6138610839844,
+        -342.8773498535156
+      ],
+      "staged_score": [
+        [
+          -181.25845336914062,
+          111.58876037597656,
+          -6.353815078735352
+        ],
+        [
+          -199.57666015625,
+          107.68445587158203,
+          1.6117229461669922
+        ]
+      ],
+      "fused_value": [
+        -342.6138610839844,
+        -342.8773498535156
+      ],
+      "fused_score": [
+        [
+          -181.2589874267578,
+          111.58946990966797,
+          -6.353269100189209
+        ],
+        [
+          -199.5761260986328,
+          107.68412017822266,
+          1.6117651462554932
+        ]
+      ],
+      "fused_score_trace": [
+        [
+          [
+            -0.8914163112640381,
+            0.33532828092575073,
+            -7.228534698486328
+          ],
+          [
+            1.407320499420166,
+            -0.35957950353622437,
+            2.073514461517334
+          ],
+          [
+            -1.7722902297973633,
+            0.15779325366020203,
+            0.44935473799705505
+          ],
+          [
+            -34.063926696777344,
+            15.238076210021973,
+            -0.9806455373764038
+          ],
+          [
+            -26.135400772094727,
+            16.775474548339844,
+            0.5135248899459839
+          ],
+          [
+            -92.53125,
+            71.2789306640625,
+            3.936614513397217
+          ],
+          [
+            -25.388320922851562,
+            40.203025817871094,
+            2.9452545642852783
+          ],
+          [
+            -6.674961566925049,
+            6.866952896118164,
+            -1.1582638025283813
+          ],
+          [
+            -9.38749885559082,
+            -48.275672912597656,
+            -0.1916276216506958
+          ],
+          [
+            14.178752899169922,
+            9.369128227233887,
+            -6.712460517883301
+          ]
+        ],
+        [
+          [
+            -0.9379401206970215,
+            0.35290658473968506,
+            -7.236368179321289
+          ],
+          [
+            0.9465525150299072,
+            -0.17871715128421783,
+            1.9991434812545776
+          ],
+          [
+            -3.4347000122070312,
+            0.8541254997253418,
+            0.43782317638397217
+          ],
+          [
+            -38.11021423339844,
+            17.11095428466797,
+            -0.9264432191848755
+          ],
+          [
+            -32.551963806152344,
+            19.773305892944336,
+            -0.29186832904815674
+          ],
+          [
+            -111.96293640136719,
+            80.0029296875,
+            4.531576156616211
+          ],
+          [
+            -28.20862579345703,
+            41.303802490234375,
+            6.976774215698242
+          ],
+          [
+            0.12692876160144806,
+            0.9958664774894714,
+            -1.1845542192459106
+          ],
+          [
+            2.1421256065368652,
+            -58.01416778564453,
+            0.030932866036891937
+          ],
+          [
+            12.414661407470703,
+            5.483124732971191,
+            -2.7252514362335205
+          ]
+        ]
+      ],
+      "trace_count": 1
+    },
+    "float64": {
+      "passed": true,
+      "valid": true,
+      "differences": {
+        "value": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "score": {
+          "finite": true,
+          "maximum_absolute": 2.3590018827235326e-12,
+          "maximum_scaled": 6.963119693413776e-14,
+          "per_row_maximum_absolute": [
+            2.3590018827235326e-12,
+            4.121147867408581e-13
+          ],
+          "per_row_maximum_scaled": [
+            6.963119693413776e-14,
+            5.029586232406492e-14
+          ],
+          "relative_l2": [
+            1.1658623367224476e-14,
+            1.9140179106213907e-15
+          ]
+        },
+        "particles": {
+          "finite": true,
+          "maximum_absolute": 0.0,
+          "maximum_scaled": 0.0,
+          "per_row_maximum_absolute": [
+            0.0,
+            0.0
+          ],
+          "per_row_maximum_scaled": [
+            0.0,
+            0.0
+          ],
+          "relative_l2": [
+            0.0,
+            0.0
+          ]
+        },
+        "particle_tangent": {
+          "finite": true,
+          "maximum_absolute": 2.5174813345074654e-09,
+          "maximum_scaled": 1.531361704110168e-10,
+          "per_row_maximum_absolute": [
+            2.5174813345074654e-09,
+            5.420588422566652e-10
+          ],
+          "per_row_maximum_scaled": [
+            1.531361704110168e-10,
+            5.246514334089625e-11
+          ],
+          "relative_l2": [
+            5.194215768330553e-14,
+            2.1957720103224783e-14
+          ]
+        }
+      },
+      "staged_value": [
+        -342.61393742045016,
+        -342.87733374246847
+      ],
+      "staged_score": [
+        [
+          -177.4316732700764,
+          109.96108233264286,
+          -5.408317916882619
+        ],
+        [
+          -200.14689599327315,
+          107.93170190343086,
+          1.6246349269432985
+        ]
+      ],
+      "fused_value": [
+        -342.61393742045016,
+        -342.87733374246847
+      ],
+      "fused_score": [
+        [
+          -177.43167327007876,
+          109.96108233264333,
+          -5.408317916882242
+        ],
+        [
+          -200.14689599327326,
+          107.93170190343045,
+          1.6246349269433802
+        ]
+      ],
+      "fused_score_trace": [
+        [
+          [
+            -0.8914168904924449,
+            0.3353285393916572,
+            -7.2285352937294345
+          ],
+          [
+            1.4073178978015242,
+            -0.3595778918626098,
+            2.073512360913176
+          ],
+          [
+            -1.772433600626081,
+            0.15784984089524737,
+            0.4494059521066178
+          ],
+          [
+            -34.061076936967275,
+            15.236801855291901,
+            -0.9818276730006527
+          ],
+          [
+            -25.759711797358932,
+            16.636774671771583,
+            0.5606585049314796
+          ],
+          [
+            -92.92064983110677,
+            71.44277478387717,
+            3.948662545684373
+          ],
+          [
+            -25.226411282726183,
+            40.143300434595375,
+            3.3092693439793575
+          ],
+          [
+            -5.959664195458592,
+            6.568689301362715,
+            -1.1400104982073742
+          ],
+          [
+            -7.841094661200922,
+            -48.99164102810343,
+            -0.43163859556861417
+          ],
+          [
+            15.59346802805692,
+            8.790781825423705,
+            -5.967814563991171
+          ]
+        ],
+        [
+          [
+            -0.9379400468188736,
+            0.3529065788905993,
+            -7.23636825039395
+          ],
+          [
+            0.9465525748794553,
+            -0.1787191501201062,
+            1.9991428935093514
+          ],
+          [
+            -3.434409935037514,
+            0.8540203912106177,
+            0.43793646863269875
+          ],
+          [
+            -38.1101925821295,
+            17.11089531375659,
+            -0.9270913177729576
+          ],
+          [
+            -32.54608366966037,
+            19.770762428235898,
+            -0.2908664364893944
+          ],
+          [
+            -111.8834068381006,
+            79.96958605399797,
+            4.527765096681627
+          ],
+          [
+            -28.01218973261988,
+            41.22075207619453,
+            6.982958097304687
+          ],
+          [
+            -1.07318624309216,
+            1.5107225490384288,
+            -1.18217708002351
+          ],
+          [
+            3.7083319932457934,
+            -58.6774886503838,
+            0.034328954998392655
+          ],
+          [
+            11.195628486060361,
+            5.998264312609734,
+            -2.720993499503564
+          ]
+        ]
+      ],
+      "trace_count": 1
+    }
+  },
+  "wall_seconds": 172.66778638307005,
+  "staging_preserves_fused_outputs": false,
+  "trace_counts": {
+    "float32": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "float64": [
+      1,
+      1,
+      1,
+      1
+    ]
+  }
+}

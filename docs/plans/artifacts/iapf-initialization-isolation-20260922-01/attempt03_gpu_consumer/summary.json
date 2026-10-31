@@ -1,0 +1,220 @@
+{
+  "environment": {
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "build": {
+      "cpu_compiler": "/home/chakwong/python/results/gpu/tf-dual-gpu-sm120-exec-20260807-20260807-184528/route_b/clang20-ubuntu-gcc11",
+      "cuda_compute_capabilities": [
+        "sm_89",
+        "compute_120"
+      ],
+      "cuda_version": "12.8.1",
+      "cudnn_version": "9",
+      "is_cuda_build": true,
+      "is_rocm_build": false,
+      "is_tensorrt_build": false
+    },
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "device": "gpu",
+    "dtype": "float64",
+    "jit_compile": true,
+    "tf32": false,
+    "visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "allocator": {
+      "current": 7680,
+      "peak": 5962240
+    }
+  },
+  "cases": 24,
+  "complete": 19,
+  "candidate_rejected": 5,
+  "derivative_checks": [
+    {
+      "attempts": [
+        {
+          "h": 1e-05,
+          "labels_stable": false
+        },
+        {
+          "h": 1e-06,
+          "labels_stable": true
+        }
+      ],
+      "selected": {
+        "h": 1e-06,
+        "finite_differences": [
+          [
+            2.602652179994891,
+            1.2529682340556292,
+            0.08438134635468941,
+            2.3672368723026693,
+            -1.5743417733915521,
+            1.3843922825884647
+          ],
+          [
+            2.602652182659426,
+            1.252968235831986,
+            0.08438134457833257,
+            2.3672368705263125,
+            -1.5743417698388384,
+            1.3843922808121079
+          ]
+        ],
+        "analytical_score": [
+          2.6026521793933672,
+          1.2529682348864122,
+          0.0843813471931274,
+          2.3672368712087644,
+          -1.5743417731594398,
+          1.3843922828923443
+        ],
+        "max_error": 3.3206013494435638e-09,
+        "pass_derivative": true
+      },
+      "status": "pass"
+    },
+    {
+      "attempts": [
+        {
+          "h": 1e-05,
+          "labels_stable": true
+        }
+      ],
+      "selected": {
+        "h": 1e-05,
+        "finite_differences": [
+          [
+            1.6711749607267732,
+            -1.057038012319822,
+            -0.6375723446083725,
+            -0.711608321779522,
+            -0.4210387624326017,
+            0.3619059983250849
+          ],
+          [
+            1.6711749607267732,
+            -1.057038012319822,
+            -0.6375723442531012,
+            -0.711608321779522,
+            -0.42103876296550874,
+            0.3619059985027206
+          ]
+        ],
+        "analytical_score": [
+          1.6711749609188653,
+          -1.0570380122828074,
+          -0.6375723445008069,
+          -0.7116083218432232,
+          -0.4210387626269797,
+          0.3619059983553813
+        ],
+        "max_error": 3.3852903813524904e-10,
+        "pass_derivative": true
+      },
+      "status": "pass"
+    },
+    {
+      "attempts": [
+        {
+          "h": 1e-05,
+          "labels_stable": true
+        }
+      ],
+      "selected": {
+        "h": 1e-05,
+        "finite_differences": [
+          [
+            14.541061553074995,
+            2.5561987511579787,
+            -1.014109980346234,
+            7.86517860156266,
+            6.2120124129094725,
+            2.8419302944726605
+          ],
+          [
+            14.541061561956779,
+            2.556198752046157,
+            -1.0141099799909625,
+            7.865178600141575,
+            6.212012413087108,
+            2.8419302950055676
+          ]
+        ],
+        "analytical_score": [
+          14.54106156454853,
+          2.556198751715738,
+          -1.0141099798708963,
+          7.865178599788835,
+          6.212012413253742,
+          2.8419302947824034
+        ],
+        "max_error": 1.1473535010964042e-08,
+        "pass_derivative": true
+      },
+      "status": "pass"
+    },
+    {
+      "attempts": [
+        {
+          "h": 1e-05,
+          "labels_stable": true
+        }
+      ],
+      "selected": {
+        "h": 1e-05,
+        "finite_differences": [
+          [
+            2.2375363517568303,
+            1.6397287147640325,
+            5.772288178462758,
+            1.1172768829226243,
+            0.04063578806778878,
+            0.18791015605756908
+          ],
+          [
+            2.237536351401559,
+            1.6397287147640325,
+            5.772288177752215,
+            1.1172768822120815,
+            0.04063578771251741,
+            0.18791015534702635
+          ]
+        ],
+        "analytical_score": [
+          2.2375363515081004,
+          1.6397287150881057,
+          5.772288178195205,
+          1.1172768830804392,
+          0.04063578794510858,
+          0.18791015542706063
+        ],
+        "max_error": 8.683576080414923e-10,
+        "pass_derivative": true
+      },
+      "status": "pass"
+    }
+  ],
+  "statistical_ranking": "not supported; conditional diagnostics only",
+  "default_readiness": false
+}

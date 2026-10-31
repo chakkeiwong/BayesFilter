@@ -1,0 +1,310 @@
+{
+  "schema": "bayesfilter.inference_validation_suite.v1",
+  "suite_id": "closure-c1-direct-pricing-20260925",
+  "profile": "development",
+  "profiles": {
+    "development": [
+      "stopping"
+    ]
+  },
+  "designs": [
+    {
+      "design_id": "c1-price-0-0-20260925",
+      "engine": "stopping",
+      "scenario": {
+        "target": "gaussian",
+        "route": "ordinary",
+        "control": "baseline",
+        "start": "dispersed",
+        "parameters": {
+          "scale": 1.0
+        }
+      },
+      "replications": 1,
+      "draws": 500,
+      "seed": 2026092501,
+      "budget_seconds": 900,
+      "purpose": "Direct full-fit cost without a fixed comparator; development only",
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+      "device": "gpu",
+      "alpha": 0.05,
+      "null_draws": 1999,
+      "rank_draws": 7,
+      "step_size": 0.4,
+      "leapfrog_steps": 5,
+      "member_l": 3,
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "measurement_draws": 128,
+      "posterior_cap": 20000,
+      "mcse_tolerance": 0.05,
+      "accuracy_tolerance": 0.25,
+      "multiplicity": 1,
+      "phase": "development",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "member_rule": "first_verified",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+        "posterior_count_budget": {
+          "count_budget_reason": "Inherited M29 developmental hypothesis; bounded counts tested under September 24 B2; no default promotion",
+          "max_results_per_chain": 60000
+        },
+        "posterior_members": "selected",
+        "posterior_precision_method": "lugsail",
+        "posterior_settings": {
+          "retained_chunk_results": 2000,
+          "retained_max_results": 20000,
+          "retained_min_results": 4000,
+          "warmup_check_window_results": 30000,
+          "warmup_chunk_results": 5000,
+          "warmup_max_results": 60000,
+          "warmup_min_results": 30000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "coverage_floor": 0.9,
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 750,
+        "timeout_policy": {
+          "max_extension_seconds": 120,
+          "shutdown_grace_seconds": 1.0
+        }
+      }
+    },
+    {
+      "design_id": "c1-price-0-1-20260925",
+      "engine": "stopping",
+      "scenario": {
+        "target": "gaussian",
+        "route": "ordinary",
+        "control": "baseline",
+        "start": "dispersed",
+        "parameters": {
+          "scale": 1.0
+        }
+      },
+      "replications": 1,
+      "draws": 500,
+      "seed": 2026092502,
+      "budget_seconds": 900,
+      "purpose": "Direct full-fit cost without a fixed comparator; development only",
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+      "device": "gpu",
+      "alpha": 0.05,
+      "null_draws": 1999,
+      "rank_draws": 7,
+      "step_size": 0.4,
+      "leapfrog_steps": 5,
+      "member_l": 3,
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "measurement_draws": 128,
+      "posterior_cap": 20000,
+      "mcse_tolerance": 0.05,
+      "accuracy_tolerance": 0.25,
+      "multiplicity": 1,
+      "phase": "development",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "member_rule": "first_verified",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+        "posterior_count_budget": {
+          "count_budget_reason": "Inherited M29 developmental hypothesis; bounded counts tested under September 24 B2; no default promotion",
+          "max_results_per_chain": 60000
+        },
+        "posterior_members": "selected",
+        "posterior_precision_method": "lugsail",
+        "posterior_settings": {
+          "retained_chunk_results": 2000,
+          "retained_max_results": 20000,
+          "retained_min_results": 4000,
+          "warmup_check_window_results": 30000,
+          "warmup_chunk_results": 5000,
+          "warmup_max_results": 60000,
+          "warmup_min_results": 30000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "coverage_floor": 0.9,
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 750,
+        "timeout_policy": {
+          "max_extension_seconds": 120,
+          "shutdown_grace_seconds": 1.0
+        }
+      }
+    },
+    {
+      "design_id": "c1-price-1-0-20260925",
+      "engine": "stopping",
+      "scenario": {
+        "target": "beta_binomial",
+        "route": "ordinary",
+        "control": "baseline",
+        "start": "dispersed",
+        "parameters": {
+          "alpha": 2.0,
+          "beta": 3.0,
+          "n": 12
+        }
+      },
+      "replications": 1,
+      "draws": 500,
+      "seed": 2026092503,
+      "budget_seconds": 900,
+      "purpose": "Direct full-fit cost without a fixed comparator; development only",
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+      "device": "gpu",
+      "alpha": 0.05,
+      "null_draws": 1999,
+      "rank_draws": 7,
+      "step_size": 0.4,
+      "leapfrog_steps": 5,
+      "member_l": 3,
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "measurement_draws": 128,
+      "posterior_cap": 10000,
+      "mcse_tolerance": 0.005,
+      "accuracy_tolerance": 0.25,
+      "multiplicity": 1,
+      "phase": "development",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "data": [
+          5,
+          12
+        ],
+        "data_provenance": "fixed synthetic observations declared before execution",
+        "member_rule": "first_verified",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+        "posterior_members": "selected",
+        "posterior_precision_method": "lugsail",
+        "posterior_settings": {
+          "retained_chunk_results": 1000,
+          "retained_max_results": 10000,
+          "retained_min_results": 5000,
+          "warmup_check_window_results": 1000,
+          "warmup_chunk_results": 500,
+          "warmup_max_results": 10000,
+          "warmup_min_results": 2000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "coverage_floor": 0.9,
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 750,
+        "timeout_policy": {
+          "max_extension_seconds": 120,
+          "shutdown_grace_seconds": 1.0
+        }
+      }
+    },
+    {
+      "design_id": "c1-price-1-1-20260925",
+      "engine": "stopping",
+      "scenario": {
+        "target": "beta_binomial",
+        "route": "ordinary",
+        "control": "baseline",
+        "start": "dispersed",
+        "parameters": {
+          "alpha": 2.0,
+          "beta": 3.0,
+          "n": 12
+        }
+      },
+      "replications": 1,
+      "draws": 500,
+      "seed": 2026092504,
+      "budget_seconds": 900,
+      "purpose": "Direct full-fit cost without a fixed comparator; development only",
+      "numerical_provenance": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+      "device": "gpu",
+      "alpha": 0.05,
+      "null_draws": 1999,
+      "rank_draws": 7,
+      "step_size": 0.4,
+      "leapfrog_steps": 5,
+      "member_l": 3,
+      "l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "measurement_draws": 128,
+      "posterior_cap": 10000,
+      "mcse_tolerance": 0.005,
+      "accuracy_tolerance": 0.25,
+      "multiplicity": 1,
+      "phase": "development",
+      "options": {
+        "bootstrap_initialization_rounds": 20,
+        "data": [
+          5,
+          12
+        ],
+        "data_provenance": "fixed synthetic observations declared before execution",
+        "member_rule": "first_verified",
+        "metric_evidence_policy": "finite_window",
+        "metric_probe_num_results": 16,
+        "native_search": true,
+        "plan_file": "docs/plans/bayesfilter-hmc-gap-closure-phases-2026-09-24.md",
+        "posterior_members": "selected",
+        "posterior_precision_method": "lugsail",
+        "posterior_settings": {
+          "retained_chunk_results": 1000,
+          "retained_max_results": 10000,
+          "retained_min_results": 5000,
+          "warmup_check_window_results": 1000,
+          "warmup_chunk_results": 500,
+          "warmup_max_results": 10000,
+          "warmup_min_results": 2000
+        },
+        "preparation_bound_expansion_steps": 1,
+        "preparation_max_restarts": 3,
+        "preparation_preset": "standard",
+        "coverage_floor": 0.9,
+        "isolate_fits": true,
+        "fit_process_timeout_seconds": 750,
+        "timeout_policy": {
+          "max_extension_seconds": 120,
+          "shutdown_grace_seconds": 1.0
+        }
+      }
+    }
+  ]
+}

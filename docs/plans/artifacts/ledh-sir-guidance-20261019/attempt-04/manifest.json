@@ -1,0 +1,2113 @@
+{
+  "status": "complete",
+  "command": [
+    "scripts/run_ledh_sir_guidance.py",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04",
+    "--seconds",
+    "3600",
+    "--guides-from",
+    "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-02",
+    "--resume-from",
+    "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-02",
+    "--quarantine-diagnostic",
+    "docs/plans/artifacts/ledh-sir-guidance-20261019/reset-diagnostic-01/diagnostic.json"
+  ],
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "environment": "tftwogpu",
+  "created_utc": "2026-10-18T17:31:04.004005+00:00",
+  "git_commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+  "git_status": [
+    " M bayesfilter/highdim/covariance_proposal_tf.py",
+    " M bayesfilter/highdim/ledh_backward_guide_tf.py",
+    " M bayesfilter/highdim/ledh_canonical_reset_score_tf.py",
+    " M bayesfilter/highdim/ledh_canonical_score_tf.py",
+    " M bayesfilter/highdim/ledh_unified_reset_tf.py",
+    " M bayesfilter/score_study/control_diagnostics_tf.py",
+    " M docs/papers/ledh_younis_kdm_score/ledh_backward_guidance.tex",
+    " M docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf",
+    " M docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.tex",
+    " M docs/plans/artifacts/ledh-backward-guide-20261015/checkpoint.md",
+    " M docs/plans/controlled-smc-kdm-checkpoint.md",
+    " M docs/plans/controlled-smc-kdm-replication-master-program-20260928.md",
+    " M docs/plans/ledh-backward-guide-integration-20261015.md",
+    " M docs/plans/younis-kdm-score-master-program-2026-09-14.md",
+    " M tests/highdim/test_ledh_backward_guide_tf.py",
+    " M tests/highdim/test_ledh_unified_reset.py",
+    "?? bayesfilter/highdim/gaussian_mixture_conditioning_tf.py",
+    "?? bayesfilter/score_study/backward_guide_pilot_tf.py",
+    "?? bayesfilter/score_study/conditional_cloud_design.py",
+    "?? bayesfilter/score_study/guidance_factorial_design.py",
+    "?? bayesfilter/score_study/guided_mixture_diagnostic_tf.py",
+    "?? bayesfilter/score_study/ksc_fitted_guides_diagnostic_tf.py",
+    "?? bayesfilter/score_study/ksc_guidance_diagnostic_tf.py",
+    "?? bayesfilter/score_study/ksc_information_diagnostic_tf.py",
+    "?? bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py",
+    "?? docs/benchmarks/run_ledh_sir_diagnostic.py",
+    "?? docs/plans/artifacts/ledh-backward-guide-jacobian-20261016/",
+    "?? docs/plans/artifacts/ledh-conditional-clouds-20261016/",
+    "?? docs/plans/artifacts/ledh-fitted-guide-20261016/",
+    "?? docs/plans/artifacts/ledh-gaussian-score-error-20261016/",
+    "?? docs/plans/artifacts/ledh-guidance-beta-factorial-20261016/",
+    "?? docs/plans/artifacts/ledh-guided-mixture-score-20261016/",
+    "?? docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/",
+    "?? docs/plans/artifacts/ledh-ksc-guidance-20261017/",
+    "?? docs/plans/artifacts/ledh-ksc-information-20261017/",
+    "?? docs/plans/artifacts/ledh-message-consumer-20261018/",
+    "?? docs/plans/artifacts/ledh-mixture-guide-20261016/",
+    "?? docs/plans/artifacts/ledh-mixture-product-20261018/",
+    "?? docs/plans/artifacts/ledh-ot-balance-weight-20261016/",
+    "?? docs/plans/artifacts/ledh-particle-count-followup-20261018/",
+    "?? docs/plans/artifacts/ledh-particle-count-stress-20261018/",
+    "?? docs/plans/artifacts/ledh-sir-diagnostic-20261018/",
+    "?? docs/plans/artifacts/ledh-sir-guidance-20261019/",
+    "?? docs/plans/ledh-backward-guide-jacobian-validation-20261016.md",
+    "?? docs/plans/ledh-conditional-cloud-localization-20261016.md",
+    "?? docs/plans/ledh-fitted-guide-pilot-20261016.md",
+    "?? docs/plans/ledh-gaussian-score-error-20261016.md",
+    "?? docs/plans/ledh-guidance-beta-factorial-20261016.md",
+    "?? docs/plans/ledh-guided-mixture-score-comparison-20261016.md",
+    "?? docs/plans/ledh-ksc-fitting-consumer-protocol-20261017.md",
+    "?? docs/plans/ledh-ksc-guidance-audit-20261017.md",
+    "?? docs/plans/ledh-ksc-information-diagnosis-20261017.md",
+    "?? docs/plans/ledh-message-consumer-continuation-20261018.md",
+    "?? docs/plans/ledh-mixture-guide-integration-20261016.md",
+    "?? docs/plans/ledh-mixture-product-moment-repair-20261018.md",
+    "?? docs/plans/ledh-ot-balance-weight-localization-20261016.md",
+    "?? docs/plans/ledh-particle-count-followup-20261018.md",
+    "?? docs/plans/ledh-particle-count-stress-repair-20261018.md",
+    "?? docs/plans/ledh-sir-diagnostic-20261018.md",
+    "?? docs/plans/ledh-sir-guidance-execution-20261019.md",
+    "?? scripts/analyze_ledh_conditional_clouds.py",
+    "?? scripts/analyze_ledh_guidance_factorial.py",
+    "?? scripts/analyze_ledh_guided_mixture_score.py",
+    "?? scripts/analyze_ledh_ksc_fitted_guides.py",
+    "?? scripts/analyze_ledh_message_consumer_diagnostic.py",
+    "?? scripts/analyze_ledh_mixture_product_diagnostic.py",
+    "?? scripts/analyze_ledh_particle_count_stress_diagnostic.py",
+    "?? scripts/analyze_ledh_sir_guidance.py",
+    "?? scripts/audit_ledh_ksc_fitted_guides.py",
+    "?? scripts/audit_ledh_ksc_guidance_diagnostic.py",
+    "?? scripts/diagnose_ledh_factorial_calibration.py",
+    "?? scripts/diagnose_ledh_ksc_information.py",
+    "?? scripts/diagnose_ledh_mixture_score_failure.py",
+    "?? scripts/diagnose_sir_global_reset.py",
+    "?? scripts/run_ledh_conditional_clouds.py",
+    "?? scripts/run_ledh_fitted_guide_pilot.py",
+    "?? scripts/run_ledh_gaussian_score_error.py",
+    "?? scripts/run_ledh_guided_mixture_score.py",
+    "?? scripts/run_ledh_ksc_fitted_guides.py",
+    "?? scripts/run_ledh_ksc_guidance_diagnostic.py",
+    "?? scripts/run_ledh_message_consumer_diagnostic.py",
+    "?? scripts/run_ledh_mixture_guide_check.py",
+    "?? scripts/run_ledh_mixture_product_diagnostic.py",
+    "?? scripts/run_ledh_particle_count_stress_diagnostic.py",
+    "?? scripts/run_ledh_sir_guidance.py",
+    "?? tests/highdim/test_conditional_cloud_analysis.py",
+    "?? tests/highdim/test_covariance_proposal_guide.py",
+    "?? tests/highdim/test_gaussian_mixture_conditioning_tf.py",
+    "?? tests/highdim/test_guidance_factorial_analysis.py",
+    "?? tests/highdim/test_guided_mixture_analysis.py",
+    "?? tests/highdim/test_guided_mixture_diagnostic_tf.py",
+    "?? tests/highdim/test_ksc_fitted_campaign_analysis.py",
+    "?? tests/highdim/test_ksc_fitted_campaign_xla_smoke.py",
+    "?? tests/highdim/test_ksc_fitted_guides_diagnostic_tf.py",
+    "?? tests/highdim/test_ksc_guidance_diagnostic_tf.py",
+    "?? tests/highdim/test_ksc_information_diagnostic_tf.py",
+    "?? tests/highdim/test_ledh_fitted_guide_tf.py",
+    "?? tests/highdim/test_ledh_gaussian_score_error_tf.py",
+    "?? tests/highdim/test_sir_backward_guidance.py",
+    "?? tests/highdim/test_sir_guidance_analysis.py",
+    "?? tests/highdim/test_sir_guidance_resume.py"
+  ],
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "cpu_only": false,
+  "cuda_visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "xla_flags": "--xla_gpu_enable_command_buffer=",
+  "plan": "docs/plans/ledh-sir-guidance-execution-20261019.md",
+  "result": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/result.md",
+  "budget_seconds": 3600.0,
+  "output": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04",
+  "completed_rows": 96,
+  "planned_rows": 96,
+  "particles": 256,
+  "horizon": 50,
+  "reset_epsilon": 1.0,
+  "reset_steps": 5,
+  "arms": {
+    "plain": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "csmc_quadratic": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "kernel": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "prior": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "global": [
+      0.1,
+      0.9,
+      0.0
+    ],
+    "local": [
+      0.1,
+      0.0,
+      0.9
+    ]
+  },
+  "evidence_role": "noncanonical_frozen_guidance_diagnostic_not_original_kdm",
+  "guide_fitting": {
+    "particles": 512,
+    "validation_count": 256,
+    "components": 32,
+    "bandwidths": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "nnls_iterations": 200,
+    "csmc_passes": 1,
+    "precision_policy": "none",
+    "solver": "centered_qr"
+  },
+  "reference": {
+    "path": "docs/plans/artifacts/ledh-independent-validation-20261008-01/report-20261009-011148/comparison.json",
+    "sha256": "3f0f6e4f591a724db52abe8a22435b85d5bcafd888efe566f27f9519ab806e01",
+    "datasets": {
+      "26100831": {
+        "value": -1715.6097948171039,
+        "score": [
+          -157.11039650174231,
+          104.57831048996057,
+          56.86070139879417
+        ],
+        "replications": 2,
+        "value_se": 0.012804872131937373,
+        "score_se": [
+          1.0730237734705952,
+          1.6595666145057564,
+          0.05650986375427891
+        ],
+        "complete": true,
+        "kind": "author-path importance/quadratic numerical reference; rank/support/radius bias not bounded",
+        "fits": [
+          {
+            "value": -1715.5970719251068,
+            "score": [
+              -156.05111190957993,
+              106.21662772754338,
+              56.91648770051467
+            ],
+            "value_se": 0.008112016962677134,
+            "score_se": [
+              5.614462834324712,
+              3.1929852511819306,
+              0.07851354397292482
+            ],
+            "fit_seed": 41,
+            "rank": 20,
+            "radius": 0.00015625,
+            "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/021-score-sir_d18-d26100831-fit41/result.json",
+            "provenance": {
+              "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/017-zhao-sir_d18-d26100831-fit41",
+              "parent_status": "complete",
+              "manifest_sha256": "a3230ffe497f633404dd1b6cd2f2268dc25e1c4bc92da089566c85021f8d53c1",
+              "smoothing_sha256": "9a47c9b14348f8a40c69b22808ec787f43f707a872eb1f917a6280e75018888e",
+              "observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+              "source_observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+              "source_horizon": 50,
+              "horizon": 50,
+              "fit_seed": 41,
+              "smooth_seed": 3041,
+              "rank": 20,
+              "samples": 100000,
+              "target_parity_max": 2.3283064365386963e-10,
+              "evaluated_paths": 100000,
+              "joint_density_parity_max": 4.092726157978177e-12,
+              "log_likelihood": -1715.5970719251068,
+              "ess": 14105.32734198738,
+              "max_weight": 0.002046784367554508,
+              "zero_weight_count": 0,
+              "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+              "prefix_baselines": [
+                {
+                  "paths": 25000,
+                  "log_likelihood": -1715.6122055278067,
+                  "ess": 4137.798553390316
+                },
+                {
+                  "paths": 50000,
+                  "log_likelihood": -1715.5999361939375,
+                  "ess": 7142.633718247801
+                }
+              ],
+              "maximum_baseline_group_mass": 0.053000948922672486,
+              "conditional_log_likelihood_jackknife_se": 0.008112016962677134
+            },
+            "estimates": [
+              {
+                "proposal": 0,
+                "radius": 0.000625,
+                "score": [
+                  -155.73792626259518,
+                  106.04616803503046,
+                  56.88765193838414
+                ],
+                "hessian": [
+                  [
+                    -7977.526343248844,
+                    5753.640027713177,
+                    189.72471057992945
+                  ],
+                  [
+                    5753.640027713177,
+                    -12471.304355269,
+                    -153.24956088030166
+                  ],
+                  [
+                    189.72471057992945,
+                    -153.24956088030166,
+                    -956.3058927136598
+                  ]
+                ],
+                "central_difference": [
+                  -155.67855968996582,
+                  106.20594059227813,
+                  56.91839932444864
+                ],
+                "linear_regression": [
+                  -155.73792626259518,
+                  106.04616803503035,
+                  56.88765193838417
+                ],
+                "central_minus_quadratic": [
+                  0.05936657262935796,
+                  0.15977255724766337,
+                  0.030747386064504667
+                ],
+                "linear_minus_quadratic": [
+                  0.0,
+                  -1.1368683772161603e-13,
+                  2.842170943040401e-14
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 7.196636280055081e-05,
+                "training_residual_max": 0.00023752667958978901,
+                "heldout_residual_rms": 7.6791850826053e-05,
+                "heldout_residual_max": 0.00029669341420351936,
+                "ess_min": 9796.961194460408,
+                "ess_median": 13429.932599745853,
+                "max_weight_max": 0.002434403163111052,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -136.80139142828656,
+                      103.08361827510659,
+                      56.799668855853966
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -147.50683656745002,
+                      102.16887078012732,
+                      56.83564207456798
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    5.6737562071601335,
+                    3.1487992084890215,
+                    0.07442027515616086
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -156.32892166390738,
+                      105.99362410194544,
+                      56.87381561479864
+                    ],
+                    [
+                      -157.91041808350684,
+                      106.02655646425936,
+                      56.884448461499645
+                    ],
+                    [
+                      -156.10924323604397,
+                      105.8959503303617,
+                      56.88351804182846
+                    ],
+                    [
+                      -155.4226190547405,
+                      106.05846205469858,
+                      56.91384253734992
+                    ],
+                    [
+                      -157.8317411806552,
+                      107.02930262015546,
+                      56.905988007875095
+                    ],
+                    [
+                      -154.21455338156673,
+                      105.52378282956099,
+                      56.85698674361489
+                    ],
+                    [
+                      -154.7929141485422,
+                      105.16288327415346,
+                      56.898229054281586
+                    ],
+                    [
+                      -156.5198181524389,
+                      106.7658606352915,
+                      56.90616632909007
+                    ],
+                    [
+                      -157.07909757952675,
+                      107.52384318283421,
+                      56.898597946697656
+                    ],
+                    [
+                      -155.47986719353938,
+                      106.51429908223813,
+                      56.881999305566254
+                    ],
+                    [
+                      -156.88987567823617,
+                      105.71151423124611,
+                      56.86220240000844
+                    ],
+                    [
+                      -153.93880127650382,
+                      106.09466874778414,
+                      56.88324726541356
+                    ],
+                    [
+                      -155.84014988236578,
+                      105.79243328705425,
+                      56.91291369301885
+                    ],
+                    [
+                      -152.99436120015986,
+                      104.73862190752337,
+                      56.901773666162214
+                    ],
+                    [
+                      -154.29933691250616,
+                      105.84371508011499,
+                      56.88835500956031
+                    ],
+                    [
+                      -155.29715214659007,
+                      106.04487743562237,
+                      56.90078247076391
+                    ],
+                    [
+                      -156.57649245039428,
+                      106.67663218883587,
+                      56.87812893603502
+                    ],
+                    [
+                      -155.8200766661093,
+                      105.14458322022739,
+                      56.85240240716701
+                    ],
+                    [
+                      -154.39220590803873,
+                      105.11693384417171,
+                      56.887258601262815
+                    ],
+                    [
+                      -157.0102810810656,
+                      107.25755033375816,
+                      56.88206573333895
+                    ]
+                  ]
+                }
+              },
+              {
+                "proposal": 0,
+                "radius": 0.00015625,
+                "score": [
+                  -156.05111190957993,
+                  106.21662772754338,
+                  56.91648770051467
+                ],
+                "hessian": [
+                  [
+                    -7978.143644689421,
+                    5776.345462043429,
+                    188.41985825435293
+                  ],
+                  [
+                    5776.345462043429,
+                    -12493.98422061261,
+                    -152.01174530240016
+                  ],
+                  [
+                    188.41985825435293,
+                    -152.01174530240016,
+                    -954.3812506531389
+                  ]
+                ],
+                "central_difference": [
+                  -156.04764890191234,
+                  106.2260397827032,
+                  56.918292222434275
+                ],
+                "linear_regression": [
+                  -156.05111190957973,
+                  106.21662772754325,
+                  56.91648770051469
+                ],
+                "central_minus_quadratic": [
+                  0.0034630076675910004,
+                  0.009412055159813804,
+                  0.0018045219196025641
+                ],
+                "linear_minus_quadratic": [
+                  1.9895196601282805e-13,
+                  -1.2789769243681803e-13,
+                  2.1316282072803006e-14
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 1.049360131554986e-06,
+                "training_residual_max": 3.392704220520071e-06,
+                "heldout_residual_rms": 1.1143634376371751e-06,
+                "heldout_residual_max": 4.20467765164384e-06,
+                "ess_min": 13502.186175654997,
+                "ess_median": 14078.153288516967,
+                "max_weight_max": 0.002144925504781171,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -137.22177533727597,
+                      103.32126919377022,
+                      56.842600505076156
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -147.95251452445353,
+                      102.34611998298355,
+                      56.877745646413366
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    5.614462834324712,
+                    3.1929852511819306,
+                    0.07851354397292482
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -156.64246729255083,
+                      106.17200056657825,
+                      56.90274405091257
+                    ],
+                    [
+                      -158.12689252419497,
+                      106.1199137292804,
+                      56.90402425204372
+                    ],
+                    [
+                      -156.5234894598192,
+                      106.12662976840996,
+                      56.92225713651119
+                    ],
+                    [
+                      -155.70664136935878,
+                      106.21274192045793,
+                      56.940411088564204
+                    ],
+                    [
+                      -158.13693627752235,
+                      107.20386196563453,
+                      56.932224061896505
+                    ],
+                    [
+                      -154.51137395131062,
+                      105.67497042273031,
+                      56.88531170733783
+                    ],
+                    [
+                      -155.13112697682877,
+                      105.36134450033529,
+                      56.929063148432355
+                    ],
+                    [
+                      -156.8394901741681,
+                      106.95219659662503,
+                      56.935677082073774
+                    ],
+                    [
+                      -157.37788664860463,
+                      107.70578924275063,
+                      56.92573284617536
+                    ],
+                    [
+                      -155.7569080558495,
+                      106.66650313143838,
+                      56.90762674725623
+                    ],
+                    [
+                      -157.10281533829584,
+                      105.8245559144976,
+                      56.88443756515251
+                    ],
+                    [
+                      -154.27883426246015,
+                      106.29197561954201,
+                      56.91292551014385
+                    ],
+                    [
+                      -156.12869236470527,
+                      105.94756518926955,
+                      56.93921650864233
+                    ],
+                    [
+                      -153.38497000643608,
+                      104.93590997511804,
+                      56.93693020126713
+                    ],
+                    [
+                      -154.62098446478998,
+                      106.02164647512899,
+                      56.91807465174653
+                    ],
+                    [
+                      -155.63348273435545,
+                      106.23864281926572,
+                      56.93159278008607
+                    ],
+                    [
+                      -156.92595150147545,
+                      106.8440202007858,
+                      56.9105417193522
+                    ],
+                    [
+                      -156.101703070981,
+                      105.28002403506076,
+                      56.879516031095456
+                    ],
+                    [
+                      -154.6631332454941,
+                      105.24984849698757,
+                      56.9124171023831
+                    ],
+                    [
+                      -157.41829563549635,
+                      107.49555578108422,
+                      56.918754032513284
+                    ]
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "value": -1715.6226816693706,
+            "score": [
+              -158.19715945652112,
+              102.89749449853187,
+              56.803467973006114
+            ],
+            "value_se": 0.006333454170443581,
+            "score_se": [
+              7.3742220716002675,
+              3.611315742523312,
+              0.06711999275249164
+            ],
+            "fit_seed": 53,
+            "rank": 20,
+            "radius": 0.00015625,
+            "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/025-score-sir_d18-d26100831-fit53/result.json",
+            "provenance": {
+              "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/023-zhao-sir_d18-d26100831-fit53",
+              "parent_status": "complete",
+              "manifest_sha256": "dbb87ccd44d44555d1dce4f64bd1cb10769065e59149ca0a24c46bc8f70a694e",
+              "smoothing_sha256": "57043e5c03a6b98dfc4d563b8052cbfd1d2c74a096b40ba3f6b93db4acb35481",
+              "observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+              "source_observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+              "source_horizon": 50,
+              "horizon": 50,
+              "fit_seed": 53,
+              "smooth_seed": 3053,
+              "rank": 20,
+              "samples": 100000,
+              "target_parity_max": 2.3283064365386963e-10,
+              "evaluated_paths": 100000,
+              "joint_density_parity_max": 4.547473508864641e-12,
+              "log_likelihood": -1715.6226816693706,
+              "ess": 11145.706497982279,
+              "max_weight": 0.004625769399336438,
+              "zero_weight_count": 0,
+              "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+              "prefix_baselines": [
+                {
+                  "paths": 25000,
+                  "log_likelihood": -1715.6184762978653,
+                  "ess": 1532.0416875228934
+                },
+                {
+                  "paths": 50000,
+                  "log_likelihood": -1715.6232124069388,
+                  "ess": 4409.161773736167
+                }
+              ],
+              "maximum_baseline_group_mass": 0.05249357660964653,
+              "conditional_log_likelihood_jackknife_se": 0.006333454170443581
+            },
+            "estimates": [
+              {
+                "proposal": 0,
+                "radius": 0.000625,
+                "score": [
+                  -158.70413148950718,
+                  103.27087216413821,
+                  56.84833141590539
+                ],
+                "hessian": [
+                  [
+                    -13852.379671533838,
+                    6207.751816132058,
+                    178.41073523643718
+                  ],
+                  [
+                    6207.751816132058,
+                    -11599.123943215072,
+                    -157.86726316204405
+                  ],
+                  [
+                    178.41073523643718,
+                    -157.86726316204405,
+                    -937.5423028158183
+                  ]
+                ],
+                "central_difference": [
+                  -158.76937624500087,
+                  103.03139502434036,
+                  56.80055215525286
+                ],
+                "linear_regression": [
+                  -158.70413148950712,
+                  103.27087216413815,
+                  56.84833141590539
+                ],
+                "central_minus_quadratic": [
+                  -0.06524475549369413,
+                  -0.2394771397978559,
+                  -0.047779260652532685
+                ],
+                "linear_minus_quadratic": [
+                  5.684341886080802e-14,
+                  -5.684341886080802e-14,
+                  0.0
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 0.00012346136049006526,
+                "training_residual_max": 0.00039669253195770415,
+                "heldout_residual_rms": 0.00013400817420052967,
+                "heldout_residual_max": 0.0005589208569566073,
+                "ess_min": 8546.636903860866,
+                "ess_median": 10612.231702636462,
+                "max_weight_max": 0.005133155427331971,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -148.6539674424205,
+                      95.42457071610738,
+                      57.0360653008249
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -167.24458948979668,
+                      105.32926075431945,
+                      56.89602460996901
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    7.378966185652822,
+                    3.568327027518612,
+                    0.07399657201428571
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -159.30474592038306,
+                      104.16487984697538,
+                      56.817312032645475
+                    ],
+                    [
+                      -157.4822873180317,
+                      102.26184733880228,
+                      56.8446466061345
+                    ],
+                    [
+                      -161.50983646378637,
+                      104.95677428006978,
+                      56.84342071850051
+                    ],
+                    [
+                      -159.4477181729136,
+                      103.30303545297605,
+                      56.80688049813383
+                    ],
+                    [
+                      -158.43080062307888,
+                      103.74325717588981,
+                      56.87969123827289
+                    ],
+                    [
+                      -153.50818155594777,
+                      100.97377036531687,
+                      56.84055544936862
+                    ],
+                    [
+                      -157.5123972334962,
+                      102.79717394584328,
+                      56.83936644164812
+                    ],
+                    [
+                      -157.46381719995765,
+                      102.80717560526922,
+                      56.861532122067295
+                    ],
+                    [
+                      -159.4651961662898,
+                      103.66643826851805,
+                      56.85202852116311
+                    ],
+                    [
+                      -158.40428350590852,
+                      102.94384642902376,
+                      56.87206041582089
+                    ],
+                    [
+                      -157.00612495191598,
+                      102.17752368421031,
+                      56.85999147970709
+                    ],
+                    [
+                      -159.92376540781103,
+                      103.84198463581633,
+                      56.83061861933531
+                    ],
+                    [
+                      -160.16380441590226,
+                      103.11148876720041,
+                      56.85171717584259
+                    ],
+                    [
+                      -160.86692761623982,
+                      103.54284165960101,
+                      56.84302868094299
+                    ],
+                    [
+                      -158.701048300758,
+                      103.29172999016882,
+                      56.84993129067002
+                    ],
+                    [
+                      -159.15072665807608,
+                      103.88239020954886,
+                      56.84613371589677
+                    ],
+                    [
+                      -157.13663277724007,
+                      103.53542510802458,
+                      56.856240368120126
+                    ],
+                    [
+                      -159.5829466916438,
+                      102.98932590856298,
+                      56.87035721993696
+                    ],
+                    [
+                      -159.97931813279467,
+                      103.65462266687626,
+                      56.84266991371302
+                    ],
+                    [
+                      -159.0235463792334,
+                      103.76879216796459,
+                      56.858023273489444
+                    ]
+                  ]
+                }
+              },
+              {
+                "proposal": 0,
+                "radius": 0.00015625,
+                "score": [
+                  -158.19715945652112,
+                  102.89749449853187,
+                  56.803467973006114
+                ],
+                "hessian": [
+                  [
+                    -13665.746733661674,
+                    6074.845822770624,
+                    179.33330913638306
+                  ],
+                  [
+                    6074.845822770624,
+                    -11463.69532327682,
+                    -157.49080956189525
+                  ],
+                  [
+                    179.33330913638306,
+                    -157.49080956189525,
+                    -951.1389986121939
+                  ]
+                ],
+                "central_difference": [
+                  -158.2011605816632,
+                  102.88226239212577,
+                  56.800445948505285
+                ],
+                "linear_regression": [
+                  -158.19715945652112,
+                  102.89749449853187,
+                  56.80346797300613
+                ],
+                "central_minus_quadratic": [
+                  -0.004001125142082174,
+                  -0.01523210640610273,
+                  -0.0030220245008294455
+                ],
+                "linear_minus_quadratic": [
+                  0.0,
+                  0.0,
+                  1.4210854715202004e-14
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 1.9604254850435107e-06,
+                "training_residual_max": 6.109946436690106e-06,
+                "heldout_residual_rms": 2.1308478246312134e-06,
+                "heldout_residual_max": 8.45933930192222e-06,
+                "ess_min": 10874.349515620217,
+                "ess_median": 11102.477020405,
+                "max_weight_max": 0.004852227778410828,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -147.70695435745608,
+                      94.7979524948651,
+                      56.94006084738277
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -166.47149364464187,
+                      104.80305679083186,
+                      56.820156084257235
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    7.3742220716002675,
+                    3.611315742523312,
+                    0.06711999275249164
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -158.8530712686445,
+                      103.84528728404119,
+                      56.77825949626482
+                    ],
+                    [
+                      -156.92291328163265,
+                      101.8418365792844,
+                      56.79578133020061
+                    ],
+                    [
+                      -161.03222185551257,
+                      104.60089412292237,
+                      56.80147058059133
+                    ],
+                    [
+                      -159.02616539818237,
+                      102.97259364313507,
+                      56.77056512468358
+                    ],
+                    [
+                      -157.92219645177806,
+                      103.36851961612656,
+                      56.83515774605271
+                    ],
+                    [
+                      -153.09314852833256,
+                      100.62426226606212,
+                      56.80326919273879
+                    ],
+                    [
+                      -156.93574652535108,
+                      102.39818020395845,
+                      56.78864073082761
+                    ],
+                    [
+                      -156.90031084410677,
+                      102.40568554034553,
+                      56.81240989649589
+                    ],
+                    [
+                      -158.99976427426992,
+                      103.31697345611586,
+                      56.81121177829935
+                    ],
+                    [
+                      -157.92046643348704,
+                      102.59458352672969,
+                      56.82905566101425
+                    ],
+                    [
+                      -156.46767715781692,
+                      101.78152595926997,
+                      56.8126223678877
+                    ],
+                    [
+                      -159.41802249145888,
+                      103.4711402418826,
+                      56.78431444669702
+                    ],
+                    [
+                      -159.6234831720478,
+                      102.71564023318051,
+                      56.8041992499921
+                    ],
+                    [
+                      -160.33806966611718,
+                      103.1549177597928,
+                      56.796092254744025
+                    ],
+                    [
+                      -158.14707840625547,
+                      102.88146485927909,
+                      56.80080293857489
+                    ],
+                    [
+                      -158.65596852705156,
+                      103.54102577193692,
+                      56.80061868708499
+                    ],
+                    [
+                      -156.6257314636878,
+                      103.15412311485454,
+                      56.81218654402028
+                    ],
+                    [
+                      -159.04224305902903,
+                      102.58353422990007,
+                      56.82123613764157
+                    ],
+                    [
+                      -159.52673597210315,
+                      103.33197472332375,
+                      56.802534835150105
+                    ],
+                    [
+                      -158.47711288132223,
+                      103.36474592049902,
+                      56.808841365560944
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "uncertainty": "between-fit delete-one; conditional path uncertainty also preserved per fit"
+      },
+      "26100832": {
+        "value": -1689.315871866053,
+        "score": [
+          -135.19081394778084,
+          56.69628763246438,
+          5.8874743984982905
+        ],
+        "replications": 2,
+        "value_se": 0.00614932869916629,
+        "score_se": [
+          1.554121718621559,
+          1.9114904388346012,
+          0.0015390605298644111
+        ],
+        "complete": true,
+        "kind": "author-path importance/quadratic numerical reference; rank/support/radius bias not bounded",
+        "fits": [
+          {
+            "value": -1689.3097414443564,
+            "score": [
+              -133.6462489139863,
+              54.7965514284847,
+              5.88594480203822
+            ],
+            "value_se": 0.006103628928284247,
+            "score_se": [
+              7.6124302087692355,
+              3.234912941745898,
+              0.07349500878581157
+            ],
+            "fit_seed": 41,
+            "rank": 20,
+            "radius": 0.00015625,
+            "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/020-score-sir_d18-d26100832-fit41/result.json",
+            "provenance": {
+              "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/016-zhao-sir_d18-d26100832-fit41",
+              "parent_status": "complete",
+              "manifest_sha256": "69ff63719da49ce0197da67c275716656e2bed08944c153a73e71a2261374827",
+              "smoothing_sha256": "72f85698c2c3e8818e952c957e9cc38434838838214b067bf995ad6728ae8dab",
+              "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+              "source_observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+              "source_horizon": 50,
+              "horizon": 50,
+              "fit_seed": 41,
+              "smooth_seed": 3041,
+              "rank": 20,
+              "samples": 100000,
+              "target_parity_max": 2.3283064365386963e-10,
+              "evaluated_paths": 100000,
+              "joint_density_parity_max": 4.547473508864641e-12,
+              "log_likelihood": -1689.3097414443564,
+              "ess": 18158.553686932944,
+              "max_weight": 0.003358874001002447,
+              "zero_weight_count": 0,
+              "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+              "prefix_baselines": [
+                {
+                  "paths": 25000,
+                  "log_likelihood": -1689.3156238572687,
+                  "ess": 3084.751883201126
+                },
+                {
+                  "paths": 50000,
+                  "log_likelihood": -1689.3166389523435,
+                  "ess": 8326.965186698042
+                }
+              ],
+              "maximum_baseline_group_mass": 0.05252234687705678,
+              "conditional_log_likelihood_jackknife_se": 0.006103628928284247
+            },
+            "estimates": [
+              {
+                "proposal": 0,
+                "radius": 0.000625,
+                "score": [
+                  -134.24482334810315,
+                  55.16737849355475,
+                  5.947759044649447
+                ],
+                "hessian": [
+                  [
+                    -8545.93546080309,
+                    6344.760137821089,
+                    159.16822018017766
+                  ],
+                  [
+                    6344.760137821089,
+                    -13436.919314535133,
+                    -60.583996244100724
+                  ],
+                  [
+                    159.16822018017766,
+                    -60.583996244100724,
+                    -882.5718846759144
+                  ]
+                ],
+                "central_difference": [
+                  -134.42170045296677,
+                  54.83549383411059,
+                  5.8819417217712555
+                ],
+                "linear_regression": [
+                  -134.2448233481031,
+                  55.16737849355475,
+                  5.947759044649425
+                ],
+                "central_minus_quadratic": [
+                  -0.17687710486362107,
+                  -0.3318846594441567,
+                  -0.06581732287819175
+                ],
+                "linear_minus_quadratic": [
+                  5.684341886080802e-14,
+                  0.0,
+                  -2.220446049250313e-14
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 0.00014248619596474708,
+                "training_residual_max": 0.0005113622352322933,
+                "heldout_residual_rms": 0.00014977433075745366,
+                "heldout_residual_max": 0.0005951343558707467,
+                "ess_min": 4864.023489602762,
+                "ess_median": 18058.703668629743,
+                "max_weight_max": 0.012207122654557128,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -153.4585282659139,
+                      61.453353304691845,
+                      6.257400265450976
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -142.79521869223092,
+                      59.205817363499094,
+                      6.033975895727416
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    8.10087286103284,
+                    3.439538387186106,
+                    0.12597706051087593
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -134.39994365417783,
+                      54.76794962220104,
+                      5.950898060361845
+                    ],
+                    [
+                      -133.44785720484433,
+                      54.446495510357636,
+                      5.956098927690781
+                    ],
+                    [
+                      -127.28567857478447,
+                      53.14923951848236,
+                      5.83005860953324
+                    ],
+                    [
+                      -134.83796094350492,
+                      55.4532771405542,
+                      5.955420112490446
+                    ],
+                    [
+                      -136.18536009081674,
+                      56.35466124150749,
+                      5.961810837055032
+                    ],
+                    [
+                      -134.5038124543858,
+                      54.99379736331809,
+                      5.95698753072604
+                    ],
+                    [
+                      -133.1739814351503,
+                      54.61241447363667,
+                      5.957573523119869
+                    ],
+                    [
+                      -134.6800349678813,
+                      55.431992535848806,
+                      5.9458681451541056
+                    ],
+                    [
+                      -135.43045008725375,
+                      55.23331326853845,
+                      5.973277789570834
+                    ],
+                    [
+                      -134.00597903215828,
+                      55.106565352577064,
+                      5.9425257400533305
+                    ],
+                    [
+                      -134.95863772704618,
+                      54.80495375318053,
+                      5.952648967824974
+                    ],
+                    [
+                      -135.8156121341855,
+                      55.96307244442226,
+                      5.9640272200800934
+                    ],
+                    [
+                      -135.19041066504775,
+                      55.74697921285476,
+                      5.936871404838439
+                    ],
+                    [
+                      -133.6964848573047,
+                      55.66162760696229,
+                      5.942085185252402
+                    ],
+                    [
+                      -133.84672515367296,
+                      54.97070054645005,
+                      5.960607197826749
+                    ],
+                    [
+                      -134.38573503390208,
+                      55.13374434584758,
+                      5.948797591640404
+                    ],
+                    [
+                      -135.7310779674447,
+                      55.95750583354013,
+                      5.961363942489358
+                    ],
+                    [
+                      -136.15390678639338,
+                      56.26504061583508,
+                      5.941268200791779
+                    ],
+                    [
+                      -132.59899468906409,
+                      53.63662927517378,
+                      5.940151083802391
+                    ],
+                    [
+                      -134.55034652944943,
+                      55.65374108979007,
+                      5.975371408204972
+                    ]
+                  ]
+                }
+              },
+              {
+                "proposal": 0,
+                "radius": 0.00015625,
+                "score": [
+                  -133.6462489139863,
+                  54.7965514284847,
+                  5.88594480203822
+                ],
+                "hessian": [
+                  [
+                    -9030.377082589224,
+                    6584.731241891903,
+                    178.56920437056672
+                  ],
+                  [
+                    6584.731241891903,
+                    -13571.307712818245,
+                    -73.56203659514068
+                  ],
+                  [
+                    178.56920437056672,
+                    -73.56203659514068,
+                    -859.4635442738348
+                  ]
+                ],
+                "central_difference": [
+                  -133.6570045596801,
+                  54.7757174246982,
+                  5.8818454946390375
+                ],
+                "linear_regression": [
+                  -133.64624891398623,
+                  54.79655142848463,
+                  5.885944802038267
+                ],
+                "central_minus_quadratic": [
+                  -0.010755645693791394,
+                  -0.020834003786497135,
+                  -0.004099307399182628
+                ],
+                "linear_minus_quadratic": [
+                  8.526512829121202e-14,
+                  -7.105427357601002e-14,
+                  4.707345624410664e-14
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 2.2253796701814692e-06,
+                "training_residual_max": 7.442705712526476e-06,
+                "heldout_residual_rms": 2.3434205565400685e-06,
+                "heldout_residual_max": 8.734668365498188e-06,
+                "ess_min": 14923.593583601625,
+                "ess_median": 18149.639442218577,
+                "max_weight_max": 0.004764689046921362,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -151.62854606407126,
+                      60.377443503356986,
+                      6.050101181093642
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -141.99401102046832,
+                      58.75499464982268,
+                      5.941792614536949
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    7.6124302087692355,
+                    3.234912941745898,
+                    0.07349500878581157
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -133.76514629309995,
+                      54.35686654342483,
+                      5.885489286542023
+                    ],
+                    [
+                      -132.8084341276426,
+                      54.05447516707855,
+                      5.89047269863911
+                    ],
+                    [
+                      -127.20018036045096,
+                      53.08726969530703,
+                      5.824834254366409
+                    ],
+                    [
+                      -134.18386862829823,
+                      55.0580064184237,
+                      5.888759050914571
+                    ],
+                    [
+                      -135.55687110998954,
+                      55.961376151287155,
+                      5.896950601079694
+                    ],
+                    [
+                      -133.85862691250486,
+                      54.58784216728228,
+                      5.890387956289616
+                    ],
+                    [
+                      -132.52230442920805,
+                      54.208011847146295,
+                      5.890389512642851
+                    ],
+                    [
+                      -134.08870473202282,
+                      55.07352690789654,
+                      5.882828104962256
+                    ],
+                    [
+                      -134.744620167923,
+                      54.81197872964929,
+                      5.903811060695619
+                    ],
+                    [
+                      -133.35881994968045,
+                      54.69324496089502,
+                      5.876139430345782
+                    ],
+                    [
+                      -134.34853989576953,
+                      54.42226562528567,
+                      5.889741059510003
+                    ],
+                    [
+                      -135.19516777556183,
+                      55.586530779258716,
+                      5.899579875730175
+                    ],
+                    [
+                      -134.53317461801214,
+                      55.326394477953954,
+                      5.869624212334379
+                    ],
+                    [
+                      -133.13542283662937,
+                      55.32410614979102,
+                      5.882066170711879
+                    ],
+                    [
+                      -133.24543344328617,
+                      54.59562541558387,
+                      5.898099835284179
+                    ],
+                    [
+                      -133.74162655215727,
+                      54.73485727172264,
+                      5.881881937074151
+                    ],
+                    [
+                      -135.09318112951752,
+                      55.577232353092995,
+                      5.896462114248388
+                    ],
+                    [
+                      -135.50649460521558,
+                      55.86752152066631,
+                      5.874816660209454
+                    ],
+                    [
+                      -132.13842466460844,
+                      53.34493863597462,
+                      5.88928752212905
+                    ],
+                    [
+                      -133.8935438440742,
+                      55.261361757713786,
+                      5.9070489890409075
+                    ]
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "value": -1689.3220401017547,
+            "score": [
+              -136.75449235122943,
+              58.6195323061539,
+              5.889022923097949
+            ],
+            "value_se": 0.007661908203380911,
+            "score_se": [
+              4.7457263898444735,
+              2.46438546899473,
+              0.08219667027758401
+            ],
+            "fit_seed": 53,
+            "rank": 20,
+            "radius": 0.00015625,
+            "source": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/024-score-sir_d18-d26100832-fit53/result.json",
+            "provenance": {
+              "directory": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/ledh-independent-validation-20261008-01/022-zhao-sir_d18-d26100832-fit53",
+              "parent_status": "complete",
+              "manifest_sha256": "ba404f560b002b0db760042dc0196016ba6ab075cb86d7e4ffcefad7f104fc37",
+              "smoothing_sha256": "c04f4f0f946483742efa217d0f8195c0575cc4c450eca02790d1360162c4cf0e",
+              "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+              "source_observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+              "source_horizon": 50,
+              "horizon": 50,
+              "fit_seed": 53,
+              "smooth_seed": 3053,
+              "rank": 20,
+              "samples": 100000,
+              "target_parity_max": 2.3283064365386963e-10,
+              "evaluated_paths": 100000,
+              "joint_density_parity_max": 4.547473508864641e-12,
+              "log_likelihood": -1689.3220401017547,
+              "ess": 18900.147564206418,
+              "max_weight": 0.003098423058970097,
+              "zero_weight_count": 0,
+              "likelihood_evaluator": "canonical TensorFlow joint minus fixed finite Octave log proposal",
+              "prefix_baselines": [
+                {
+                  "paths": 25000,
+                  "log_likelihood": -1689.300166214887,
+                  "ess": 3151.6577050334727
+                },
+                {
+                  "paths": 50000,
+                  "log_likelihood": -1689.3126345157884,
+                  "ess": 8377.266635923499
+                }
+              ],
+              "maximum_baseline_group_mass": 0.054420699804949166,
+              "conditional_log_likelihood_jackknife_se": 0.007661908203380911
+            },
+            "estimates": [
+              {
+                "proposal": 0,
+                "radius": 0.000625,
+                "score": [
+                  -137.0681382006978,
+                  58.86943074827503,
+                  5.92118564858565
+                ],
+                "hessian": [
+                  [
+                    -10993.718053522234,
+                    5533.609990399205,
+                    94.74702082734937
+                  ],
+                  [
+                    5533.609990399205,
+                    -12990.559338054498,
+                    -41.95105439301146
+                  ],
+                  [
+                    94.74702082734937,
+                    -41.95105439301146,
+                    -843.352378564449
+                  ]
+                ],
+                "central_difference": [
+                  -137.0847381584653,
+                  58.6257888990211,
+                  5.886961234111965
+                ],
+                "linear_regression": [
+                  -137.06813820069777,
+                  58.869430748274986,
+                  5.921185648585659
+                ],
+                "central_minus_quadratic": [
+                  -0.016599957767510887,
+                  -0.24364184925392607,
+                  -0.03422441447368563
+                ],
+                "linear_minus_quadratic": [
+                  2.842170943040401e-14,
+                  -4.263256414560601e-14,
+                  8.881784197001252e-15
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 9.36681264337814e-05,
+                "training_residual_max": 0.00031874029797127057,
+                "heldout_residual_rms": 0.00010141508409462435,
+                "heldout_residual_max": 0.00040016130344018574,
+                "ess_min": 10232.334038512565,
+                "ess_median": 18687.69542917877,
+                "max_weight_max": 0.006617230367230574,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -141.73062820143565,
+                      58.19883327710229,
+                      6.08101561394285
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -141.73107497404007,
+                      59.83255272787993,
+                      6.090434217470882
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    4.728162980369941,
+                    2.46182379091035,
+                    0.08429300657320758
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -138.40274325324273,
+                      59.526735105010715,
+                      5.914403745095762
+                    ],
+                    [
+                      -136.31411628060803,
+                      58.89405379538899,
+                      5.904392863961979
+                    ],
+                    [
+                      -138.376732627674,
+                      59.35130987175315,
+                      5.941211308558833
+                    ],
+                    [
+                      -134.73038195347345,
+                      58.0293771698511,
+                      5.8905436497655765
+                    ],
+                    [
+                      -136.24806954391735,
+                      58.72069923386779,
+                      5.911998829160594
+                    ],
+                    [
+                      -136.06573816286576,
+                      57.92972478086953,
+                      5.894960794763509
+                    ],
+                    [
+                      -137.4702428031461,
+                      59.38692521884899,
+                      5.9093367083628925
+                    ],
+                    [
+                      -137.1343793549178,
+                      58.550426815624476,
+                      5.907015914460148
+                    ],
+                    [
+                      -137.9725851984917,
+                      59.28319102159835,
+                      5.911562129302748
+                    ],
+                    [
+                      -135.4767992527695,
+                      58.5072579429866,
+                      5.936105376230611
+                    ],
+                    [
+                      -135.87567395904873,
+                      58.282872730901325,
+                      5.924341893083441
+                    ],
+                    [
+                      -136.49164753704014,
+                      58.292578677176486,
+                      5.934538744917461
+                    ],
+                    [
+                      -137.43977218396375,
+                      58.781504459328744,
+                      5.978986135010325
+                    ],
+                    [
+                      -138.00631596428272,
+                      59.17907393597258,
+                      5.9312794121425165
+                    ],
+                    [
+                      -138.05984301158347,
+                      59.98487590019822,
+                      5.9177513722623125
+                    ],
+                    [
+                      -139.04679270507398,
+                      59.84658734453257,
+                      5.931274155973003
+                    ],
+                    [
+                      -136.33568663678085,
+                      58.62931299202314,
+                      5.937794267233849
+                    ],
+                    [
+                      -137.84308391709718,
+                      58.4804345740125,
+                      5.924945132110251
+                    ],
+                    [
+                      -137.0380813222131,
+                      58.515818261378705,
+                      5.9027142202581135
+                    ],
+                    [
+                      -137.02305396627662,
+                      59.21354499587746,
+                      5.918539748571679
+                    ]
+                  ]
+                }
+              },
+              {
+                "proposal": 0,
+                "radius": 0.00015625,
+                "score": [
+                  -136.75449235122943,
+                  58.6195323061539,
+                  5.889022923097949
+                ],
+                "hessian": [
+                  [
+                    -10658.402367035369,
+                    5416.498347882936,
+                    80.88074760917924
+                  ],
+                  [
+                    5416.498347882936,
+                    -12958.70923293931,
+                    -34.09386431074658
+                  ],
+                  [
+                    80.88074760917924,
+                    -34.09386431074658,
+                    -856.3187371578443
+                  ]
+                ],
+                "central_difference": [
+                  -136.75579864458314,
+                  58.60430759078099,
+                  5.8868648123961975
+                ],
+                "linear_regression": [
+                  -136.75449235122943,
+                  58.61953230615381,
+                  5.8890229230979525
+                ],
+                "central_minus_quadratic": [
+                  -0.001306293353707133,
+                  -0.015224715372909259,
+                  -0.0021581107017514256
+                ],
+                "linear_minus_quadratic": [
+                  0.0,
+                  -9.237055564881302e-14,
+                  3.552713678800501e-15
+                ],
+                "condition_number": 7.526294823141227,
+                "design_rank": 10,
+                "training_residual_rms": 1.4593236261220506e-06,
+                "training_residual_max": 4.638741552997344e-06,
+                "heldout_residual_rms": 1.578014007581907e-06,
+                "heldout_residual_max": 5.903702118257442e-06,
+                "ess_min": 17151.853872544372,
+                "ess_median": 18898.907368990367,
+                "max_weight_max": 0.0038477404816038355,
+                "prefix_scores": [
+                  {
+                    "paths": 25000,
+                    "status": "complete",
+                    "score": [
+                      -141.44355440642667,
+                      58.00139799632002,
+                      6.045645213170888
+                    ]
+                  },
+                  {
+                    "paths": 50000,
+                    "status": "complete",
+                    "score": [
+                      -141.17236964889517,
+                      59.447477021467954,
+                      6.03616427605438
+                    ]
+                  }
+                ],
+                "conditional_path_jackknife": {
+                  "status": "complete",
+                  "groups": 20,
+                  "scope": "conditional iid path sampling; excludes between-fit variation, support error and radius bias",
+                  "standard_error": [
+                    4.7457263898444735,
+                    2.46438546899473,
+                    0.08219667027758401
+                  ],
+                  "deleted_group_scores": [
+                    [
+                      -138.10618732105397,
+                      59.28937992852139,
+                      5.882917793421673
+                    ],
+                    [
+                      -136.00539016551758,
+                      58.629157014900436,
+                      5.872141453541964
+                    ],
+                    [
+                      -138.04399279537287,
+                      59.092037514704785,
+                      5.9074387285945615
+                    ],
+                    [
+                      -134.36314466559642,
+                      57.74937749049918,
+                      5.8563560766993525
+                    ],
+                    [
+                      -135.97966276821313,
+                      58.49924798286943,
+                      5.883986241594494
+                    ],
+                    [
+                      -135.83890669093765,
+                      57.737059509464615,
+                      5.869475390948709
+                    ],
+                    [
+                      -137.0955335506055,
+                      59.09986510572534,
+                      5.870862512661554
+                    ],
+                    [
+                      -136.87948780648705,
+                      58.34067335922987,
+                      5.879832030550083
+                    ],
+                    [
+                      -137.68717255001494,
+                      59.043440661475785,
+                      5.882528493997365
+                    ],
+                    [
+                      -135.18825253150416,
+                      58.27376454538382,
+                      5.9063899917823015
+                    ],
+                    [
+                      -135.48804906896575,
+                      57.986818897486266,
+                      5.885847479345549
+                    ],
+                    [
+                      -136.15005290122534,
+                      58.02734924983075,
+                      5.900159143744522
+                    ],
+                    [
+                      -137.11098712078908,
+                      58.52062237904173,
+                      5.94651791866772
+                    ],
+                    [
+                      -137.69490920715265,
+                      58.9417239842878,
+                      5.898162322071413
+                    ],
+                    [
+                      -137.77659129852952,
+                      59.752108967602545,
+                      5.888559077904921
+                    ],
+                    [
+                      -138.74036932481857,
+                      59.61294112086321,
+                      5.899618737358081
+                    ],
+                    [
+                      -136.02785889694422,
+                      58.37685473385069,
+                      5.906546063395763
+                    ],
+                    [
+                      -137.48458874895684,
+                      58.18696283908914,
+                      5.887970837583147
+                    ],
+                    [
+                      -136.77907548447405,
+                      58.312500590282035,
+                      5.875064940365384
+                    ],
+                    [
+                      -136.638833072911,
+                      58.91650175537308,
+                      5.880132208469256
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "uncertainty": "between-fit delete-one; conditional path uncertainty also preserved per fit"
+      }
+    }
+  },
+  "data": {
+    "26100831": {
+      "path": "docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100831/dataset.json",
+      "sha256": "3818d653a7c1e8f9f278c84b6a742e1ab14a4ccd66fbabce09c4f170f4fe0dbc",
+      "observation_sha256": "4fbe09d37d7be1ae71fd0137b2bd26afb9962fadabcc882b91f0a83ec13e6a4b",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    },
+    "26100832": {
+      "path": "docs/plans/artifacts/ledh-independent-validation-20261008-01/inputs/sir_d18-d26100832/dataset.json",
+      "sha256": "f6cb97aecc77bc03434cf8b719ba7de7648030dfc121deae1489cd8f94084ed7",
+      "observation_sha256": "1ac6ec96a24c0c6a798994728169418ffbd3bec6fef64888b50b49d6850bf4a7",
+      "target_id": "canonical_sir_d18_x0_then_transition_observe_v1"
+    }
+  },
+  "seeds": {
+    "26100831": [
+      261019301,
+      261019302,
+      261019303,
+      261019304,
+      261019305,
+      261019306,
+      261019307,
+      261019308
+    ],
+    "26100832": [
+      261019401,
+      261019402,
+      261019403,
+      261019404,
+      261019405,
+      261019406,
+      261019407,
+      261019408
+    ]
+  },
+  "fit_seeds": {
+    "26100831": 261019101,
+    "26100832": 261019102
+  },
+  "source_sha256": {
+    "scripts/run_ledh_sir_guidance.py": "172823f1d14aff7f0a4e01a4500034254fadd499803eddf99fb5aafb2d12274f",
+    "bayesfilter/score_study/sir_backward_guidance_diagnostic_tf.py": "d583d1f1669acfdfe979a6c3f64f00453e75ba5aafe620e0b212b2a394437db7",
+    "bayesfilter/replication/multivariate_controlled_smc_tf.py": "7147061f4d1c3028c529ae620b9fc117799313fe37c8e57f0c42d5f72f357a12",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "19207a1d3512cf9d29721b1fae3a328976895ad239f462d5e73b20f6b4b9d4bf",
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "01eaaafc5c9a1db722318cc8911635f9bdda38e0c3a4288be5f38c029d15bfca",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "trace_fields": [
+    "log_increment",
+    "score_increment",
+    "ess",
+    "max_weight",
+    "max_prior_proposal_ratio",
+    "reset_mean_error",
+    "reset_covariance_relative_error",
+    "reset_margin",
+    "guide_margin",
+    "map_margin",
+    "correction_displacement",
+    "moment_loss_before",
+    "moment_loss_after",
+    "valid",
+    "sinkhorn_row_error",
+    "reset_displacement",
+    "sinkhorn_column_error",
+    "correction_coordinate_displacement",
+    "pre_correction_mean_error",
+    "pre_correction_covariance_relative_error",
+    "mean_error_limit",
+    "moment_valid",
+    "correction_cap_valid",
+    "covariance_relative_error_limit",
+    "moment_roundoff_warning",
+    "mean_error_scale",
+    "roundoff_mean_error_limit",
+    "roundoff_covariance_relative_error_limit"
+  ],
+  "theta": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "parameter_names": [
+    "log_kappa_scale",
+    "log_nu_scale",
+    "log_observation_noise_scale"
+  ],
+  "reused_fits": {
+    "26100831": {
+      "path": "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-02/guides-26100831.json",
+      "sha256": "0c94d095e43e1a092b5e504b73d6fa72b8497d63832c0ff30dd52229227fb466",
+      "original_fit_seconds": 1.1682956750155427
+    },
+    "26100832": {
+      "path": "docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-02/guides-26100832.json",
+      "sha256": "d54951b4bca55290506af5deacb192de5780ebf894ca68b2006945c512fa84b9",
+      "original_fit_seconds": 0.8192200129851699
+    }
+  },
+  "fits": {
+    "26100831": {
+      "artifact": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04/guides-26100831.json",
+      "sha256": "0c94d095e43e1a092b5e504b73d6fa72b8497d63832c0ff30dd52229227fb466",
+      "seconds": 0.8593627249938436,
+      "valid": true,
+      "projected_times": 39,
+      "kernel_active_times": 10
+    },
+    "26100832": {
+      "artifact": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-04/guides-26100832.json",
+      "sha256": "d54951b4bca55290506af5deacb192de5780ebf894ca68b2006945c512fa84b9",
+      "seconds": 0.9072000939631835,
+      "valid": true,
+      "projected_times": 37,
+      "kernel_active_times": 9
+    }
+  },
+  "resumed_rows": {
+    "directory": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/ledh-sir-guidance-20261019/attempt-02",
+    "rows_sha256": "7768e775d4c33974295e983ded78d61e329ec59402a9a5c134816d26529129a3",
+    "manifest_sha256": "bf1d8305e24adc029c2244829f45150af2aad65114e2af74478865365498ada9",
+    "count": 60,
+    "original_wall_seconds": 2677.5198321230127,
+    "original_runner_sha256": "ef7ee9680738f338e94d741bc13dd2c1a8c1b9a27d88913c88787659a85ee02c",
+    "quarantined_keys": [
+      [
+        26100832,
+        261019405,
+        "global"
+      ]
+    ],
+    "diagnostic_sha256": "c94e75775cd68957183ca383cd60985212f53914e43e7ce097ea8c603c35d37a"
+  },
+  "wall_seconds": 1350.3854683249956
+}

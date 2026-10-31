@@ -1,0 +1,23 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792574921.788542       3 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1792574921.791776       3 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792574921.802057       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792574921.802142       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792574921.802150       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792574921.802152       3 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+/home/chakwong/.config/matplotlib is not a writable directory
+Matplotlib created a temporary cache directory at /tmp/matplotlib-nahrfmgs because there was an issue with the default path (/home/chakwong/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+2026-10-21 17:28:44.367647: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (100)
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_optimization.py", line 580, in <module>
+    main()
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_optimization.py", line 570, in main
+    verify_saved()
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_optimization.py", line 442, in verify_saved
+    xf,yf = tf.cast(tf.boolean_mask(x,finite),tf.float64),tf.cast(tf.boolean_mask(y,finite),tf.float64)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/array_ops.py", line 1506, in boolean_mask
+    raise ValueError("mask cannot be scalar.")
+ValueError: mask cannot be scalar.

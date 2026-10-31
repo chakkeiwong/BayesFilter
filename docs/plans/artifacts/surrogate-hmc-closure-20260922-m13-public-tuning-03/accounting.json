@@ -1,0 +1,64 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 15202.721697999998,
+    "gpu_seconds": 15465.98222041002
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 70530.05867729199,
+    "gpu_seconds": 59545.03944395184
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_public_tuning.py",
+        "tests/test_surrogate_hmc_program.py::test_explicit_long_campaign_watchdog_preserves_budget_and_default",
+        "tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected",
+        "tests/test_surrogate_hmc_program.py::test_budget_reservation_prevents_launch"
+      ],
+      "cpu_allowance_seconds": 180.0,
+      "cpu_worker_seconds": 17.216776,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 180.0,
+      "wall_seconds": 13.018114567996236
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-public-tuning",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-public-tuning-03/m13-public-tuning/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 71600.0,
+      "cpu_worker_seconds": 15166.379153999998,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 15465.98222041002,
+      "max_timeout_seconds": 62000.0,
+      "status": "COMPLETED",
+      "timeout_seconds": 61994.74326198001,
+      "wall_seconds": 15465.98222041002
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 55327.336979292,
+    "gpu_seconds": 44079.05722354182
+  }
+}

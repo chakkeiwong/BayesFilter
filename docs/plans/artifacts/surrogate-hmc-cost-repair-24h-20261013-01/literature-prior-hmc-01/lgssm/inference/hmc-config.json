@@ -1,0 +1,224 @@
+{
+  "config": {
+    "nomination": {
+      "schema": "bayesfilter.tensorflow_hmc_tuning.v3",
+      "numerical_backend": "tensorflow_only",
+      "dtype": "float64",
+      "parameter_dimension": 4,
+      "chain_count": 4,
+      "initial_chain_state_policy": "explicit_four_chain_bank_or_diagnostic_single_position_replication",
+      "candidate_initial_position_policy": "explicit_four_chain_bank_required",
+      "mass_window_leapfrog_steps": 1,
+      "evidence_role": "candidate",
+      "mass_window_results": [
+        128,
+        256
+      ],
+      "metric_state_count_by_window": [
+        512,
+        1024
+      ],
+      "metric_rank_eligible": true,
+      "step_adaptation_results": 256,
+      "verification_results": 128,
+      "max_leapfrog_steps": 4,
+      "trajectory_candidates": [
+        1,
+        2,
+        4
+      ],
+      "trajectory_candidate_policy": "powers_of_two_then_explicit_cap",
+      "candidate_policy_metadata_role": "historical_graph_helper_only; active candidate stages use shared search/execution configs",
+      "seed_derivation_policy": "stateless_fold_in_mass_100_plus_window_candidate_1000_plus_index",
+      "dual_averaging_internal_policy": "tensorflow_probability_defaults_except_explicit_adaptation_steps_and_target_accept_prob",
+      "initial_step_size": 0.01,
+      "max_step_size": null,
+      "energy_error_max": 1000.0,
+      "budget_provenance": "five-model N4032 master enforces the owner-selected wall budget",
+      "initial_step_size_provenance": "small standardized-coordinate hypothesis, adapted on own target",
+      "geometry_provenance": "identity coordinate-metric warm start, own-target windows with 10 percent identity shrinkage; not an assertion about prior covariance",
+      "target_scope": "f3ddfd4657530a1654ff46275b876836c2343a84c49a80ddd7bc44e79bdb8d4f",
+      "acceptance_policy": {
+        "schema": "bayesfilter.four_chain_mean_band_acceptance.v1",
+        "chain_count": 4,
+        "chain_weighting": "equal_chain_means",
+        "overall_band": [
+          0.5,
+          1.0
+        ],
+        "per_chain_band": [
+          0.3,
+          1.0
+        ],
+        "boundaries": "inclusive",
+        "negative_infinity_log_acceptance": "probability_zero",
+        "nan_or_positive_infinity_log_acceptance": "invalid"
+      },
+      "target_accept_prob": 0.7,
+      "verification_repair_rounds": 1,
+      "step_repair_factor": 2.0,
+      "mass_shrinkage": 0.1,
+      "covariance_jitter": 0.0,
+      "eigenvalue_floor": 1.4210854715202004e-14,
+      "max_condition_number": 67108864.0,
+      "seed": [
+        6111117,
+        61
+      ],
+      "chain_execution_mode": "tf_function",
+      "target_status_trace_policy": "none",
+      "use_xla": true,
+      "candidate_selection": "first_passing_predeclared_candidate",
+      "ranking_claim": false,
+      "artifact_authority": false,
+      "posterior_admission_authority": false,
+      "admission_supported": false,
+      "mechanics_handoff_supported": true,
+      "handoff_eligibility": "result_dependent_candidate_screen",
+      "fresh_rhat_verification": "not_part_of_tuning_handoff",
+      "rhat_role": "retained_explanatory_only",
+      "xla_qualification": "requires_external_qualification",
+      "xla_mode": "requested_full_chain_compilation",
+      "nonclaims": [
+        "diagnostic_only results cannot issue a tuning handoff",
+        "candidate handoff authorizes only the same frozen mechanics",
+        "R-hat and ESS are retained-run explanatory diagnostics",
+        "the route is not XLA qualified",
+        "no retained posterior convergence claim"
+      ]
+    },
+    "initial_chain_positions": [
+      [
+        -0.75,
+        -0.75,
+        -0.75,
+        -0.75
+      ],
+      [
+        -0.25,
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      [
+        0.75,
+        0.75,
+        0.75,
+        0.75
+      ]
+    ],
+    "initialization_provenance": "four dispersed coordinate starts, not prior draws; readiness must be measured on the selected posterior",
+    "warmup_results": 2000,
+    "verification_results": 1000,
+    "fresh_seed": [
+      6111121,
+      71
+    ],
+    "energy_error_max": 1000.0,
+    "warmup_max_results": 10000,
+    "verification_max_results": 20000,
+    "chunk_results": 250,
+    "check_every_results": 1000,
+    "warmup_check_window_results": 1000,
+    "warmup_rhat_max": 1.05,
+    "resume_manifest": null
+  },
+  "scope": {
+    "model": "lgssm",
+    "target_id": "sqmc_lgssm_p44_d3_predict_first_v2",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 3,
+    "parameter_dimension": 4,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 200,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "8eb5ee8b5404f3091ed26f109439355cddebcddc391c5bf67f27645f1c2ff979",
+    "prior": {
+      "id": "literature-model-priors-v1",
+      "coordinates": "q",
+      "normalized": true,
+      "chart": "affine",
+      "chart_scales": [
+        0.4,
+        0.5,
+        0.5,
+        0.2
+      ],
+      "jacobian": "physical-to-theta and theta-to-q Jacobians included",
+      "evidence": "docs/papers/surrogate-hmc-priors-2026-10-15/README.md",
+      "source": "Dahlin-Schon 2019 sections 4,5; Sarkka-Nummenmaa 2009 section III",
+      "phi": "0.55*tanh(theta[0])",
+      "phi_normal_mean": 0.0,
+      "phi_normal_variance": 0.5,
+      "phi_conditioning_interval": [
+        -0.55,
+        0.55
+      ],
+      "process_variance_multiplier": "exp(theta[1])",
+      "observation_variance_multiplier": "exp(theta[2])",
+      "inverse_gamma_shape": 1.0,
+      "inverse_gamma_scale": 1.0,
+      "initial_mean_amplitude": "theta[3]",
+      "mean_normal_mean": 0.0,
+      "mean_normal_variance": 1.0,
+      "adaptation": "restricted AR prior; IG family also applied to process scale; location prior transferred",
+      "nominal": [
+        0.25,
+        -1.7147984504699707,
+        -2.1202635765075684,
+        0.03999999910593033
+      ]
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "e9d2176cc30b709a0acc3f5f34e627f9a1670624500151e272bb68834a392c1e",
+      "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "3bd4a904a41689cdf754f1ca2dc46ddfd91c539a1f2b2989f2bc6503ae04787d",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "endpoint": "exact_Kalman",
+  "posterior_sampling_includes_public_verification_draws": true,
+  "redundant_validation_phase": false
+}

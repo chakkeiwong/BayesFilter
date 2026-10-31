@@ -1,0 +1,40 @@
+{
+  "cpu_only": true,
+  "reason": "focused harness checks; GPU intentionally hidden",
+  "checks": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "tests/test_replication_master.py"
+      ],
+      "returncode": 0,
+      "seconds": 1.1662346750090364,
+      "log": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review07/check1.log"
+    },
+    {
+      "command": [
+        "Rscript",
+        "--vanilla",
+        "-e",
+        "invisible(parse(file='docs/benchmarks/diagnose_iapf_eq15_local_solver.R')); cat('R_PARSE_PASS\\n')"
+      ],
+      "returncode": 0,
+      "seconds": 0.16494158499699552,
+      "log": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review07/check2.log"
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-I",
+        "-B",
+        "scripts/run_replication_master.py",
+        "plan"
+      ],
+      "returncode": 0,
+      "seconds": 0.03195641499769408,
+      "log": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922/docs/plans/artifacts/iapf-kdm-replication-20260924-01/development-review07/check3.log"
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-SQMC/docs/benchmarks/run_sqmc_ksc_full_mixture.py",
+    "--output",
+    "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/attempt-01/compare-attempt-01",
+    "--mode",
+    "compare"
+  ],
+  "git_commit": "b7ed96ec7e35e1bb7c68f41ed18b358f97f714db",
+  "source_sha256": {
+    "docs/plans/sqmc-ksc-full-mixture-correction-20260929.md": "1e54b222a3f8f5d3b612e4a910f65946b6a4dfeb26071789959d149d2d6db1c7",
+    "bayesfilter/highdim/sqmc_ksc_gaussian_sum_reference_tf.py": "b7dd94789b761e138aa3b29127addc6e1726b117c062388fcf23a5af91479421",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "4e28b6b9518aa96ee85e41269b7fe5bcc154385e9709ce6a11d2140457cd7f86",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "docs/benchmarks/run_sqmc_expanded_comparison.py": "3c61c9a26383a9111886c9340592f20d65ac5674d11d1a91ac68b7b534474d6c",
+    "docs/benchmarks/run_sqmc_ksc_full_mixture.py": "fece2c014abe4623868d58a7421acbb80b0f26e2004a14212e5e1d11bfc80e14",
+    "tests/highdim/test_sqmc_ksc_gaussian_sum.py": "7ca8aff02d1b7a314f12181791b47ee4808925ad572998d82d3fe2d8829ff123"
+  },
+  "plan": "docs/plans/sqmc-ksc-full-mixture-correction-20260929.md",
+  "program": "fp64_gpu_xla_ksc_seven_component_gaussian_sum_quadrature_reference",
+  "tuning": "N/A deterministic resolution verification",
+  "started_utc": "2026-09-28T18:13:14.344338+00:00",
+  "seeds": [
+    213001,
+    213002,
+    213003,
+    213004,
+    213005,
+    213006,
+    213007,
+    213008
+  ],
+  "production_deviations": "FP64/TF32 off independent reference, not production/default/HMC",
+  "pre_framework_nvidia_smi": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 5254 MiB, 16303 MiB, 6 %\nGPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 1159 MiB, 16376 MiB, 46 %",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_uuid": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "cpu_gpu_status": "GPU full-seven-component Gaussian-sum quadrature reference; CPU exact diagnostic",
+  "tf32": false,
+  "jit_compile": true,
+  "framework_gpu_probe": {
+    "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+    "value": 4.0
+  },
+  "gpu_inventory": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 5270 MiB, 16303 MiB, 6 %\nGPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 1410 MiB, 16376 MiB, 72 %",
+  "data_version": "unchanged archived KSC final datasets; input-sha256.json",
+  "source_unchanged": true,
+  "status": "pass",
+  "wall_seconds": 42.79572624398861,
+  "finished_utc": "2026-09-28T18:13:57.138387+00:00",
+  "result": "/home/chakwong/BayesFilter-SQMC/docs/plans/artifacts/sqmc-ksc-full-mixture-20260929/attempt-01/compare-attempt-01/result.json",
+  "gpu_allocator_bytes": {
+    "current": 3840,
+    "peak": 268442112
+  }
+}

@@ -3,8 +3,10 @@
 
 This chapter gives a self-contained account of neural-transport Hamiltonian
 Monte Carlo (NeuTra HMC) and documents the BayesFilter implementation and
-experiments available in July 2026, followed by a September 2026 investigation
-of weak nonlinear learning in the q20 target. The construction was introduced by
+experiments available through October 2026.  The current five-model
+surrogate-HMC case study is in Chapter~\ref{ch:bf-surrogate-hmc-five-models};
+the historical July and September experiments below remain labeled by their
+original protocols and are not silently promoted by the new run. The construction was introduced by
 \citet{hoffman2019neutra}; the derivation and implementation below do not
 require the reader to consult that paper.  The HMC and transport mathematics,
 diagnostics, and five common truth-tail targets are derived explicitly.  Eight
@@ -159,8 +161,15 @@ Artifacts distinguish latent $z$, unconstrained source $\theta$, and physical
 $\vartheta=C(\theta)$.  HMC integrates $z$; the filter target consumes $\theta$;
 scientific summaries use $\vartheta$.
 
-\section{The BayesFilter dense IAF}
+\section{The historical BayesFilter dense IAF}
 \label{sec:bf-neutra-iaf}
+
+The implementation and numerical settings in this section are historical and
+unfaithful to the original author's code. The current author-based IAF uses a
+free scale bias outside the conditional cap and nonzero author initialization;
+see Section~\ref{sec:bf-fab-iaf} and the implementation reference. The historical
+formulas remain here to explain the preserved experiments, not as the active
+architecture or training recipe.
 
 The tested map is a stack of three MADE-style dense inverse autoregressive flow
 (IAF) stages, reverse-order permutations between stages, and a fixed full

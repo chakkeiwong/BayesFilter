@@ -1,0 +1,111 @@
+{
+  "all_models_validated": false,
+  "cases": [
+    {
+      "batch_single_error": 0.0,
+      "deterministic_lag_residual": 0.0,
+      "finite_difference": [
+        -0.700629969485611,
+        -0.008676058826928568,
+        -1.993067866212783,
+        0.21688796114638362
+      ],
+      "observation": "AR2_linear",
+      "pre_flow_lag_residual": 0.0,
+      "relative_score_error": 4.537004105742426e-11,
+      "score": [
+        -0.700629969530981,
+        -0.008676058817837284,
+        -1.9930678661632855,
+        0.2168879611910894
+      ],
+      "valid": true,
+      "value": -0.019753438302267057
+    },
+    {
+      "batch_single_error": 8.881784197001252e-16,
+      "deterministic_lag_residual": 0.0,
+      "finite_difference": [
+        -0.7415656134490688,
+        0.044614019945043985,
+        -1.9604737497402878,
+        0.1820352100834199
+      ],
+      "observation": "quadratic_control",
+      "pre_flow_lag_residual": 0.0,
+      "relative_score_error": 3.6441405448783826e-11,
+      "score": [
+        -0.7415656134855102,
+        0.04461401996084613,
+        -1.960473749693336,
+        0.1820352101162915
+      ],
+      "valid": true,
+      "value": -0.0625904428183568
+    }
+  ],
+  "device": "gpu",
+  "full_canonical_controls": {
+    "coordinate_cap": 2.0,
+    "correction_steps": 1,
+    "flow_substeps": 3,
+    "pairwise_steps": 1,
+    "reset_balance_steps": 8,
+    "reset_design": "fixed initial cloud",
+    "reset_policy": "contract_e",
+    "reset_sinkhorn_steps": 8
+  },
+  "gpu_intentionally_hidden": false,
+  "identity_chart_error": 4.440892098500626e-16,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "next_action": "Existing master: independent AR2 reference, scoped DCTR tuning, public HMC tuning and posterior comparison",
+  "posterior_comparisons": "NOT_RUN",
+  "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "qualified": true,
+  "seed_policy": [
+    20260922,
+    381,
+    382,
+    383
+  ],
+  "stage": "structural-integration",
+  "status": "STRUCTURAL_CANONICAL_MECHANICS_QUALIFIED",
+  "target": "additive Gaussian innovations with deterministic affine completion",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true,
+  "trace_exception": "non-XLA graph for independent intermediate-state diagnostics"
+}

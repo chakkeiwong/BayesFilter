@@ -1,0 +1,172 @@
+{
+  "status": "FAIL",
+  "scope": "LORENZ_EQUIVALENT_SOLVER_REPAIR",
+  "replication": "INCOMPLETE",
+  "solver_verdict": "NOT_PROMOTED_PARITY_FAILURE",
+  "checks": [
+    {
+      "name": "fit_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "independent_svd_A",
+      "passed": true,
+      "max_absolute_error": 1.3758017303189263e-07,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_svd_b",
+      "passed": false,
+      "max_absolute_error": 2.946861059172079e-06,
+      "atol": 1e-07,
+      "rtol": 1e-09,
+      "max_scaled_error": 2.1818973035391718,
+      "flat_index": 1184,
+      "actual_at_worst": -24.652282672468573,
+      "expected_at_worst": -24.652282400490094
+    },
+    {
+      "name": "independent_svd_c",
+      "passed": true,
+      "max_absolute_error": 1.0369811207056046e-05,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "replay_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "independent_forward_x",
+      "passed": true,
+      "max_absolute_error": 2.219557870830613e-12,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_forward_log_incremental_weight",
+      "passed": true,
+      "max_absolute_error": 9.337099982076325e-10,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_forward_logZ",
+      "passed": true,
+      "max_absolute_error": 5.384208634495735e-10,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_forward_ess",
+      "passed": true,
+      "max_absolute_error": 2.785895958368201e-10,
+      "atol": 1e-07,
+      "rtol": 1e-09
+    },
+    {
+      "name": "independent_forward_ancestry",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "fresh_forward_valid",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "fit_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    },
+    {
+      "name": "forward_single_trace",
+      "passed": true,
+      "max_absolute_error": 0.0,
+      "atol": 0.0,
+      "rtol": 0.0
+    }
+  ],
+  "independent_reference_solver": "scipy_gelsd_centered_full_rank",
+  "source_normal_equations": "NUMERICALLY_UNRESOLVED_DIAGNOSTIC_ONLY",
+  "minimum_precision_margin": 0.013914064466234492,
+  "minimum_gram_eigenvalue_ratio": 0.011813911730264122,
+  "fresh_forward_logZ": [
+    -1085.0703416721049,
+    -1085.072770434252
+  ],
+  "fresh_seeds": [
+    20261001,
+    20261002
+  ],
+  "traced_signatures": {
+    "fit": 1,
+    "forward": 1
+  },
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "tf32": false,
+  "dtype": "float64",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "device": "/device:GPU:0",
+  "cpu_only": false,
+  "numpy_runtime": false,
+  "pfor": false,
+  "python_time_loop": false,
+  "allocator": {
+    "current": 28033024,
+    "peak": 61587712
+  },
+  "wall_seconds": 10.375715463014785,
+  "nonclaims": [
+    "Not Figure6/Table1 replication",
+    "No stochastic ranking",
+    "No general default or HMC claim"
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "status": "PASS",
+  "scope": "LORENZ_REJECTED_TRAJECTORY_DIAGNOSIS",
+  "replication": "INCOMPLETE",
+  "device": "CPU",
+  "gpu_intentionally_hidden": true,
+  "diagnostic_numpy_reference": true,
+  "policies": [
+    {
+      "policy": "nearest_precision",
+      "nonfinite": [
+        {
+          "field": "x",
+          "count": 409600,
+          "first": [
+            3,
+            1,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "field": "log_incremental_weight",
+          "count": 51712,
+          "first": [
+            3,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "field": "ess",
+          "count": 101,
+          "first": [
+            3,
+            0,
+            0
+          ]
+        },
+        {
+          "field": "logZ",
+          "count": 101,
+          "first": [
+            3,
+            0,
+            0
+          ]
+        }
+      ],
+      "affected": [
+        {
+          "stage": 3,
+          "row": 0,
+          "first_bad_weight_or_cloud_time": 0,
+          "probes": [
+            {
+              "time": 0,
+              "min_precision_eigenvalue": 395.77242345987025,
+              "max_precision_eigenvalue": 26559837915.09373,
+              "previous_cloud_maxabs": 0.0,
+              "deterministic_mean_maxabs": 0.0,
+              "twisted_mean_maxabs": 244738691.15853497,
+              "largest_covariance_eigenvalue": 0.0025267045926493058,
+              "cloud_maxabs": 244738691.61375973,
+              "lookahead_mean_maxabs": null,
+              "logweight_maxabs": null,
+              "linear_coefficient_maxabs": 150006459637.3085
+            },
+            {
+              "time": 1,
+              "min_precision_eigenvalue": 755.3962701520086,
+              "max_precision_eigenvalue": 50693786006.063324,
+              "previous_cloud_maxabs": 244738691.50933057,
+              "deterministic_mean_maxabs": null,
+              "twisted_mean_maxabs": null,
+              "largest_covariance_eigenvalue": 0.0013238084956373557,
+              "cloud_maxabs": null,
+              "lookahead_mean_maxabs": null,
+              "logweight_maxabs": null,
+              "linear_coefficient_maxabs": 290594815206.67755
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "policy": "backtrack_precision",
+      "nonfinite": [
+        {
+          "field": "x",
+          "count": 401408,
+          "first": [
+            4,
+            3,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "field": "log_incremental_weight",
+          "count": 50688,
+          "first": [
+            4,
+            2,
+            0,
+            0
+          ]
+        },
+        {
+          "field": "ess",
+          "count": 99,
+          "first": [
+            4,
+            2,
+            0
+          ]
+        },
+        {
+          "field": "logZ",
+          "count": 99,
+          "first": [
+            4,
+            2,
+            0
+          ]
+        }
+      ],
+      "affected": [
+        {
+          "stage": 4,
+          "row": 0,
+          "first_bad_weight_or_cloud_time": 2,
+          "probes": [
+            {
+              "time": 1,
+              "min_precision_eigenvalue": 592.1184972207743,
+              "max_precision_eigenvalue": 12173.789846579231,
+              "previous_cloud_maxabs": 19.007734553532302,
+              "deterministic_mean_maxabs": 16.2436342823426,
+              "twisted_mean_maxabs": 36.85429328961797,
+              "largest_covariance_eigenvalue": 0.0016888511416105027,
+              "cloud_maxabs": 36.968507754313585,
+              "lookahead_mean_maxabs": 19.13036648854826,
+              "logweight_maxabs": 5952856.37396045,
+              "linear_coefficient_maxabs": 7259.011580844754
+            },
+            {
+              "time": 2,
+              "min_precision_eigenvalue": 61.64743866763659,
+              "max_precision_eigenvalue": 12569.114343618809,
+              "previous_cloud_maxabs": 36.812862230900656,
+              "deterministic_mean_maxabs": 18.96877160463897,
+              "twisted_mean_maxabs": 411.80793326505824,
+              "largest_covariance_eigenvalue": 0.016221274096907056,
+              "cloud_maxabs": 412.1784265181798,
+              "lookahead_mean_maxabs": null,
+              "logweight_maxabs": null,
+              "linear_coefficient_maxabs": 14577.604982255407
+            },
+            {
+              "time": 3,
+              "min_precision_eigenvalue": 658.340022008221,
+              "max_precision_eigenvalue": 12400.782455222783,
+              "previous_cloud_maxabs": 411.72675239826657,
+              "deterministic_mean_maxabs": null,
+              "twisted_mean_maxabs": null,
+              "largest_covariance_eigenvalue": 0.0015189719089985882,
+              "cloud_maxabs": null,
+              "lookahead_mean_maxabs": null,
+              "logweight_maxabs": null,
+              "linear_coefficient_maxabs": 15399.482619905466
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "both_rejected_policies_located",
+      "passed": true
+    }
+  ],
+  "interpretation": "Saved-trajectory diagnosis only; no candidate promotion or solver ranking.",
+  "wall_seconds": 0.34602296992670745
+}

@@ -1,0 +1,61 @@
+{
+  "charged_this_run": {
+    "cpu_worker_seconds": 860.3038419999999,
+    "gpu_seconds": 738.4327261099825
+  },
+  "cumulative": {
+    "cpu_worker_seconds": 52613.443169292,
+    "gpu_seconds": 41652.696728096824
+  },
+  "jobs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_surrogate_hmc_closure_program.py",
+        "tests/test_surrogate_hmc_m13_four_chain_cost.py"
+      ],
+      "cpu_allowance_seconds": 120.0,
+      "cpu_worker_seconds": 8.988356,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "cpu",
+      "exit_code": 0,
+      "gpu_intentionally_hidden": true,
+      "gpu_seconds": 0.0,
+      "max_timeout_seconds": 14400,
+      "status": "COMPLETED",
+      "timeout_seconds": 120.0,
+      "wall_seconds": 7.76043033102178
+    },
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "bayesfilter.testing.surrogate_hmc_closure_diagnostics",
+        "--stage",
+        "m13-four-chain-cost",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-four-chain-cost-02/m13-four-chain-cost/report.json",
+        "--device",
+        "gpu"
+      ],
+      "cpu_allowance_seconds": 850.0,
+      "cpu_worker_seconds": 850.328946,
+      "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "device": "gpu",
+      "exit_code": -15,
+      "gpu_intentionally_hidden": false,
+      "gpu_seconds": 738.4327261099825,
+      "max_timeout_seconds": 14400,
+      "status": "JOB_CPU_BUDGET_LIMIT",
+      "timeout_seconds": 1300.0,
+      "wall_seconds": 738.4327261099825
+    }
+  ],
+  "previous_charge": {
+    "cpu_worker_seconds": 51753.139327291996,
+    "gpu_seconds": 40914.26400198684
+  }
+}

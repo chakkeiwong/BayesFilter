@@ -1,0 +1,69 @@
+{
+  "schema": "kdm_source_stages_manifest_v1",
+  "resource": "gpu",
+  "mode": "verify",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_source_stages_tf.py",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-05/diagnostic",
+    "--mode",
+    "verify",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json"
+  ],
+  "launcher_command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/run_kdm_source_stages.py",
+    "--mode",
+    "verify",
+    "--reference",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+    "--output",
+    "docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-05"
+  ],
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-source-stages-20261007.md",
+  "result": "docs/plans/controlled-smc-kdm-source-stages-result-20261007.md",
+  "timeout_seconds": 3528,
+  "status": "COMPLETED",
+  "seeds": [
+    20261007,
+    20261008,
+    811,
+    731
+  ],
+  "data": "source saved train5000/validation1000",
+  "cpu_gpu_status": "trusted GPU/XLA",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "LD_LIBRARY_PATH": null,
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "OMP_NUM_THREADS": "1",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1"
+  },
+  "hashes": {
+    "scripts/run_kdm_source_stages.py": "b7cc6fd8064f1932d69e756d3d4d6b09ea41d39556ebff0780f3fd647ebf8440",
+    "docs/benchmarks/diagnose_kdm_source_stages_tf.py": "e85f74255a0ad9ba109418d0d3b099120dcd0094d940c757b4fa29d14b149a6f",
+    "docs/plans/controlled-smc-kdm-source-stages-20261007.md": "fffd02f2892aa78a73f46120d88a319f6abf4cc850f7a282bae0af7d57dbe0f9",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "de827b08c19a14d1b802dfdcb2c2018c36260b3a131098ea2ad3c1df3b8200ec",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "39a58f385b7f2840824fcdeba5dc5487be1a334a843964c7280fbe0d11c4fba6",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/reference_kdm_neural.py": "907fcf70d98c42ca393f301f5b0ef327ef8a90741af90ddeb93598f665af338d",
+    "docs/benchmarks/reference_kdm_stage_transfer.py": "b476ba6cd587e160a667469ff5c41e59dfc07fd644d799947044a0c351246bbc"
+  },
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-stages-20261007-04/diagnostic/result.json",
+  "reference_sha256": "1609a9bd199b077329de9348a3a2d82b9edeb3bae1c30c065687f0dda183e38e",
+  "returncode": 0,
+  "wall_seconds": 179.33224262692966,
+  "result_sha256": "f74c5c99e916fb697932c0fc83237ad04868532c036362e0a8db19a3468ce3dc"
+}

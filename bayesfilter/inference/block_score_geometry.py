@@ -13,14 +13,15 @@ the block family nor moves the center.
 
 from __future__ import annotations
 
+import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
-import numpy as np
 import tensorflow as tf
 
-from bayesfilter.inference.fixed_center_curvature import compare_precision_geometry
-
+from bayesfilter.inference import block_score_geometry_tf as native
+from bayesfilter.ops.host_tensor_io import numeric_tensor
 
 BLOCK_SCORE_GEOMETRY_NONCLAIMS = (
     "fixed-center block score geometry is an HMC initializer only",
@@ -88,7 +89,7 @@ class BlockScoreGeometryConfig:
             "principal_angle_degrees_cap",
         ):
             value = float(getattr(self, name))
-            if not np.isfinite(value) or value <= 0.0:
+            if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f"{name} must be positive and finite")
             object.__setattr__(self, name, value)
         if self.max_condition_number < 1.0:
@@ -103,10 +104,7 @@ class BlockScoreGeometryConfig:
         object.__setattr__(self, "principal_subspace_rank", rank)
 
     def payload(self) -> Mapping[str, Any]:
-        return {
-            name: getattr(self, name)
-            for name in self.__dataclass_fields__
-        }
+        return {name: getattr(self, name) for name in self.__dataclass_fields__}
 
 
 @dataclass(frozen=True)
@@ -116,8 +114,8 @@ class BlockScoreGeometryResult:
     accepted: bool
     status: str
     blocks: tuple[ScoreGeometryBlock, ...]
-    precision_z: np.ndarray | None
-    covariance_z: np.ndarray | None
+    precision_z: tf.Tensor | None
+    covariance_z: tf.Tensor | None
     diagnostics: Mapping[str, Any]
     nonclaims: tuple[str, ...] = BLOCK_SCORE_GEOMETRY_NONCLAIMS
 
@@ -128,12 +126,11 @@ class BlockScoreGeometryResult:
         for name in ("precision_z", "covariance_z"):
             value = getattr(self, name)
             if value is not None:
-                array = np.asarray(value, dtype=np.float64).copy()
-                array.setflags(write=False)
+                array = numeric_tensor(value, tf.float64)
                 object.__setattr__(self, name, array)
         object.__setattr__(self, "diagnostics", _json_ready(dict(self.diagnostics)))
 
-    def position_geometry(self, scale: Any) -> Mapping[str, np.ndarray]:
+    def position_geometry(self, scale: Any) -> Mapping[str, tf.Tensor]:
         """Convert qualified standardized geometry to parameter coordinates."""
 
         if not self.accepted or self.precision_z is None or self.covariance_z is None:
@@ -142,23 +139,14 @@ class BlockScoreGeometryResult:
         dimension = int(self.precision_z.shape[0])
         if scale_tf.shape != (dimension,):
             raise ValueError("scale shape must match geometry dimension")
-        if not bool(tf.reduce_all(tf.math.is_finite(scale_tf) & (scale_tf > 0.0)).numpy()):
+        precision, covariance, factor, valid = native.position_program(dimension)(
+            self.precision_z, self.covariance_z, scale_tf)
+        if not bool(valid):
             raise ValueError("scale must be positive and finite")
-        scale_matrix = tf.linalg.diag(scale_tf)
-        inverse_scale = tf.linalg.diag(1.0 / scale_tf)
-        covariance = tf.matmul(
-            tf.matmul(scale_matrix, tf.convert_to_tensor(self.covariance_z, tf.float64)),
-            scale_matrix,
-        )
-        precision = tf.matmul(
-            tf.matmul(inverse_scale, tf.convert_to_tensor(self.precision_z, tf.float64)),
-            inverse_scale,
-        )
-        factor = tf.linalg.cholesky(covariance)
         return {
-            "precision": precision.numpy(),
-            "covariance": covariance.numpy(),
-            "factor": factor.numpy(),
+            "precision": precision,
+            "covariance": covariance,
+            "factor": factor,
         }
 
     def payload(self, *, include_matrices: bool = False) -> Mapping[str, Any]:
@@ -198,9 +186,15 @@ def fit_block_diagonal_score_geometry(
     dimension = int(center.shape[0])
     declared_blocks = _validate_blocks(blocks, dimension)
     training_z = _replicate_tensor(training_offsets_z, dimension, "training_offsets_z")
-    training_scores = _replicate_tensor(training_scores_z, dimension, "training_scores_z")
-    selection_z = _replicate_tensor(selection_offsets_z, dimension, "selection_offsets_z")
-    selection_scores = _replicate_tensor(selection_scores_z, dimension, "selection_scores_z")
+    training_scores = _replicate_tensor(
+        training_scores_z, dimension, "training_scores_z"
+    )
+    selection_z = _replicate_tensor(
+        selection_offsets_z, dimension, "selection_offsets_z"
+    )
+    selection_scores = _replicate_tensor(
+        selection_scores_z, dimension, "selection_scores_z"
+    )
     audit_z = _matrix_tensor(audit_offsets_z, dimension, "audit_offsets_z")
     audit_scores = _matrix_tensor(audit_scores_z, dimension, "audit_scores_z")
     if training_z.shape != training_scores.shape:
@@ -211,279 +205,115 @@ def fit_block_diagonal_score_geometry(
         raise ValueError("audit offset and score shapes must match")
     replicate_count = int(training_z.shape[0])
     if replicate_count < 2 or int(selection_z.shape[0]) != replicate_count:
-        raise ValueError("at least two matching training/selection replicates are required")
-    finite_inputs = tf.reduce_all(
-        tf.math.is_finite(
-            tf.concat(
-            (
-                tf.reshape(center, [-1]),
-                tf.reshape(training_z, [-1]),
-                tf.reshape(training_scores, [-1]),
-                tf.reshape(selection_z, [-1]),
-                tf.reshape(selection_scores, [-1]),
-                tf.reshape(audit_z, [-1]),
-                tf.reshape(audit_scores, [-1]),
-            ),
-            axis=0,
-            )
+        raise ValueError(
+            "at least two matching training/selection replicates are required"
         )
-    )
-    if not bool(finite_inputs.numpy()):
-        return _rejected("nonfinite_fit_inputs", declared_blocks)
-
-    replicates: list[Mapping[str, Any]] = []
-    replicate_precisions: list[tf.Tensor] = []
-    for replicate_index in range(replicate_count):
-        precision, block_reports, failure = _fit_replicate(
-            center,
-            training_z[replicate_index],
-            training_scores[replicate_index],
-            declared_blocks,
-            cfg,
-        )
-        report: dict[str, Any] = {
-            "replicate_index": replicate_index,
-            "blocks": block_reports,
-        }
-        if failure is not None:
-            report["status"] = failure
-            replicates.append(report)
-            return _rejected(failure, declared_blocks, {"replicates": replicates})
-        selection_rmse, selection_unexplained = _score_diagnostics(
-            precision,
-            center,
-            selection_z[replicate_index],
-            selection_scores[replicate_index],
-        )
-        report.update(
-            {
-                "status": "usable",
-                "selection_relative_rmse": selection_rmse,
-                "selection_unexplained_response_fraction": selection_unexplained,
-            }
-        )
-        replicates.append(report)
-        replicate_precisions.append(precision)
-
-    stability = _stability(replicate_precisions, cfg, dimension)
-    consensus = tf.reduce_mean(tf.stack(replicate_precisions, axis=0), axis=0)
-    selection_passed = all(
-        report["selection_relative_rmse"] <= cfg.selection_relative_rmse_cap
-        for report in replicates
-    )
-    consensus_selection = [
-        _score_diagnostics(consensus, center, selection_z[index], selection_scores[index])
-        for index in range(replicate_count)
-    ]
-    consensus_selection_rmse = float(
-        tf.reduce_mean(tf.convert_to_tensor([item[0] for item in consensus_selection], tf.float64)).numpy()
-    )
-    consensus_selection_unexplained = float(
-        tf.reduce_mean(tf.convert_to_tensor([item[1] for item in consensus_selection], tf.float64)).numpy()
-    )
-    audit_rmse, audit_unexplained = _score_diagnostics(
-        consensus, center, audit_z, audit_scores
-    )
-    covariance = tf.linalg.cholesky_solve(
-        tf.linalg.cholesky(consensus), tf.eye(dimension, dtype=tf.float64)
-    )
-    inverse_residual = float(
-        tf.reduce_max(tf.abs(tf.matmul(consensus, covariance) - tf.eye(dimension, dtype=tf.float64))).numpy()
-    )
+    program = native.fit_program(dimension, replicate_count, int(training_z.shape[1]),
+        int(selection_z.shape[1]), int(audit_z.shape[0]),
+        tuple((block.start, block.stop) for block in declared_blocks))
+    result = program(center, training_z, training_scores, selection_z, selection_scores,
+        audit_z, audit_scores,
+        tf.constant([getattr(cfg, name) for name in native.CONTROL_FIELDS], tf.float64),
+        tf.constant(cfg.principal_subspace_rank, tf.int32))
+    # Bulk transport of completed diagnostics; no host numerical decisions.
+    report = {name: result[name].numpy().tolist() for name in (
+        "status", "replicate_count", "block_counts", "blocks", "selection", "pairs",
+        "checks", "pair_passed", "stability_passed", "summary")}
+    status_code = report["status"]
+    if status_code == 10:
+        raise ValueError("subspace_rank must lie in [1, dimension]")
+    status = native.STATUSES[status_code]
+    if status_code == 1:
+        return _rejected(status, declared_blocks)
+    replicates = _replicate_reports(report, declared_blocks)
+    if status_code in (2, 3, 4):
+        return _rejected(status, declared_blocks, {"replicates": replicates})
+    summary = report["summary"]
     diagnostics = {
         "family": "block_diagonal_symmetric_score_regression",
         "dimension": dimension,
         "block_count": len(declared_blocks),
         "within_block_symmetric_coefficient_count": sum(
-            block.size * (block.size + 1) // 2 for block in declared_blocks
-        ),
+            block.size * (block.size + 1) // 2 for block in declared_blocks),
         "training_rows_per_replicate": int(training_z.shape[1]),
         "selection_rows_per_replicate": int(selection_z.shape[1]),
         "audit_rows": int(audit_z.shape[0]),
         "replicates": replicates,
-        "stability": stability,
-        "consensus_selection_relative_rmse": consensus_selection_rmse,
-        "consensus_selection_unexplained_response_fraction": consensus_selection_unexplained,
-        "audit_relative_rmse": audit_rmse,
-        "audit_unexplained_response_fraction": audit_unexplained,
-        "precision_covariance_identity_max_abs": inverse_residual,
+        "stability": _stability_report(report, cfg, dimension, replicate_count),
+        "consensus_selection_relative_rmse": summary[0],
+        "consensus_selection_unexplained_response_fraction": summary[1],
+        "audit_relative_rmse": summary[2],
+        "audit_unexplained_response_fraction": summary[3],
+        "precision_covariance_identity_max_abs": summary[4],
         "config": cfg.payload(),
         "audit_used_after_consensus": True,
         "dense_global_fit_used": False,
         "factor_fit_used": False,
         "fallback_used": False,
     }
-    status = "qualified_for_hmc_initialization"
-    if not selection_passed or consensus_selection_rmse > cfg.selection_relative_rmse_cap:
-        status = "selection_score_fit_rejected"
-    elif not bool(stability["passed"]):
-        status = "replicate_stability_rejected"
-    elif audit_rmse > cfg.audit_relative_rmse_cap:
-        status = "audit_score_fit_rejected"
-    elif audit_unexplained > cfg.unexplained_response_fraction_cap:
-        status = "offblock_curvature_rejected"
-    elif inverse_residual > 1.0e-8:
-        status = "precision_covariance_identity_rejected"
     return BlockScoreGeometryResult(
-        accepted=status == "qualified_for_hmc_initialization",
-        status=status,
-        blocks=declared_blocks,
-        precision_z=consensus.numpy(),
-        covariance_z=covariance.numpy(),
-        diagnostics=diagnostics,
-    )
+        accepted=status_code == 0, status=status, blocks=declared_blocks,
+        precision_z=result["precision"], covariance_z=result["covariance"], diagnostics=diagnostics)
 
 
-def _fit_replicate(
-    center: tf.Tensor,
-    offsets: tf.Tensor,
-    scores: tf.Tensor,
-    blocks: tuple[ScoreGeometryBlock, ...],
-    config: BlockScoreGeometryConfig,
-) -> tuple[tf.Tensor, list[Mapping[str, Any]], str | None]:
-    dimension = int(center.shape[0])
-    precision = tf.zeros([dimension, dimension], tf.float64)
-    reports: list[Mapping[str, Any]] = []
-    response = center[None, :] - scores
-    for block in blocks:
-        z_block = offsets[:, block.start : block.stop]
-        response_block = response[:, block.start : block.stop]
-        design = _symmetric_score_design(z_block, block.size)
-        coefficient_count = block.size * (block.size + 1) // 2
-        flat_design = tf.reshape(design, [-1, coefficient_count])
-        flat_response = tf.reshape(response_block, [-1, 1])
-        singular = tf.linalg.svd(flat_design, compute_uv=False)
-        tolerance = (
-            tf.reduce_max(singular)
-            * tf.cast(tf.shape(flat_design)[0], tf.float64)
-            * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
-        )
-        rank = int(tf.reduce_sum(tf.cast(singular > tolerance, tf.int32)).numpy())
-        row_singular = tf.linalg.svd(z_block, compute_uv=False)
-        row_tolerance = (
-            tf.reduce_max(row_singular)
-            * tf.cast(tf.shape(z_block)[0], tf.float64)
-            * tf.experimental.numpy.finfo(tf.float64.as_numpy_dtype).eps
-        )
-        row_rank = int(tf.reduce_sum(tf.cast(row_singular > row_tolerance, tf.int32)).numpy())
-        if rank < coefficient_count or row_rank < block.size:
-            reports.append(
-                {
-                    **block.payload(),
-                    "coefficient_count": coefficient_count,
-                    "design_rank": rank,
-                    "offset_rank": row_rank,
-                    "status": "rank_deficient",
-                }
-            )
-            return precision, reports, "block_design_rank_deficient"
-        ridge = tf.sqrt(tf.constant(config.ridge, tf.float64)) * tf.eye(
-            coefficient_count, dtype=tf.float64
-        )
-        coefficients = tf.linalg.lstsq(
-            tf.concat((flat_design, ridge), axis=0),
-            tf.concat((flat_response, tf.zeros([coefficient_count, 1], tf.float64)), axis=0),
-            fast=False,
-        )[:, 0]
-        block_precision = _unpack_symmetric(coefficients, block.size)
-        eigenvalues = tf.linalg.eigvalsh(block_precision)
-        minimum = float(tf.reduce_min(eigenvalues).numpy())
-        maximum = float(tf.reduce_max(eigenvalues).numpy())
-        nonpositive = int(tf.reduce_sum(tf.cast(eigenvalues <= 0.0, tf.int32)).numpy())
-        condition = np.inf if minimum <= 0.0 else maximum / minimum
-        reports.append(
-            {
-                **block.payload(),
-                "coefficient_count": coefficient_count,
-                "design_rank": rank,
-                "offset_rank": row_rank,
-                "raw_minimum_eigenvalue": minimum,
-                "raw_maximum_eigenvalue": maximum,
-                "raw_nonpositive_eigenvalue_count": nonpositive,
-                "raw_condition_number": condition,
-                "status": "usable"
-                if nonpositive == 0 and condition <= config.max_condition_number
-                else "raw_not_spd_or_conditioned",
-            }
-        )
-        if nonpositive:
-            return precision, reports, "raw_block_precision_not_spd"
-        if not np.isfinite(condition) or condition > config.max_condition_number:
-            return precision, reports, "block_condition_number_rejected"
-        indices = tf.range(block.start, block.stop, dtype=tf.int32)
-        grid = tf.stack(tf.meshgrid(indices, indices, indexing="ij"), axis=-1)
-        precision = tf.tensor_scatter_nd_update(
-            precision, tf.reshape(grid, [-1, 2]), tf.reshape(block_precision, [-1])
-        )
-    return precision, reports, None
+def _replicate_reports(report, blocks):
+    """Decode the already ordered/truncated tensor reports into the public schema."""
+    replicates = []
+    for index in range(report["replicate_count"]):
+        block_reports = []
+        code = 0
+        for block_index in range(report["block_counts"][index]):
+            block = blocks[block_index]
+            values = report["blocks"][index][block_index]
+            code = int(values[6])
+            block_report = {**block.payload(),
+                "coefficient_count": block.size * (block.size + 1) // 2,
+                "design_rank": int(values[0]), "offset_rank": int(values[1])}
+            if code == 2:
+                block_report["status"] = "rank_deficient"
+            else:
+                block_report.update({"raw_minimum_eigenvalue": values[2],
+                    "raw_maximum_eigenvalue": values[3],
+                    "raw_nonpositive_eigenvalue_count": int(values[4]),
+                    "raw_condition_number": values[5],
+                    "status": "usable" if code == 0 else "raw_not_spd_or_conditioned"})
+            block_reports.append(block_report)
+        record = {"replicate_index": index, "blocks": block_reports,
+            "status": "usable" if code == 0 else native.STATUSES[code]}
+        if code == 0:
+            record.update({"selection_relative_rmse": report["selection"][index][0],
+                "selection_unexplained_response_fraction": report["selection"][index][1]})
+        replicates.append(record)
+    return replicates
 
 
-def _score_diagnostics(
-    precision: tf.Tensor,
-    center: tf.Tensor,
-    offsets: tf.Tensor,
-    scores: tf.Tensor,
-) -> tuple[float, float]:
-    response = center[None, :] - scores
-    prediction = tf.matmul(offsets, precision, transpose_b=True)
-    residual = prediction - response
-    response_scale = tf.maximum(
-        tf.sqrt(tf.reduce_mean(tf.square(response))), tf.constant(1.0e-15, tf.float64)
-    )
-    relative_rmse = tf.sqrt(tf.reduce_mean(tf.square(residual))) / response_scale
-    unexplained = tf.linalg.norm(residual) / tf.maximum(
-        tf.linalg.norm(response), tf.constant(1.0e-15, tf.float64)
-    )
-    return float(relative_rmse.numpy()), float(unexplained.numpy())
-
-
-def _stability(
-    precisions: Sequence[tf.Tensor],
-    config: BlockScoreGeometryConfig,
-    dimension: int,
-) -> Mapping[str, Any]:
+def _stability_report(report, config, dimension, replicate_count):
     comparisons = []
-    passed = True
-    rank = min(config.principal_subspace_rank, dimension - 1)
-    for left_index, left in enumerate(precisions):
-        for right_index in range(left_index + 1, len(precisions)):
-            metrics = dict(
-                compare_precision_geometry(
-                    left.numpy(), precisions[right_index].numpy(), subspace_rank=rank
-                )
-            )
-            generalized = metrics["generalized_eigenvalues"]
-            checks = {
-                "generalized_eigenvalue_spread": bool(
-                    generalized is not None
-                    and generalized["spread"] <= config.generalized_eigenvalue_spread_cap
-                ),
-                "trace_normalized_frobenius": bool(
-                    metrics["trace_normalized_frobenius"]
-                    <= config.trace_normalized_frobenius_cap
-                ),
-                "trace_normalized_operator": bool(
-                    metrics["trace_normalized_operator"]
-                    <= config.trace_normalized_operator_cap
-                ),
-                "principal_angle_degrees": bool(
-                    metrics["maximum_principal_angle_degrees"] is not None
-                    and metrics["maximum_principal_angle_degrees"]
-                    <= config.principal_angle_degrees_cap
-                ),
-            }
-            pair_passed = all(checks.values())
-            passed = passed and pair_passed
-            comparisons.append(
-                {
-                    "left_replicate": left_index,
-                    "right_replicate": right_index,
-                    "passed": pair_passed,
-                    "checks": checks,
-                    "metrics": metrics,
-                }
-            )
-    return {"passed": passed, "principal_subspace_rank": rank, "comparisons": comparisons}
+    pair_index = 0
+    for left in range(replicate_count):
+        for right in range(left + 1, replicate_count):
+            values = report["pairs"][pair_index]
+            summary = values[3 * dimension:]
+            rank = int(summary[0])
+            metrics = {"left_raw_eigenvalues": values[:dimension],
+                "right_raw_eigenvalues": values[dimension:2 * dimension],
+                "left_nonpositive_count": int(summary[7]),
+                "right_nonpositive_count": int(summary[8]),
+                "trace_normalized_frobenius": summary[4],
+                "trace_normalized_operator": summary[5],
+                "positive_subspace_rank": rank,
+                "principal_angles_degrees": values[2 * dimension:2 * dimension + rank],
+                "maximum_principal_angle_degrees": summary[6] if rank else None,
+                "generalized_eigenvalues": {"minimum": summary[1], "maximum": summary[2],
+                    "spread": summary[3]} if bool(summary[9]) else None}
+            checks = dict(zip(("generalized_eigenvalue_spread", "trace_normalized_frobenius",
+                "trace_normalized_operator", "principal_angle_degrees"), report["checks"][pair_index], strict=True))
+            comparisons.append({"left_replicate": left, "right_replicate": right,
+                "passed": report["pair_passed"][pair_index], "checks": checks, "metrics": metrics})
+            pair_index += 1
+    return {"passed": report["stability_passed"],
+        "principal_subspace_rank": min(config.principal_subspace_rank, dimension - 1),
+        "comparisons": comparisons}
 
 
 def _validate_blocks(
@@ -523,33 +353,6 @@ def _matrix_tensor(value: Any, dimension: int, name: str) -> tf.Tensor:
     return tensor
 
 
-def _symmetric_score_design(z: tf.Tensor, dimension: int) -> tf.Tensor:
-    columns = []
-    for row in range(dimension):
-        for column in range(row, dimension):
-            contribution = z[:, column, None] * tf.one_hot(
-                row, dimension, dtype=tf.float64
-            )[None, :]
-            if row != column:
-                contribution += z[:, row, None] * tf.one_hot(
-                    column, dimension, dtype=tf.float64
-                )[None, :]
-            columns.append(contribution)
-    return tf.stack(columns, axis=2)
-
-
-def _unpack_symmetric(coefficients: tf.Tensor, dimension: int) -> tf.Tensor:
-    matrix = tf.zeros([dimension, dimension], tf.float64)
-    index = 0
-    for row in range(dimension):
-        for column in range(row, dimension):
-            value = coefficients[index]
-            matrix += tf.scatter_nd([[row, column]], [value], [dimension, dimension])
-            if row != column:
-                matrix += tf.scatter_nd([[column, row]], [value], [dimension, dimension])
-            index += 1
-    return matrix
-
 
 def _rejected(
     status: str,
@@ -571,10 +374,8 @@ def _json_ready(value: Any) -> Any:
         return {str(key): _json_ready(item) for key, item in value.items()}
     if isinstance(value, (tuple, list)):
         return [_json_ready(item) for item in value]
-    if isinstance(value, np.ndarray):
-        return value.tolist()
-    if isinstance(value, np.generic):
-        return value.item()
+    if tf.is_tensor(value) or hasattr(value, "__array_interface__"):
+        return numeric_tensor(value).numpy().tolist()
     return value
 
 

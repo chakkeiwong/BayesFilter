@@ -1,0 +1,75 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791227691.759330 2946312 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791227691.763274 2946312 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791227691.773139 2946312 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791227691.773229 2946312 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791227691.773236 2946312 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791227691.773238 2946312 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791227694.320605 2946312 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791227694.718838 2946312 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5b9fc84c9360
+I0000 00:00:1791227696.911794 2946312 cuda_dnn.cc:529] Loaded cuDNN version 92000
+I0000 00:00:1791227698.391919 2946312 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+m13-t10 1024 control 0 valid True
+m13-t10 1024 control 1 valid True
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 293, in worker
+    row["bootstrap"]=evaluate(bootstrap,param,observed,seed)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 92, in evaluate
+    value=m.serial(function(*values))
+                   ^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_expanded.py", line 86, in function
+    return dict(value=base.bootstrap_reference(spec, observed, n)(theta, seed))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 250, in bootstrap_reference
+    model = specification(spec["name"], tf.float64)["model"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 84, in specification
+    fixture = range_fixture(t, 1704)
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 30, in range_fixture
+    base = build_range_bearing_fixture_tf()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py", line 99, in build_range_bearing_fixture_tf
+    "A": _tensor_to_nested_float(A),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py", line 248, in _tensor_to_nested_float
+    return tf.cast(value, DTYPE).numpy().tolist()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SymbolicTensor' object has no attribute 'numpy'
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 433, in <module>
+    if __name__=="__main__": main()
+                             ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 430, in main
+    worker(args)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 293, in worker
+    row["bootstrap"]=evaluate(bootstrap,param,observed,seed)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 92, in evaluate
+    value=m.serial(function(*values))
+                   ^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_expanded.py", line 86, in function
+    return dict(value=base.bootstrap_reference(spec, observed, n)(theta, seed))
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 250, in bootstrap_reference
+    model = specification(spec["name"], tf.float64)["model"]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 84, in specification
+    fixture = range_fixture(t, 1704)
+              ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/marginal_weight_campaign.py", line 30, in range_fixture
+    base = build_range_bearing_fixture_tf()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py", line 99, in build_range_bearing_fixture_tf
+    "A": _tensor_to_nested_float(A),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py", line 248, in _tensor_to_nested_float
+    return tf.cast(value, DTYPE).numpy().tolist()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SymbolicTensor' object has no attribute 'numpy'

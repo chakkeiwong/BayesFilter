@@ -591,7 +591,36 @@ class HMCCandidateExecutionBinding:
                       "sample_chain_call_s_scope": "equal_share_of_enclosing_batch_call"})
             for index in range(batch)]
 
-    def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> tuple[str, ...]:
+    def health_failures(self, initial: Any, samples: Any, trace: Mapping[str, Any],
+                        *, chunk_counts: Sequence[int] | None = None) -> tuple[str, ...]:
+        if chunk_counts is not None:
+            import tensorflow as tf
+            if (samples.dtype != tf.float64 or samples.shape.rank != 3
+                    or tuple(samples.shape[1:]) != tuple(self.initial_active_state.shape)):
+                raise ValueError("candidate sample shape/dtype mismatch")
+            # Check the complete trace before slicing; otherwise extra trailing
+            # rows would disappear and malformed telemetry could look valid.
+            for value in tf.nest.flatten(trace):
+                if value.shape.rank is None or value.shape.rank < 2 or value.shape[:2] != samples.shape[:2]:
+                    raise ValueError("misaligned health trace before chunk partition")
+            counts = tuple(chunk_counts)
+            total = int(samples.shape[0])
+            limit = self.config.chunk_max_results
+            expected = tuple(min(limit, total-start) for start in range(0, total, limit))
+            if not counts or any(type(count) is not int for count in counts) or counts != expected:
+                raise ValueError("numerical health chunk partition disagrees with execution config")
+            failures = []
+            start = 0
+            for count in counts:
+                stop = start + count
+                # Each native invocation bootstraps its own target/score cache.
+                # Validate exact cache preservation within that lifetime, using
+                # the previous retained position at invocation boundaries.
+                prior = initial if start == 0 else samples[start-1]
+                part = tf.nest.map_structure(lambda value: value[start:stop], trace)
+                failures.extend(self.health_failures(prior, samples[start:stop], part))
+                start = stop
+            return tuple(dict.fromkeys(failures))
         if 'proposal_failure_code' in trace:
             from .hmc_proposal_rejection import guarded_health_failures
             return guarded_health_failures(initial, samples, trace)
@@ -686,11 +715,28 @@ class HMCCandidateExecutionBinding:
                 "metropolis_value_mismatch", "metropolis_score_mismatch",
                 "nonfinite_current_score", "proposal_health_classification_mismatch")
             failures.extend(name for name, okay in zip(names, selection) if not okay)
+        elif "accepted_target_score_finite" in trace:
+            cached_values_ok = tf.reduce_all(trace["is_accepted"][1:]
+                | tf.equal(trace["target_log_prob"][1:], trace["target_log_prob"][:-1]))
+            previous_value = trace.get("previous_target_log_prob")
+            if previous_value is not None:
+                if previous_value.shape != samples.shape[:2] or previous_value.dtype != tf.float64:
+                    raise ValueError("invalid previous target-value trace")
+                cached_values_ok &= tf.reduce_all(tf.math.is_finite(previous_value))
+                cached_values_ok &= tf.reduce_all(trace["is_accepted"]
+                    | tf.equal(trace["target_log_prob"], previous_value))
+                cached_values_ok &= tf.reduce_all(tf.equal(
+                    previous_value[1:], trace["target_log_prob"][:-1]))
+            # Old traces lack the pre-choice cache. Do not re-evaluate it in a
+            # different graph/backend and demand bitwise equality. New q20
+            # traces carry it directly; legacy rows retain adjacent checks.
+            if not bool(cached_values_ok):
+                failures.append("rejected_value_cache_changed")
         if "divergence" in trace:
             if tuple(trace["divergence"].shape) != shape or trace["divergence"].dtype != tf.bool:
                 raise ValueError("invalid native divergence trace")
-            if bool(tf.reduce_any(trace["divergence"])):
-                failures.append("native_divergence_positive")
+            # Native energy/divergence telemetry is not an execution veto.
+            # Its count is preserved separately in acceptance evidence.
         if self.config.target_status_trace_policy == "per_chain_step":
             for key in ("target_status_telemetry", "proposed_target_status_telemetry"):
                 telemetry = trace.get(key, {})
@@ -710,14 +756,28 @@ class HMCCandidateExecutionBinding:
                     status_shape = (int(tf.reduce_sum(tf.cast(~status_rejection, tf.int32))),)
                     status_failed = target_status_telemetry_has_failure(telemetry, expected_shape=status_shape)
                 if status_failed:
-                    failures.append(key + "_failed")
+                    reason = key + "_failed"
+                    if key == "proposed_target_status_telemetry":
+                        # Preserve the veto. Classify only failures confined to
+                        # nonfinite proposed positions/values as numerical
+                        # exploration boundaries. A finite failed proposal or
+                        # missing/malformed telemetry never gets this label.
+                        finite = (tf.reduce_all(tf.math.is_finite(trace["proposed_state"]), axis=-1)
+                                  & tf.math.is_finite(trace["proposed_target_log_prob"]))
+                        finite_status = {name: tf.boolean_mask(value, finite)
+                                         for name, value in trace[key].items()}
+                        if not target_status_telemetry_has_failure(finite_status,
+                                expected_shape=(int(tf.reduce_sum(tf.cast(finite, tf.int32))),)):
+                            reason = "nonfinite_proposal_target_status"
+                    failures.append(reason)
         return tuple(failures)
 
-    def analyze(self, initial: Any, samples: Any, trace: Mapping[str, Any]) -> Mapping[str, Any]:
+    def analyze(self, initial: Any, samples: Any, trace: Mapping[str, Any],
+                *, chunk_counts: Sequence[int] | None = None) -> Mapping[str, Any]:
         import tensorflow as tf
         from bayesfilter.inference.hmc_verification import evaluate_hmc_acceptance_evidence
 
-        failures = self.health_failures(initial, samples, trace)
+        failures = self.health_failures(initial, samples, trace, chunk_counts=chunk_counts)
         warmup = self.config.num_warmup_steps
         divergence = trace.get("divergence")
         evidence = evaluate_hmc_acceptance_evidence(
@@ -729,6 +789,9 @@ class HMCCandidateExecutionBinding:
         decision = HMCCandidateDecision.from_evidence(evidence,
             hard_vetoes=tuple(reason for reason in failures if reason != "native_divergence_positive"),
             shared_invalidity="metropolis_state_mismatch" in failures)
+        if decision.hard_vetoes and decision.evidence_validity == "valid":
+            decision = HMCCandidateDecision("unavailable", "candidate_data_invalid",
+                hard_vetoes=decision.hard_vetoes, promotion_vetoes=decision.promotion_vetoes)
         return {**decision.payload(), "acceptance": evidence.pooled_mean,
                 "acceptance_evidence": evidence.payload(),
                 "engineering_invalidity_reasons": evidence.engineering_invalidity_reasons,
@@ -778,8 +841,8 @@ class HMCCandidateExecutionBinding:
         digest = _json_native_sha256(numerical)
         if digest in self._analysis_cache:
             return _json_copy(self._analysis_cache[digest])
-        from .hmc_acceptance_trials import NUMERICAL_SCHEMA, evidence_analysis
-        if numerical.get("schema") == NUMERICAL_SCHEMA:
+        from .hmc_acceptance_trials import NUMERICAL_SCHEMAS, evidence_analysis
+        if numerical.get("schema") in NUMERICAL_SCHEMAS:
             replay_scope = _REPLAY_ANALYSES.get()
             shared = (replay_scope[1] if replay_scope is not None
                       and self._replay_scope_token is replay_scope[0] else None)
@@ -822,7 +885,8 @@ class HMCCandidateExecutionBinding:
         else:
             analysis = self.analyze(_tensor_from_payload(numerical["initial_state"]),
                                    _tensor_from_payload(numerical["samples"]),
-                                   _trace_from_payload(numerical["trace"]))
+                                   _trace_from_payload(numerical["trace"]),
+                                   chunk_counts=tuple(chunk["count"] for chunk in numerical["chunks"]))
         self._analysis_cache[digest] = _json_copy(analysis)
         return analysis
 
@@ -921,7 +985,8 @@ class HMCCandidateExecutionBinding:
         samples = tf.concat([_tensor_from_payload(chunk["samples"]) for chunk in chunks], axis=0)
         traces = [_trace_from_payload(chunk["trace"]) for chunk in chunks]
         trace = tf.nest.map_structure(lambda *parts: tf.concat(parts, axis=0), *traces)
-        analysis = self.analyze(self.initial_active_state, samples, trace)
+        analysis = self.analyze(self.initial_active_state, samples, trace,
+                                chunk_counts=tuple(chunk["count"] for chunk in chunks))
         numerical = {
             "schema": "bayesfilter.hmc_candidate_numerical_evidence.v1",
             "binding_hash": self.binding_hash, "candidate": candidate.payload(), "work": work.payload(),

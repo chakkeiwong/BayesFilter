@@ -1,0 +1,410 @@
+{
+  "schema": "bayesfilter.five_model_hmc_campaign.v1",
+  "status": "INCOMPLETE_SEE_MODEL_STATUS",
+  "started_utc": "2026-10-11T05:09:39.342340+00:00",
+  "particles": 4032,
+  "dtype": "float32",
+  "tf32": false,
+  "horizons": {
+    "lgssm": 50,
+    "ksc": 50,
+    "predator_prey": 50,
+    "sir_d18": 50,
+    "range_bearing": 20
+  },
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-n4032-master-2026-10-11.md",
+  "prior_choice": "benchmark-normal-v1",
+  "through_phase": "inference",
+  "wall_budget_seconds": 1000.0,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/pytest/__main__.py",
+    "-q",
+    "tests/test_surrogate_hmc_five_model_master.py",
+    "tests/test_hmc_sequential_verification.py",
+    "tests/test_hmc_tensorflow_verified.py",
+    "--basetemp",
+    "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final"
+  ],
+  "audit": {
+    "status": "test_only"
+  },
+  "prepared_root": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+  "models": {
+    "lgssm": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "mechanics": {
+        "status": "PASS_HMC_MECHANICS_ONLY",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "lgssm",
+          "--phase",
+          "mechanics",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm/mechanics",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.346323+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm-mechanics.log",
+        "runtime_estimate": null,
+        "stage_wall_budget_seconds": 999.9960847510956,
+        "inference_budget_policy": null,
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm/mechanics/pilot.json",
+        "wall_seconds": 0.000504049938172102,
+        "finished_utc": "2026-10-11T05:09:39.347473+00:00"
+      },
+      "inference": {
+        "status": "HMC_TUNING_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "lgssm",
+          "--phase",
+          "inference",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm/inference",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.355628+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm-inference.log",
+        "runtime_estimate": {
+          "hours_at_pilot_rate": 0.010466666666666666,
+          "available_hours": 0.27777411684781933,
+          "role": "compilation-inclusive L1 timing; not a lower bound or convergence forecast"
+        },
+        "stage_wall_budget_seconds": 333.3289402173832,
+        "inference_budget_policy": "equal_remaining_share_with_unused_time_carried_forward",
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/lgssm/inference/hmc.json",
+        "wall_seconds": 0.000293404096737504,
+        "finished_utc": "2026-10-11T05:09:39.356553+00:00"
+      }
+    },
+    "ksc": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "mechanics": {
+        "status": "PASS_HMC_MECHANICS_ONLY",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "ksc",
+          "--phase",
+          "mechanics",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc/mechanics",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.342995+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc-mechanics.log",
+        "runtime_estimate": null,
+        "stage_wall_budget_seconds": 999.9994293130003,
+        "inference_budget_policy": null,
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc/mechanics/pilot.json",
+        "wall_seconds": 0.0004862099885940552,
+        "finished_utc": "2026-10-11T05:09:39.343961+00:00"
+      },
+      "inference": {
+        "status": "HMC_TUNING_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "ksc",
+          "--phase",
+          "inference",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc/inference",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.351399+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc-inference.log",
+        "runtime_estimate": {
+          "hours_at_pilot_rate": 0.010466666666666666,
+          "available_hours": 0.2777752849580591,
+          "role": "compilation-inclusive L1 timing; not a lower bound or convergence forecast"
+        },
+        "stage_wall_budget_seconds": 199.99820516980253,
+        "inference_budget_policy": "equal_remaining_share_with_unused_time_carried_forward",
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/ksc/inference/hmc.json",
+        "wall_seconds": 0.0003474028781056404,
+        "finished_utc": "2026-10-11T05:09:39.352354+00:00"
+      }
+    },
+    "predator_prey": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "mechanics": {
+        "status": "PASS_HMC_MECHANICS_ONLY",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "predator_prey",
+          "--phase",
+          "mechanics",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey/mechanics",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.348064+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey-mechanics.log",
+        "runtime_estimate": null,
+        "stage_wall_budget_seconds": 999.9943397589959,
+        "inference_budget_policy": null,
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey/mechanics/pilot.json",
+        "wall_seconds": 0.00043553090654313564,
+        "finished_utc": "2026-10-11T05:09:39.349021+00:00"
+      },
+      "inference": {
+        "status": "HMC_TUNING_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "predator_prey",
+          "--phase",
+          "inference",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey/inference",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.357362+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey-inference.log",
+        "runtime_estimate": {
+          "hours_at_pilot_rate": 0.010466666666666666,
+          "available_hours": 0.27777363570943836,
+          "role": "compilation-inclusive L1 timing; not a lower bound or convergence forecast"
+        },
+        "stage_wall_budget_seconds": 499.99254427698907,
+        "inference_budget_policy": "equal_remaining_share_with_unused_time_carried_forward",
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/predator_prey/inference/hmc.json",
+        "wall_seconds": 0.00038227299228310585,
+        "finished_utc": "2026-10-11T05:09:39.358411+00:00"
+      }
+    },
+    "sir_d18": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "mechanics": {
+        "status": "PASS_HMC_MECHANICS_ONLY",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "sir_d18",
+          "--phase",
+          "mechanics",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18/mechanics",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.349689+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18-mechanics.log",
+        "runtime_estimate": null,
+        "stage_wall_budget_seconds": 999.9927136669867,
+        "inference_budget_policy": null,
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18/mechanics/pilot.json",
+        "wall_seconds": 0.0004811100661754608,
+        "finished_utc": "2026-10-11T05:09:39.350720+00:00"
+      },
+      "inference": {
+        "status": "HMC_TUNING_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "sir_d18",
+          "--phase",
+          "inference",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18/inference",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.359261+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18-inference.log",
+        "runtime_estimate": {
+          "hours_at_pilot_rate": 0.010466666666666666,
+          "available_hours": 0.27777310661583515,
+          "role": "compilation-inclusive L1 timing; not a lower bound or convergence forecast"
+        },
+        "stage_wall_budget_seconds": 999.9831838170066,
+        "inference_budget_policy": "equal_remaining_share_with_unused_time_carried_forward",
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/sir_d18/inference/hmc.json",
+        "wall_seconds": 0.00033220998011529446,
+        "finished_utc": "2026-10-11T05:09:39.360318+00:00"
+      }
+    },
+    "range_bearing": {
+      "endpoint-audit": {
+        "status": "PASS_ENDPOINT_MECHANICS",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "filter-tuning": {
+        "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+        "reused_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/prepared",
+        "result": "prepared"
+      },
+      "mechanics": {
+        "status": "PASS_HMC_MECHANICS_ONLY",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "range_bearing",
+          "--phase",
+          "mechanics",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing/mechanics",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.344613+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing-mechanics.log",
+        "runtime_estimate": null,
+        "stage_wall_budget_seconds": 999.997799520148,
+        "inference_budget_policy": null,
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing/mechanics/pilot.json",
+        "wall_seconds": 0.000546501949429512,
+        "finished_utc": "2026-10-11T05:09:39.345690+00:00"
+      },
+      "inference": {
+        "status": "HMC_TUNING_REPAIR_REQUIRED",
+        "command": [
+          "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+          "stage-worker",
+          "--model",
+          "range_bearing",
+          "--phase",
+          "inference",
+          "--output",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing/inference",
+          "--gpu",
+          "1",
+          "--priors",
+          "benchmark-normal-v1",
+          "--selection",
+          "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/selection.json"
+        ],
+        "started_utc": "2026-10-11T05:09:39.353089+00:00",
+        "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing-inference.log",
+        "runtime_estimate": {
+          "hours_at_pilot_rate": 0.010466666666666666,
+          "available_hours": 0.2777748178172624,
+          "role": "compilation-inclusive L1 timing; not a lower bound or convergence forecast"
+        },
+        "stage_wall_budget_seconds": 249.99733603553614,
+        "inference_budget_policy": "equal_remaining_share_with_unused_time_carried_forward",
+        "returncode": 0,
+        "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-03/review-final/test_campaign_reserves_model_b0/run/range_bearing/inference/hmc.json",
+        "wall_seconds": 0.00030961702577769756,
+        "finished_utc": "2026-10-11T05:09:39.354061+00:00"
+      }
+    }
+  },
+  "wall_seconds": 0.018733880948275328,
+  "remaining_wall_seconds": 999.981265878072,
+  "completed_models": [],
+  "finished_utc": "2026-10-11T05:09:39.361061+00:00",
+  "scientific_default_promoted": false
+}

@@ -1,0 +1,858 @@
+{
+  "status": "complete",
+  "scientific_disposition": "checked numerical repairs accepted; accuracy/default promotion vetoed; full paper replication unresolved",
+  "assembled_utc": "2026-09-21T19:11:55.138281+00:00",
+  "git_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "git_branch": "surrogate-hmc",
+  "dirty_worktree": true,
+  "provenance_note": "Executed source snapshots and hashes in every attempt are authoritative; final source hashes below include local uncommitted work. Unrelated changes were preserved.",
+  "working_directory": "/home/chakwong/BayesFilter",
+  "plan": "docs/plans/iapf-r-targeted-fitting-repair-2026-09-22.md",
+  "result": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/result.md",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "R_version": "R scripting front-end version 4.1.2 (2021-11-01)",
+  "hardware_mode": "independent CPU R reference; single BLAS/OpenMP thread",
+  "CPU_only": true,
+  "GPU_intentionally_hidden": true,
+  "GPU_memory_policy": "N/A: R CPU reference, no TensorFlow or GPU initialization",
+  "data_version": "Synthetic first-study linear Gaussian model in snapshotted reference_iapf_paper.R; exact data/filter seeds and preserved saved inputs are recorded below and in each attempt.",
+  "seed_records_columns": [
+    "dimension",
+    "data_seed",
+    "filter_seed"
+  ],
+  "seed_records": {
+    "learning": [
+      [
+        5,
+        92210005,
+        92241014
+      ],
+      [
+        5,
+        92220005,
+        92241014
+      ],
+      [
+        20,
+        92210020,
+        92241029
+      ],
+      [
+        20,
+        92220020,
+        92241029
+      ],
+      [
+        80,
+        92210080,
+        92241089
+      ],
+      [
+        80,
+        92220080,
+        92241089
+      ]
+    ],
+    "bridge-authoritative": [
+      [
+        80,
+        92100180,
+        92201192
+      ],
+      [
+        80,
+        92100180,
+        92202201
+      ],
+      [
+        80,
+        92100180,
+        92203210
+      ],
+      [
+        80,
+        92100180,
+        92204219
+      ],
+      [
+        80,
+        92100280,
+        92201292
+      ],
+      [
+        80,
+        92100280,
+        92202301
+      ],
+      [
+        80,
+        92100280,
+        92203310
+      ],
+      [
+        80,
+        92100280,
+        92204319
+      ]
+    ],
+    "analytic-controls": [
+      [
+        5,
+        92210005,
+        92241014
+      ],
+      [
+        5,
+        92210005,
+        92242023
+      ],
+      [
+        5,
+        92220005,
+        92241014
+      ],
+      [
+        5,
+        92220005,
+        92242023
+      ],
+      [
+        20,
+        92210020,
+        92241029
+      ],
+      [
+        20,
+        92210020,
+        92242038
+      ],
+      [
+        20,
+        92220020,
+        92241029
+      ],
+      [
+        20,
+        92220020,
+        92242038
+      ],
+      [
+        80,
+        92210080,
+        92241089
+      ],
+      [
+        80,
+        92210080,
+        92242098
+      ],
+      [
+        80,
+        92220080,
+        92241089
+      ],
+      [
+        80,
+        92220080,
+        92242098
+      ]
+    ]
+  },
+  "heldout_region_seeds": [
+    92230001,
+    92230003
+  ],
+  "warm_and_saved_cloud_input_identity": "Per-attempt input_sha256 maps bind all reused clouds and targets; repeated saved records were not counted as independent replications.",
+  "source_paper_and_code_audit": {
+    "path": "docs/plans/artifacts/iapf-r-root-cause-audit-20260922-01/result.md",
+    "sha256": "8fb4f4c417f830b977e64b5b795f85ebcea6ed6e629460dee1e3a773fad3edbd",
+    "note": "Checked derivations and primary-paper anchors are in this prior audit; this extension is not original-author code."
+  },
+  "budget": {
+    "numerical_worker_seconds": 494.012353748898,
+    "worker_seconds_cap": 4800,
+    "launches": 29,
+    "launch_cap": 30,
+    "prior_used_seconds": 109582.18247977401,
+    "cumulative_used_seconds": 110076.19483352291,
+    "cumulative_cap_seconds": 172800,
+    "prior_allocation_remaining_at_start_seconds": 5007.613923305995,
+    "remaining_prior_allocation_seconds": 4513.601569557097,
+    "original_deadline_utc": "2026-09-21T20:04:26Z",
+    "deadline_renewed": false,
+    "accounting": "Aggregate numerical R worker wall time; orchestration, code editing, post-run reporting and documentation are separate."
+  },
+  "started_utc": "2026-09-21T18:38:20.720376+00:00",
+  "numerical_finished_utc": "2026-09-21T19:01:14.657230+00:00",
+  "process_statuses": {
+    "complete_exit_0": 29,
+    "timeout": 0,
+    "infrastructure_failure": 0
+  },
+  "localized_candidate_repair": {
+    "failed_attempt": "attempt22-bridge",
+    "classification": "Constrained L-BFGS-B iteration limit; scaled KKT 1.50861217010034e-6 exceeded unchanged 1e-6 criterion",
+    "repair": "Direct SVD active-set fallback for the same convex objective and bounds",
+    "focused_regression_attempt": "attempt27-checks",
+    "focused_checks_passed": 43,
+    "same_seed_full_retry": "attempt28-bridge",
+    "retry_status": "complete",
+    "failed_evidence_preserved": true
+  },
+  "attempts": [
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt01-checks/manifest.json",
+      "sha256": "86c55c3eb35a852ab9912c1546b324ce2a20ce0da260b6b156cb4bd231e48f9f",
+      "stage": "checks",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt01-checks/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "checks",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt01-checks/results"
+      ],
+      "wall_seconds": 0.4661509500583634,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt02-warm/manifest.json",
+      "sha256": "3e2a6f0f5a727e0a5cd85ed94d35d8ee63d91c6142ebc8007b71759c5f0778ab",
+      "stage": "warm",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt02-warm/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "warm",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt02-warm/results"
+      ],
+      "wall_seconds": 1.5696589399594814,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt03-solver/manifest.json",
+      "sha256": "ccb8072d5d0cf1ca774cd03cc7f58f4bce07062b7977a77dec844555238fa01c",
+      "stage": "solver",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt03-solver/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "solver",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt03-solver/results"
+      ],
+      "wall_seconds": 20.172530472045764,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt04-analytic/manifest.json",
+      "sha256": "0b53467e2b8960a06ec40320cf616ffebc1fcd0c38f0fbdbfbc02e6d9f2c6397",
+      "stage": "analytic",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt04-analytic/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "analytic",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt04-analytic/results"
+      ],
+      "wall_seconds": 24.98748676502146,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt05-learning/manifest.json",
+      "sha256": "53426ecbdcb00fed53eb010864ae6c23e23c534cf5cda64d079921c67ec458b3",
+      "stage": "learning",
+      "arguments": [
+        "5",
+        "92210005",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt05-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt05-learning/results",
+        "5",
+        "92210005",
+        "qr"
+      ],
+      "wall_seconds": 2.2711587729863822,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt06-learning/manifest.json",
+      "sha256": "aa5c15bd70eab8c88f3fc30b69bcbf965ab7508a8233e2b4bf022b2b518eda6e",
+      "stage": "learning",
+      "arguments": [
+        "5",
+        "92210005",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt06-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt06-learning/results",
+        "5",
+        "92210005",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 1.8192896789405495,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt07-learning/manifest.json",
+      "sha256": "2d9fd082e27edbe9de159fe75a9c6e3c44ae663042e2dc229b58b58dfc1e15c3",
+      "stage": "learning",
+      "arguments": [
+        "5",
+        "92220005",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt07-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt07-learning/results",
+        "5",
+        "92220005",
+        "qr"
+      ],
+      "wall_seconds": 2.1201147160027176,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt08-learning/manifest.json",
+      "sha256": "0ac0e1b95389fad14a71a59083c37df76bc92bfd3322aaaacc4f8087f18397a7",
+      "stage": "learning",
+      "arguments": [
+        "5",
+        "92220005",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt08-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt08-learning/results",
+        "5",
+        "92220005",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 1.8193635999923572,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt09-learning/manifest.json",
+      "sha256": "43ff521cef7db3c27c416f79608b640a0a80a736229b552947f9007c22bc9f52",
+      "stage": "learning",
+      "arguments": [
+        "20",
+        "92210020",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt09-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt09-learning/results",
+        "20",
+        "92210020",
+        "qr"
+      ],
+      "wall_seconds": 5.229688945109956,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt10-learning/manifest.json",
+      "sha256": "f5e49e8bd6c7574007b723bb5247a7657cd2ba2141b67e08325d65c79aefb5cc",
+      "stage": "learning",
+      "arguments": [
+        "20",
+        "92210020",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt10-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt10-learning/results",
+        "20",
+        "92210020",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 4.878672913997434,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt11-learning/manifest.json",
+      "sha256": "f4bfa9dcac19719e0cfe13e163aa92e093a99f312034d4ce88cc12ffb41a01e7",
+      "stage": "learning",
+      "arguments": [
+        "20",
+        "92220020",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt11-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt11-learning/results",
+        "20",
+        "92220020",
+        "qr"
+      ],
+      "wall_seconds": 5.23042652499862,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt12-learning/manifest.json",
+      "sha256": "f039cc11855fe28818098d56ecb09291e3ec5b56ab9373672275b247816d58ed",
+      "stage": "learning",
+      "arguments": [
+        "20",
+        "92220020",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt12-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt12-learning/results",
+        "20",
+        "92220020",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 4.82761798100546,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt13-learning/manifest.json",
+      "sha256": "8c7b3af0eccb2e5ec16ef4c0d97578e850e91d84517a6903576a0f568dc4ad9b",
+      "stage": "learning",
+      "arguments": [
+        "80",
+        "92210080",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt13-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt13-learning/results",
+        "80",
+        "92210080",
+        "qr"
+      ],
+      "wall_seconds": 26.594000600045547,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt14-learning/manifest.json",
+      "sha256": "660b2b2908179a18fd485acd8c3e5069367e3ea0248db91d346152a20ba0e97b",
+      "stage": "learning",
+      "arguments": [
+        "80",
+        "92210080",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt14-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt14-learning/results",
+        "80",
+        "92210080",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 31.37962256697938,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt15-learning/manifest.json",
+      "sha256": "7bee362150d9b17e6c7f7aaea01e9ae45eaf331a0a481602015751324683656b",
+      "stage": "learning",
+      "arguments": [
+        "80",
+        "92220080",
+        "qr"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt15-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt15-learning/results",
+        "80",
+        "92220080",
+        "qr"
+      ],
+      "wall_seconds": 27.250523922033608,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt16-learning/manifest.json",
+      "sha256": "2f641575b37d885801fbdd5f26cda7d74ee2ae9148ce949fc3e67910cef94be4",
+      "stage": "learning",
+      "arguments": [
+        "80",
+        "92220080",
+        "ridge_bounded1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt16-learning/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "learning",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt16-learning/results",
+        "80",
+        "92220080",
+        "ridge_bounded1"
+      ],
+      "wall_seconds": 30.504378589917906,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt17-checks/manifest.json",
+      "sha256": "985d778a7f1c9e65489103683dd532ac77cb96d9af76579a616184dc7ba45073",
+      "stage": "checks",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt17-checks/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "checks",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt17-checks/results"
+      ],
+      "wall_seconds": 0.615601419005543,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt18-regression/manifest.json",
+      "sha256": "7e2f210f42fc9f52e5a8a2eca2abba17443371b98b3ddcf806354a0e1e1e0c1f",
+      "stage": "regression",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt18-regression/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "regression",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt18-regression/results"
+      ],
+      "wall_seconds": 0.6158761890837923,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt19-bridge/manifest.json",
+      "sha256": "7703408a5c15ba4c4da86d50fc295b8aa72d59f9980e60ae3bf08c889448e6f6",
+      "stage": "bridge",
+      "arguments": [
+        "92100180",
+        "1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt19-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt19-bridge/results",
+        "92100180",
+        "1"
+      ],
+      "wall_seconds": 32.62822062999476,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt20-bridge/manifest.json",
+      "sha256": "e10e1d18350ce43ec654b38ac88ce3bda8340e7b1121b10f2cdf74c15a318fa0",
+      "stage": "bridge",
+      "arguments": [
+        "92100180",
+        "2"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt20-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt20-bridge/results",
+        "92100180",
+        "2"
+      ],
+      "wall_seconds": 31.52220752905123,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt21-bridge/manifest.json",
+      "sha256": "036e422f8370bae198eb6aae671f14533955b49bf9db6acc6a87196ae763d504",
+      "stage": "bridge",
+      "arguments": [
+        "92100180",
+        "3"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt21-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt21-bridge/results",
+        "92100180",
+        "3"
+      ],
+      "wall_seconds": 37.302479347912595,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt22-bridge/manifest.json",
+      "sha256": "69770f73d132d7ddf39583eac7a5d06621c759be0e64ff7e25d8abd432def61c",
+      "stage": "bridge",
+      "arguments": [
+        "92100180",
+        "4"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt22-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt22-bridge/results",
+        "92100180",
+        "4"
+      ],
+      "wall_seconds": 16.023133761947975,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt23-bridge/manifest.json",
+      "sha256": "2ea98e6ae9d1b85a8574239456c3ba2484bd7ded19bdd954e3377472ae61a08e",
+      "stage": "bridge",
+      "arguments": [
+        "92100280",
+        "1"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt23-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt23-bridge/results",
+        "92100280",
+        "1"
+      ],
+      "wall_seconds": 24.417052149074152,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt24-bridge/manifest.json",
+      "sha256": "d07356cce5ae595f1ba56c25587d8e92509027316bdbb6a988b23b4b9ded8caf",
+      "stage": "bridge",
+      "arguments": [
+        "92100280",
+        "2"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt24-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt24-bridge/results",
+        "92100280",
+        "2"
+      ],
+      "wall_seconds": 31.410827362909913,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt25-bridge/manifest.json",
+      "sha256": "615112542d18b7ed18c247dce4ea09af629637d621e57a47490698e434113251",
+      "stage": "bridge",
+      "arguments": [
+        "92100280",
+        "3"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt25-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt25-bridge/results",
+        "92100280",
+        "3"
+      ],
+      "wall_seconds": 31.360019633895718,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt26-bridge/manifest.json",
+      "sha256": "c6a09a02bf5e678c4b2027f8a0d3324048ce9b94f88404169b27ae1c181bda7f",
+      "stage": "bridge",
+      "arguments": [
+        "92100280",
+        "4"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt26-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt26-bridge/results",
+        "92100280",
+        "4"
+      ],
+      "wall_seconds": 31.841806674026884,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt27-checks/manifest.json",
+      "sha256": "bdf1931f2ca23228d132ff1486cc0762fe545ff1116b01c08036bb3bf0252cfd",
+      "stage": "checks",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt27-checks/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "checks",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt27-checks/results"
+      ],
+      "wall_seconds": 0.715957488049753,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt28-bridge/manifest.json",
+      "sha256": "80c2621d594235fea8380076dca447aef6a74aaf34b6f4ba936a21c4819c9ae6",
+      "stage": "bridge",
+      "arguments": [
+        "92100180",
+        "4"
+      ],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt28-bridge/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "bridge",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt28-bridge/results",
+        "92100180",
+        "4"
+      ],
+      "wall_seconds": 54.344425714924,
+      "status": "complete"
+    },
+    {
+      "path": "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt29-closeout/manifest.json",
+      "sha256": "e096600a7eff34bda0e7d8469cfff67071bcbf153abb9a21daea24017328072b",
+      "stage": "closeout",
+      "arguments": [],
+      "command": [
+        "/usr/bin/Rscript",
+        "--vanilla",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt29-closeout/source/docs/benchmarks/run_iapf_fitting_repair.R",
+        "closeout",
+        "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/attempt29-closeout/results"
+      ],
+      "wall_seconds": 10.094059909926727,
+      "status": "complete"
+    }
+  ],
+  "final_source_sha256": {
+    "docs/benchmarks/run_iapf_fitting_repair_supervisor.py": "1d2f376d911ce6bd252201674f2778d082d47fee406a7cfe51a6ed2c333acd0f",
+    "docs/benchmarks/reference_iapf_paper.R": "979c84f9dbe906742a8101b94ab5391c3268b2b46c81a903b1d5529022916887",
+    "docs/benchmarks/reference_iapf_author_choices.R": "420455b782efa415783eba9d0ae3fbd3483a7994c24bb76d4e126900b081d2b4",
+    "docs/benchmarks/reference_iapf_constrained_diagnostic.R": "7ef3fd67dd198c6443634494ef4f2d85cf1abdfbafd1c2477ca294509a404da6",
+    "docs/benchmarks/run_iapf_fitting_repair.R": "b5e4b63aeb823a3a97cb87934855d49a311114c435864a42ff5b159a62e83383",
+    "docs/benchmarks/iapf_fitting_repair_analytic.R": "1989fb8a42e83d28c494d4793d5f1d9c38adbd1447e6b43f91d84555c8478af1",
+    "docs/benchmarks/iapf_fitting_repair_bridge.R": "bcc491159af4551abf47b58093dc2a5067606d5988ec7a04b66d0800039bb9b2",
+    "docs/benchmarks/iapf_fitting_repair_closeout.R": "6cd2b6b6666922faf8bed1c7f065e60f8d429404dbcf434040908a4cad528d6b",
+    "docs/benchmarks/iapf_fitting_repair_learning.R": "605be716cfd05014fe9c897c56473bb89fc4cb7bec4a58282a0934ec6d9a73a1",
+    "docs/benchmarks/iapf_fitting_repair_regression.R": "1dbf126e312d4cbfbc0a7e8a1b284f41a50325c327e303777f0d1eea4582184a",
+    "docs/benchmarks/iapf_fitting_repair_solver.R": "266c4c2b82472191a99f14b9d12e600512f40773e7c35a62a3fb5b6a5d2f2951",
+    "tests/reference_iapf_author_choices.R": "48b57a0f903942206eeee2744d965b692037884d9e94f8c2836c6b2904172b18",
+    "docs/benchmarks/summarize_iapf_fitting_repair.py": "4088055ab6e0ba7fbd860bdb961d3a875c5856a33c98b37b149090a03a14dc92"
+  },
+  "final_document_sha256": {
+    "docs/plans/iapf-r-targeted-fitting-repair-2026-09-22.md": "1abe8fe41ffee8b2f564eefcb991ab5f580fbb0c7e9db308c6b3df66819dff2d",
+    "docs/plans/younis-kdm-score-master-program-2026-09-14.md": "d40895cf83d88e8e192bc6585ecd33dbd37064d4dd9ead58c41a5b989edba5eb",
+    "docs/plans/artifacts/younis-kdm-score-master-20260914/run-20260914-140520-01/checkpoint.md": "4266dd1146b5e76e00259e9cb4560da6b2f75824ed8915ca594abf213a21d25c"
+  },
+  "output_sha256": {
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/result.md": "0a7cf7c052750e69a5692e1de6334b7657146dd5ea3d43cf3cf48abebfa2cb0a",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/analytic-controls.csv": "bc4a8a3a0b24c58130af13f449b29fa9f7c09d03deeb8cc0cdea574afcab0d26",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/bridge-all-attempts.csv": "a2fcb53f50ba69160a258e9afaee6d576b3d03a20d5c0f8dc623e7d9f626eb5d",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/bridge-authoritative.csv": "6f6bfab4d70fad5f307c531454d2cdeea9363120c938de4f498acfe8ce977e60",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/checks.csv": "71ea20f894bbac15c5cd5c38c9a22937da43caeb7922757adc42e869a5637e6e",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/conditional-heuristics.csv": "b16859567cd5c69f36d699f1407a7bf7434e162b27817abdc83136eceb8e071e",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/conditional-shape-heuristics.csv": "121fbaf8acf7e75b8b64efc4053253f93790c266436f236a68a229ed2f6a9a3e",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/learning.csv": "5d9f264eafe87a3b48ec3ba23abcb94489a3e2234b08d13b7254002e79e3b920",
+    "docs/plans/artifacts/iapf-r-targeted-fitting-repair-20260922-01/report-v1/summary.json": "9d9d1fbb44aa140ae5efc78174862ff939218546a50ae010d345f7dd17b30fd3"
+  },
+  "hash_verification": "Every executed snapshot, recorded input and output hash was checked by summarize_iapf_fitting_repair.py before report-v1 creation. Final R source still matches attempt29 snapshots.",
+  "summary": {
+    "status": "complete",
+    "attempts": 29,
+    "statuses": {
+      "complete": 29
+    },
+    "worker_seconds": 494.012353748898,
+    "warm_replay_records": 50,
+    "warm_replay_guard_accepts": 50,
+    "warm_shape_worsens": 36,
+    "solver_records": 200,
+    "solver_accepts": {
+      "bounded1": 36,
+      "ridge_bounded1": 40,
+      "svd0": 40,
+      "svd05": 40,
+      "svd1": 34
+    },
+    "fresh_learning_records": 12,
+    "fresh_learning_statuses": {
+      "complete": 12
+    },
+    "bridge_records": 8,
+    "bridge_statuses": {
+      "complete": 8
+    },
+    "preserved_bridge_attempts": 9,
+    "bridge_terminal_error_range": [
+      -0.631238842308449,
+      0.45019039503677
+    ],
+    "total_check_evaluations": 464,
+    "heuristic_dominance_verdict": "promotion_veto_observed_conditional_underperformance",
+    "conditional_heuristic_veto_records": 9,
+    "conditional_shape_veto_records": 11,
+    "statistical_ranking": "not_supported",
+    "default_readiness": false,
+    "nonclaims": [
+      "original-author identity",
+      "full paper replication",
+      "statistical superiority",
+      "matched-cost performance",
+      "production promotion"
+    ],
+    "next_action": "Freeze the explicit repaired reference; independent multi-seed validation across five dimensions, preserving paper-equation and extension distinctions."
+  },
+  "nonclaims": [
+    "original-author implementation identity",
+    "full paper replication",
+    "statistical superiority",
+    "matched-cost performance",
+    "TensorFlow/GPU/default/LEDH/KDM/HMC promotion"
+  ]
+}

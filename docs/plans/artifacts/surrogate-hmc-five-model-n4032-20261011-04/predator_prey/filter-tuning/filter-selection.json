@@ -1,0 +1,158 @@
+{
+  "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+  "scope": {
+    "model": "predator_prey",
+    "target_id": "canonical_predator_prey_x0_then_transition_observe_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 2,
+    "parameter_dimension": 6,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "5798daf584595804a87dbfc620a49fc1c992289724b2b240b7431971e4eabb37",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        0.6000000238418579,
+        114.0,
+        25.0,
+        0.30000001192092896,
+        0.5,
+        0.5
+      ],
+      "scales": [
+        0.35,
+        0.35,
+        0.35,
+        0.35,
+        0.35,
+        0.35
+      ],
+      "chart": "multiplicative_exp",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "62c4d53e4fb7d6571a94c254840fff1dca64bff77dd9131b9f6a23d39b2ac30a",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486"
+    }
+  },
+  "candidates": [
+    {
+      "index": 0,
+      "controls": {
+        "flow_steps": 16,
+        "reset_steps": 40,
+        "reset_epsilon": 1.0,
+        "correction_steps": 0,
+        "correction_basis": 4,
+        "correction_rate": 0.1,
+        "correction_radius": 0.25
+      },
+      "valid": true,
+      "beta": [
+        0.10000000149011612,
+        0.8936728239059448,
+        0.006327271461486816
+      ],
+      "fit_converged": true,
+      "validation_loss": 1.0281856060028076,
+      "equal_validation_loss": 1.1549100875854492,
+      "selected_beta_loss": 1.0281856060028076,
+      "beta_choice": "calibrated"
+    },
+    {
+      "index": 1,
+      "controls": {
+        "flow_steps": 32,
+        "reset_steps": 80,
+        "reset_epsilon": 1.0,
+        "correction_steps": 0,
+        "correction_basis": 4,
+        "correction_rate": 0.1,
+        "correction_radius": 0.25
+      },
+      "valid": true,
+      "beta": [
+        0.10000000149011612,
+        0.8973666429519653,
+        0.0026334524154663086
+      ],
+      "fit_converged": true,
+      "validation_loss": 1.0281943082809448,
+      "equal_validation_loss": 1.159140706062317,
+      "selected_beta_loss": 1.0281943082809448,
+      "beta_choice": "calibrated"
+    },
+    {
+      "index": 2,
+      "controls": {
+        "flow_steps": 16,
+        "reset_steps": 40,
+        "reset_epsilon": 0.5,
+        "correction_steps": 0,
+        "correction_basis": 4,
+        "correction_rate": 0.1,
+        "correction_radius": 0.25
+      },
+      "valid": true,
+      "beta": [
+        0.10000000149011612,
+        0.891372561454773,
+        0.00862729549407959
+      ],
+      "fit_converged": true,
+      "validation_loss": 1.0282349586486816,
+      "equal_validation_loss": 1.1549947261810303,
+      "selected_beta_loss": 1.0282349586486816,
+      "beta_choice": "calibrated"
+    }
+  ],
+  "selected": {
+    "index": 0,
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 1.0,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25
+    },
+    "valid": true,
+    "beta": [
+      0.10000000149011612,
+      0.8936728239059448,
+      0.006327271461486816
+    ],
+    "fit_converged": true,
+    "validation_loss": 1.0281856060028076,
+    "equal_validation_loss": 1.1549100875854492,
+    "selected_beta_loss": 1.0281856060028076,
+    "beta_choice": "calibrated"
+  },
+  "calibration_seeds": [
+    26101101,
+    26101102
+  ],
+  "validation_seeds": [
+    26101103,
+    26101104
+  ],
+  "claim_data_seed": 26100831,
+  "ranking": "descriptive_nomination_only",
+  "canonical_admission": false,
+  "wall_seconds": 91.24000893812627,
+  "selection_hash": "751a8d67103bbe36bc71b249e9edf2282e8434b9f091b87afebb769cb60ea29b"
+}

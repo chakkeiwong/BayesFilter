@@ -517,6 +517,7 @@ def _smooth_sigma_point_score_with_rule(
     fixed_null_tolerance: tf.Tensor | float,
     jitter: tf.Tensor | float,
     allow_fixed_null_support: bool = False,
+    jit_compile: bool = True,
 ) -> TFFilterDerivativeResult:
     y = _as_observation_matrix(observations)
     n_timesteps = _static_num_timesteps(y)
@@ -868,7 +869,7 @@ def _smooth_sigma_point_score_with_rule(
         return t + 1, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score
 
     _, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score = compiled_tensor_recurrence(
-        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score), n_timesteps,
+        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_fixed_null_derivative_residual, max_innovation_floor_count, max_innovation_residual, max_integration_rank, max_placement_floor_count, max_placement_residual, max_structural_null_count, max_structural_null_covariance_residual, max_support_residual, mean, min_innovation_eigen_gap, min_placement_eigen_gap, score), n_timesteps, jit_compile=jit_compile,
     )
 
     # Assertions inside XLA may be ignored; enforce the same branch in
@@ -929,7 +930,7 @@ def _smooth_sigma_point_score_with_rule(
         ),
         "derivative_provider": derivatives.name,
         "hessian_status": "deferred",
-        "jit_compile": True,
+        "jit_compile": jit_compile,
     }
     diagnostics = TFFilterDiagnostics(
         backend=backend_name,
@@ -961,7 +962,7 @@ def _smooth_sigma_point_score_with_rule(
                 if allow_fixed_null_support
                 else "analytic_score_smooth_branch_hessian_deferred"
             ),
-            compiled_status="xla_tensor_recurrence",
+            compiled_status="xla_tensor_recurrence" if jit_compile else "graph_reference_exception",
         ),
         diagnostics=diagnostics,
         trace=(
@@ -988,6 +989,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
     spectral_gap_tolerance: tf.Tensor | float,
     fixed_null_tolerance: tf.Tensor | float,
     jitter: tf.Tensor | float,
+    jit_compile: bool = True,
 ) -> TFFilterDerivativeResult:
     y = _as_observation_matrix(observations)
     n_timesteps = _static_num_timesteps(y)
@@ -1316,7 +1318,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
         return t + 1, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score
 
     _, covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score = compiled_tensor_recurrence(
-        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score), n_timesteps,
+        time_step, (covariance, d_covariance, d_mean, last_implemented_innovation_covariance, log_likelihood, max_deterministic_residual, max_factor_derivative_residual, max_innovation_condition_estimate, max_innovation_floor_count, max_innovation_residual, max_innovation_sylvester_residual, max_placement_floor_count, max_placement_residual, max_support_residual, mean, min_innovation_eigen_gap, min_innovation_eigenvalue, min_placement_eigen_gap, score), n_timesteps, jit_compile=jit_compile,
     )
 
     checked_value = tf.debugging.check_numerics(
@@ -1358,6 +1360,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
         "derivative_branch": "strict_spd_principal_sqrt",
         "derivative_method": "analytic_first_order_principal_sqrt_sylvester",
         "derivative_provider": derivatives.name,
+        "jit_compile": jit_compile,
         "hessian_status": "deferred",
     }
     diagnostics = TFFilterDiagnostics(
@@ -1382,7 +1385,7 @@ def _principal_sqrt_sigma_point_score_with_rule(
             model,
             filter_name=backend_name,
             differentiability_status="analytic_score_principal_sqrt_branch_hessian_deferred",
-            compiled_status="xla_tensor_recurrence",
+            compiled_status="xla_tensor_recurrence" if jit_compile else "graph_reference_exception",
         ),
         diagnostics=diagnostics,
         trace=(
@@ -1410,8 +1413,9 @@ def tf_svd_sigma_point_score_with_rule(
     fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
+    jit_compile: bool = True,
 ) -> TFFilterDerivativeResult:
-    """Return an analytic score for a fixed SVD/eigen sigma-point rule."""
+    """Return an analytic score; disabling XLA is a reference/debug exception."""
 
     if backend_name == "tf_principal_sqrt_ukf_score":
         if allow_fixed_null_support:
@@ -1430,6 +1434,7 @@ def tf_svd_sigma_point_score_with_rule(
             spectral_gap_tolerance=spectral_gap_tolerance,
             fixed_null_tolerance=fixed_null_tolerance,
             jitter=jitter,
+            jit_compile=jit_compile,
         )
 
     return _smooth_sigma_point_score_with_rule(
@@ -1445,6 +1450,7 @@ def tf_svd_sigma_point_score_with_rule(
         fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
         allow_fixed_null_support=allow_fixed_null_support,
+        jit_compile=jit_compile,
     )
 
 
@@ -1544,6 +1550,7 @@ def tf_principal_sqrt_ukf_score(
     fixed_null_tolerance: tf.Tensor | float = 1e-10,
     jitter: tf.Tensor | float = 0.0,
     allow_fixed_null_support: bool = False,
+    jit_compile: bool = True,
 ) -> TFFilterDerivativeResult:
     """Return the historical analytic principal-square-root UKF score.
 
@@ -1571,6 +1578,7 @@ def tf_principal_sqrt_ukf_score(
         fixed_null_tolerance=fixed_null_tolerance,
         jitter=jitter,
         allow_fixed_null_support=allow_fixed_null_support,
+        jit_compile=jit_compile,
     )
 
 def tf_svd_cut4_score(

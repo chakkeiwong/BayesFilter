@@ -612,6 +612,41 @@ verification or convergence evidence. These consumers do not establish that
 the proposed search covers all useful durations or that an adaptation method
 improves posterior delivery.
 
+The current comparison scope contains five core nonlinear targets:
+\path{NL-ACC}, \path{NL-PP-UKF}, \path{NL-PP-SGQF}, \path{NL-SIR} and
+\path{NL-STR}. Fixed HMC, randomized HMC, SNAPER-proposed randomized HMC and
+fully refreshed MAMS define twenty planned method--target cells. These are
+validation obligations rather than evidence that twenty comparisons have
+finished. The accumulation target uses a generic adapter. The full-model
+frozen-design driver covers the other four adapters: the two predator--prey
+filters, SIR and the structural filter. Each method and target scope still
+needs its own qualification and independent complete-fit evidence.
+
+Two additional targets have explicit unfinished dispositions outside that
+twenty-cell denominator. \path{NL-GROWTH} needs a parameter-posterior adapter
+and checked score, geometry and reference. \path{NL-SV} has an adapter factory,
+but its \path{source_route_eligibility_needed} disposition requires an eligible
+Zhao--Cui source route and checked score, geometry and independent reference
+before admission. A factory alone does not establish that qualification.
+
+A completed full SGQF cohort supplies evidence only for its declared target
+and seed. The completed October cohorts delivered seven of eight fixed-HMC,
+five of eight randomized-HMC, five of six SNAPER-proposed and four of four
+MAMS members under the posterior and reference criteria. The subsequent SIR
+cohort verified all 24 candidates: 23 passed posterior checks and 21 also
+passed reference screening. Two posterior-passing members failed reference screening and one
+fixed-HMC member remained resource-censored. All 24 stayed in the tuning set.
+Algorithm~\ref{alg:bf-modern-candidate-procedure} and
+Table~\ref{tab:bf-modern-cohort-results} give the procedure, criteria and
+complete outcomes. These cohorts do not complete the nonlinear matrix,
+calibrate sequential stopping or establish a method ranking. Agreement with a finite-filter
+reference assesses the declared finite-filter posterior, subject to the
+recorded reference error. Actual MacroFinance and \path{dsge_hmc}/BGS
+consumers need their own target, score, geometry, public-tuner wiring and
+posterior/reference qualification; a generic structural or predator--prey
+model cannot establish those properties. Failed posterior assessments leave
+every tuning-qualified member in the retained candidate set.
+
 Stateless seeds do not by themselves guarantee identical trajectories across
 TensorFlow compilation modes. In the current diagnostic environment, CPU/XLA
 and GPU/XLA share the tested random streams, while non-XLA execution produces

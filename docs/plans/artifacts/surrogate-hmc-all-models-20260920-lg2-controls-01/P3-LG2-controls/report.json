@@ -1,0 +1,187 @@
+{
+  "allocator": {
+    "current": 516864,
+    "peak": 151249664
+  },
+  "elapsed_seconds": 247.56075116898865,
+  "forecast": {
+    "allocation": {
+      "cpu_worker_seconds": 1800,
+      "gpu_seconds": 7200
+    },
+    "complete_forecast": false,
+    "cost_allowance": 1.5,
+    "cpu_worker_seconds": 13478.531625000036,
+    "gpu_seconds": 14525.543135889166,
+    "inference_authorized": false,
+    "preparation_and_nomination_excluded": true,
+    "scope": "one B arm only; 250 fresh warmup + 1000 verification + 2000 retention",
+    "status": "UNDER_BUDGETED_INITIAL_ALLOCATION",
+    "trajectory_leapfrogs": 1,
+    "transitions": 3250
+  },
+  "heuristic_dominance": "NOT_RUN",
+  "inference_attempts_consumed": 0,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "plan": "docs/plans/surrogate-hmc-lg2-controls-2026-09-20.md",
+  "posterior_comparisons": "NOT_RUN",
+  "scope": {
+    "attempt": 1,
+    "chunk_extent": 1024,
+    "control_family": "full_canonical_geometric_protection_curve_v1",
+    "data_regime": "synthetic LG2; separate calibration/validation/claim partitions",
+    "dtype": "float32",
+    "horizon": 20,
+    "jit_compile": true,
+    "law": "stationary x0; F=a*base_F, Q=exp(2*b)*base_Q, H=I R=.5I; independent uniform a[.5,1.2] b[-1,1]",
+    "model": "LG2",
+    "parameter_dimension": 2,
+    "particle_count": 1024,
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "state_dimension": 2,
+    "tf32": true
+  },
+  "scoped_control_attempts_consumed": 1,
+  "selected": {
+    "controls": {
+      "coordinate_cap": 1600.0,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 1e-05,
+      "correction_lm_scale_floor": 1e-08,
+      "correction_steps": 2,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 10.0,
+      "pairwise_rms_cap": 200.0,
+      "pairwise_steps": 2,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 8,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1.0000000000000001e-07,
+      "reset_sinkhorn_steps": 8,
+      "substeps": 10
+    },
+    "default_readiness": false,
+    "evidence": {
+      "calibration": {
+        "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-controls-01/P3-LG2-controls/calibration/curve.json",
+        "sha256": "d87010a26d010f76e55d8db705044fb18a392fb7e7b796d271b51e88965761b9"
+      },
+      "validation": {
+        "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-controls-01/P3-LG2-controls/validation/curve.json",
+        "sha256": "bb5583593069679c63f79c1cfbea7a78a77d160d89e13288774b3b4a2e990308"
+      }
+    },
+    "exact_score_admission": false,
+    "issuer_sha256": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "partition_data": {
+      "calibration": {
+        "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/calibration/data.json",
+        "sha256": "ed8c967fbef8162bb172afc32cf4b502e5dbdf0956e72974f04f923ebac7d583"
+      },
+      "validation": {
+        "path": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/validation/data.json",
+        "sha256": "5083bc515046511822ce9e310ddd2d991119c86aabbcf212d012acb4663d1be9"
+      }
+    },
+    "schema": "bayesfilter.surrogate_hmc_dctr_control_selection.v1",
+    "scope": {
+      "attempt": 1,
+      "chunk_extent": 1024,
+      "control_family": "full_canonical_geometric_protection_curve_v1",
+      "data_regime": "synthetic LG2; separate calibration/validation/claim partitions",
+      "dtype": "float32",
+      "horizon": 20,
+      "jit_compile": true,
+      "law": "stationary x0; F=a*base_F, Q=exp(2*b)*base_Q, H=I R=.5I; independent uniform a[.5,1.2] b[-1,1]",
+      "model": "LG2",
+      "parameter_dimension": 2,
+      "particle_count": 1024,
+      "reset_contract_id": "contract_e_chol_v1",
+      "route": "canonical_batch_fused_value_score",
+      "state_dimension": 2,
+      "tf32": true
+    },
+    "selected_index": 2,
+    "selected_multiplier": 0.01,
+    "selection_rule": "first adjacent non-harm pass on both independent partitions",
+    "source_hashes": {
+      "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+      "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+      "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+      "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+      "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+      "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+      "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+      "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+      "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+      "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+      "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+      "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+      "bayesfilter/testing/surrogate_hmc_linear_consumer.py": "3020faed8d10d8625f2afb48bf19237d4aaf7b90ba90d6f323ca5720e64a97d5",
+      "bayesfilter/testing/surrogate_hmc_linear_reference.py": "e84a41d732de06c49bb489165691c177d9efb64f7d949c93a424af658ef54624",
+      "scripts/calibrate_surrogate_hmc_linear_controls.py": "fe0cf287e0115d64ae27ba420e3144c80bec302cee189a5d0ad7390dc6e44bfe"
+    },
+    "use": "imperfect_proposal_field_experiment"
+  },
+  "source_hashes": {
+    "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+    "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+    "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+    "bayesfilter/inference/surrogate_hmc_dctr_selection.py": "db1265f9206c5cfc35693150a2782dc825cefc8b818f3d116968a2c698a1f88b",
+    "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+    "bayesfilter/testing/surrogate_hmc_linear_consumer.py": "3020faed8d10d8625f2afb48bf19237d4aaf7b90ba90d6f323ca5720e64a97d5",
+    "bayesfilter/testing/surrogate_hmc_linear_reference.py": "e84a41d732de06c49bb489165691c177d9efb64f7d949c93a424af658ef54624",
+    "scripts/calibrate_surrogate_hmc_linear_controls.py": "fe0cf287e0115d64ae27ba420e3144c80bec302cee189a5d0ad7390dc6e44bfe"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": true,
+  "verdict": "SELECTED_FOR_PROPOSAL_EXPERIMENT"
+}

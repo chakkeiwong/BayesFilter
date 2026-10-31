@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping
+from functools import lru_cache
+from typing import Any
 
 import tensorflow as tf
 
@@ -27,6 +29,7 @@ from bayesfilter.nonlinear.ssl_lstm_sgqf_ukf_adapters import (
 from bayesfilter.nonlinear.svd_sigma_point_derivatives_tf import (
     tf_principal_sqrt_ukf_score,
 )
+from bayesfilter.ops.stateless_random_tf import philox_normal_float64
 
 FREE_NAMES = (
     "latent_mean_weight.0.0",
@@ -90,9 +93,25 @@ def make_complexity_config(q: int) -> SSLLSTMStaticConfig:
     )
 
 
+@lru_cache(maxsize=16)
+def _fixture_program(config):
+    return tf.function(lambda: make_full_fixture(config), input_signature=[],
+                       jit_compile=True, autograph=False)
+
+
+@lru_cache(maxsize=16)
+def _synthetic_program(config):
+    return tf.function(lambda fixture: make_synthetic_observations(config, fixture),
+        input_signature=[tf.TensorSpec([config.parameter_dim], tf.float64)],
+        jit_compile=True, autograph=False)
+
+
 def make_full_fixture(config: SSLLSTMStaticConfig) -> tf.Tensor:
     """Create a deterministic finite fixture with the same free center."""
 
+    if tf.executing_eagerly():
+        with tf.device("/CPU:0"):
+            return _fixture_program(config)()
     if config.latent_dim == 1 and config.hidden_dim == 1:
         return tf.identity(Q1_FULL_FIXTURE)
     p = int(config.parameter_dim)
@@ -100,36 +119,36 @@ def make_full_fixture(config: SSLLSTMStaticConfig) -> tf.Tensor:
     slices = ssl_lstm_parameter_slices(config)
     n = int(config.augmented_state_dim)
     k = int(config.latent_dim)
-    updates: list[tuple[int, float]] = []
-    for index in range(n):
-        updates.append((slices.initial_std_start + index, -0.85 + 0.011 * index))
-    for index in range(k):
-        updates.append((slices.process_std_start + index, 0.55 + 0.017 * index))
-    updates.append((slices.observation_std_start, -0.2))
+    indices = tf.concat([tf.range(n) + slices.initial_std_start,
+        tf.range(k) + slices.process_std_start, [slices.observation_std_start]], 0)
+    values = tf.concat([
+        tf.constant(-.85, tf.float64) + tf.constant(.011, tf.float64) * tf.cast(tf.range(n), tf.float64),
+        tf.constant(.55, tf.float64) + tf.constant(.017, tf.float64) * tf.cast(tf.range(k), tf.float64),
+        tf.constant([-.2], tf.float64)], 0)
+    theta = tf.tensor_scatter_nd_update(theta, indices[:, None], values)
     # The four estimated coordinates have the same prior-center truth at every q.
-    updates.extend((index, float(value)) for index, value in zip(_free_indices(config), PRIOR_CENTER))
-    indices = tf.constant([[index] for index, _ in updates], tf.int32)
-    values = tf.constant([value for _, value in updates], tf.float64)
-    return tf.tensor_scatter_nd_update(theta, indices, values)
+    return tf.tensor_scatter_nd_update(theta, tf.constant(_free_indices(config), tf.int32)[:, None], PRIOR_CENTER)
 
 
 def make_synthetic_observations(config: SSLLSTMStaticConfig, fixture: tf.Tensor) -> tf.Tensor:
     """Generate one fixed synthetic observation path for q>1."""
 
+    if tf.executing_eagerly():
+        with tf.device("/CPU:0"):
+            return _synthetic_program(config)(fixture)
     if config.latent_dim == 1 and config.hidden_dim == 1:
         return tf.identity(Q1_OBSERVATIONS)
     params = unpack_ssl_lstm_parameters(fixture, config)
     state = tf.identity(params.initial_mean)
-    rows: list[tf.Tensor] = []
+    rows = tf.TensorArray(tf.float64, HORIZON, element_shape=[1])
     process_seed = tf.constant((20260719, 1000 + config.latent_dim), tf.int32)
     obs_seed = tf.constant((20260719, 2000 + config.latent_dim), tf.int32)
-    for step in range(HORIZON):
-        noise = tf.random.stateless_normal(
+    def advance(step, state, rows):
+        noise = philox_normal_float64(
             [config.latent_dim],
             tf.random.experimental.stateless_fold_in(process_seed, step),
-            dtype=tf.float64,
         ) * params.process_std
-        obs_noise = tf.random.stateless_normal([1], tf.random.experimental.stateless_fold_in(obs_seed, step), dtype=tf.float64)
+        obs_noise = philox_normal_float64([1], tf.random.experimental.stateless_fold_in(obs_seed, step))
         deterministic = ssl_lstm_transition(params, state[tf.newaxis, :])[0]
         state = tf.concat(
             (
@@ -143,8 +162,11 @@ def make_synthetic_observations(config: SSLLSTMStaticConfig, fixture: tf.Tensor)
             + params.observation_bias,
             [1],
         ) + params.observation_std * obs_noise
-        rows.append(observation)
-    return tf.stack(rows, axis=0)
+        return step + 1, state, rows.write(step, observation)
+
+    _, _, rows = tf.while_loop(lambda step, *_: step < HORIZON, advance,
+        (tf.constant(0), state, rows), maximum_iterations=HORIZON, parallel_iterations=1)
+    return rows.stack()
 
 
 @dataclass(frozen=True)

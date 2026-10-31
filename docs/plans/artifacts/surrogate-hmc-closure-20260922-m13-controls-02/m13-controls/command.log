@@ -1,0 +1,31 @@
+2026-09-24 16:40:07.415985: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-24 16:40:07.423063: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790239207.430787  956346 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790239207.433536  956346 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790239207.440090  956346 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790239207.440140  956346 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790239207.440146  956346 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790239207.440147  956346 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-24 16:40:07.442367: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1790239209.068411  956346 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790239209.071944  956346 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 13153 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+2026-09-24 16:40:14.056538: I external/local_xla/xla/service/service.cc:152] XLA service 0x642d8ac265f0 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-24 16:40:14.056609: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-24 16:40:14.056618: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (1): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+2026-09-24 16:40:15.363699: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+I0000 00:00:1790239217.579672  956346 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790239240.518642  956346 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+calibration 1.0 {'nominal': True, 'stress': False} 35.08778956499009
+calibration 0.1 {'nominal': True, 'stress': False} 30.62601294000342
+calibration 0.01 {'nominal': True, 'stress': False} 27.266075161998742
+calibration 0.001 {'nominal': True, 'stress': False} 21.91043279299629
+WARNING:tensorflow:5 out of the last 9 calls to <function M13LikelihoodTarget.compile.<locals>.<lambda> at 0x71f7842cb6a0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+validation 1.0 {'nominal': True, 'stress': False} 21.443205135001335
+WARNING:tensorflow:6 out of the last 11 calls to <function M13LikelihoodTarget.compile.<locals>.<lambda> at 0x71f7842c94e0> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+validation 0.1 {'nominal': True, 'stress': False} 21.62223456100037
+validation 0.01 {'nominal': True, 'stress': False} 20.763197745007346
+validation 0.001 {'nominal': False, 'stress': False} 21.21458811199409
+{"stage": "m13-controls", "status": "M13_CONTROL_REPAIR_REQUIRED", "qualified": false}

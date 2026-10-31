@@ -1,0 +1,862 @@
+{
+  "status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+  "model": "ksc",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "ksc",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/ksc/filter-tuning/ksc",
+    "--gpu",
+    "0",
+    "--batch-size",
+    "2",
+    "--paired-repeats",
+    "2",
+    "--offset",
+    "0.0",
+    "--filter-tuning",
+    "--shared-gaussian-contraction",
+    "direct"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-12T06:18:29.530635+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": false,
+  "evidence_role": "fresh_scope_control_nomination_with_precision_veto",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+    "covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "source_snapshot": "docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/ksc/filter-tuning/ksc/source",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "source_dependency_sha256": {
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "7b2a781983c7e2d627dc7b9b25335e413ea81f4975b82de02001dbe427c664fa",
+    "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+    "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "f18bd545fc0820dad91520001a2b045bcaf4cb46387541cac525cbbb46cc86e1",
+    "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+    "bayesfilter/highdim/covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+    "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+    "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+    "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+    "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+    "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+    "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+    "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+    "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+  },
+  "baseline_selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-06/ksc/filter-tuning/filter-selection.json",
+  "particles": 4032,
+  "horizon": 50,
+  "parameter_count": 2,
+  "state_dimension": 1,
+  "dtype": "float32",
+  "tf32": false,
+  "jit_compile": true,
+  "scope": {
+    "model": "ksc",
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 1,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        1.5,
+        0.0
+      ],
+      "scales": [
+        0.5,
+        0.5
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "7b2a781983c7e2d627dc7b9b25335e413ea81f4975b82de02001dbe427c664fa",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "538711e3256e61195a125df96e57d5815d39b49739f4f826c4e449690b329b45",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "f18bd545fc0820dad91520001a2b045bcaf4cb46387541cac525cbbb46cc86e1",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "beed89bff72fa38e6eebac3e9738453bd461791b4f855280d0e4c2f6ac9028d3",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "8ea9a2546b7eef496649cff9ef43335d7613ced8c39684de568761777f3cbf5e",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "7c574eaa74e90481ea58b2c60a3c4a00ad9b3fc84ff6595f58579b674d40a542",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection": "docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/ksc/filter-tuning/ksc/filter-selection.json",
+  "selected": {
+    "index": 2,
+    "controls": {
+      "flow_steps": 16,
+      "reset_steps": 40,
+      "reset_epsilon": 0.25,
+      "correction_steps": 0,
+      "correction_basis": 4,
+      "correction_rate": 0.1,
+      "correction_radius": 0.25,
+      "shared_gaussian_contraction": "direct"
+    },
+    "valid": true,
+    "beta": [
+      0.3333333432674408,
+      0.3333333432674408,
+      0.3333333432674408
+    ],
+    "trajectory_health": [
+      {
+        "seed": 26101211,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1025.3023681640625
+          ],
+          "maximum": [
+            3972.57763671875
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0003033951797988266
+          ],
+          "maximum": [
+            0.0014603864401578903
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1.1920928955078125e-07
+          ],
+          "maximum": [
+            3.0994415283203125e-06
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            4.236554786984925e-07
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.9999999403953552
+          ],
+          "maximum": [
+            1.0
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            2.036977093666792e-07
+          ],
+          "maximum": [
+            0.00011357077164575458
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1.1920928955078125e-06
+          ],
+          "maximum": [
+            1.3470649719238281e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.11467456817626953
+          ],
+          "maximum": [
+            0.3229999542236328
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101212,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1187.335693359375
+          ],
+          "maximum": [
+            3872.2392578125
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.00033900674316100776
+          ],
+          "maximum": [
+            0.0012220623902976513
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            3.0994415283203125e-06
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            5.267906999506522e-07
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.9999999403953552
+          ],
+          "maximum": [
+            1.0
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            5.404726834967732e-07
+          ],
+          "maximum": [
+            0.00010993616888299584
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1.3113021850585938e-06
+          ],
+          "maximum": [
+            9.119510650634766e-06
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.09807586669921875
+          ],
+          "maximum": [
+            0.29448986053466797
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101213,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1127.2669677734375
+          ],
+          "maximum": [
+            3943.302978515625
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0003377923567313701
+          ],
+          "maximum": [
+            0.0013869007816538215
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            3.0994415283203125e-06
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            3.3973410040744056e-07
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.9999999403953552
+          ],
+          "maximum": [
+            1.0
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            6.220943760126829e-08
+          ],
+          "maximum": [
+            4.300312139093876e-05
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1.430511474609375e-06
+          ],
+          "maximum": [
+            7.62939453125e-06
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.07588624954223633
+          ],
+          "maximum": [
+            0.28451061248779297
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      },
+      {
+        "seed": 26101214,
+        "valid": [
+          true
+        ],
+        "steps_completed": [
+          50
+        ],
+        "ess": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            204.06802368164062
+          ],
+          "maximum": [
+            3927.514892578125
+          ]
+        },
+        "max_weight": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0003260320518165827
+          ],
+          "maximum": [
+            0.00745996693149209
+          ]
+        },
+        "reset_mean_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            3.814697265625e-06
+          ]
+        },
+        "reset_covariance_relative_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            3.8715131722710794e-07
+          ]
+        },
+        "reset_margin": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.9999999403953552
+          ],
+          "maximum": [
+            1.0
+          ]
+        },
+        "sinkhorn_row_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            5.75528247281909e-08
+          ],
+          "maximum": [
+            0.00027019670233130455
+          ]
+        },
+        "sinkhorn_column_error": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            1.3709068298339844e-06
+          ],
+          "maximum": [
+            2.1219253540039062e-05
+          ]
+        },
+        "reset_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.09671592712402344
+          ],
+          "maximum": [
+            0.27422046661376953
+          ]
+        },
+        "correction_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        },
+        "correction_coordinate_displacement": {
+          "finite_count": [
+            50
+          ],
+          "minimum": [
+            0.0
+          ],
+          "maximum": [
+            0.0
+          ]
+        }
+      }
+    ],
+    "precision_pass": true,
+    "precision_checks": [
+      {
+        "passed": true,
+        "healthy": true,
+        "fp32_values_and_scores": [
+          [
+            -117.73257446289062,
+            1.9020299911499023,
+            2.0970349311828613
+          ],
+          [
+            -117.71286010742188,
+            1.8244752883911133,
+            2.058422327041626
+          ]
+        ],
+        "fp64_values_and_scores": [
+          [
+            -117.73311905486405,
+            1.9023410865447892,
+            2.0973878667950516
+          ],
+          [
+            -117.71341183066282,
+            1.824778319752745,
+            2.05877235269186
+          ]
+        ],
+        "absolute_errors": [
+          [
+            0.0005445919734228255,
+            0.0003110953948868289,
+            0.0003529356121902971
+          ],
+          [
+            0.0005517232409459893,
+            0.0003030313616316782,
+            0.00035002565023400933
+          ]
+        ],
+        "scaled_errors": [
+          [
+            4.625648057188086e-06,
+            0.00016353292113974662,
+            0.0001682738885724586
+          ],
+          [
+            4.687004075114851e-06,
+            0.00016606475337384465,
+            0.00017001668483470172
+          ]
+        ],
+        "tolerance": 0.01,
+        "scale": "max(1,abs(FP64 component))",
+        "role": "numerical veto; same-algorithm reference, not model oracle",
+        "validation_seed": 26101213,
+        "independent_reference_value_and_score": [
+          [
+            -117.69377825036914,
+            1.8879891039504062,
+            2.083388454823002
+          ],
+          [
+            -117.67421227659834,
+            1.8103236436368264,
+            2.045078426249709
+          ]
+        ],
+        "fp32_reference_absolute_error": [
+          [
+            0.03879621252148979,
+            0.014040887199496144,
+            0.013646476359859161
+          ],
+          [
+            0.0386478308235354,
+            0.014151644754286874,
+            0.01334390079191694
+          ]
+        ],
+        "reference_role": "explanatory nominal/local value-score accuracy; not posterior validation"
+      },
+      {
+        "passed": true,
+        "healthy": true,
+        "fp32_values_and_scores": [
+          [
+            -119.35519409179688,
+            1.3460732698440552,
+            -1.9034852981567383
+          ],
+          [
+            -119.35804748535156,
+            1.3185985088348389,
+            -1.8927102088928223
+          ]
+        ],
+        "fp64_values_and_scores": [
+          [
+            -119.35236665980428,
+            1.3457013717413844,
+            -1.9019055621446612
+          ],
+          [
+            -119.35518955028738,
+            1.3182038517836985,
+            -1.8911320103589782
+          ]
+        ],
+        "absolute_errors": [
+          [
+            0.002827431992599827,
+            0.0003718981026707979,
+            0.0015797360120770598
+          ],
+          [
+            0.0028579350641848578,
+            0.0003946570511403902,
+            0.0015781985338441107
+          ]
+        ],
+        "scaled_errors": [
+          [
+            2.368978573050831e-05,
+            0.00027636005318888013,
+            0.0008306069678326663
+          ],
+          [
+            2.39447909634523e-05,
+            0.00029938999996576303,
+            0.0008345258422993613
+          ]
+        ],
+        "tolerance": 0.01,
+        "scale": "max(1,abs(FP64 component))",
+        "role": "numerical veto; same-algorithm reference, not model oracle",
+        "validation_seed": 26101214,
+        "independent_reference_value_and_score": [
+          [
+            -119.38977656256196,
+            1.549936603663163,
+            -1.9220577838368968
+          ],
+          [
+            -119.39167860579472,
+            1.521978863880764,
+            -1.9106530849579049
+          ]
+        ],
+        "fp32_reference_absolute_error": [
+          [
+            0.03458247076508769,
+            0.20386333381910782,
+            0.018572485680158568
+          ],
+          [
+            0.03363112044316097,
+            0.20338035504592522,
+            0.017942876065082602
+          ]
+        ],
+        "reference_role": "explanatory nominal/local value-score accuracy; not posterior validation"
+      }
+    ],
+    "first_score_compile_and_execute_seconds": 21.9496931550093,
+    "warmed_score_seconds": 13.892083032988012,
+    "score_batch_size": 2,
+    "importance_variance_cost_proxy": 16.843098744788442,
+    "fit_converged": true,
+    "context_valid": true,
+    "beta_fit": {
+      "beta": [
+        0.10000000149011612,
+        0.8999999761581421,
+        0.0
+      ],
+      "objective": 1.1258504390716553,
+      "gap": 0.0,
+      "iterations": 11,
+      "converged": true
+    },
+    "calibration_candidate_valid": true,
+    "validation_loss": 1.2336328029632568,
+    "equal_validation_loss": 1.2124242782592773,
+    "selected_beta_loss": 1.2124242782592773,
+    "beta_choice": "equal_defensive_mixture"
+  },
+  "wall_seconds": 1100.5440983860753,
+  "peak_host_rss_bytes": 3433947136,
+  "allocator": {
+    "current": 2562304,
+    "peak": 561507072
+  }
+}

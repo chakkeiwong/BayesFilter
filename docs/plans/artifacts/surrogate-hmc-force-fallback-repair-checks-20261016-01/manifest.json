@@ -1,0 +1,75 @@
+{
+  "recorded_utc": "2026-10-16T08:34:29.325652+00:00",
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "working_tree": "dirty; unrelated edits preserved; exact repair files hashed below",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "packages": {
+    "tensorflow": "2.20.0.dev0+selfbuilt",
+    "tensorflow-probability": "0.25.0",
+    "pytest": "9.0.2"
+  },
+  "cpu_only": true,
+  "gpu_status": "intentionally hidden before TensorFlow import with CUDA_VISIBLE_DEVICES=-1",
+  "jit_compile": "actual synthetic numerical kernel tests use XLA; host orchestration is not compiled",
+  "data_version": "synthetic fixtures defined in test sources",
+  "random_seeds": "explicit stateless seeds in the hashed test sources; no research dataset generated",
+  "command_argv": [
+    "env",
+    "CUDA_VISIBLE_DEVICES=-1",
+    "BAYESFILTER_PRELOAD_CUSTOM_OP=0",
+    "TF_NUM_INTRAOP_THREADS=4",
+    "TF_NUM_INTEROP_THREADS=2",
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_hmc_force_fallback_policy.py",
+    "tests/test_hmc_tensorflow_verified.py",
+    "tests/test_hmc_sequential_verification.py",
+    "tests/test_hmc_tensorflow_resume.py",
+    "tests/test_surrogate_hmc_60h_continuation.py"
+  ],
+  "cwd": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "attempts": [
+    {
+      "log": "tests.log",
+      "exit_code": 1,
+      "passed": 60,
+      "failed": 2,
+      "wall_seconds": 30.38,
+      "classification": "stale sample-cap test expectations; unchanged runtime policy"
+    },
+    {
+      "log": "tests-final.log",
+      "exit_code": 0,
+      "passed": 62,
+      "failed": 0,
+      "wall_seconds": 31.15
+    }
+  ],
+  "cpu_test_wall_seconds": 61.53,
+  "gpu_worker_seconds": 0,
+  "plan": "docs/plans/surrogate-hmc-force-fallback-repair-2026-10-16.md",
+  "result": "docs/plans/artifacts/surrogate-hmc-force-fallback-repair-checks-20261016-01/result.md",
+  "source_sha256": {
+    "bayesfilter/inference/hmc_tensorflow_verified.py": "e52f576eed0e84354fa1abc79303a69fd8f0ecd649170fe7f47f2e67cffdf2c1",
+    "bayesfilter/inference/hmc_tensorflow_resume.py": "9e74ac1298f9c8e4cd8f94873bfbb4f9d540110101be529e94afab8a70b7d16c",
+    "bayesfilter/inference/hmc_sequential_verification.py": "994699798263d02bfdf579267c301192cbb471a277298e51052f75fb6449e8b3",
+    "scripts/run_surrogate_hmc_60h_continuation.py": "e5a744e1f413c1e3e5774eba968dc4f549ae24f767cb78df9fa1fe64492dd3e0",
+    "docs/plans/surrogate-hmc-force-fallback-repair-2026-10-16.md": "a7e475fbde6633f44049777ee05f6802425be3937751c4217556474f4593ef11",
+    "docs/plans/surrogate-hmc-five-model-n4032-master-2026-10-11.md": "01f269d7c98a7be8b0fbab2fd45b4cb2e36989873a18f48b4f8427fcabf38638",
+    "docs/plans/surrogate-hmc-60h-continuation-2026-10-16.md": "cbfe8d2ffea512554041f9a0e62b8faa9dec27e0177de88ed1a3b930174f5814",
+    "tests/test_hmc_force_fallback_policy.py": "65568a716d8aa16440f5dfe9fb9b62fe2533979de2c4d4c7bdd9599bfb2148e6",
+    "tests/test_hmc_tensorflow_verified.py": "230bdcf2ecffc8fe8112b9d0be644e0ccb5bbc090d6714356c025c5a44b8c6ec",
+    "tests/test_hmc_sequential_verification.py": "25897260feb8c8f568d1c3470cb32e838f6315405b60c5a5db2110f255f733e1",
+    "tests/test_hmc_tensorflow_resume.py": "e14df944f8bdc81f20713cdd8cb521c6600135514783bc4c686ae087e63edf8a",
+    "tests/test_surrogate_hmc_60h_continuation.py": "a05201e305b11d48f064e74994a6546b7be692e8d3b460eea6751081df905227"
+  },
+  "log_sha256": {
+    "tests.log": "8396891a53c0b18c66086042baf355db677346378eac68520a2d7a5a91e1b043",
+    "tests-final.log": "b6ed40f8e11229d62ea6fb8b78ed9074ee2ac2d49f2df3d138c12062589a1f2c"
+  },
+  "preparation_preflight": "PASS for range_bearing, predator_prey and sir_d18 after repair",
+  "remaining_campaign_seconds_estimate_at_0831_utc": 188431.41631807399
+}

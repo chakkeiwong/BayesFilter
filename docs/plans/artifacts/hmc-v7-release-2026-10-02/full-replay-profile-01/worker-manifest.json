@@ -1,0 +1,325 @@
+{
+  "source_manifest_sha256": "5eacc08fc31b69495e3bb125ceb5b3d35673808de22ffd5f04c7318ffd0a4d7c",
+  "configuration": {
+    "schema": "bayesfilter.acceptance_model_config.v3",
+    "case_id": "development-lgssm_qr",
+    "target": "ssm_lgssm_qr",
+    "parameters": {},
+    "data": [
+      0.18,
+      0.05,
+      0.16,
+      0.11
+    ],
+    "route": "ordinary",
+    "geometry": {
+      "kind": "explicit_diagonal",
+      "center": [
+        0.6940861479720454,
+        -1.6094379124341003
+      ],
+      "scale": [
+        1.0,
+        1.0
+      ]
+    },
+    "active_starts": [
+      [
+        0.5,
+        -1.5
+      ],
+      [
+        0.55,
+        -1.45
+      ],
+      [
+        0.45,
+        -1.55
+      ],
+      [
+        0.6,
+        -1.4
+      ]
+    ],
+    "epsilon_by_l": [
+      [
+        3,
+        [
+          0.95
+        ]
+      ],
+      [
+        5,
+        [
+          0.95
+        ]
+      ],
+      [
+        9,
+        [
+          0.95
+        ]
+      ],
+      [
+        13,
+        [
+          0.95
+        ]
+      ],
+      [
+        18,
+        [
+          0.95
+        ]
+      ],
+      [
+        25,
+        [
+          0.95
+        ]
+      ]
+    ],
+    "epsilon_domain": [
+      0.0001,
+      1.95
+    ],
+    "repair_factor": 1.3,
+    "max_repairs_per_family": 4,
+    "policy": {
+      "schema": "bayesfilter.hmc_replicated_acceptance_policy.v7",
+      "trial_num_results": 65,
+      "discarded_prefix": 3,
+      "base_repetitions": 32,
+      "max_repetitions": 256,
+      "max_candidates": 100,
+      "search_family_alpha": 0.05,
+      "verification_family_alpha": 0.05,
+      "diagnostic_family_alpha": 0.05,
+      "temporal_tolerance": 0.1,
+      "preferred_region": [
+        0.65,
+        0.75
+      ],
+      "qualification_region": [
+        0.55,
+        0.85
+      ],
+      "start_weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "method": "bounded_betting_mixture_v1",
+      "bet_fractions": [
+        1.0,
+        0.5,
+        0.25,
+        0.125
+      ],
+      "min_movement_rate": 0.05,
+      "max_repeated_state_fraction": 0.95,
+      "min_normalized_return_displacement": 0.0,
+      "max_abs_log_accept_energy_proxy": 1000.0,
+      "evidence_unit": "independent_fixed_horizon_trial",
+      "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+      "temporal_diagnostic_role": "preparation_investigation_not_admission",
+      "rhat_role": "reporting_only",
+      "independent_unit": "complete_start_bank_trial",
+      "default_promotion_status": "experimental_pending_validation"
+    },
+    "evidence_rungs": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "seed": [
+      20261002,
+      2501
+    ],
+    "wall_seconds": 1800,
+    "expected_outcome": "positive_delivery",
+    "classification": "development",
+    "provenance": "Frozen diagnostic hypotheses from the October 2 matrix: explicit steps/scales/starts; deterministic synthetic data; K0 uses native quadratic score preparation; supplied funnel maps have no learning claim. Evidence counts and budget are caller-declared. No posterior or default claim.; full-search release development: inherited six-L primary grid; M100; one refinement round at factors .8/1.25 and L4/7; four candidate-specific repair attempts with factor1.3; 32--256 trials; these are hypotheses, not frozen confirmation or automatic-preparation evidence; endpoint distance reporting-only per the October 3 counterexample audit; adjacent movement and repeated-path vetoes unchanged; explicit independent-trial batching preserves each original TFP stream; batch size is an execution hypothesis, not a statistical default",
+    "search": {
+      "schema": "bayesfilter.hmc_controller_config.v2",
+      "replicated_acceptance_policy": {
+        "schema": "bayesfilter.hmc_replicated_acceptance_policy.v7",
+        "trial_num_results": 65,
+        "discarded_prefix": 3,
+        "base_repetitions": 32,
+        "max_repetitions": 256,
+        "max_candidates": 100,
+        "search_family_alpha": 0.05,
+        "verification_family_alpha": 0.05,
+        "diagnostic_family_alpha": 0.05,
+        "temporal_tolerance": 0.1,
+        "preferred_region": [
+          0.65,
+          0.75
+        ],
+        "qualification_region": [
+          0.55,
+          0.85
+        ],
+        "start_weights": [
+          0.25,
+          0.25,
+          0.25,
+          0.25
+        ],
+        "method": "bounded_betting_mixture_v1",
+        "bet_fractions": [
+          1.0,
+          0.5,
+          0.25,
+          0.125
+        ],
+        "min_movement_rate": 0.05,
+        "max_repeated_state_fraction": 0.95,
+        "min_normalized_return_displacement": 0.0,
+        "max_abs_log_accept_energy_proxy": 1000.0,
+        "evidence_unit": "independent_fixed_horizon_trial",
+        "estimand": "conditional_frozen_start_bank_fixed_horizon_mean_metropolis_probability",
+        "temporal_diagnostic_role": "preparation_investigation_not_admission",
+        "rhat_role": "reporting_only",
+        "independent_unit": "complete_start_bank_trial",
+        "default_promotion_status": "experimental_pending_validation"
+      },
+      "primary_l_grid": [
+        3,
+        5,
+        9,
+        13,
+        18,
+        25
+      ],
+      "epsilon_by_l": [
+        [
+          3,
+          [
+            0.95
+          ]
+        ],
+        [
+          5,
+          [
+            0.95
+          ]
+        ],
+        [
+          9,
+          [
+            0.95
+          ]
+        ],
+        [
+          13,
+          [
+            0.95
+          ]
+        ],
+        [
+          18,
+          [
+            0.95
+          ]
+        ],
+        [
+          25,
+          [
+            0.95
+          ]
+        ]
+      ],
+      "total_budget_units": 1200,
+      "repair_reserve_units": 200,
+      "candidate_reserve_units": 3,
+      "allow_repair_from_free_pool": true,
+      "initial_epsilon": null,
+      "pilot_enabled": false,
+      "evidence_rungs": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "refinement_rounds": 1,
+      "epsilon_refinement_factors": [
+        0.8,
+        1.25
+      ],
+      "refinement_l_grid": [
+        4,
+        7
+      ],
+      "expansion_l_grid": [],
+      "max_candidates": 100,
+      "max_gradient_work": null,
+      "max_wall_time_seconds": 1800.0,
+      "explore_failed_intervals": false
+    },
+    "replicated_trial_batch_size": 32
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_uuid": "GPU-3eb0894d-1bb7-c79f-73a7-ac5b5c1dc79c",
+  "members": [
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000001-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000002-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000007-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000008-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000009-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000010-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000013-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000027-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000028-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000029-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000034-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000035-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000036-member.json",
+    "/home/ubuntu/python/BayesFilter/docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-batched-02/lgssm_qr/model/000037-member.json"
+  ],
+  "expected_ids": [
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000001",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000002",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000007",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000008",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000009",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000010",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000013",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000027",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000028",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000029",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000034",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000035",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000036",
+    "development-lgssm_qr:b1c2daeba1cfa7411ff2f833f3bab398aba61a6e8ac27d1d86f13d569d063ba9:candidate:000037"
+  ],
+  "tensorflow_version": "2.20.0",
+  "jit_compile": true,
+  "tf32": true,
+  "native_sampling": false
+}

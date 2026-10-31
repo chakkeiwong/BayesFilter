@@ -1,0 +1,45 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______________ test_paired_diagnostic_traces_protected_baseline _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-235/test_paired_diagnostic_traces_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7668bb95fdd0>
+
+    def test_paired_diagnostic_traces_protected_baseline(tmp_path,monkeypatch):
+        monkeypatch.setattr(runtime,"N",32)
+        case=runtime.load_case("lgssm")
+>       case.horizon=2
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/highdim/test_covariance_proposal_compact_maps.py:63: AttributeError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791820438.823437  455829 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+_____________ test_comparison_artifact_saves_provenance_and_parity _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-chakwong/pytest-235/test_comparison_artifact_saves0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7668bf38b0d0>
+
+    def test_comparison_artifact_saves_provenance_and_parity(tmp_path,monkeypatch):
+        monkeypatch.setattr(runtime,"N",32)
+        case=runtime.load_case("lgssm")
+>       case.horizon=2
+        ^^^^^^^^^^^^
+E       AttributeError: property 'horizon' of 'Case' object has no setter
+
+tests/highdim/test_covariance_proposal_compact_maps.py:92: AttributeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_compact_maps.py::test_paired_diagnostic_traces_protected_baseline
+FAILED tests/highdim/test_covariance_proposal_compact_maps.py::test_comparison_artifact_saves_provenance_and_parity
+2 failed, 103 deselected, 2 warnings in 3.77s

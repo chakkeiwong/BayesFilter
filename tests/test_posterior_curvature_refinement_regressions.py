@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
 import tensorflow as tf
-import bayesfilter.inference.posterior_curvature_refinement as refinement
 
 from bayesfilter.inference import (
     PosteriorCurvatureRefinementConfig,
     refine_posterior_local_curvature,
 )
+from bayesfilter.inference import posterior_curvature_tf as runtime
 
 
 def _target(theta: tf.Tensor):
@@ -102,11 +102,12 @@ for name in sys.modules:
     if name.startswith('bayesfilter.inference.'):
         assert name.rsplit('.', 1)[-1] in {
             'score_curvature_tf', 'posterior_curvature_refinement',
+            'posterior_curvature_tf', 'posterior_curvature_report', 'mass_matrix_tf',
         }, name
 assert not any(name.startswith(('MacroFinance', 'filters.', 'inference.hmc')) for name in sys.modules)
 print('fresh lazy closure passed')
 """
-    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60)
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "fresh lazy closure passed" in result.stdout
 
@@ -115,35 +116,50 @@ print('fresh lazy closure passed')
 def test_new_helper_and_legacy_dense_fit_share_identical_raw_precision(monkeypatch, condition) -> None:
     from bayesfilter.inference.fixed_center_curvature import _fit_dense_precision
 
-    recorded = []
-    original = refinement.fit_dense_score_precision_tf
+    center_buffer = tf.Variable(tf.zeros([2, 2], tf.float64))
+    with tf.device(center_buffer.device):
+        fit_count = tf.Variable(0, dtype=tf.int64)
+        offset_buffer = tf.Variable(tf.zeros([2, 48, 2], tf.float64))
+        score_buffer = tf.Variable(tf.zeros([2, 48, 2], tf.float64))
+        selection_offset_buffer = tf.Variable(tf.zeros([2, 48, 2], tf.float64))
+        selection_score_buffer = tf.Variable(tf.zeros([2, 48, 2], tf.float64))
+        precision_buffer = tf.Variable(tf.zeros([2, 2, 2], tf.float64))
+    original = runtime.fit_dense_score_precision_tf
 
     def capture(center, offsets, scores, **selection):
         fit = original(center, offsets, scores, **selection)
-        recorded.append((center, offsets, scores, selection, fit))
-        return fit
+        slot = tf.reshape(fit_count.assign_add(1) - 1, [1, 1])
+        writes = [center_buffer.scatter_nd_update(slot, center[None]),
+            offset_buffer.scatter_nd_update(slot, offsets[None]),
+            score_buffer.scatter_nd_update(slot, scores[None]),
+            selection_offset_buffer.scatter_nd_update(slot, selection['selection_offsets'][None]),
+            selection_score_buffer.scatter_nd_update(slot, selection['selection_scores'][None]),
+            precision_buffer.scatter_nd_update(slot, fit['raw_precision'][None])]
+        with tf.control_dependencies(writes):
+            return {name: tf.identity(value) for name, value in fit.items()}
 
     def target(theta):
         precision = tf.constant([[2.0, 0.3], [0.3, condition]], tf.float64)
         shifted = theta - tf.constant([0.3, -0.1], tf.float64)
         return -0.5 * tf.reduce_sum(shifted * (shifted @ precision), axis=1), -shifted @ precision
 
-    monkeypatch.setattr(refinement, "fit_dense_score_precision_tf", capture)
+    monkeypatch.setattr(runtime, "fit_dense_score_precision_tf", capture)
     result = refine_posterior_local_curvature(
         target, np.zeros(2), np.array([[0.8, 0.0], [0.2, 1.1]]),
         batched_eligibility_fn=_eligible,
         config=PosteriorCurvatureRefinementConfig(rows_per_partition=48, batch_size=16),
     )
     assert result.accepted
-    for center, offsets, scores, selection, fit in recorded:
+    assert int(fit_count) == len(result.diagnostics['replicates']) == 2
+    for index in range(int(fit_count)):
         legacy = _fit_dense_precision(
-            center.numpy(), offsets.numpy(), scores.numpy(),
-            selection["selection_offsets"].numpy(), selection["selection_scores"].numpy(),
+            center_buffer[index].numpy(), offset_buffer[index].numpy(), score_buffer[index].numpy(),
+            selection_offset_buffer[index].numpy(), selection_score_buffer[index].numpy(),
             replicate_index=0, eigenvalue_floor=1e-12, max_condition_number=1e10,
             holdout_cap=1e-7, projection_cap=1e-7, require_raw_spd=True,
         )
         assert legacy.accepted
-        np.testing.assert_allclose(fit["raw_precision"], legacy.raw_precision_z, atol=1e-10, rtol=1e-12)
+        np.testing.assert_allclose(precision_buffer[index], legacy.raw_precision_z, atol=1e-10, rtol=1e-12)
 
 
 def test_additive_log_density_constants_do_not_change_geometry() -> None:

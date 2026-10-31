@@ -1,0 +1,309 @@
+{
+  "schema": "bayesfilter_research_proposal_audit_v1",
+  "completed_utc": "2026-10-04T15:55:00.325135+00:00",
+  "question": "Mathematically valid M13 importance correction repair while preserving original LGSSM/KSC values and scores; downstream goal remains surrogate HMC.",
+  "stage": "proposal_and_math_audit_only",
+  "git_commit": "a55c6be7a16e9401242ee3449248fa347eb58d90",
+  "git_branch": "ledh-graceful-failure-execution-20260917",
+  "tracked_worktree_status": [
+    "M  bayesfilter/highdim/genut_shape_lm_tf.py",
+    "MM bayesfilter/highdim/higher_moment_contract_e.py",
+    "M  bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+    "M  bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+    "MM bayesfilter/highdim/ledh_canonical_score_tf.py",
+    "M  bayesfilter/highdim/ledh_contract_e_reset_tf.py",
+    "M  bayesfilter/highdim/ledh_numerical_safety_tf.py",
+    "MM bayesfilter/highdim/ledh_unified_correction_tf.py",
+    "M  bayesfilter/highdim/ledh_unified_reset_tf.py",
+    "M  bayesfilter/inference/__init__.py",
+    "M  bayesfilter/inference/hmc_tensorflow_tuning.py",
+    "M  bayesfilter/inference/hmc_tuning_dispatch.py",
+    "M  bayesfilter/inference/neural_force_hmc.py",
+    "M  bayesfilter/inference/tuning_contract.py",
+    "M  docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md",
+    "M  experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py",
+    "M  tests/highdim/test_ledh_canonical_batch_fused.py"
+  ],
+  "source_baseline": "Current dirty post-fix checkout; runtime-source-before.json is the exact file hash snapshot.",
+  "runtime_source_files_checked": 838,
+  "runtime_source_changed": false,
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "python_version": "3.11.15",
+  "conda_environment": "tftwogpu",
+  "execution": "CPU-only symbolic/reference and document work. No TensorFlow/CUDA import, GPU allocation, filter run or HMC.",
+  "gpu_memory_policy": "N/A: no GPU workload",
+  "jit_compile": "N/A: no TensorFlow algorithm executed",
+  "random_seeds": "N/A: exact deterministic algebra; empirical inputs belong to linked previous artifacts",
+  "data_version": "No new data; October 4 localization and score-before/after artifacts are cited as prior evidence.",
+  "plan_file": "docs/plans/surrogate-hmc-m13-marginal-repair-audit-plan-2026-10-04.md",
+  "result_file": "docs/plans/artifacts/surrogate-hmc-m13-marginal-repair-proposal-20261004-01/audit-result.md",
+  "proposal_file": "docs/plans/surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.tex",
+  "proposal_sha256": "6f8efacea8b30ca6d9b705c20aad60c5b9393a28ba45df4cdad952ce46b2372a",
+  "commands": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/surrogate-hmc-m13-marginal-repair-proposal-20261004-01/verify_algebra.py",
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/surrogate-hmc-m13-marginal-repair-proposal-20261004-01/build_proposal.py",
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python docs/plans/artifacts/surrogate-hmc-m13-marginal-repair-proposal-20261004-01/finalize_audit.py"
+  ],
+  "document_build_command": [
+    "/usr/bin/pdflatex",
+    "-interaction=nonstopmode",
+    "-halt-on-error",
+    "-output-directory=/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-marginal-repair-proposal-20261004-01",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.tex"
+  ],
+  "wall_time_seconds": {
+    "local_algebra": 0.6217809040099382,
+    "final_pdf_compile": 0.5348559349076822,
+    "mcp_document_call_timeout_each": 300
+  },
+  "budget": {
+    "local_algebra_limit_seconds": 120,
+    "gpu_hmc_seconds_used": 0,
+    "previous_diagnostic_balance_seconds": 1575.9,
+    "service_latency_and_document_builds": "excluded from local algebra budget"
+  },
+  "mathdev": {
+    "primary_equivalent_checks": 11,
+    "additional_unreduced_gaussian_coefficients": 5,
+    "local_checks": 9,
+    "document_audit": "partial; original and narrowed reports retained",
+    "formal_certificate": false,
+    "raw_results": [
+      "mathdev-symbolic-raw.json",
+      "mathdev-supplemental-raw.json"
+    ]
+  },
+  "audited_sources": {
+    "v1": {
+      "snapshot": "proposal-audited-v1.tex",
+      "sha256": "af8af3a90b834832a28ade6ede21b95e4548d7fc1c090833837ba5fa154a6a87",
+      "report": "mathdev-document-rigor.json",
+      "report_source_sha256": "af8af3a90b834832a28ade6ede21b95e4548d7fc1c090833837ba5fa154a6a87",
+      "matches": true,
+      "coverage": {
+        "available_labeled_equation_count": 23,
+        "concrete_repair_count": 3,
+        "diagnostic_abstention_count": 0,
+        "distinct_issue_count": 5,
+        "gap_count": 5,
+        "partial_coverage": true,
+        "proposal_count": 3,
+        "resolved_by_existing_context_count": 0,
+        "selected_count": 11,
+        "status": "partial_coverage",
+        "target_file": "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.tex",
+        "target_file_only": true
+      }
+    },
+    "v2": {
+      "snapshot": "proposal-audited-v2.tex",
+      "sha256": "f615d5438eb909eab0374482dc360ed0d7397d558315cca08255126392836a7d",
+      "report": "mathdev-revision-rigor.json",
+      "report_source_sha256": "f615d5438eb909eab0374482dc360ed0d7397d558315cca08255126392836a7d",
+      "matches": true,
+      "coverage": {
+        "available_labeled_equation_count": 23,
+        "concrete_repair_count": 3,
+        "diagnostic_abstention_count": 0,
+        "distinct_issue_count": 3,
+        "gap_count": 3,
+        "partial_coverage": true,
+        "proposal_count": 3,
+        "resolved_by_existing_context_count": 0,
+        "selected_count": 3,
+        "status": "partial_coverage",
+        "target_file": "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.tex",
+        "target_file_only": true
+      }
+    }
+  },
+  "source_pdf_sha256": {
+    ".localresources/papers/m13-repair-20261004/owen-zhou-2000.pdf": "29e7e64fc64475e82418b7dcf4700239237ac9c2291e233b208f3e29236cdb49",
+    ".localresources/papers/m13-repair-20261004/li-coates-2017.pdf": "af69af561d3615501b36f83aae453166c242046f4d410417c64c5d5b83f4dd3e",
+    ".localresources/papers/m13-repair-20261004/klaas-defreitas-doucet-2005.pdf": "701ab320a9e4758cdfc299053fa142ba2548a384dacebff93325ac2b2ae0b9cf"
+  },
+  "artifacts": {
+    "audit-result.md": {
+      "sha256": "d29aee54e398d9bd28bb6613495b8ff8d2768dc0d340aafeb5601c0af760ccff",
+      "bytes": 13881
+    },
+    "build_proposal.py": {
+      "sha256": "39966cb4ee693340ae5b4c6d1671fb89b71d3036f3aef5abe5bf690f76854d65",
+      "bytes": 2232
+    },
+    "contact-1.jpg": {
+      "sha256": "0d9e87c1d80b8e32d7994bf8cdede879ca0ea30b822b942c5a0f88b8c11a5a60",
+      "bytes": 355521
+    },
+    "contact-2.jpg": {
+      "sha256": "2bf644340e2ddca3f3a369957049dc565ed80289f7a5b47990a2c86bad7e0a79",
+      "bytes": 369814
+    },
+    "contact-3.jpg": {
+      "sha256": "576393fd89bd0d1c50f1358056a3c034087a1cf4a1158ccf640486aa8e4587c4",
+      "bytes": 353247
+    },
+    "final-artifact-check.json": {
+      "sha256": "f457a111969fe2edb1eed8b2cbe02c6aeecb391f871d0cd0966934ab63670a2b",
+      "bytes": 739
+    },
+    "finalize_audit.py": {
+      "sha256": "b7fffe643592507545c8a04ca42dc774986505ad5bf3725d4a1d9d98ad00890b",
+      "bytes": 6608
+    },
+    "gaussian-2x2-mathdev-coefficients-unreduced.json": {
+      "sha256": "f5407dc5a390fa8594fb6b44410ffc9727f4fc26c3e40e5f8884daa959fc155b",
+      "bytes": 1463
+    },
+    "gaussian-2x2-mathdev-coefficients.json": {
+      "sha256": "4598f8bd8dad6e8b19596a4a1de1a3864713a90f4c1137ee033a36042e324f27",
+      "bytes": 1446
+    },
+    "gaussian-2x2-mathdev-input.json": {
+      "sha256": "fae6da43f0f236e805949558bd8e983277c2e9725d2558888caf74e5e2ed50c6",
+      "bytes": 1253
+    },
+    "latex-build-manifest.json": {
+      "sha256": "4414e49a97b67412624556cb0bfd1b0ed0d0d307d7ca046c73e02276849c411c",
+      "bytes": 646
+    },
+    "latex-build.log": {
+      "sha256": "a5a77747ee5f403408ff677dc67c8306c9fe8eb8bfbb019143d665193a6a2330",
+      "bytes": 14398
+    },
+    "local-algebra-report.json": {
+      "sha256": "f45f5ecbab2ef556901cc580f440f484ff80c66d6abedf8023ef1d6fad03443a",
+      "bytes": 555
+    },
+    "mathdev-document-rigor.json": {
+      "sha256": "332cc79814ebd01a8f78001c883c0ef8b6a4296164d75dee445646f9882cc408",
+      "bytes": 859748
+    },
+    "mathdev-document-rigor.md": {
+      "sha256": "c72a76bee246009b5656aeccd5a0d2dae30ce5381248d43c6694a6833c8f6274",
+      "bytes": 5021
+    },
+    "mathdev-revision-rigor.json": {
+      "sha256": "a0fee6e4ced16ff4cf7211102890f857ccc36d3f756b5c65a2de092f07c89b7b",
+      "bytes": 356548
+    },
+    "mathdev-revision-rigor.md": {
+      "sha256": "019aee9b23916c7a2d867911458ee8dc4762df02f41e9d160075a094f12d55fe",
+      "bytes": 2451
+    },
+    "mathdev-supplemental-raw.json": {
+      "sha256": "0871dd32a330b420cab83c389e57dc8bd04b34b08f16dc138f60607303fb04f9",
+      "bytes": 18581
+    },
+    "mathdev-symbolic-raw.json": {
+      "sha256": "ff60d5b085bfd5a1f87da24df71e54640b172639864d788878b0291f9e785cce",
+      "bytes": 50191
+    },
+    "proposal-audited-v1.tex": {
+      "sha256": "af8af3a90b834832a28ade6ede21b95e4548d7fc1c090833837ba5fa154a6a87",
+      "bytes": 29730
+    },
+    "proposal-audited-v2.tex": {
+      "sha256": "f615d5438eb909eab0374482dc360ed0d7397d558315cca08255126392836a7d",
+      "bytes": 30269
+    },
+    "proposal-page-1.png": {
+      "sha256": "4d1d56ac1bca53d8e93da86145228ceb658881f6efdffe2b90b881ba17f81043",
+      "bytes": 230254
+    },
+    "proposal-page-2.png": {
+      "sha256": "ac729763b5b6e448e6cfa3b87b264db464da790316ea9554dcd0e7f480c0e651",
+      "bytes": 230654
+    },
+    "proposal-page-3.png": {
+      "sha256": "56ace8f23c0d84d04fba38554daaf633d87f3c687f711e8d1402de841fddd15b",
+      "bytes": 202563
+    },
+    "proposal-page-4.png": {
+      "sha256": "1aeb9c7eb232738cf2255e2549dc19494e682a714ead5f377f39d4c9b19f6c6e",
+      "bytes": 196895
+    },
+    "proposal-page-5.png": {
+      "sha256": "cbc523df0f2d05c47c4d368192da93e031b9ae8799be5709451197917f870f92",
+      "bytes": 228516
+    },
+    "proposal-page-6.png": {
+      "sha256": "4ce982745c12c0b276ab8deb34ec76faecebb07ddcfbd9f8e761c9cbe28bff77",
+      "bytes": 247014
+    },
+    "proposal-page-7.png": {
+      "sha256": "a18f95b9965029c6d45bd73e86951a5c320dd1151f2b49d020b556ced4b7f5e6",
+      "bytes": 267968
+    },
+    "proposal-page-8.png": {
+      "sha256": "ed1530d5fee29b2a36efb9a6466cabba413f468965bcb3598d9b71c2105b3202",
+      "bytes": 280139
+    },
+    "proposal-page-9.png": {
+      "sha256": "64c4c877673f14a57425b36eae913963f90a7a913475008ce154af21e0dff7d1",
+      "bytes": 100435
+    },
+    "proposal-rendered.txt": {
+      "sha256": "881a2f2a23123b8966eb48540d6defa68962e8cf41cbf45c497ab2ffd8e2ecab",
+      "bytes": 33164
+    },
+    "runtime-source-after.json": {
+      "sha256": "34718c95975d86dca3116906338c7f92e36386ef1f079e95939426dc4a970f8a",
+      "bytes": 102473
+    },
+    "runtime-source-before.json": {
+      "sha256": "34718c95975d86dca3116906338c7f92e36386ef1f079e95939426dc4a970f8a",
+      "bytes": 102473
+    },
+    "source-support.md": {
+      "sha256": "763ee31a70d9dfbd5a6feb7ad88cf0cae58832640535a9cc8571cf3c3b9c0b6f",
+      "bytes": 8088
+    },
+    "stratified-counterexample.json": {
+      "sha256": "fbc81f98697ec708f74c45ce1c43d5c89ca69abf705c7c210d595ef6cf72d028",
+      "bytes": 671
+    },
+    "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.aux": {
+      "sha256": "7207bf274480cf8d01bd2a0ea74e87597837b9bb9791019b07d136aefc753050",
+      "bytes": 4770
+    },
+    "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.log": {
+      "sha256": "1e6325b10ca6daa7848e349a94a618b68f9edec402cebc4cda214f78d7ec2bf1",
+      "bytes": 25172
+    },
+    "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.out": {
+      "sha256": "d92f97b6bddd66bbf8698fda37a0990314d7328e3bcd64d5f953a62d7b8ff84e",
+      "bytes": 2646
+    },
+    "surrogate-hmc-m13-marginal-repair-proposal-2026-10-04.pdf": {
+      "sha256": "d2efe7dd3253d3fedb0247c7df46f5c038767c23b49a2c9518aba42108b94864",
+      "bytes": 306155
+    },
+    "verify_algebra.py": {
+      "sha256": "e0d165d994cd3e26eac8e300d9d4f95b8b58842103c9d954be6b125395b1b831",
+      "bytes": 3323
+    }
+  },
+  "final_artifact_check": {
+    "status": "PASS",
+    "checks": {
+      "runtime_source_files_unchanged": true,
+      "audited_source_digests_match": true,
+      "local_algebra_passed": true,
+      "pdf_build_passed": true,
+      "pdf_matches_final_source": true,
+      "all_equation_references_resolve": true,
+      "equation_labels_unique": true,
+      "claude_handoff_exists": true
+    },
+    "runtime_files_checked": 838,
+    "changed_runtime_files": [],
+    "new_runtime_files": [],
+    "missing_references": [],
+    "duplicate_labels": [],
+    "render_review": "All nine pages inspected via three contact sheets; equations/table fit, no clipping or blank pages.",
+    "mathematical_scope": "Scoped identities and explicit manual proofs; no full formal certificate or empirical candidate run."
+  },
+  "claude_review": "Written handoff only; not yet performed",
+  "next_master_phase": "Implement separately identified optional marginal correction, preserve legacy consumers, then test T=1 against bootstrap/current LEDH/quadrature; proposal only."
+}

@@ -1,0 +1,283 @@
+{
+  "status": "FAIL",
+  "scope": "AUTHOR_SOURCE_EXECUTABILITY_AND_COST_PILOT",
+  "replication": "INCOMPLETE",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "author_algorithm_modified": false,
+  "driver_changes": "Pilot grid/repetition scheduling and observation-only reporting",
+  "runtime_equivalence": "Author MATLAB source executed in Octave; MATLAB/Octave equivalence not yet certified",
+  "source_validity": "Finite-real logZ observed; full covariance/domain validity not certified by this cost pilot",
+  "source_lock": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt139_c0_source_lock",
+  "source_lock_sha256": "f8534fddd2163877a4d6d8c6e2aa542b0c4f8afe9d30f0019bcc276e0917ff45",
+  "drivers": [
+    {
+      "driver": "lorenz_csmc",
+      "lane": "Lorenz",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt140_c1_source_cost_pilot/reference-work/Lorenz');save_default_options('-mat7-binary');rand('state',202610031);randn('state',202610031);run('cSMC_VaryF_pilot.m');"
+      ],
+      "mode": "pilot",
+      "seed": 202610031,
+      "source_driver_sha256": "f57732be90c66bfa538af7a84f928fdec1e3b1dbb2157a83be60935675499968",
+      "instrumented_sha256": "545bb60fbca5ddcb112ad729460b693eca0e730dee76cccfc7e68a65e7d8f78d",
+      "source_algorithm_sha256": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+      "full_cases": 4000,
+      "returncode": 0,
+      "wall_seconds": 4.4743329170159996,
+      "cases": [
+        {
+          "grid_index": 1,
+          "repetition": 1,
+          "seconds": 1.9186060428619385,
+          "logZ": -18523.512127564434,
+          "finite_real": true,
+          "N": 512,
+          "I": 4,
+          "T": 100,
+          "ESS": 511.12654966175353,
+          "refinements": 4
+        },
+        {
+          "grid_index": 20,
+          "repetition": 1,
+          "seconds": 0.6891200542449951,
+          "logZ": -2035.6121306983932,
+          "finite_real": true,
+          "N": 512,
+          "I": 4,
+          "T": 100,
+          "ESS": 509.93485791373405,
+          "refinements": 1
+        },
+        {
+          "grid_index": 40,
+          "repetition": 1,
+          "seconds": 1.442007064819336,
+          "logZ": -42044.246233321915,
+          "finite_real": true,
+          "N": 512,
+          "I": 4,
+          "T": 100,
+          "ESS": 511.77065352774025,
+          "refinements": 3
+        }
+      ],
+      "expected_cases": 3,
+      "exact_case_coverage": true,
+      "status": "COMPLETE",
+      "source_numerical_failure": false,
+      "source_settings": {
+        "N": 512,
+        "I": 4,
+        "T": 100,
+        "nrep": 1,
+        "ngrid": 40
+      },
+      "descriptive_full_matrix_seconds": {
+        "mean_projection": 5399.644215901692,
+        "conservative_reservation": 15408.848342895508,
+        "evidence": "three selected cells; scheduling estimate, not a confidence interval"
+      }
+    },
+    {
+      "driver": "lorenz_apf",
+      "lane": "Lorenz",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt140_c1_source_cost_pilot/reference-work/Lorenz');save_default_options('-mat7-binary');rand('state',202610032);randn('state',202610032);run('APF_VaryF_pilot.m');"
+      ],
+      "mode": "pilot",
+      "seed": 202610032,
+      "source_driver_sha256": "07cab9d30d77d6b9725bc7a62a910dddd3f7d4cdab9df45f1ad57f52c1e280f3",
+      "instrumented_sha256": "306e2b1628fd3a07ce9d38620a2c97632d544041bbcbe78406d7e9609a21b2c1",
+      "source_algorithm_sha256": "e8fec4cdd891bb8cd2512d37c3aa801fe9b94219b3c058e9eb9769d6dc15ee90",
+      "full_cases": 4000,
+      "returncode": 0,
+      "wall_seconds": 5.174341281992383,
+      "cases": [
+        {
+          "grid_index": 1,
+          "repetition": 1,
+          "seconds": 4.710434913635254,
+          "logZ": -60047.920079156094,
+          "finite_real": true,
+          "N": 6144,
+          "I": 0,
+          "T": 100,
+          "ESS": 63.69088482343763,
+          "refinements": 4
+        },
+        {
+          "grid_index": 20,
+          "repetition": 1,
+          "seconds": 0.6059210300445557,
+          "logZ": -2120.4605189941094,
+          "finite_real": true,
+          "N": 1382,
+          "I": 0,
+          "T": 100,
+          "ESS": 166.19645125146076,
+          "refinements": 1
+        },
+        {
+          "grid_index": 40,
+          "repetition": 1,
+          "seconds": 1.8466119766235352,
+          "logZ": -126210.62246361868,
+          "finite_real": true,
+          "N": 4505,
+          "I": 0,
+          "T": 100,
+          "ESS": 46.12785270022433,
+          "refinements": 3
+        }
+      ],
+      "expected_cases": 3,
+      "exact_case_coverage": true,
+      "status": "COMPLETE",
+      "source_numerical_failure": false,
+      "source_settings": {
+        "N": 4505,
+        "I": 0,
+        "T": 100,
+        "nrep": 1,
+        "ngrid": 40
+      },
+      "descriptive_full_matrix_seconds": {
+        "mean_projection": 9550.623893737793,
+        "conservative_reservation": 37743.47930908203,
+        "evidence": "three selected cells; scheduling estimate, not a confidence interval"
+      }
+    },
+    {
+      "driver": "neuroscience_csmc",
+      "lane": "NeuroScience",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt140_c1_source_cost_pilot/reference-work/NeuroScience');save_default_options('-mat7-binary');rand('state',202610033);randn('state',202610033);run('NormConst_cSMC_pilot.m');"
+      ],
+      "mode": "pilot",
+      "seed": 202610033,
+      "source_driver_sha256": "5576c1217d1b5a50842aecaac1aeaddedb666fecc7255b4a0c42d44a8cffb3e8",
+      "instrumented_sha256": "e6149b91dac1a41f6aa9ae082d73b91bff69434337b811189ace57a8a1e5034a",
+      "source_algorithm_sha256": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+      "full_cases": 2000,
+      "returncode": 0,
+      "wall_seconds": 22.05717593897134,
+      "cases": [
+        {
+          "grid_index": 1,
+          "repetition": 1,
+          "seconds": 7.2822980880737305,
+          "logZ": -3698.955744663657,
+          "finite_real": true,
+          "N": 128,
+          "I": 3,
+          "T": 2999,
+          "ESS": null,
+          "refinements": 3
+        },
+        {
+          "grid_index": 10,
+          "repetition": 1,
+          "seconds": 7.2729668617248535,
+          "logZ": -3106.430929175706,
+          "finite_real": true,
+          "N": 128,
+          "I": 3,
+          "T": 2999,
+          "ESS": null,
+          "refinements": 3
+        },
+        {
+          "grid_index": 20,
+          "repetition": 1,
+          "seconds": 7.294806957244873,
+          "logZ": -3114.0969252927785,
+          "finite_real": true,
+          "N": 128,
+          "I": 3,
+          "T": 2999,
+          "ESS": null,
+          "refinements": 3
+        }
+      ],
+      "expected_cases": 3,
+      "exact_case_coverage": true,
+      "status": "COMPLETE",
+      "source_numerical_failure": false,
+      "source_settings": {
+        "N": 128,
+        "I": 3,
+        "T": 2999,
+        "nrep": 1,
+        "ngrid": 20
+      },
+      "descriptive_full_matrix_seconds": {
+        "mean_projection": 14566.714604695639,
+        "conservative_reservation": 29239.227828979492,
+        "evidence": "three selected cells; scheduling estimate, not a confidence interval"
+      }
+    },
+    {
+      "driver": "neuroscience_bpf",
+      "lane": "NeuroScience",
+      "command": [
+        "octave",
+        "--no-gui",
+        "--quiet",
+        "--eval",
+        "addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst');addpath('/home/chakwong/BayesFilter/.localresources/code/octave-statistics-1.5.0/inst/distributions');cd('/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt140_c1_source_cost_pilot/reference-work/NeuroScience');save_default_options('-mat7-binary');rand('state',202610034);randn('state',202610034);run('NormConst_BPF_pilot.m');"
+      ],
+      "mode": "pilot",
+      "seed": 202610034,
+      "source_driver_sha256": "2346fc106a9a44f99fe3abfd1f4af3a056dce46bcfa0f491f803fc4dd3352003",
+      "instrumented_sha256": "b9844e1c37787c4e58ada6cc263656a194310bfde0dc537fb88d071792153ebb",
+      "source_algorithm_sha256": "290ec37cae84e6272970923c469330fc66ff4485d1caa55c3903b9f0400f0db2",
+      "full_cases": 2000,
+      "returncode": 124,
+      "wall_seconds": 45.064245985937305,
+      "cases": [
+        {
+          "grid_index": 1,
+          "repetition": 1,
+          "seconds": 41.99685001373291,
+          "logZ": -3723.5610966007102,
+          "finite_real": true,
+          "N": 5529,
+          "I": 0,
+          "T": 2999,
+          "ESS": null,
+          "refinements": 0
+        }
+      ],
+      "expected_cases": 3,
+      "exact_case_coverage": false,
+      "status": "TIMEOUT",
+      "source_numerical_failure": false,
+      "descriptive_full_matrix_seconds": {
+        "mean_projection": 83993.70002746582,
+        "conservative_reservation": 168047.40005493164,
+        "evidence": "three selected cells; scheduling estimate, not a confidence interval"
+      }
+    }
+  ],
+  "scientific_verdict": "No replication, statistical ranking, or port promotion from cost/executability alone",
+  "checks": [
+    {
+      "name": "all_four_driver_cases_accounted_for",
+      "passed": false
+    }
+  ]
+}

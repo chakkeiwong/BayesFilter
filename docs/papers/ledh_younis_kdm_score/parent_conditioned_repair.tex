@@ -1,0 +1,434 @@
+\section{Matching the physical parent and integrating the conditional mixture}
+\label{sec:parent-conditioned-repair}
+
+The aggregate-moment and component-mixture investigations raise a more specific
+question than whether a flexible guide can fit a useful distribution. Which
+distribution does the flow actually transport? A Gaussian fitted to the whole
+predictive cloud describes uncertainty across parents. A child generated from
+one physical parent starts with the process covariance around that parent's
+transition mean. These distributions generally have different means and
+covariances. Applying a flow designed for the first to samples from the second
+can produce a poor proposal even when its density and importance correction are
+implemented correctly. The correction preserves the stated importance law;
+it does not make a poor proposal efficient.
+
+This section derives a repair in the SIR setting, where the nonlinear dynamics
+are followed by a linear Gaussian observation. It connects the conditional
+proposal already introduced in Section~\ref{sec:sg-physical-repair} to exact
+integration of the current finite predictive mixture. The proposal itself is
+an existing option, not a newly discovered algorithm. The new investigation
+separates its remaining ancestor error from the extra error introduced by
+representing each conditional Gaussian with one child and then resetting the
+cloud. It also specifies what may be changed in the KDM construction without
+silently changing either the importance law or the differentiated scalar.
+
+\subsection{Why a covariance mismatch can become a mean error}
+
+Consider a scalar observation $y=x+\varepsilon$, with
+$\varepsilon\sim N(0,R)$. Suppose the flow is designed for the prior $N(m,P)$,
+but its input really follows $N(a,Q)$. The continuous affine Gaussian flow that
+transports its intended prior to its posterior has terminal map
+\begin{equation}
+ F_{m,P}(x)=m+\frac{P}{P+R}(y-m)
+              +\sqrt{\frac{R}{P+R}}(x-m).
+ \label{eq:parent-flow-map}
+\end{equation}
+Indeed, when $x\sim N(m,P)$, this map has the posterior mean
+$m+P(y-m)/(P+R)$ and variance $PR/(P+R)$. On the actual physical input,
+however, the mean and variance are
+\begin{align}
+ E[F_{m,P}(X)]&=m+\frac{P}{P+R}(y-m)
+                 +\sqrt{\frac{R}{P+R}}(a-m),\\
+ \operatorname{Var}[F_{m,P}(X)]&=\frac{RQ}{P+R}.
+ \label{eq:parent-mismatch}
+\end{align}
+The desired parent-conditional Gaussian instead has mean
+$a+Q(y-a)/(Q+R)$ and variance $RQ/(Q+R)$. Setting $m=a$ removes the
+centering mismatch but leaves the wrong gain and variance when $P\ne Q$.
+Setting $P=Q$ is also insufficient if $m\ne a$: with
+$c=\sqrt{R/(Q+R)}$, the remaining mean error is
+$(c^2-c)(m-a)$. Matching both quantities makes the continuous linear-Gaussian
+map exact. A finitely discretized flow still requires its own integration
+error check.
+
+Consequently, a mean-dominated discrepancy does not show that covariance
+repair is irrelevant. The covariance controls both the gain and contraction,
+and therefore the output mean. For example, take $a=m=0$, $Q=1$, $R=100$,
+and $y=10$. The physical conditional mean is $10/101\simeq0.099$, with
+variance $100/101\simeq0.990$. A flow designed with $P=100$ instead produces
+mean $5$ and variance $0.5$ on those same physical draws. Nothing in this
+example requires a failed Cholesky factorization or extreme floating-point
+rounding: it is a mismatch between the assumed and actual proposal input.
+
+The R2 frozen-input contraction diagnostic supports this mechanism in a
+limited, descriptive sense. Replacing the guide covariance by
+$P_\gamma=Q+\gamma(P_{\rm UKF}-Q)$, while preserving its mean and recomputing
+the proposal densities, reduced the observed mean conditional Gaussian KL
+from about $81.14$ at $\gamma=1$ to $0.002$ at $\gamma=0$ on the inspected
+stages. Those stages do not establish a general ranking or show that the
+remaining mean mismatch is always negligible. They motivate a cleaner test:
+condition the actual parent distribution directly.
+
+\subsection{The exact conditional law of the current finite mixture}
+
+Fix a time step and parameter $\theta$. The incoming approximation consists
+of states $x_i$ and normalized positive weights $w_i$, $i=1,\ldots,N$.
+Let $a_i=f_\theta(x_i)$ be the nonlinear transition mean. In this SIR model,
+the transition is Gaussian conditional on the parent, and the observation is
+linear:
+\begin{equation}
+ X\mid i\sim N(a_i,Q),\qquad Y\mid X\sim N(HX,R),\qquad
+ p_N(x)=\sum_iw_i\,\varphi(x;a_i,Q),
+ \label{eq:parent-finite-prior}
+\end{equation}
+where $\varphi(\cdot;m,V)$ denotes a normalized Gaussian density. The state has
+18 coordinates; $H$ selects the nine infected coordinates. The physical
+covariances in the present implementation are $Q=I_{18}$ and
+$R=100\exp(2\theta_2)I_9$, where $\theta_2$ is the observation-noise
+coordinate in the code's zero-based indexing. Thus $Q$ is not the covariance
+of the whole predictive cloud and should not be replaced by that covariance
+when defining the conditional physical transition.
+
+Define the innovation covariance and Kalman gain
+\begin{equation}
+ S=HQH^\top+R,\qquad K=QH^\top S^{-1}.
+\end{equation}
+Completing the square in the product of transition and observation densities
+gives
+\begin{align}
+ m_i&=a_i+K(y-Ha_i),& C&=Q-KHQ,\\
+ e_i&=\varphi(y;Ha_i,S),&
+ \varphi(x;a_i,Q)\varphi(y;Hx,R)
+   &=e_i\varphi(x;m_i,C).
+ \label{eq:parent-product-identity}
+\end{align}
+The last equality includes its normalizing constant: integrating both sides
+over $x$ gives the predictive likelihood $e_i$ for parent $i$. Summing with
+the incoming weights then yields
+\begin{equation}
+ Z_N=\sum_iw_i e_i,\qquad
+ \alpha_i=\frac{w_i e_i}{Z_N},\qquad
+ \pi_N(x\mid y)=\sum_i\alpha_i\varphi(x;m_i,C).
+ \label{eq:parent-exact-posterior}
+\end{equation}
+This is exact conditioning of the finite mixture in
+\eqref{eq:parent-finite-prior}. The incoming states remain an approximation
+to the previous filtering distribution. Therefore $Z_N$ is not generally the
+true model predictive likelihood, and $\pi_N$ is not an exact solution of the
+nonlinear recursive filter. Direct conditioning removes one current-step
+approximation while leaving the previous approximation visible.
+
+\subsection{What changes in sampling, and what does not}
+
+Use $q_i(x)=\varphi(x;m_i,C)$ for the child associated with parent $i$.
+Equation~\eqref{eq:parent-product-identity} gives the pointwise cancellation
+\begin{equation}
+ \frac{\varphi(x;a_i,Q)\varphi(y;Hx,R)}{q_i(x)}=e_i.
+ \label{eq:parent-cancellation}
+\end{equation}
+With one child drawn from each parent, the unnormalized child weight is
+$w_i e_i$. There is no child-draw variability in this ratio. The parent
+evidences can nevertheless differ enormously, so the normalized weights
+$\alpha_i$ can still concentrate. This repair cannot recover a missing region
+of the incoming parent cloud.
+
+The allocation law matters if one changes that one-child-per-parent design.
+If a parent is sampled with probability $b_i$ and its child is sampled from
+$q_i$, the joint importance ratio is
+\begin{equation}
+ \frac{w_i\varphi(x;a_i,Q)\varphi(y;Hx,R)}{b_iq_i(x)}
+       =\frac{w_ie_i}{b_i}.
+ \label{eq:parent-allocation-ratio}
+\end{equation}
+Choosing $b_i=\alpha_i$ makes that joint ratio constant, but a categorical
+choice based on parameter-dependent $\alpha_i$ makes the realized finite
+program piecewise discontinuous in $\theta$. Between switching boundaries,
+the selected branch has an ordinary pathwise derivative; at a jump, that
+derivative does not describe passage across the boundary. It therefore does
+not establish the smooth finite target required by the present HMC design.
+Differentiating an expectation over the categorical choice is a separate
+question and must also account for the changing allocation probabilities. This
+allocation is now an implemented proposal default, as detailed in
+Section~\ref{sec:observation-weighted-default}; its HMC smoothness limitation
+remains. Smooth deterministic transport is a different route;
+it needs its own finite-map derivative and reset analysis.
+
+Likewise, replacing an ancestor density by a marginal mixture density requires
+a corresponding derivation of the sampling measure. A global KDM density
+cannot simply be inserted into the denominator of a parent-specific ratio
+while keeping an incompatible numerator or allocation weight. In the first
+repair experiment, parent association and the existing ancestor importance
+law remain fixed. The shared physical-conditional proposal already computes
+the original transition, observation and proposal densities at the same
+child; the algebraic cancellation is checked rather than assumed.
+
+There is no double assimilation here. The observation enters the proposal,
+and the original target numerator still contains the observation likelihood;
+the proposal density in the denominator makes
+\eqref{eq:parent-cancellation} hold. Applying another observation update to the
+conditional Gaussian without adjusting the proposal law would define a
+different calculation.
+
+\subsection{Integrate before blaming the child representation}
+
+The finite conditional mixture permits exact first and second moments without
+drawing a child. Its mean, raw second moment and covariance are
+\begin{align}
+ \mu_N&=\sum_i\alpha_i m_i,\\
+ M_{2,N}&=\sum_i\alpha_i(C+m_im_i^\top),\\
+ V_N&=\sum_i\alpha_i\{C+(m_i-\mu_N)(m_i-\mu_N)^\top\}.
+ \label{eq:parent-integrated-moments}
+\end{align}
+The covariance expression separates within-parent uncertainty $C$ from
+between-parent uncertainty. Keeping only the weighted conditional means would
+discard $C$ and underestimate the uncertainty even when all parents coincide.
+If they do coincide, \eqref{eq:parent-integrated-moments} reduces to the
+ordinary Gaussian conditional moments, a useful implementation check.
+
+For the conditional proposal, the weights $\alpha_i$ are independent of the
+child draws. Conditional on the incoming cloud, the expectation of
+$\sum_i\alpha_i\phi(X_i)$ equals the corresponding integrated expectation
+for any integrable $\phi$. Thus integration eliminates that conditional
+sampling variance for first and quadratic features. With independent children,
+the conditional variance of the sampled feature estimator is
+$\sum_i\alpha_i^2\operatorname{Var}_{q_i}[\phi(X)]$.
+
+There is also a precise squared-error statement. Write
+$\widehat g=\sum_i\alpha_i\phi(X_i)$ and
+$g_N=\sum_i\alpha_i E_{q_i}[\phi(X)]$. Conditional on the incoming cloud
+and observation, let $g_\star$ be a fixed reference feature vector and let
+$W$ be a fixed positive semidefinite loss matrix. Expanding the square and
+using $E[\widehat g-g_N]=0$ gives
+\begin{equation}
+ E\!\left[(\widehat g-g_\star)^\top W(\widehat g-g_\star)\right]
+ =(g_N-g_\star)^\top W(g_N-g_\star)
+ +\operatorname{tr}\!\left\{W\sum_i\alpha_i^2
+       \operatorname{Cov}_{q_i}[\phi(X)]\right\}.
+ \label{eq:parent-integrated-risk}
+\end{equation}
+Thus integration reduces expected squared error relative to these sampled,
+pre-reset conditional-proposal features, even if $g_\star$ is the true
+filtering expectation. The same identity applies to an independently generated
+latent-state label after conditioning on that label. It leaves the first term,
+the incoming approximation's error, untouched. This expectation over fresh
+child draws does not order individual realized losses, arbitrary
+self-normalized importance estimators, corrected clouds, or two recursive
+algorithms with different incoming clouds. The identity also concerns exact
+arithmetic; finite-precision departures from the cancellation must be measured.
+
+The comparison becomes informative when all readouts are retained: integrated,
+weighted children, reset cloud and corrected cloud. If integrated moments are
+already poor on a fixed incoming cloud, changing the number of child draws
+cannot fix that conditional target; investigate incoming coverage and earlier
+propagation. If integration is accurate but sampled moments are poor, inspect
+allocation and within-component representation. If the discrepancy first
+appears after reset or correction, inspect those transformations. These are
+explanatory comparisons with the same incoming approximation, not competing
+definitions of the model posterior.
+
+The canonical Contract-E reset restores the moments of its weighted source
+cloud. Feeding $\mu_N$ and $V_N$ into that reset instead would change its
+target and therefore require a distinct reset contract and a new total
+derivative. The initial implementation consequently records integrated moments
+without using them to alter the next cloud. An integrated final readout can
+improve the reported estimator while leaving next-step ancestor coverage
+unchanged; both effects must be measured separately.
+
+\subsection{Differentiate the same conditioned mixture}
+
+For a parameter direction, write a dot for the total directional derivative.
+The parent means depend on both the transition parameter and the incoming
+states: $\dot a_i=\partial_\theta f_\theta(x_i)\dot\theta+
+D_xf_\theta(x_i)\dot x_i$. Incoming weights, previous resets and corrections
+also depend on the parameter. Holding these quantities fixed would answer a
+different derivative question.
+
+To allow parameter-dependent $H,Q,R$, differentiate the innovation covariance
+and gain explicitly:
+\begin{align}
+ \dot S&=\dot H QH^\top+H\dot QH^\top+HQ\dot H^\top+\dot R,\\
+ \dot K&=(\dot QH^\top+Q\dot H^\top-K\dot S)S^{-1},\\
+ r_i&=y-Ha_i,& \dot r_i&=-\dot H a_i-H\dot a_i,\\
+ \dot m_i&=\dot a_i+\dot K r_i+K\dot r_i,\\
+ \dot C&=\dot Q-\dot KHQ-K\dot H Q-KH\dot Q.
+ \label{eq:parent-condition-tangents}
+\end{align}
+The observation $y$ is held fixed during inference. Matrix solves implement
+these expressions without forming an explicit inverse. With
+$v_i=S^{-1}r_i$, the Gaussian log-evidence derivative is
+\begin{equation}
+ \dot{\log e_i}=-v_i^\top\dot r_i+
+ \tfrac12v_i^\top\dot S v_i-\tfrac12\operatorname{tr}(S^{-1}\dot S).
+\end{equation}
+For normalized incoming weights, put
+$u_i=\dot{\log w_i}+\dot{\log e_i}$. Then
+\begin{equation}
+ \dot{\log Z_N}=\sum_i\alpha_i u_i,\qquad
+ \dot\alpha_i=\alpha_i\left(u_i-\sum_j\alpha_j u_j\right).
+ \label{eq:parent-weight-tangents}
+\end{equation}
+When the input consists of unnormalized log weights $\ell_i$, replace
+$\dot{\log w_i}$ by
+$\dot\ell_i-\sum_jw_j\dot\ell_j$. This normalization term is necessary even
+when all displayed weights sum numerically to one.
+
+Finally, let $B_i=C+m_im_i^\top$. The readout derivatives are
+\begin{align}
+ \dot\mu_N&=\sum_i(\dot\alpha_i m_i+\alpha_i\dot m_i),\\
+ \dot M_{2,N}&=\sum_i\left[\dot\alpha_i B_i+
+ \alpha_i(\dot C+\dot m_i m_i^\top+m_i\dot m_i^\top)\right].
+ \label{eq:parent-readout-tangents}
+\end{align}
+These derivatives include mixture weights as well as component moments.
+They can be evaluated with the analytical recursive tangents already carried
+by the shared executor. Finite differences test the total recursive program,
+including moving initial states and all previous resets. Agreement certifies
+that finite-program derivative on the tested cases, not agreement with the
+underlying model score or with a Zhao--Cui adapted-filter reference.
+
+\subsection{Consequences for a useful KDM repair}
+
+For a Gaussian mixture whose components approximate the predictive
+distribution, condition each component before combining it. Component $k$
+with predictive mean $a_k$ and covariance $Q_k$ has its own $S_k,K_k,m_k,C_k$
+and evidence $e_k$; update its weight proportionally to $w_ke_k$. Aggregating
+first loses this component-specific observation response. But merely creating
+more components cannot guarantee an improvement. For instance, the symmetric
+scalar mixture with means $\pm b$ and common variance $P-b^2$ matches the
+mean and variance of $N(0,P)$, while its fourth moment is $3P^2-2b^4$.
+Moment matching has not preserved the Gaussian law.
+
+The physical-parent repair and a useful learned or UKF-updated KDM therefore
+answer different parts of the problem. Matching $a_i,Q$ repairs the flow's
+local input mismatch. Integrating its conditional mixture removes current-step
+child noise from the chosen readout. Improving later incoming coverage may
+require a better component representation or smooth redistribution, but that
+step must preserve a derived sampling law and include the corresponding
+analytical derivatives. The first execution tests the existing conditional
+proposal with unchanged reset semantics and reports all four moment readouts.
+Only after that comparison identifies the remaining error is a more elaborate
+component or allocation mechanism justified.
+
+The initial independent Gaussian-product check passed in FP32 and FP64; its
+FP64 full moment/evidence tangent discrepancy was below $6\times10^{-10}$
+on a three-parent fixture. That fixture held $H$ and $Q$ fixed and did not test
+the recursive endpoint. Its purpose is to check
+\eqref{eq:parent-product-identity} and the moving-weight/readout algebra.
+Recursive, GPU and paired estimation results belong to the subsequent
+execution record; the fixture alone establishes no efficacy ranking.
+
+\subsection{What the first recursive comparison establishes}
+
+The first recursive experiment uses the 18-state SIR model, five observations,
+1,008 particles, 16 newly simulated datasets and two particle replicates per
+dataset, at the nominal three-dimensional parameter vector. It compares the
+original LEDH baseline, the existing aggregate-moment candidate with
+$\gamma=0$, and the physical-parent conditional proposal. The latter uses one
+Gaussian child per parent and retains the complete covariance, Contract-E
+reset and correction lifecycle. All three routes run through the same
+analytical executor. Integration supplies an additional readout; it does not
+change the cloud propagated to the next observation.
+
+The loss is the equal-weight average of squared errors in two feature blocks:
+18 standardized first moments and the 171 distinct standardized quadratic
+moments, evaluated against the simulated terminal state. Feature scales were
+frozen using a separate 64-path calibration. Consequently, the numbers below
+measure a latent-label prediction loss, not distance to the exact filtering
+moments or likelihood. UKF, bootstrap filtering and the UKF prediction before
+the terminal observation provide simple comparators.
+
+The numerical-reference run uses FP32 particles and densities, disables TF32,
+and retains the previously selected FP64 output standardization within the
+correction. It is therefore a mixed-precision run, not evidence for an
+all-FP32 implementation. Every one of its 96 full-filter cells passes the
+recorded validity checks. A separate CPU/FP64 two-observation fixture checks
+the total recursive derivatives of the likelihood and integrated and corrected
+moments by central differences at two step sizes, including dependence through
+the initial cloud and earlier resets.
+
+\begin{center}
+\begin{tabular}{lr}
+\hline
+Method and final readout & Mean standardized feature loss\\
+\hline
+UKF & 0.566871\\
+Bootstrap particle filter & 0.602845\\
+Aggregate-moment candidate, $\gamma=0$, corrected & 0.605266\\
+Parent-conditioned proposal, weighted children & 0.606323\\
+Parent-conditioned proposal, reset cloud & 0.606323\\
+Parent-conditioned proposal, corrected cloud & 0.606323\\
+Parent-conditioned proposal, integrated & 0.607334\\
+UKF prediction before the terminal observation & 0.656055\\
+Original LEDH baseline, corrected & 0.719388\\
+\hline
+\end{tabular}
+\end{center}
+
+These are descriptive means over datasets after averaging the two particle
+replicates. The parent-conditioned corrected loss minus the $\gamma=0$
+corrected loss is $0.001057$, with a dataset-paired standard error of
+$0.000949$. This screen does not establish an accuracy improvement over that
+existing candidate. The integrated loss minus the weighted-child loss is
+$0.001011$, with a paired standard error of $0.000396$. That realized
+difference does not contradict \eqref{eq:parent-integrated-risk}: the identity
+averages over fresh child draws conditional on each incoming cloud, whereas
+the table uses two particular draws and one latent label per dataset.
+The screen was specified as descriptive and selects no statistically
+supported winner.
+
+The comparison with simple methods is consequential. The parent-conditioned
+integrated loss exceeds UKF by $0.040464$ overall, with a paired standard
+error of $0.016877$, and its observed loss is higher in each of eight
+predeclared low/high regime bins. Those bins split innovation, predictive
+spread, signal-to-noise ratio and distance from the boundary at thresholds
+frozen on earlier calibration data; they overlap and contain between five and
+eleven datasets. This is a promotion veto under the experiment's conditional
+heuristic screen, not a claim of a population ranking or eight independent
+replications.
+
+The four readouts localize a different question. Across the 32
+parent-conditioned runs and all five times, the largest coordinatewise
+absolute difference between sampled and integrated means is $0.4181$; for
+covariance entries it is $5.0501$. The corresponding reset-minus-sample
+maxima are $9.89\times10^{-4}$ and $3.16\times10^{-4}$, while
+correction-minus-reset maxima are $7.60\times10^{-5}$ and
+$9.09\times10^{-5}$. Thus reset and correction approximately preserve the
+moments of their sampled source in this reference run. These discrepancies
+measure agreement with that source, not error relative to the true filter.
+In particular, integrating the same incoming approximation has not closed
+its observed gap to UKF. Incoming coverage, the finite-parent representation
+and the chosen proposal family remain explanations to distinguish.
+
+TF32 requires a separate numerical conclusion. Repeating the screen with
+identical saved data and random inputs leaves all 32 $\gamma=0$ cells and
+all 32 parent-conditioned cells valid, but rejects all 32 original-baseline
+cells: 31 first fail at reset and one first fails at correction. The failed
+baseline cells have effective sample sizes between 1 and 3.03 at the failing
+time. Reset row and column residuals remain below their declared thresholds,
+so the recorded failures are not marginal-balance failures. The records locate
+the failing stage; they do not identify an individual failing factorization.
+An accuracy comparison against that baseline in TF32 would therefore be invalid.
+
+The parent-conditioned cancellation is also more accurate without TF32.
+Across the reference screen, the largest absolute discrepancies between
+sampled importance and integrated formulas are $6.08\times10^{-7}$ for a
+normalized weight, $3.06\times10^{-5}$ for the cumulative log evidence and
+$6.49\times10^{-5}$ for its tested directional derivative. With TF32 these
+grow to $6.61\times10^{-4}$, $1.82\times10^{-3}$ and $1.43\times10^{-2}$,
+respectively. Internal validity flags consequently do not imply precision
+equivalence or HMC readiness.
+
+The physical-parent mismatch now has a derived repair and a tested recursive
+implementation. Its integrated moments are exact for the stated finite
+conditional mixture, up to numerical error. Neither statement establishes
+that this incoming mixture adequately represents the nonlinear filtering
+distribution. The next scientific question is whether improving that
+representation or smooth allocation closes the remaining error; it is
+different from repeating the conditional Gaussian algebra. No Zhao--Cui
+adapted-filter oracle or HMC run was part of this experiment.
+
+The complete commands, frozen controls, paired regime tables, failure census
+and source snapshots are recorded in the repository note
+\texttt{ledh-parent-conditioned-result-20261026.md}. The corrected no-TF32
+and TF32 runs are identified there by timestamps
+\texttt{20261026T075252756468Z} and \texttt{20261026T075603594553Z}.

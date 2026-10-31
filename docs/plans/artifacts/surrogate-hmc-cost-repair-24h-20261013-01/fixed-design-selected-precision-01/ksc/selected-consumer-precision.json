@@ -1,0 +1,584 @@
+{
+  "status": "SELECTED_CONSUMER_PRECISION_PASS",
+  "model": "ksc",
+  "scope": {
+    "model": "ksc",
+    "target_id": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+    "horizon": 50,
+    "particles": 4032,
+    "state_dimension": 1,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 60,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+    "prior": {
+      "coordinates": "q",
+      "distribution": "independent_standard_normal",
+      "nominal": [
+        1.5,
+        0.0
+      ],
+      "scales": [
+        0.5,
+        0.5
+      ],
+      "chart": "affine",
+      "jacobian": "prior is defined in q; no additional chart Jacobian"
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "ac67ca4bc48470466a2ce8099bd640d31b178204a8e5e3d36540344da8d98948",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "selection": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/fixed-design-scope-advance-01/ksc/filter-tuning/ksc/filter-selection.json",
+  "selection_hash": "11a711c8b8667232591dcd4a88eb09ad6fd721a811d7441630c89182bb34f694",
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 40,
+    "reset_epsilon": 0.25,
+    "correction_steps": 0,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25,
+    "shared_gaussian_contraction": "direct"
+  },
+  "beta": [
+    0.3333333432674408,
+    0.3333333432674408,
+    0.3333333432674408
+  ],
+  "positions": [
+    [
+      -0.15,
+      -0.15
+    ],
+    [
+      -0.05,
+      -0.05
+    ],
+    [
+      0.05,
+      0.05
+    ],
+    [
+      0.15,
+      0.15
+    ]
+  ],
+  "precision_policy": "uniform",
+  "tolerance": 0.01,
+  "n": 4032,
+  "horizon": 50,
+  "source_sha256": {
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_selected_precision_diagnostic.py": "f35734e152b0f62ec8896c30ad55dec893a834bc5e1fb086ab75bd719211d00e",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_five_model.py": "dd2d01224df86429dbe8e974fe4495a85ff1067d2423b44d652608a260bc1f51",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2"
+  },
+  "data_sha256": "94d709591995a2baf6e887f173da73fb3a1e7ed67ffab5678027578640a7f1a8",
+  "input_sha256": [
+    "606636579b9cb716b59e19529724c95bd107bf3a55aee87247dd03fcd92c7580",
+    "8026076b3a500b3f782f016a2ac5c4346db8341c8e43c2db6e4bd958b58d3165",
+    "e9596af9fb18531a65ceb0fef1659dcb9a6451555d17e284e1aa5bd5debd29a3",
+    "dde395b54799d98ad2fbf4514bdcd5e5f1c60b6b6d0fa8a7795f65505073d2ea",
+    "d12f4f00fa0d79fc2e83e78c4e536f02533f2f0d0c30633439a74a4ae951aad9",
+    "f12bd3aa387f24e7c809921b705b58cabbe503f22aead01db825612b403700ba"
+  ],
+  "source_selection_status": "FILTER_SCOPE_SELECTED_FOR_EXPLORATORY_HMC",
+  "candidate_rows": [
+    {
+      "value": [
+        -111.82833862304688,
+        -111.96360778808594
+      ],
+      "score": [
+        [
+          -2.092902421951294,
+          -0.5353227257728577
+        ],
+        [
+          -2.0716795921325684,
+          -0.7010592818260193
+        ]
+      ],
+      "force": [
+        [
+          0.896451210975647,
+          0.11766136288642884
+        ],
+        [
+          0.9858397960662841,
+          0.30052964091300965
+        ]
+      ],
+      "valid": [
+        true,
+        true
+      ],
+      "physical_parameters": [
+        [
+          1.4249999523162842,
+          -0.07500000298023224
+        ],
+        [
+          1.475000023841858,
+          -0.02500000037252903
+        ]
+      ]
+    },
+    {
+      "value": [
+        -112.104736328125,
+        -112.24938201904297
+      ],
+      "score": [
+        [
+          -2.021479845046997,
+          -0.843140184879303
+        ],
+        [
+          -1.9495848417282104,
+          -0.9659972786903381
+        ]
+      ],
+      "force": [
+        [
+          1.0607399225234986,
+          0.4715700924396515
+        ],
+        [
+          1.1247924208641051,
+          0.6329986393451691
+        ]
+      ],
+      "valid": [
+        true,
+        true
+      ],
+      "physical_parameters": [
+        [
+          1.524999976158142,
+          0.02500000037252903
+        ],
+        [
+          1.5750000476837158,
+          0.07500000298023224
+        ]
+      ]
+    }
+  ],
+  "reference_rows": [
+    {
+      "value": [
+        -111.82831753432922,
+        -111.96358863995223
+      ],
+      "score": [
+        [
+          -2.0929045385454215,
+          -0.535323374906574
+        ],
+        [
+          -2.071681528222044,
+          -0.7010600325202498
+        ]
+      ],
+      "force": [
+        [
+          0.8964522692727107,
+          0.117661687453287
+        ],
+        [
+          0.9858407641110221,
+          0.30053001626012493
+        ]
+      ],
+      "valid": [
+        true,
+        true
+      ]
+    },
+    {
+      "value": [
+        -112.10471594216214,
+        -112.24937005613765
+      ],
+      "score": [
+        [
+          -2.0214824724578615,
+          -0.8431411475337756
+        ],
+        [
+          -1.9495865047618675,
+          -0.9659973685005482
+        ]
+      ],
+      "force": [
+        [
+          1.0607412362289308,
+          0.47157057376688777
+        ],
+        [
+          1.1247932523809336,
+          0.6329986842502741
+        ]
+      ],
+      "valid": [
+        true,
+        true
+      ]
+    }
+  ],
+  "binding": {
+    "force": [
+      [
+        0.896451210975647,
+        0.11766136288642884
+      ],
+      [
+        0.9858397960662841,
+        0.30052964091300965
+      ],
+      [
+        1.0607399225234986,
+        0.4715700924396515
+      ],
+      [
+        1.1247924208641051,
+        0.6329986393451691
+      ]
+    ],
+    "force_valid": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "comparisons": {
+    "likelihood": {
+      "finite": true,
+      "candidate": [
+        -111.82833862304688,
+        -111.96360778808594,
+        -112.104736328125,
+        -112.24938201904297
+      ],
+      "reference": [
+        -111.82831753432922,
+        -111.96358863995223,
+        -112.10471594216214,
+        -112.24937005613765
+      ],
+      "scaled_errors": [
+        1.8858119413979326e-07,
+        1.7102107868482733e-07,
+        1.8184750466788895e-07,
+        1.065743648522354e-07
+      ],
+      "maximum_scaled_error": 1.8858119413979326e-07,
+      "tolerance": 0.01,
+      "passed": true
+    },
+    "score": {
+      "finite": true,
+      "candidate": [
+        [
+          -2.092902421951294,
+          -0.5353227257728577
+        ],
+        [
+          -2.0716795921325684,
+          -0.7010592818260193
+        ],
+        [
+          -2.021479845046997,
+          -0.843140184879303
+        ],
+        [
+          -1.9495848417282104,
+          -0.9659972786903381
+        ]
+      ],
+      "reference": [
+        [
+          -2.0929045385454215,
+          -0.535323374906574
+        ],
+        [
+          -2.071681528222044,
+          -0.7010600325202498
+        ],
+        [
+          -2.0214824724578615,
+          -0.8431411475337756
+        ],
+        [
+          -1.9495865047618675,
+          -0.9659973685005482
+        ]
+      ],
+      "scaled_errors": [
+        [
+          1.0113190011965154e-06,
+          6.491337163350153e-07
+        ],
+        [
+          9.345497604127024e-07,
+          7.506942305557374e-07
+        ],
+        [
+          1.2997445687650532e-06,
+          9.62654472580482e-07
+        ],
+        [
+          8.530186544401828e-07,
+          8.981021004661471e-08
+        ]
+      ],
+      "maximum_scaled_error": 1.2997445687650532e-06,
+      "tolerance": 0.01,
+      "passed": true
+    },
+    "force": {
+      "finite": true,
+      "candidate": [
+        [
+          0.896451210975647,
+          0.11766136288642884
+        ],
+        [
+          0.9858397960662841,
+          0.30052964091300965
+        ],
+        [
+          1.0607399225234986,
+          0.4715700924396515
+        ],
+        [
+          1.1247924208641051,
+          0.6329986393451691
+        ]
+      ],
+      "reference": [
+        [
+          0.8964522692727107,
+          0.117661687453287
+        ],
+        [
+          0.9858407641110221,
+          0.30053001626012493
+        ],
+        [
+          1.0607412362289308,
+          0.47157057376688777
+        ],
+        [
+          1.1247932523809336,
+          0.6329986842502741
+        ]
+      ],
+      "scaled_errors": [
+        [
+          1.0582970637607048e-06,
+          3.2456685816750763e-07
+        ],
+        [
+          9.680447379256663e-07,
+          3.753471152778687e-07
+        ],
+        [
+          1.2384787046516806e-06,
+          4.81327236290241e-07
+        ],
+        [
+          7.392619281305432e-07,
+          4.4905104967796206e-08
+        ]
+      ],
+      "maximum_scaled_error": 1.2384787046516806e-06,
+      "tolerance": 0.01,
+      "passed": true
+    },
+    "binding_wiring": {
+      "finite": true,
+      "candidate": [
+        [
+          0.896451210975647,
+          0.11766136288642884
+        ],
+        [
+          0.9858397960662841,
+          0.30052964091300965
+        ],
+        [
+          1.0607399225234986,
+          0.4715700924396515
+        ],
+        [
+          1.1247924208641051,
+          0.6329986393451691
+        ]
+      ],
+      "reference": [
+        [
+          0.896451210975647,
+          0.11766136288642884
+        ],
+        [
+          0.9858397960662841,
+          0.30052964091300965
+        ],
+        [
+          1.0607399225234986,
+          0.4715700924396515
+        ],
+        [
+          1.1247924208641051,
+          0.6329986393451691
+        ]
+      ],
+      "scaled_errors": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "maximum_scaled_error": 0.0,
+      "tolerance": 1e-06,
+      "passed": true
+    }
+  },
+  "posterior_sampling_complete": false,
+  "canonical_admission": false,
+  "reference_role": "same_finite_program_FP64_not_model_oracle",
+  "starts_role": "initial_region_only_not_posterior_coverage",
+  "actual_binding_seconds_cold": 17.680677158990875,
+  "completed_groups": 2,
+  "health": {
+    "candidate": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "reference": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "actual_binding": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "wall_seconds": 116.97144743381068,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "gpu_devices": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "tf32": false,
+  "cpu_only": false,
+  "command": [
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_selected_precision.py",
+    "worker",
+    "--model",
+    "ksc",
+    "--campaign",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01",
+    "--selection",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/fixed-design-scope-advance-01/ksc/filter-tuning/ksc/filter-selection.json",
+    "--scope-plan",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/fixed-design-scope-execution.json",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/fixed-design-selected-precision-01/ksc"
+  ],
+  "conda_env": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "elapsed_worker_seconds": 116.98760274099186,
+  "source_snapshot": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/fixed-design-selected-precision-01/ksc/source",
+  "source_snapshot_checks": {
+    "all_match": true,
+    "mismatches": []
+  }
+}

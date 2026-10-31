@@ -1,0 +1,420 @@
+{
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "jit_compile": false,
+  "scope": "legacy graph localization only",
+  "cases": [
+    {
+      "case": "default",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": false,
+      "max_errors": [],
+      "parity": false,
+      "seconds": 0.8697874170029536
+    },
+    {
+      "case": "trace_only",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": false,
+      "max_errors": [],
+      "parity": false,
+      "seconds": 0.15827073599211872
+    },
+    {
+      "case": "fisher_only",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": false,
+      "max_errors": [],
+      "parity": false,
+      "seconds": 0.24186469404958189
+    },
+    {
+      "case": "all_arrays_written",
+      "shapes": [
+        [
+          0
+        ],
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": false,
+      "max_errors": [],
+      "parity": false,
+      "seconds": 0.2884680830175057
+    },
+    {
+      "case": "minimal_array_written_False",
+      "shapes": [
+        []
+      ],
+      "expected_shapes": [
+        []
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.04010386497247964
+    },
+    {
+      "case": "minimal_array_written_True",
+      "shapes": [
+        []
+      ],
+      "expected_shapes": [
+        []
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.014097104023676366
+    },
+    {
+      "case": "no_meta_optimizer",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.1258129909983836
+    },
+    {
+      "case": "no_arithmetic",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        4.440892098500626e-16,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.1548326649935916
+    },
+    {
+      "case": "no_dependency",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        4.440892098500626e-16,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.2242583129554987
+    },
+    {
+      "case": "no_loop",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        4.440892098500626e-16,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.3073518000310287
+    },
+    {
+      "case": "no_function",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        4.440892098500626e-16,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.3548539420007728
+    },
+    {
+      "case": "no_constant_folding",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.24793597700772807
+    },
+    {
+      "case": "no_shape",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.18440711899893358
+    },
+    {
+      "case": "no_remapping",
+      "shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "expected_shapes": [
+        [],
+        [
+          6
+        ],
+        [
+          2,
+          4,
+          1
+        ]
+      ],
+      "shape_valid": true,
+      "max_errors": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parity": true,
+      "seconds": 0.14712368696928024
+    }
+  ],
+  "all_written_repairs_observed_failure": false
+}

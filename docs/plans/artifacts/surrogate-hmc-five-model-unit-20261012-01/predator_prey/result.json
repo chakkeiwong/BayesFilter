@@ -1,0 +1,145 @@
+{
+  "status": "PASS",
+  "model": "predator_prey",
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/surrogate-hmc-five-model-performance-repair-master-2026-10-11.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py",
+    "worker",
+    "--model",
+    "predator_prey",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-five-model-unit-20261012-01/predator_prey",
+    "--gpu",
+    "0",
+    "--unit",
+    "--correction-steps",
+    "1",
+    "--offset",
+    "0.08"
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "started_utc": "2026-10-11T16:11:26.249543+00:00",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "evidence_role": "implementation_parity_and_descriptive_timing",
+  "seed": 261008301,
+  "source_sha256": {
+    "analytical_jet_tf.py": "8ed9bb0e7ae9950e23b683671889d2fe92f86b768045096f8c62060581c67ae9",
+    "covariance_proposal_score_tf.py": "c08eac486dc601b2e7a373e0fceeda83e7df8ca8f7c5f66f35b8a621fc4ed396",
+    "covariance_proposal_score_batch_tf.py": "b8fc770f0034e7e4fb15a144d94d5f109559befcbb2774971c5a4ab2f407b5e0",
+    "covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+    "covariance_proposal_tf.py": "160adc166df292fba2dd989c12dc70c564d2681c69cedc3b1ac30d5b3973e83c",
+    "covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+    "covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+    "ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "particles": 64,
+  "horizon": 2,
+  "parameter_count": 6,
+  "state_dimension": 2,
+  "observation_dimension": 2,
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "controls": {
+    "flow_steps": 2,
+    "reset_steps": 4,
+    "reset_epsilon": 1.0,
+    "correction_steps": 1,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "beta": [
+    0.10000000149011612,
+    0.8999999761581421,
+    0.0
+  ],
+  "offset": 0.08,
+  "data_sha256": "5798daf584595804a87dbfc620a49fc1c992289724b2b240b7431971e4eabb37",
+  "gpu_devices": [],
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "new_first_call_seconds": 11.40013010497205,
+  "candidate": {
+    "value": -14.256779136627816,
+    "score": [
+      -61.83952893240983,
+      -0.7263737018397961,
+      -0.06174238162386719,
+      10.346023965818516,
+      5.442383629137693,
+      -7.602279294033236
+    ],
+    "valid": true,
+    "steps_completed": 2
+  },
+  "finite_difference_score": [
+    -61.83952889653454,
+    -0.7263737016109733,
+    -0.061742381649799775,
+    10.346023964835638,
+    5.4423836285621965,
+    -7.602279290264135
+  ],
+  "finite_difference_error": [
+    3.587528851767274e-08,
+    2.2882284955727528e-10,
+    2.5932582470300503e-11,
+    9.82877779165392e-10,
+    5.754960952231158e-10,
+    3.769101475370462e-09
+  ],
+  "finite_difference_pass": true,
+  "old_first_call_seconds": 5.628975386032835,
+  "baseline": {
+    "value": -14.256779136627816,
+    "score": [
+      -61.83952893241035,
+      -0.726373701839788,
+      -0.06174238162386724,
+      10.346023965818151,
+      5.442383629137681,
+      -7.602279294033208
+    ],
+    "valid": true
+  },
+  "score_absolute_error": [
+    5.258016244624741e-13,
+    8.104628079763643e-15,
+    4.85722573273506e-17,
+    3.6415315207705135e-13,
+    1.1546319456101628e-14,
+    2.842170943040401e-14
+  ],
+  "value_absolute_error": 0.0,
+  "tolerance": {
+    "rtol": 2e-07,
+    "atol": 2e-07
+  },
+  "parity_pass": true,
+  "paired_warmed_seconds": [
+    {
+      "new": 0.008494288893416524,
+      "old": 0.016153563978150487
+    }
+  ],
+  "graph": {
+    "xla_must_compile": true,
+    "traces": 1,
+    "host_callbacks": []
+  },
+  "median_speedup": 1.9016970320694253,
+  "wall_seconds": 20.153414685977623
+}

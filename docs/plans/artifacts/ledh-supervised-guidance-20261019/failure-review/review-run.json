@@ -1,0 +1,92 @@
+{
+  "purpose": "Post-run mathematical, implementation and evidence review; no new candidate fitting, selection or GPU campaign",
+  "date": "2026-10-20",
+  "git_commit_reviewed": "4abbaf9f19caa0f6bc90fca27ba629b3bd011fc2",
+  "branch": "ledh-refactor-with-policy-fix",
+  "workdir": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+  "plan": "docs/plans/ledh-supervised-guidance-failure-review-20261019.md",
+  "result": "docs/plans/artifacts/ledh-supervised-guidance-20261019/failure-review/review.md",
+  "environment": {
+    "focused_tests": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "failed_collection_only": "/home/chakwong/anaconda3/envs/tf-gpu/bin/python",
+    "array_execution": "CPU-only diagnostic tests; CUDA_VISIBLE_DEVICES=-1 set before import",
+    "jit_compile": "Non-JIT diagnostic/reference exception in the existing consumer tests; no production readiness claim",
+    "analysis": "Python standard-library arithmetic over saved JSON; no framework or NumPy computation",
+    "gpu_used": false,
+    "gpu_seconds": 0,
+    "packages_or_environment_modified": false
+  },
+  "data": {
+    "new_data_generated": false,
+    "input_root": "docs/plans/artifacts/ledh-supervised-guidance-20261019",
+    "input_manifests": ["pilot-02/manifest.json", "pilot-03/manifest.json"],
+    "data_version_authority": "Original pilot manifests and source hashes; the T2 and T5 results remain separate",
+    "primary_T5_observation_seeds": {
+      "calibration": [261029501, 261029502],
+      "validation": [261029503, 261029504],
+      "test": [261029505, 261029506, 261029507, 261029508]
+    },
+    "primary_T5_particle_seeds": [261029801, 261029802],
+    "new_random_seeds": []
+  },
+  "analysis_reproduction_command": "python3 docs/plans/artifacts/ledh-supervised-guidance-20261019/failure-review/analyze.py",
+  "checks": [
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 /home/chakwong/anaconda3/envs/tf-gpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py -k 'quadratic_guide_is_applied_in_preflow_coordinates or guided_consumer_actual_nonlinear_flow_jacobian or curved_guided_flow_logdet_and_score_total_derivative'",
+      "wall_seconds_reported_by_pytest": 9.81,
+      "status": "Collection failure in wrong environment: incompatible compiled custom-op symbol",
+      "log": "consumer-tests.log",
+      "repair": "Use the original tftwogpu environment; no installation or rebuild"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py -k 'quadratic_guide_is_applied_in_preflow_coordinates or guided_consumer_actual_nonlinear_flow_jacobian or curved_guided_flow_logdet_and_score_total_derivative'",
+      "wall_seconds_reported_by_pytest": 26.29,
+      "status": "3 passed, 16 deselected",
+      "log": "consumer-tests-02.log"
+    },
+    {
+      "command": "env CUDA_VISIBLE_DEVICES=-1 /home/chakwong/anaconda3/envs/tftwogpu/bin/python -m pytest -q tests/highdim/test_ledh_backward_guide_tf.py -k 'quadratic_guide_is_applied_in_preflow_coordinates or quadratic_square_completion_matches_normalized_density'",
+      "wall_seconds_reported_by_pytest": 8.47,
+      "status": "2 passed, 17 deselected; refined coordinate test and existing density test",
+      "log": "consumer-tests-03.log"
+    },
+    {
+      "tool": "MathDevMCP check_equality / SymPy",
+      "status": "Scalar affine quadratic substitution proved; not full document certification",
+      "artifact": "mathdev-pullback.json"
+    },
+    {
+      "workdir": "docs/papers/ledh_younis_kdm_score",
+      "command": "pdflatex -interaction=nonstopmode -halt-on-error ledh_younis_kdm_score.tex",
+      "passes": 6,
+      "reason_for_repeat": "Final explicit symmetry, positive-covariance and Gaussian-observation assumptions; two passes after each mathematical clarification",
+      "logs": ["pdf-pass-01.log", "pdf-pass-02.log", "pdf-pass-03.log", "pdf-pass-04.log", "pdf-pass-05.log", "pdf-pass-06.log"],
+      "result_pdf": "docs/papers/ledh_younis_kdm_score/ledh_younis_kdm_score.pdf"
+    }
+  ],
+  "budget": {
+    "review_cpu_wall_cap_seconds": 600,
+    "review_gpu_cap_seconds": 0,
+    "measured_test_seconds_including_failed_collection": 44.57,
+    "prior_implementation_commit_hook_seconds": 112.25,
+    "accounting": "Command runtimes, not human/agent review elapsed time; CPU-only build and arithmetic are subsecond to a few seconds",
+    "conservative_other_command_reserve_seconds": 60,
+    "final_review_commit_hook_reserve_seconds": 200,
+    "remaining_after_reserves_seconds": 183.18,
+    "owner_gpu_campaign_remaining_seconds_unchanged": 33303.439085210
+  },
+  "commit_validation": {
+    "prior_implementation_commit": "4abbaf9f1",
+    "prior_hook_result": "3 oracle tests passed",
+    "final_review_commit_hook": "Required repository hook, not bypassed; outcome recorded by commit command",
+    "final_review_commit_log": "/tmp/ledh-supervised-failure-review-commit-20261020.log"
+  },
+  "artifacts": [
+    "analyze.py", "analysis.json", "analysis.log", "mathdev-pullback.json",
+    "consumer-tests.log", "consumer-tests-02.log", "consumer-tests-03.log",
+    "pdf-pass-01.log", "pdf-pass-02.log", "pdf-pass-03.log", "pdf-pass-04.log",
+    "pdf-pass-05.log", "pdf-pass-06.log", "render.log", "render-final.log",
+    "render-gaussian.log", "review.md", "review-run.json"
+  ],
+  "scientific_status": "No method promotion or statistically established ranking. The flow-coordinate distinction is proved and consumer-tested; its causal contribution to SIR score error remains unmeasured."
+}

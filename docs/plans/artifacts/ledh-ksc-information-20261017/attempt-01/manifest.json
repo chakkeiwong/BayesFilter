@@ -1,0 +1,285 @@
+{
+  "schema": "ksc_saved_information_diagnostic_v1",
+  "plan": "docs/plans/ledh-ksc-information-diagnosis-20261017.md",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/diagnose_ledh_ksc_information.py",
+    "--source",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02",
+    "--output",
+    "docs/plans/artifacts/ledh-ksc-information-20261017/attempt-01"
+  ],
+  "cwd": "/home/chakwong/BayesFilter/.localresources/worktrees/ledh-iapf-execution-20260922",
+  "commit": "ea1018de1da55ed02a29a8d60f08a6827fce8a42",
+  "branch": "ledh-refactor-with-policy-fix",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "cpu_only": true,
+  "cuda_visible_devices": "-1",
+  "jit_compile": false,
+  "dtype": "float64",
+  "purpose": "reference/debug exception",
+  "source_manifest": "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/manifest.json",
+  "source_hashes": {
+    "bayesfilter/__init__.py": "29faa092150e7fc395288661520d5a4d6c37790c329827248eb65e7f18e823dd",
+    "bayesfilter/diagnostics.py": "da00bf6421d55952d6e0a4ee58e4402bfeee414c90d44e2745485b73b73e1fc4",
+    "bayesfilter/highdim/__init__.py": "9b731a16585ae3e0e3420212670802efea6f5088000bd5f32d0f9f130f5ac9fb",
+    "bayesfilter/highdim/actual_sv_srukf_tf.py": "854b2292430b77a6baa2e76bc480c5e26ecd03f4f382ab3762c2137c097655bd",
+    "bayesfilter/highdim/bases.py": "02d5315aec6beab9fe01bd2efd61fb751df2141a7a28c22cc11d2153eeb2e55c",
+    "bayesfilter/highdim/covariance_proposal_tf.py": "9f13d3ee36f5bec7ce792f1f94ddfe27c36d6a9d9ea9add277338b8778b39721",
+    "bayesfilter/highdim/derivatives.py": "a5351fc1365534e277c6567eac8e1927e30b9cb26a15cf7554bbae824610a017",
+    "bayesfilter/highdim/diagnostics.py": "c64d20dfd486ec27bc8c421d858b19b9bf7a79d13d15278bd4d63159169ca8f8",
+    "bayesfilter/highdim/filtering.py": "8cd5aa1cb66871b32851b889cd2592cc4d416494c941803dd7e3c6dcb4a32e35",
+    "bayesfilter/highdim/fitting.py": "b05ad12344847ad9f0b5aeb42c0b67cc78e4d90ad68cbb64848f5312cd164af1",
+    "bayesfilter/highdim/fixed_branch.py": "0be1d0cc8fd9f0739ca41392d5ea8c518a9ae41b7407787e729f9fdf5e364dd9",
+    "bayesfilter/highdim/ledh_backward_guide_tf.py": "3251c35284d7c4c2e079c0ff3915b1515a0550807e96168718fb326ace7246ca",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "879c56d91c0ced5d1104989973b1e71a63fa05be82b82940555375c48a5d3ce3",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "f7e74d11b720077f8ddb8cee195cb80cded37e9a0b75fc9ded02726c3a59d79f",
+    "bayesfilter/highdim/ledh_forward_contract.py": "abc0c476b85a280996c82b789ed929a919e9eb9ed96ad4a1f30fe6cd6676b0dc",
+    "bayesfilter/highdim/ledh_marginal_weights_tf.py": "5de3c494f0a9d82f3f54854906f37dea54ad3c9e76bcd2a159aea7190f08e2ae",
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1c99f18fcb2ebcee782bb4906d84aa43467758429f1de4b0f475eb07bc8b9a10",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795",
+    "bayesfilter/highdim/native_generalized_sv.py": "2cfb4d3abb8b32ff5e9ba256183bf50c752c236638813f25a5f53cbc9164367c",
+    "bayesfilter/highdim/rank_budget.py": "6a62b2b942b7eb766f2abf6b1a532e6bdda87f9a4206aef351edf9efed6a2751",
+    "bayesfilter/highdim/score_api.py": "f80353f9412260ddc771894b5ebbd9037ed099bab96483490277f2c4aff680b7",
+    "bayesfilter/highdim/source_route.py": "cf44d4e62342fb179bc6cded3c815dde20c51fbe100f298a078530f37f3798c8",
+    "bayesfilter/highdim/source_route_gate_runtime_tf.py": "49e475c9180a4595039b8d203a2d1d4edf5bc7c0c728ace1d321b0adb05f0d9e",
+    "bayesfilter/highdim/source_route_numerics_tf.py": "418a2bc22ad94c60d52ba07aadab5307b24527c3cf14114f0879a0e93498c138",
+    "bayesfilter/highdim/source_route_preparation_runtime_tf.py": "c1d0e7d0e6ce1b280284bbd778f10fa175f722ba3a4eea3cc9bd9b8a60e74989",
+    "bayesfilter/highdim/source_route_preparation_tf.py": "3a01abdaf0c6d7efd17da533f98b020d5d561b85d13157485afe45ca144508d0",
+    "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+    "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+    "bayesfilter/highdim/squared_tt.py": "c4a8f1d90c65b433617113045a62ebeb87e10858ab3d52f7c14fa7720cee0587",
+    "bayesfilter/highdim/sv_direct_sgqf_native_tf.py": "256e20dcdb1457e2fa00e50ae3af79535e7c9d093af5311bfda28dd5e392263f",
+    "bayesfilter/highdim/sv_mixture_cut4.py": "e488337a5eee8439641e2df89a17ebc914b1675dd5a108b31a56c37b89c09ba3",
+    "bayesfilter/highdim/sv_panel_quadrature_native_tf.py": "13cfe6c969bd2a86c485c5d98be16e70c52569a432f020f3329e9e82948f153f",
+    "bayesfilter/highdim/transition_route.py": "f5764e42e27b099bd4a2511153368cf866176718ea3cc9bf93a91dead7f4229a",
+    "bayesfilter/highdim/transport.py": "f0bcef0fe0e041fc8f93d0e13192c07234a78fdd930ecd07aeea138f60b8927e",
+    "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+    "bayesfilter/highdim/tt.py": "82e66f95cfc434996d70893661ee17f2ac35bfbcbfbb31cc0af3a749683354f4",
+    "bayesfilter/highdim/ukf_scout.py": "16214c1c028887b22c94b96b5ee2321e6e72c71fef20e4c846e2a20dc5d0c80a",
+    "bayesfilter/highdim/validation.py": "cc5820ca360c549ad9fa36eabaf6e25bb94d07eb851fce068aa51615c4314b20",
+    "bayesfilter/highdim/zhao_cui_fixed_adjacent_tt_tf.py": "44047f1e1d6bede46c674cd0d0180bebf958c60b67ab6d477419baee393c72c2",
+    "bayesfilter/linear/__init__.py": "580fe398f05cf46e289c7bd722bfa2ae2707ee0c25c93251f6eb7c897d34b8b8",
+    "bayesfilter/linear/compiled_recurrence_tf.py": "cde8a1749a90428839843b0d73a62281a4d9081b04ee392d3dbf2277e60bbbe3",
+    "bayesfilter/linear/dtypes_tf.py": "de534d5411a372e0344b1248e1c192dcc0206b21a8bef86c13cff15024ef960d",
+    "bayesfilter/linear/qr_factor_tf.py": "a4c346a0127c4ee2752a13ea338dfa4930ecfd1f573a103183c6ad9dd210b84c",
+    "bayesfilter/linear/svd_factor_tf.py": "5bbbf1f9e6c4d8782838d202d3213360604c0325a47335e0ce44bfc6870f7e6f",
+    "bayesfilter/linear/types_tf.py": "6f79ae42472ecd304e6012bdf3c1fba13e97ac1431d537d8152ecb96133f8af8",
+    "bayesfilter/nonlinear/__init__.py": "e9e08c353cd2f7996b808466842d451424b3d1c473ca301ce04f2df4f75d38a2",
+    "bayesfilter/nonlinear/cut_tf.py": "2540dba0aec24b638af112f88aca602b6d1bb9d97c4c7ec924049347e751a86f",
+    "bayesfilter/nonlinear/fixed_sgqf_compiled_tf.py": "b305f3fa8aecac605a7401dac139aa4b0554e7733f726bd08af985f022432547",
+    "bayesfilter/nonlinear/fixed_sgqf_derivatives_tf.py": "a0c0cb048f3e108354af8095817972b150293dfe9cbd259a24269b70c58c1d93",
+    "bayesfilter/nonlinear/fixed_sgqf_tf.py": "3a57a78426bae7acfba7032b72ffd3925c97cf683f92f64ed31361bfafe2ac44",
+    "bayesfilter/nonlinear/sigma_points_tf.py": "33e066075446c940c29daa13cef31744cf7c0e4fb896ac92505e1d6e5f1cb6e3",
+    "bayesfilter/nonlinear/srukf_factor_tf.py": "d6002d396d08d21e3f62ebd484640b8a6545390993fe5fb797b5fd0cd2142f37",
+    "bayesfilter/nonlinear/svd_cut_tf.py": "951cc8e853b23f46950093d88463c300ecfec9f41e2919fae233820953850fb2",
+    "bayesfilter/nonlinear/svd_sigma_point_derivatives_tf.py": "5343c84ee5bde947d00319f1cd2aa7c8b6d7ec914514071562575a0750e1ef1d",
+    "bayesfilter/ops/__init__.py": "b06c7eadbc274d6f45d9230de9048dd88ec8fd2f3eeb68b5c204b3b90ea17fb5",
+    "bayesfilter/ops/fixed_signature_tf.py": "b8f4d2c987ad2e3908ff3ac04827f9b149200ab89836a15a99b6d72c02461e2d",
+    "bayesfilter/ops/generator_stream_tf.py": "eb7fd99ca7c0571cad91573454d12239c29ca51e3c28f58e27de845b29c041ca",
+    "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+    "bayesfilter/ops/symmetric_principal_sqrt_tf.py": "0f184dbcde01877b60c30523da2eae4039fbace508710ed58bef879215b32f6e",
+    "bayesfilter/ops/symmetric_sylvester_tf.py": "0506c96d4fd3565e4d94fac742daae7f62bcf4cde0232b3b5e2dd6c2052e9cb2",
+    "bayesfilter/replication/__init__.py": "d746c78900f05bfc000b2dcbe84baa31b3f0ea98e1d165a734918043f4bb5742",
+    "bayesfilter/replication/controlled_smc_tf.py": "c5485c7d4e7e0c0088eb60adad6dc1ef044054ca40a35897337c0e6c45e9df1b",
+    "bayesfilter/results_tf.py": "e09be453fa62e1b3a3ef16c542ca3782f82c1967303509430b5676168e91cea6",
+    "bayesfilter/runtime/__init__.py": "33e2427ae5b6a607c62d8712df5e59646c4af445b04d48f39292899e234ebfc6",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/score_study/__init__.py": "f14eec695264f1045a17d9f2820161b42fb5c668b9bf1100ff9666653c7ed8a6",
+    "bayesfilter/score_study/guided_mixture_diagnostic_tf.py": "c37806827f17083ec6c3d415126ff85711b4419569f88084bc56840d79e741fc",
+    "bayesfilter/score_study/ksc_fitted_guides_diagnostic_tf.py": "2c248e7c0a9832645fd835e6eda82ef920eb68d88bcd55c5d4fd8cd8e51b6d71",
+    "bayesfilter/score_study/ksc_guidance_diagnostic_tf.py": "a33315703a24c13555a59e084c76050e23bf9bfd17f9fdc15e645ca8c275ab48",
+    "bayesfilter/structural.py": "3a181ef4c8f9e67ab8b923b5c016d6df3da13e4b77d4e940f0c07a60fc37fd4f",
+    "bayesfilter/structural_tf.py": "36b568fb81ed7ef08f08d88c0c2853c1096525eba1fa45188581c356cc618c39",
+    "scripts/run_ledh_ksc_fitted_guides.py": "e2a52d6a6cc657ce568d84504f48f1bc90fe34b68041eb50e71a98dbdd5924e4",
+    "scripts/diagnose_ledh_ksc_information.py": "d709742b0df56aa929435890c521eb74c775ef4cc324890e90b2cb0624d23a04",
+    "bayesfilter/score_study/ksc_information_diagnostic_tf.py": "3f8d23de2873c10ab90085ec161957f59aa502f4791af90ef3a638d296233542"
+  },
+  "input_hashes": {
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/manifest.json": "361a569e59baba539055bcfcb0cd0dfa092cad046b5e98cd02d18ba6c46364e8",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-0.json": "9b7b08526bc356694278b721e4f4a0061a7cbe36b623153f251839ad485caec0",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-1.json": "ab29af058be368280badf30aadc65df3d4e3ae24ed9a01b971f3c8d850de660d",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-2.json": "0d3ac3741e903f4baebe5eb2e99216073f3fe6e51d9d22772d1535364d8efafa",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-3.json": "d7f7f1404e9dd8ba5215e020685ea8aa3399025b51365ef541b66990dd35e364",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-4.json": "ca2f0b62cad7d88eded4221c45ddb59068ca01e668d406df0c0af17d98aea188",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-5.json": "4f0c2aa71790160f8c22bb1f9011275a7de47dc5a4cf0b137079660cc9ef8de6",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-6.json": "26f66360bcb89d43e2e1cb6d4642d10731e62c37b04cc4e23641ce0df2c1fa37",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-ordinary-kernel-7.json": "57b39dbf962c46b5022217a02335efc5fe3c14b984ef7f334d50f02fcc9bd484",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-0.json": "a38bef2b0e688f5e7c7113ec7ad56a7cce825e0742cf403a07c47608ddf5ab33",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-1.json": "cb171d92b042ce83e2d19d99cd22909aeaeb511c6e3ebb03782cbf4297083ee9",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-2.json": "5972fcf868eed86cef17600f853c032e1388691ad09f5a3097a983752b2781cf",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-3.json": "78de9240ce6c003677129b9528fda606ab42317534166138dcd01a964fe88ce8",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-4.json": "d196f4a04e2a89be0d56178358128c56c93e05d830074ea49a4d84fb951a3e0a",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-5.json": "b6c66b6298bf175c0fbcb9dfddba1c03a4fdbee1809da9d8f5572ea394c4bea0",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-6.json": "a2fedfc73c825767abee38cf8364a95756981ae7f41dca2f706100bd77396742",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-negative_future_tail-kernel-7.json": "e79bb5cd8250ee62d5be552498b9dfc04bcec35a8409c3a37041db0c8d53dc44",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-0.json": "671d8fdb2bba6ff2fca3ac77be74b6d67f65fc31ce7af4d7a9ea2d62ce32de0f",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-1.json": "f90369024852587de2cb6c635e752f81c26e58612cd7e544f95527c9db4317f8",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-2.json": "084ce74fcc1f6c65540595c236e5017bf0deb85b72c704bacb52c2ca040a3e15",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-3.json": "9d6e1566ee359ad4a11d497fd597d7972c39cf58753342882beddb024d847fcc",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-4.json": "f06f1b180969ff69648c6712c91a6972b7b1666125df07b5192159eecda7567b",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-5.json": "81db4f10d9a053b26300e86db95caf35dad30711538f87aeedd2372a49b5d545",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-6.json": "b64eca14db13de3997cd1acde9ab845fcbadc89631b17bb70819465d137a3006",
+    "docs/plans/artifacts/ledh-ksc-fitted-guides-20261017/final-02/fit-positive_future_tail-kernel-7.json": "a1e6ed818a69cb5bf4137a80b4e9992dccf23acce2a3a6324298f0b6c45b8ab1"
+  },
+  "source_data_version": "sqmc_ksc_seven_mixture_q1_prior1_predict_first_v1",
+  "controls": {
+    "flow_steps": 16,
+    "reset_steps": 5,
+    "reset_epsilon": 1.0,
+    "correction_steps": 2,
+    "correction_basis": 4,
+    "correction_rate": 0.1,
+    "correction_radius": 0.25
+  },
+  "status": "pass",
+  "seeds": [
+    {
+      "condition": "ordinary",
+      "cluster": 0,
+      "fit": 671100,
+      "cloud": 681000
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 1,
+      "fit": 671101,
+      "cloud": 681010
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 2,
+      "fit": 671102,
+      "cloud": 681020
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 3,
+      "fit": 671103,
+      "cloud": 681030
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 4,
+      "fit": 671104,
+      "cloud": 681040
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 5,
+      "fit": 671105,
+      "cloud": 681050
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 6,
+      "fit": 671106,
+      "cloud": 681060
+    },
+    {
+      "condition": "ordinary",
+      "cluster": 7,
+      "fit": 671107,
+      "cloud": 681070
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 0,
+      "fit": 672100,
+      "cloud": 682000
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 1,
+      "fit": 672101,
+      "cloud": 682010
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 2,
+      "fit": 672102,
+      "cloud": 682020
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 3,
+      "fit": 672103,
+      "cloud": 682030
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 4,
+      "fit": 672104,
+      "cloud": 682040
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 5,
+      "fit": 672105,
+      "cloud": 682050
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 6,
+      "fit": 672106,
+      "cloud": 682060
+    },
+    {
+      "condition": "negative_future_tail",
+      "cluster": 7,
+      "fit": 672107,
+      "cloud": 682070
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 0,
+      "fit": 673100,
+      "cloud": 683000
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 1,
+      "fit": 673101,
+      "cloud": 683010
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 2,
+      "fit": 673102,
+      "cloud": 683020
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 3,
+      "fit": 673103,
+      "cloud": 683030
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 4,
+      "fit": 673104,
+      "cloud": 683040
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 5,
+      "fit": 673105,
+      "cloud": 683050
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 6,
+      "fit": 673106,
+      "cloud": 683060
+    },
+    {
+      "condition": "positive_future_tail",
+      "cluster": 7,
+      "fit": 673107,
+      "cloud": 683070
+    }
+  ],
+  "budget_seconds": 90,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "wall_seconds": 6.013314907992026
+}

@@ -1,0 +1,198 @@
+...........................FF........................................... [ 73%]
+..........................                                               [100%]
+=================================== FAILURES ===================================
+___ test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker[archived] ___
+
+mode = 'archived'
+
+    @pytest.mark.parametrize("mode", ["archived", "current"])
+    def test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker(mode):
+        # Import and fixed-input smoke only; no numerical filter or GPU is run.
+        source = """
+    import importlib
+    import json
+    import sys
+    from bayesfilter.testing import surrogate_hmc_m13_repeatability as m
+    target, module, arm, saved, finder = m.prepare_target(sys.argv[1])
+    import tensorflow as tf
+    assert not tf.config.list_physical_devices("GPU")
+    importlib.import_module("bayesfilter.highdim.ledh_unified_correction_tf")
+    provenance = m.source_provenance(sys.argv[1], arm)
+    links = m.verify_call_chain(module)
+    evaluate = target.compile(9, filter_moments=True)
+    assert len(evaluate.input_signature) == 1
+    assert evaluate.input_signature[0].shape.as_list() == [9, 2]
+    assert len(links) == 2
+    assert provenance["bayesfilter/highdim/ledh_range_bearing_target_tf.py"]["loaded"]
+    print(json.dumps({"cpu_only_smoke": True, "gpu_intentionally_hidden": True, "mode": sys.argv[1]}))
+    """
+        environment = dict(os.environ, CUDA_VISIBLE_DEVICES="-1", TF_FORCE_GPU_ALLOW_GROWTH="true",
+                           TF_NUM_INTRAOP_THREADS="2", TF_NUM_INTEROP_THREADS="1", OMP_NUM_THREADS="2")
+        result = subprocess.run([sys.executable, "-c", source, mode], cwd=repeat.ROOT,
+                                env=environment, text=True, capture_output=True, timeout=60)
+>       assert result.returncode == 0, result.stdout + result.stderr
+E       AssertionError: WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E         I0000 00:00:1790193659.956180  534290 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E         I0000 00:00:1790193659.958590  534290 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+E         W0000 00:00:1790193659.964837  534290 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193659.964875  534290 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193659.964879  534290 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193659.964880  534290 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         Traceback (most recent call last):
+E           File "<string>", line 6, in <module>
+E           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_repeatability.py", line 142, in prepare_target
+E             target_module, finder = load_target(mode, arm)
+E                                     ^^^^^^^^^^^^^^^^^^^^^^
+E           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_repeatability.py", line 75, in load_target
+E             finder = SavedSourceFinder(sources, BASE / "source")
+E                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_repeatability.py", line 56, in __init__
+E             if digest(path) != expected:
+E                ^^^^^^^^^^^^
+E           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_repeatability.py", line 30, in digest
+E             return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+E                                   ^^^^^^^^^^^^^^^^^^^^^^^
+E           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/pathlib.py", line 1050, in read_bytes
+E             with self.open(mode='rb') as f:
+E                  ^^^^^^^^^^^^^^^^^^^^
+E           File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/pathlib.py", line 1044, in open
+E             return io.open(self, mode, buffering, encoding, errors, newline)
+E                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E         FileNotFoundError: [Errno 2] No such file or directory: '/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-consumer-03/source/bayesfilter/highdim/transport_chunk_policy.py'
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', '\nimport importlib\nimport json\nim...ans/artifacts/surrogate-hmc-closure-20260922-m13-consumer-03/source/bayesfilter/highdim/transport_chunk_policy.py\'\n').returncode
+
+tests/test_surrogate_hmc_m13_repeatability.py:79: AssertionError
+___ test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker[current] ____
+
+mode = 'current'
+
+    @pytest.mark.parametrize("mode", ["archived", "current"])
+    def test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker(mode):
+        # Import and fixed-input smoke only; no numerical filter or GPU is run.
+        source = """
+    import importlib
+    import json
+    import sys
+    from bayesfilter.testing import surrogate_hmc_m13_repeatability as m
+    target, module, arm, saved, finder = m.prepare_target(sys.argv[1])
+    import tensorflow as tf
+    assert not tf.config.list_physical_devices("GPU")
+    importlib.import_module("bayesfilter.highdim.ledh_unified_correction_tf")
+    provenance = m.source_provenance(sys.argv[1], arm)
+    links = m.verify_call_chain(module)
+    evaluate = target.compile(9, filter_moments=True)
+    assert len(evaluate.input_signature) == 1
+    assert evaluate.input_signature[0].shape.as_list() == [9, 2]
+    assert len(links) == 2
+    assert provenance["bayesfilter/highdim/ledh_range_bearing_target_tf.py"]["loaded"]
+    print(json.dumps({"cpu_only_smoke": True, "gpu_intentionally_hidden": True, "mode": sys.argv[1]}))
+    """
+        environment = dict(os.environ, CUDA_VISIBLE_DEVICES="-1", TF_FORCE_GPU_ALLOW_GROWTH="true",
+                           TF_NUM_INTRAOP_THREADS="2", TF_NUM_INTEROP_THREADS="1", OMP_NUM_THREADS="2")
+        result = subprocess.run([sys.executable, "-c", source, mode], cwd=repeat.ROOT,
+                                env=environment, text=True, capture_output=True, timeout=60)
+>       assert result.returncode == 0, result.stdout + result.stderr
+E       AssertionError: WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E         I0000 00:00:1790193662.510783  534338 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E         I0000 00:00:1790193662.513251  534338 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+E         W0000 00:00:1790193662.519370  534338 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193662.519399  534338 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193662.519402  534338 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         W0000 00:00:1790193662.519404  534338 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+E         2026-09-24 04:01:04.528969: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+E         Traceback (most recent call last):
+E           File "<string>", line 6, in <module>
+E           File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/testing/surrogate_hmc_m13_repeatability.py", line 161, in prepare_target
+E             raise ValueError("M13 input, control or execution scope differs from baseline")
+E         ValueError: M13 input, control or execution scope differs from baseline
+E         
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['/home/chakwong/anaconda3/envs/tftwogpu/bin/python', '-c', '\nimport importlib\nimport json\nim...or execution scope differs from baseline")\nValueError: M13 input, control or execution scope differs from baseline\n').returncode
+
+tests/test_surrogate_hmc_m13_repeatability.py:79: AssertionError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  bayesfilter/highdim/stochastic_density_training.py:561: DeprecationWarning: invalid escape sequence '\('
+    """Return a guide-only loss for initializing the square-root TT.
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:168: DeprecationWarning: invalid escape sequence '\s'
+    ax1.set_ylabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:176: DeprecationWarning: invalid escape sequence '\s'
+    ax2.set_xlabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:116: DeprecationWarning: invalid escape sequence '\p'
+    ax1.errorbar(eps_p, rmse_p, yerr=std_p, fmt='-o', color='blue', capsize=5, label='RMSE (Bias $\pm$ Var)')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:117: DeprecationWarning: invalid escape sequence '\e'
+    ax1.set_xscale('log'); ax1.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax1.set_ylabel("RMSE", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:121: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_xscale('log'); ax2.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax2.set_ylabel("Execution Time (ms)", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:122: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_title("Computational Speed vs. $\epsilon$", fontsize=14); ax2.grid(True, alpha=0.3)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:103: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, b_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:104: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, lambdas, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:106: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].set_xlabel('$\lambda$'); axes[0,0].set_ylabel('$\\beta(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:113: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,1].set_xlabel('$\lambda$'); axes[0,1].set_ylabel('$e = \\beta^*(\lambda) - \lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:119: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,0].set_xlabel('$\lambda$'); axes[1,0].set_ylabel('$u^*$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:123: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:124: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_lin, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:126: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].set_xlabel('$\lambda$'); axes[1,1].set_ylabel('$R_{stiff}$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/old_pt1_submission/scripts/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_repeatability.py::test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker[archived]
+FAILED tests/test_surrogate_hmc_m13_repeatability.py::test_real_frozen_target_prepares_and_wires_in_fresh_cpu_worker[current]
+2 failed, 96 passed, 21 warnings in 31.87s

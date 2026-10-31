@@ -10,6 +10,13 @@ disposition pending C2. Exact results and limitations are in the
 [execution checkpoint](bayesfilter-hmc-remaining-gap-execution-2026-09-24.md).
 The [current result](bayesfilter-hmc-remaining-gap-results-2026-09-24.md) gives
 the full requirement/status table and the revised learned-mixture capacity issue.
+The completed engineering amendment is the reviewed
+[timeout supervision repair](bayesfilter-hmc-timeout-aware-supervision-plan-2026-09-24.md).
+It separates execution allowances from numerical identity, adds progress and
+workload observation, preserves partial posterior resume, and continues later
+fits after local budget exhaustion. Its bounded GPU diagnostic is charged to
+the existing unreserved balance and is not C2 confirmation. The master and
+machine progress file track the same amendment; old frozen evidence stays intact.
 Planning source is
 `622d9a9ed028659328b6386f9e9de7f368e7bba3` on `main`. Unrelated dirty Q20,
 training, governance, chapter 26b and bibliography work is outside this scope.
@@ -763,8 +770,15 @@ strongest alternative explanation, and exact test/skipped-test receipts.
 Rebuild and inspect changed pages of `docs/main.tex`; align chapters 21b/25,
 the API reference and registry without creating a competing guide.
 
-The active next research action is **diagnose C2's three per-fit timeouts before
-continuation within the existing cumulative budgets**. A's arithmetic and
+The active next research action is **price complete fits under intended sharing
+conditions and specify C2's continuation disposition under the changed source**.
+The timeout diagnosis found productive workers, missing native deadline
+propagation and cell-wide interruption after a local timeout. The amendment
+repairs these mechanisms without replacing C2's source/design or exhausted
+slots. Its tests pass and its GPU canary demonstrated a bounded 90-second
+extension and final termination; the numerical fit remained unavailable.
+See the [repair result](bayesfilter-hmc-timeout-aware-supervision-result-2026-09-24.md).
+A's arithmetic and
 compatibility repairs and B's eight prospective fits are complete. The
 independent saved-array analysis does not explain the historical coverage
 nonpasses through the repaired quantile cutoff. No statistical closure or

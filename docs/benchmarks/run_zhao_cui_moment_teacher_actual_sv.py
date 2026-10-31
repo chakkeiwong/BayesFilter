@@ -200,7 +200,7 @@ def _dense_arm(
                 observations, theta64, order=order, radius=radius
             )
         score = tape.gradient(value, theta64)
-        increment_scores = tape.jacobian(increments, theta64)
+        increment_scores = tape.jacobian(increments, theta64, experimental_use_pfor=False)
         del tape
     if score is None or increment_scores is None:
         raise RuntimeError("actual-SV dense reference differentiation failed")

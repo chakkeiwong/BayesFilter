@@ -1,0 +1,33 @@
+{
+  "command": [
+    "scripts/run_observation_parent_sir_reference.py",
+    "--out",
+    "docs/plans/artifacts/observation-parent-sir-accuracy-20261028/reference-local01",
+    "--limit",
+    "900",
+    "--local-only"
+  ],
+  "git_commit": "b543565bed052016086059c929d0648e205fb4a0",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "device": "CPU reference; GPU intentionally hidden",
+  "jit_compile": true,
+  "plan": "docs/plans/observation-parent-default-and-sir-accuracy-20261028.md",
+  "data_seed": 26100611,
+  "paths_per_fit": 100000,
+  "source_anchors": [
+    "Zhao-Cui 2024 eq26 Algorithm4 p18",
+    "third_party/audit/zhao_cui_tensor_ssm_p10/source/models/full_sol.m:139-206"
+  ],
+  "method": "fixed_hmc_adaptation saved target-adapted smoothing proposals; exact path reweighting at evaluation theta; not a new TT fit",
+  "caveat": "rank and fit seed both change; conditional path MCSE omits TT support bias",
+  "rows_file": "docs/plans/artifacts/observation-parent-sir-accuracy-20261028/reference-local01/rows.json",
+  "result_file": "docs/plans/observation-parent-sir-accuracy-result-20261028.md",
+  "source_sha256": {
+    "scripts/run_observation_parent_sir_reference.py": "e879173ff0369bca3948ddaf2df5c648e9bb165d87db08851583e9ec6503b4f1",
+    "bayesfilter/testing/sir_path_score_reference_tf.py": "3703da1e0f904262e3b44a15e868e92a25564278c980950e579b488e58b41119",
+    "bayesfilter/testing/zhao_cui_path_likelihood_reference.py": "6e4241d5d321cccde4884e4e876837a19c60a614c8ff5bd9a46acdf63462224e"
+  },
+  "wall_seconds": 763.2006204379722,
+  "status": "complete",
+  "row_count": 24
+}

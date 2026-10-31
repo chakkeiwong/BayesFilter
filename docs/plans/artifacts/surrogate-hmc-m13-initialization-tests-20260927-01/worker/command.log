@@ -1,0 +1,52 @@
+........................................F.........................       [100%]
+=================================== FAILURES ===================================
+______ test_public_tuning_reservation_includes_review_and_failed_attempt _______
+
+    def test_public_tuning_reservation_includes_review_and_failed_attempt():
+        from bayesfilter.inference.surrogate_hmc_closure_program import PASS_CAPS
+        from bayesfilter.inference.surrogate_hmc_program import reserve_job, validated_budget
+        cap = PASS_CAPS["m13-public-tuning"]
+        selected = jobs("m13-public-tuning")
+        assert [job["name"] for job in selected] == ["review", "m13-public-tuning"]
+        ledger = validated_budget(cap["gpu_seconds"], cap["cpu_worker_seconds"] - 18.105269)
+        ledger["charged"]["cpu_worker_seconds"] = selected[0]["cpu"] + 1.
+        job = selected[1]
+>       reserve_job(ledger, job["device"], job["timeout"], job["cpu"],
+                    max_timeout_seconds=job["max_timeout_seconds"])
+
+tests/test_surrogate_hmc_closure_program.py:340: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+ledger = {'charged': {'cpu_worker_seconds': 181.0, 'gpu_seconds': 0.0}, 'jobs': [], 'limits': {'cpu_worker_seconds': 59981.894731, 'gpu_seconds': 50000.0}}
+device = 'gpu', timeout = 62000.0, cpu_allowance = 71600.0
+
+    def reserve_job(ledger: dict, device: str, timeout: float, cpu_allowance=None, *, max_timeout_seconds=4 * 3600) -> None:
+        # Explicit campaign ceilings may span one day; the ordinary default stays
+        # four hours and both CPU/GPU ledger reservations still apply.
+        if not math.isfinite(max_timeout_seconds) or not 0 < max_timeout_seconds <= 24 * 3600:
+            raise ValueError("invalid explicit job timeout ceiling")
+        if device not in {"gpu", "cpu"} or not math.isfinite(timeout) or not 0 < timeout <= max_timeout_seconds:
+            raise ValueError("invalid device or job timeout")
+        cpu = 4 * timeout if cpu_allowance is None else cpu_allowance
+        if not math.isfinite(cpu) or cpu <= 0:
+            raise ValueError("invalid CPU allowance")
+        for key, need in (("gpu_seconds", timeout if device == "gpu" else 0.),
+                          ("cpu_worker_seconds", cpu)):
+            if ledger["charged"][key] + need > ledger["limits"][key]:
+>               raise ValueError(f"insufficient budget reservation: {key}")
+E               ValueError: insufficient budget reservation: gpu_seconds
+
+bayesfilter/inference/surrogate_hmc_program.py:475: ValueError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_closure_program.py::test_public_tuning_reservation_includes_review_and_failed_attempt
+1 failed, 65 passed, 2 warnings in 33.02s

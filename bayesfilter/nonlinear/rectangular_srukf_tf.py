@@ -32,6 +32,9 @@ TransitionJacobianFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 TransitionParameterDerivativeFn = Callable[[tf.Tensor, tf.Tensor], tf.Tensor]
 ObservationJacobianFn = Callable[[tf.Tensor], tf.Tensor]
 ObservationParameterDerivativeFn = Callable[[tf.Tensor], tf.Tensor]
+ObservationValueAndDerivativesFn = Callable[
+    [tf.Tensor], tuple[tf.Tensor, tf.Tensor, tf.Tensor]
+]
 
 
 @dataclass(frozen=True)
@@ -101,6 +104,8 @@ class TFRectangularSRUKFDerivatives:
     observation_state_jacobian_fn: ObservationJacobianFn
     d_observation_fn: ObservationParameterDerivativeFn
     transition_value_and_derivatives_fn: TransitionValueAndDerivativesFn | None = None
+    # Joint callback returns h[B,R,M], D_x h[B,R,M,N], D_theta h[B,P,R,M].
+    observation_value_and_derivatives_fn: ObservationValueAndDerivativesFn | None = None
 
     def __post_init__(self) -> None:
         for field in ("d_initial_mean", "d_initial_factor", "d_process_factor", "d_observation_factor"):
@@ -393,12 +398,19 @@ def tf_rectangular_srukf_value_and_score(
                 pivot_tolerance=branch.pivot_tolerance,
             )
 
-            observation_points = tf.convert_to_tensor(model.observation_fn(predicted_points), tf.float64)
+            if derivatives.observation_value_and_derivatives_fn is None:
+                observation_points = model.observation_fn(predicted_points)
+                observation_state_j = derivatives.observation_state_jacobian_fn(predicted_points)
+                observation_direct = derivatives.d_observation_fn(predicted_points)
+            else:
+                observation_points, observation_state_j, observation_direct = (
+                    derivatives.observation_value_and_derivatives_fn(predicted_points))
+            observation_points = tf.convert_to_tensor(observation_points, tf.float64)
             d_observation_points = tf.einsum(
                 "brij,bprj->bpri",
-                tf.convert_to_tensor(derivatives.observation_state_jacobian_fn(predicted_points), tf.float64),
+                tf.convert_to_tensor(observation_state_j, tf.float64),
                 d_predicted_points,
-            ) + tf.convert_to_tensor(derivatives.d_observation_fn(predicted_points), tf.float64)
+            ) + tf.convert_to_tensor(observation_direct, tf.float64)
             predicted_observation = tf.einsum("r,brd->bd", mean_weights, observation_points)
             d_predicted_observation = tf.einsum("r,bprd->bpd", mean_weights, d_observation_points)
             y_stack = _stack(observation_points, predicted_observation, covariance_weights)

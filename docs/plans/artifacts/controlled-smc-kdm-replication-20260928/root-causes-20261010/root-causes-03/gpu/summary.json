@@ -1,0 +1,110 @@
+{
+  "status": "COMPLETED",
+  "replication": "INCOMPLETE",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": false,
+  "jit_compile": true,
+  "traces": {
+    "regression/source_normal_equations": 1,
+    "regression/centered_qr": 1,
+    "mdpf/float32/update": 1,
+    "mdpf/float32/isolated": 1,
+    "mdpf/float32/candidate": 1,
+    "mdpf/float64/update": 1,
+    "mdpf/float64/isolated": 1,
+    "mdpf/float64/candidate": 1,
+    "am_dpf/float32/update": 1,
+    "am_dpf/float32/isolated": 1,
+    "am_dpf/float32/candidate": 1,
+    "am_dpf/float64/update": 1,
+    "am_dpf/float64/isolated": 1,
+    "am_dpf/float64/candidate": 1,
+    "angle/float32": 1,
+    "angle/float64": 1
+  },
+  "devices": [
+    "/job:localhost/replica:0/task:0/device:GPU:0"
+  ],
+  "optimizer_consumer_wiring": [
+    {
+      "consumer": "BearingsNeuralReplay._update",
+      "optimizer": "_apply_update",
+      "direct_call_checked": true
+    },
+    {
+      "consumer": "BearingsNeuralReplay._native_update",
+      "optimizer": "_apply_update",
+      "direct_call_checked": true
+    },
+    {
+      "consumer": "SourceFullTraining._update",
+      "optimizer": "_apply_update",
+      "direct_call_checked": true
+    },
+    {
+      "consumer": "SourceWeightPretraining._update",
+      "optimizer": "_apply_update",
+      "direct_call_checked": true
+    },
+    {
+      "consumer": "SourceWeightPretraining._native_update",
+      "optimizer": "_apply_update",
+      "direct_call_checked": true
+    }
+  ],
+  "checkpoint_checks": [
+    {
+      "variant": "mdpf",
+      "dtype": "float32",
+      "exact_rate_roundtrip": true,
+      "legacy_rejected_without_mutation": true,
+      "shared_batch_rates": true
+    },
+    {
+      "variant": "mdpf",
+      "dtype": "float64",
+      "exact_rate_roundtrip": true,
+      "legacy_rejected_without_mutation": true,
+      "shared_batch_rates": true
+    },
+    {
+      "variant": "am_dpf",
+      "dtype": "float32",
+      "exact_rate_roundtrip": true,
+      "legacy_rejected_without_mutation": true,
+      "shared_batch_rates": true
+    },
+    {
+      "variant": "am_dpf",
+      "dtype": "float64",
+      "exact_rate_roundtrip": true,
+      "legacy_rejected_without_mutation": true,
+      "shared_batch_rates": true
+    }
+  ],
+  "scope": "matched-input root causes, no qualification",
+  "numpy_role": "MATLAB reference loading/prediction only"
+}

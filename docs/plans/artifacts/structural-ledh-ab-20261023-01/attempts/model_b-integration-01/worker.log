@@ -1,0 +1,25 @@
+2026-10-24 00:02:13.256814: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792771333.266087  603196 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792771333.269020  603196 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792771333.276535  603196 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771333.276577  603196 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771333.276579  603196 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771333.276580  603196 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792771335.621717  603196 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792771336.124426  603196 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792771336.222895  603196 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+Traceback (most recent call last):
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 662, in <module>
+    if __name__=='__main__': main()
+                             ^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 651, in main
+    if args.command=='worker': return worker(args.job)
+                                      ^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 222, in worker
+    result=WORKERS[job['kind']](tf,job,out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/BayesFilter-structural-model-ab-20261023/scripts/run_structural_ledh_ab.py", line 195, in integration
+    transport=NeuTraTransport(NeuTraTransportConfig.hoffman_author_iaf(3,dtype='float64'))
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: NeuTraTransportConfig.hoffman_author_iaf() missing 2 required keyword-only arguments: 'conditional_scale_cap' and 'seed'

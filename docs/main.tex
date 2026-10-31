@@ -2,6 +2,12 @@
 
 \input{preamble}
 
+% Reserve enough TOC space for chapter.section.subsection numbers such as 54.10.1.
+\makeatletter
+\renewcommand*\l@section{\@dottedtocline{1}{1.5em}{3.1em}}
+\renewcommand*\l@subsection{\@dottedtocline{2}{4.6em}{4em}}
+\makeatother
+
 \title{\Huge\textbf{BayesFilter}\\[12pt]
   \Large Bayesian Estimation for Structural State-Space Models\\[4pt]
   \large HMC-Safe Filtering, Analytic Likelihood Derivatives,\\
@@ -54,6 +60,7 @@
 \input{chapters/ch32b_deterministic_ot_equalweighting}
 \input{chapters/ch32c_entropic_ot_sinkhorn}
 \input{chapters/ch32c2_ledh_pfpf_ot_custom_gradient}
+\input{chapters/ch32c3_ukf_covariance_guided_particle_proposal}
 
 \part{Learned Transport Extensions}
 \input{chapters/ch32d_retained_teacher_neural_ot}
@@ -63,6 +70,7 @@
 \part{HMC Target Interpretation, Verification, and Filter Choice}
 \input{chapters/ch19e_dpf_hmc_target_suitability}
 \input{chapters/ch19f_dpf_debugging_crosswalk}
+\input{chapters/ch19g_dpf_observation_parent_failures}
 \input{chapters/ch20_filter_choice}
 
 \part{High-Dimensional Nonlinear Filtering}
@@ -85,8 +93,12 @@
 \input{chapters/ch25_diagnostics}
 \input{chapters/ch26_transport_surrogates}
 \input{chapters/ch26b_neutra_transport_hmc}
+\input{chapters/ch26d_modern_importance_sampling}
+\input{chapters/ch26e_rare_regions_transport}
+\input{chapters/ch26f_neutra_controlled_training}
 \input{chapters/ch26c_hnn_surrogate_hmc}
 \input{chapters/ch26g_modern_hmc_methods}
+\input{chapters/ch26h_surrogate_hmc_five_model_results}
 \input{chapters/ch26k_stan_walnutpie}
 
 \part{Industrial Applications and Case Studies}

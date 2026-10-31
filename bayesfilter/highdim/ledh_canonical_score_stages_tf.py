@@ -26,6 +26,9 @@ from __future__ import annotations
 
 import tensorflow as tf
 
+from bayesfilter.ops.slogdet_tf import determinant_tf
+import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+
 Tensor = tf.Tensor
 
 
@@ -54,7 +57,7 @@ def flow_value_and_parameter_tangent_lgssm(
     transition = theta[0] * f0
     d_transition = f0  # d(theta*F0)/dtheta
 
-    process_chol = tf.linalg.cholesky(process_covariance)
+    process_chol = small_matrix.cholesky(process_covariance)
     anchors = tf.einsum("ij,nj->ni", transition, states)
     d_anchors = tf.einsum("ij,nj->ni", d_transition, states)
     pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
@@ -72,8 +75,8 @@ def flow_value_and_parameter_tangent_lgssm(
     eps = tf.constant(1.0 / substeps, dtype=dtype)
     h = observation_matrix
     r = observation_covariance
-    r_chol = tf.linalg.cholesky(r)
-    r_inv_z = tf.linalg.cholesky_solve(r_chol, observation[:, None])[:, 0]
+    r_chol = small_matrix.cholesky(r)
+    r_inv_z = small_matrix.cholesky_solve(r_chol, observation[:, None])[:, 0]
 
     actual = pre_flow
     d_actual = d_pre_flow
@@ -82,17 +85,21 @@ def flow_value_and_parameter_tangent_lgssm(
     log_det = tf.zeros([tf.shape(states)[0]], dtype)
     d_log_det = tf.zeros([tf.shape(states)[0]], dtype)
 
-    for step_index in range(substeps):
-        lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
+    # Match the original Python-double schedule before the target-dtype cast.
+    schedule = tf.cast(tf.cast(tf.range(1, substeps + 1), tf.float64)
+                       / tf.constant(substeps, tf.float64), dtype)
+
+    def flow_step(step_index, actual, d_actual, log_det, d_log_det):
+        lam = schedule[step_index]
         php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
         d_php = tf.einsum("oi,nij,pj->nop", h, d_predicted, h)
         innovation = lam * php + r[None]
-        innovation_chol = tf.linalg.cholesky(innovation)
+        innovation_chol = small_matrix.cholesky(innovation)
         ph_t = tf.einsum("nij,oj->nio", predicted, h)
         d_ph_t = tf.einsum("nij,oj->nio", d_predicted, h)
         # K_lam = P H^T S^{-1}
         k_lam = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(
+            small_matrix.cholesky_solve(
                 innovation_chol, tf.linalg.matrix_transpose(ph_t)
             )
         )
@@ -100,13 +107,13 @@ def flow_value_and_parameter_tangent_lgssm(
         # d(K_lam) = dP H^T S^{-1} - K_lam dS S^{-1}
         # implemented via cholesky_solve on the transposed systems:
         term_one = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(
+            small_matrix.cholesky_solve(
                 innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
             )
         )
         k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
         term_two = tf.linalg.matrix_transpose(
-            tf.linalg.cholesky_solve(
+            small_matrix.cholesky_solve(
                 innovation_chol, tf.linalg.matrix_transpose(k_ds)
             )
         )
@@ -151,14 +158,18 @@ def flow_value_and_parameter_tangent_lgssm(
         # theta-product and its parameter derivative:
         # d log|det(I+eps A)| = eps tr[(I+eps A)^{-1} dA]
         step_matrix = eye[None] + eps * a_matrix
-        log_det = log_det + tf.math.log(
-            tf.abs(tf.linalg.det(step_matrix))
-        )
+        log_det = log_det + tf.math.log(tf.abs(determinant_tf(step_matrix)))
         if with_tangent:
             step_inv = tf.linalg.inv(step_matrix)
             d_log_det = d_log_det + eps * tf.linalg.trace(
                 tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
             )
+        return step_index + 1, actual, d_actual, log_det, d_log_det
+
+    _, actual, d_actual, log_det, d_log_det = tf.while_loop(
+        lambda step_index, *_: step_index < substeps,
+        flow_step, (tf.constant(0), actual, d_actual, log_det, d_log_det),
+        maximum_iterations=substeps, parallel_iterations=1)
 
     if with_tangent:
         return actual, d_actual[..., None], log_det, d_log_det
@@ -179,7 +190,7 @@ def multi_step_value_and_score_lgssm(
     substeps: int,
     with_tangent: bool,
 ) -> tuple[Tensor, Tensor | None]:
-    """Multi-step value + analytical score, gated recursion slice.
+    """Independent LGSSM reference slice with an analytical score.
 
     Slice semantics (recorded honestly): particles carry as post-flow
     children step to step with equal-weight reset (reset_policy='none'
@@ -197,12 +208,12 @@ def multi_step_value_and_score_lgssm(
     count = tf.shape(initial_states)[0]
     transition = theta[0] * f0
     d_transition = f0
-    process_chol = tf.linalg.cholesky(process_covariance)
-    obs_chol = tf.linalg.cholesky(observation_covariance)
+    process_chol = small_matrix.cholesky(process_covariance)
+    obs_chol = small_matrix.cholesky(observation_covariance)
     eye = tf.eye(int(initial_states.shape[1]), dtype=dtype)
     eps = tf.constant(1.0 / substeps, dtype=dtype)
     h = observation_matrix
-    r_inv = tf.linalg.cholesky_solve(obs_chol, tf.eye(int(observation_matrix.shape[0]), dtype=dtype))
+    r_inv = small_matrix.cholesky_solve(obs_chol, tf.eye(int(observation_matrix.shape[0]), dtype=dtype))
 
     states = initial_states
     d_states = tf.zeros_like(initial_states)
@@ -218,7 +229,13 @@ def multi_step_value_and_score_lgssm(
         "ij,njk,lk->nil", d_transition, covariances, transition
     ) + tf.einsum("ij,njk,lk->nil", transition, covariances, d_transition)
 
-    for time_index in range(horizon):
+    if horizon == 0:
+        return total, d_total[None] if with_tangent else None
+
+    schedule = tf.cast(tf.cast(tf.range(1, substeps + 1), tf.float64)
+                       / tf.constant(substeps, tf.float64), dtype)
+
+    def time_step(time_index, states, d_states, weights_log, total, d_total):
         observation = observations[time_index]
         noise = noises[time_index]
         anchors = tf.einsum("ij,nj->ni", transition, states)
@@ -233,29 +250,29 @@ def multi_step_value_and_score_lgssm(
         d_actual = d_pre_flow
         log_det = tf.zeros([count], dtype)
         d_log_det = tf.zeros([count], dtype)
-        for step_index in range(substeps):
-            lam = tf.constant((step_index + 1) / substeps, dtype=dtype)
+        def flow_step(step_index, actual, d_actual, log_det, d_log_det):
+            lam = schedule[step_index]
             php = tf.einsum("oi,nij,pj->nop", h, predicted, h)
             d_php = tf.einsum("oi,nij,pj->nop", h, base_d_predicted, h)
-            innovation_chol = tf.linalg.cholesky(
+            innovation_chol = small_matrix.cholesky(
                 lam * php + observation_covariance[None]
             )
             ph_t = tf.einsum("nij,oj->nio", predicted, h)
             d_ph_t = tf.einsum("nij,oj->nio", base_d_predicted, h)
             k_lam = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
+                small_matrix.cholesky_solve(
                     innovation_chol, tf.linalg.matrix_transpose(ph_t)
                 )
             )
             d_s = lam * d_php
             term_one = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
+                small_matrix.cholesky_solve(
                     innovation_chol, tf.linalg.matrix_transpose(d_ph_t)
                 )
             )
             k_ds = tf.einsum("nio,nop->nip", k_lam, d_s)
             term_two = tf.linalg.matrix_transpose(
-                tf.linalg.cholesky_solve(
+                small_matrix.cholesky_solve(
                     innovation_chol, tf.linalg.matrix_transpose(k_ds)
                 )
             )
@@ -290,11 +307,17 @@ def multi_step_value_and_score_lgssm(
             )
             actual = new_actual
             step_matrix = eye[None] + eps * a_matrix
-            log_det += tf.math.log(tf.abs(tf.linalg.det(step_matrix)))
+            log_det += tf.math.log(tf.abs(determinant_tf(step_matrix)))
             step_inv = tf.linalg.inv(step_matrix)
             d_log_det += eps * tf.linalg.trace(
                 tf.einsum("nij,njk->nik", step_inv, d_a_matrix)
             )
+            return step_index + 1, actual, d_actual, log_det, d_log_det
+
+        _, actual, d_actual, log_det, d_log_det = tf.while_loop(
+            lambda step_index, *_: step_index < substeps,
+            flow_step, (tf.constant(0), actual, d_actual, log_det, d_log_det),
+            maximum_iterations=substeps, parallel_iterations=1)
 
         children, d_children = actual, d_actual
         transition_log, d_transition_log = _gaussian_log_density_and_tangent(
@@ -326,7 +349,14 @@ def multi_step_value_and_score_lgssm(
 
         states = children
         d_states = d_children
-        weights_log = tf.fill([count], -tf.math.log(tf.cast(count, dtype)))
+        weights_log = tf.ensure_shape(
+            tf.fill([count], -tf.math.log(tf.cast(count, dtype))), weights_log.shape)
+        return time_index + 1, states, d_states, weights_log, total, d_total
+
+    _, _, _, _, total, d_total = tf.while_loop(
+        lambda time_index, *_: time_index < horizon,
+        time_step, (tf.constant(0), states, d_states, weights_log, total, d_total),
+        maximum_iterations=horizon, parallel_iterations=1)
 
     if with_tangent:
         return total, d_total[None]
@@ -343,9 +373,9 @@ def _cholesky_forward_differential(
     Batched over the leading axis.
     """
 
-    inv_d = tf.linalg.triangular_solve(chol, d_matrix)
+    inv_d = small_matrix.triangular_solve(chol, d_matrix)
     inv_d_inv_t = tf.linalg.matrix_transpose(
-        tf.linalg.triangular_solve(
+        small_matrix.triangular_solve(
             chol, tf.linalg.matrix_transpose(inv_d)
         )
     )
@@ -387,7 +417,8 @@ def _sigma_points_with_tangent(
     )
     scale_c = tf.constant(scale, dtype=dtype)
     valid, chol = safe_cholesky(scale_c * stabilized, "sigma_points")
-    d_chol = _cholesky_forward_differential(chol, scale_c * d_stabilized)
+    from bayesfilter.highdim.ledh_numerical_safety_tf import cholesky_differential
+    d_chol = cholesky_differential(chol, scale_c * d_stabilized, valid)
     if standard_points is not None:
         return (means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, chol),
                 d_means[:, None, :] + tf.einsum("sj,nij->nsi", standard_points, d_chol),
@@ -595,19 +626,21 @@ def quadrature_update_with_parameter_tangent(
     d_cross_cov = tf.einsum(
         "s,nsi,nsj->nij", cov_w, d_centered_x, centered_y
     ) + tf.einsum("s,nsi,nsj->nij", cov_w, centered_x, d_centered_y)
-    chol = tf.linalg.cholesky(
-        innovation_cov
-        + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype)
+    from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+    innovation_valid, chol = safe_cholesky(
+        innovation_cov + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype),
+        "ukf_innovation",
     )
+    valid = valid & innovation_valid
     gain = tf.linalg.matrix_transpose(
-        tf.linalg.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
+        small_matrix.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))
     )
     # dK = (dC - K dS) S^{-1}
     residual_matrix = d_cross_cov - tf.einsum(
         "nio,nop->nip", gain, d_innovation_cov
     )
     d_gain = tf.linalg.matrix_transpose(
-        tf.linalg.cholesky_solve(
+        small_matrix.cholesky_solve(
             chol, tf.linalg.matrix_transpose(residual_matrix)
         )
     )
@@ -635,13 +668,13 @@ def quadrature_update_with_parameter_tangent(
     )
     result = (post_means, post_covs, d_post_means, d_post_covs, valid)
     if return_evidence:
-        inverse_innovation = tf.linalg.cholesky_solve(chol, innovation[..., None])[..., 0]
+        inverse_innovation = small_matrix.cholesky_solve(chol, innovation[..., None])[..., 0]
         logdet = 2 * tf.reduce_sum(tf.math.log(tf.linalg.diag_part(chol)), axis=-1)
         constant = tf.cast(obs_dim, dtype) * tf.math.log(2 * tf.acos(tf.cast(-1., dtype)))
         log_evidence = -.5 * (constant + logdet + tf.reduce_sum(innovation * inverse_innovation, -1))
         d_log_evidence = -tf.reduce_sum(d_innovation * inverse_innovation, -1)
         d_log_evidence += .5 * tf.einsum("ni,nij,nj->n", inverse_innovation, d_innovation_cov, inverse_innovation)
-        d_log_evidence -= .5 * tf.linalg.trace(tf.linalg.cholesky_solve(chol, d_innovation_cov))
+        d_log_evidence -= .5 * tf.linalg.trace(small_matrix.cholesky_solve(chol, d_innovation_cov))
         return (*result, log_evidence, d_log_evidence)
     return result
 
@@ -685,7 +718,7 @@ def _gaussian_log_density_and_tangent(
     """
 
     residual = points - means
-    solved = tf.linalg.triangular_solve(
+    solved = small_matrix.triangular_solve(
         tf.broadcast_to(
             covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]
         ),
@@ -705,7 +738,7 @@ def _gaussian_log_density_and_tangent(
     d_residual = (d_points if d_points is not None else 0.0) - (
         d_means if d_means is not None else 0.0
     )
-    d_solved = tf.linalg.triangular_solve(
+    d_solved = small_matrix.triangular_solve(
         tf.broadcast_to(
             covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]
         ),
@@ -716,7 +749,7 @@ def _gaussian_log_density_and_tangent(
         symmetric_d_covariance = 0.5 * (
             d_covariance + tf.linalg.matrix_transpose(d_covariance)
         )
-        precision_residual = tf.linalg.cholesky_solve(
+        precision_residual = small_matrix.cholesky_solve(
             covariance_chol, residual[:, :, None]
         )[:, :, 0]
         covariance_quadratic = tf.einsum(
@@ -726,7 +759,7 @@ def _gaussian_log_density_and_tangent(
             precision_residual,
         )
         covariance_trace = tf.linalg.trace(
-            tf.linalg.cholesky_solve(
+            small_matrix.cholesky_solve(
                 covariance_chol, symmetric_d_covariance
             )
         )
@@ -764,7 +797,7 @@ def one_step_increment_and_parameter_tangent_lgssm(
     d_transition = f0
     anchors = tf.einsum("ij,nj->ni", transition, states)
     d_anchors = tf.einsum("ij,nj->ni", d_transition, states)
-    process_chol = tf.linalg.cholesky(process_covariance)
+    process_chol = small_matrix.cholesky(process_covariance)
     pre_flow = anchors + tf.einsum("ij,nj->ni", process_chol, noise)
     d_pre_flow = d_anchors
 
@@ -792,7 +825,7 @@ def one_step_increment_and_parameter_tangent_lgssm(
         d_anchors if with_tangent else None,
         process_chol,
     )
-    obs_chol = tf.linalg.cholesky(observation_covariance)
+    obs_chol = small_matrix.cholesky(observation_covariance)
     observed = tf.einsum(
         "oi,ni->no", observation_matrix, children
     )

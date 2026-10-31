@@ -7,9 +7,16 @@ flattening is deliberately absent from this reduction-bearing stage.
 
 from __future__ import annotations
 
+import math
+
 import tensorflow as tf
 
-from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky
+import bayesfilter.highdim.ledh_small_matrix_tf as small_matrix
+
+from bayesfilter.highdim.ledh_numerical_safety_tf import safe_cholesky, cholesky_differential
+
+from bayesfilter.highdim.transport_chunk_policy import select_transport_chunks
+from bayesfilter.highdim.ledh_exact_block_transport_tf import exact_block_transport_with_tangent
 
 Tensor = tf.Tensor
 
@@ -21,9 +28,9 @@ def _sym(value: Tensor) -> Tensor:
 def _chol_diff(chol: Tensor, d_matrix: Tensor) -> Tensor:
     """Cholesky JVP with chol [B,D,D] and tangent [K,B,D,D]."""
     chol_k = chol[None, ...]
-    inv_d = tf.linalg.triangular_solve(chol_k, d_matrix)
+    inv_d = small_matrix.triangular_solve(chol_k, d_matrix)
     inv_d_inv_t = tf.linalg.matrix_transpose(
-        tf.linalg.triangular_solve(chol_k, tf.linalg.matrix_transpose(inv_d))
+        small_matrix.triangular_solve(chol_k, tf.linalg.matrix_transpose(inv_d))
     )
     lower = tf.linalg.band_part(inv_d_inv_t, -1, 0)
     phi = lower - 0.5 * tf.linalg.diag(tf.linalg.diag_part(inv_d_inv_t))
@@ -69,6 +76,7 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     sinkhorn_steps: int,
     balance_steps: int,
     ridge: float,
+    denominator_regularization: float = 1.0e-7,
 ) -> tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
     """Reset B clouds for K tangent directions without cross-row reductions.
 
@@ -87,8 +95,11 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     d_transport : Tensor
         Tangent transport [K, B, N, N]
     valid : Tensor
-        Validity flag [B]. True if all Cholesky decompositions succeeded.
+        Validity flag [B], including B=1. Checks factors,
+        scaling denominators and transport.
     """
+    if not math.isfinite(denominator_regularization) or denominator_regularization < 0:
+        raise ValueError("denominator_regularization must be finite and nonnegative")
     children = tf.convert_to_tensor(children)
     dtype = children.dtype
     d_children = tf.cast(d_children, dtype)
@@ -100,74 +111,119 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
         children, d_children, covariances, d_covariances,
         weights, d_weights, tf.cast(design, dtype),
     )
+    batch = tf.shape(children)[0]
     n = tf.shape(children)[1]
     dim = tf.shape(children)[2]
     n_f = tf.cast(n, dtype)
 
-    deltas = children[:, :, None, :] - children[:, None, :, :]
-    d_deltas = d_children[:, :, :, None, :] - d_children[:, :, None, :, :]
-    cost = tf.reduce_sum(tf.square(deltas), axis=3)
-    d_cost = 2.0 * tf.reduce_sum(deltas[None, ...] * d_deltas, axis=4)
-    mean_cost = tf.reduce_mean(cost, axis=(1, 2))
-    floor = tf.cast(1.0e-3, dtype)
-    cost_scale = tf.maximum(mean_cost, floor)
-    d_cost_scale = tf.where(
-        mean_cost[None, :] > floor,
-        tf.reduce_mean(d_cost, axis=(2, 3)),
-        tf.zeros_like(d_cost[:, :, 0, 0]),
-    )
-    eps_c = tf.cast(epsilon, dtype)
-    exponent = -cost / (cost_scale[:, None, None] * eps_c)
-    d_exponent = -(
-        d_cost / cost_scale[None, :, None, None]
-        - cost[None, ...] * d_cost_scale[:, :, None, None]
-        / tf.square(cost_scale)[None, :, None, None]
-    ) / eps_c
-    kernel = tf.exp(exponent)
-    d_kernel = kernel[None, ...] * d_exponent
+    if children.shape[1] is None:
+        raise ValueError("particle count must be static before tracing")
+    selection = select_transport_chunks(int(children.shape[1]))
+    if selection.row_blocks == 1:
+        deltas = children[:, :, None, :] - children[:, None, :, :]
+        d_deltas = d_children[:, :, :, None, :] - d_children[:, :, None, :, :]
+        cost = tf.reduce_sum(tf.square(deltas), axis=3)
+        d_cost = 2.0 * tf.reduce_sum(deltas[None, ...] * d_deltas, axis=4)
+        mean_cost = tf.reduce_mean(cost, axis=(1, 2))
+        floor = tf.cast(1.0e-3, dtype)
+        cost_scale = tf.maximum(mean_cost, floor)
+        d_cost_scale = tf.where(
+            mean_cost[None, :] > floor,
+            tf.reduce_mean(d_cost, axis=(2, 3)),
+            tf.zeros_like(d_cost[:, :, 0, 0]),
+        )
+        eps_c = tf.cast(epsilon, dtype)
+        exponent = -cost / (cost_scale[:, None, None] * eps_c)
+        d_exponent = -(
+            d_cost / cost_scale[None, :, None, None]
+            - cost[None, ...] * d_cost_scale[:, :, None, None]
+            / tf.square(cost_scale)[None, :, None, None]
+        ) / eps_c
+        kernel = tf.exp(exponent)
+        d_kernel = kernel[None, ...] * d_exponent
 
-    batch = tf.shape(children)[0]
-    uniform = tf.fill([batch, n], 1.0 / n_f)
-    left = tf.ones_like(uniform)
-    right = tf.ones_like(uniform)
-    d_left = tf.zeros_like(d_weights)
-    d_right = tf.zeros_like(d_weights)
-    tiny = tf.cast(1.0e-7, dtype)
-    for _ in range(sinkhorn_steps + balance_steps):
-        kr = tf.einsum("bij,bj->bi", kernel, right) + tiny
-        d_kr = tf.einsum("kbij,bj->kbi", d_kernel, right) + tf.einsum(
-            "bij,kbj->kbi", kernel, d_right
-        )
-        left_new = uniform / kr
-        d_left_new = -uniform[None, ...] * d_kr / tf.square(kr)[None, ...]
-        kl = tf.einsum("bij,bi->bj", kernel, left_new) + tiny
-        d_kl = tf.einsum("kbij,bi->kbj", d_kernel, left_new) + tf.einsum(
-            "bij,kbi->kbj", kernel, d_left_new
-        )
-        right = weights / kl
-        d_right = d_weights / kl[None, ...] - (
-            weights[None, ...] * d_kl / tf.square(kl)[None, ...]
-        )
-        left, d_left = left_new, d_left_new
+        batch = tf.shape(children)[0]
+        uniform = tf.fill([batch, n], 1.0 / n_f)
+        left = tf.ones_like(uniform)
+        right = tf.ones_like(uniform)
+        d_left = tf.zeros_like(d_weights)
+        d_right = tf.zeros_like(d_weights)
+        tiny = tf.cast(denominator_regularization, dtype)
+        valid_scaling = tf.ones([batch], dtype=tf.bool)
+        iteration_count = sinkhorn_steps + balance_steps
 
-    coupling = left[:, :, None] * kernel * right[:, None, :]
-    d_coupling = (
-        d_left[:, :, :, None] * kernel[None, ...] * right[None, :, None, :]
-        + left[None, :, :, None] * d_kernel * right[None, :, None, :]
-        + left[None, :, :, None] * kernel[None, ...] * d_right[:, :, None, :]
-    )
-    row_mass = tf.reduce_sum(coupling, axis=2)
-    d_row_mass = tf.reduce_sum(d_coupling, axis=3)
-    transport = coupling / row_mass[:, :, None]
-    d_transport = (
-        d_coupling / row_mass[None, :, :, None]
-        - coupling[None, ...] * d_row_mass[:, :, :, None]
-        / tf.square(row_mass)[None, :, :, None]
-    )
-    barycentric = tf.einsum("bij,bjd->bid", transport, children)
-    d_barycentric = tf.einsum(
-        "kbij,bjd->kbid", d_transport, children
-    ) + tf.einsum("bij,kbjd->kbid", transport, d_children)
+        def balance_step(index, left, right, d_left, d_right, valid_scaling):
+            kr = tf.einsum("bij,bj->bi", kernel, right) + tiny
+            valid_kr = tf.math.is_finite(kr) & (kr > 0)
+            valid_scaling &= tf.reduce_all(valid_kr, axis=1)
+            kr = tf.where(valid_kr, kr, tf.ones_like(kr))
+            d_kr = tf.einsum("kbij,bj->kbi", d_kernel, right) + tf.einsum(
+                "bij,kbj->kbi", kernel, d_right
+            )
+            left_new = uniform / kr
+            d_left_new = -uniform[None, ...] * d_kr / tf.square(kr)[None, ...]
+            kl = tf.einsum("bij,bi->bj", kernel, left_new) + tiny
+            valid_kl = tf.math.is_finite(kl) & (kl > 0)
+            valid_scaling &= tf.reduce_all(valid_kl, axis=1)
+            kl = tf.where(valid_kl, kl, tf.ones_like(kl))
+            d_kl = tf.einsum("kbij,bi->kbj", d_kernel, left_new) + tf.einsum(
+                "bij,kbi->kbj", kernel, d_left_new
+            )
+            right = weights / kl
+            d_right = d_weights / kl[None, ...] - (
+                weights[None, ...] * d_kl / tf.square(kl)[None, ...]
+            )
+            return index + 1, left_new, right, d_left_new, d_right, valid_scaling
+
+        _, left, right, d_left, d_right, valid_scaling = tf.while_loop(
+            lambda index, *_: index < iteration_count,
+            balance_step, (tf.constant(0), left, right, d_left, d_right, valid_scaling),
+            maximum_iterations=max(0, iteration_count), parallel_iterations=1,
+        )
+
+        coupling = left[:, :, None] * kernel * right[:, None, :]
+        d_coupling = (
+            d_left[:, :, :, None] * kernel[None, ...] * right[None, :, None, :]
+            + left[None, :, :, None] * d_kernel * right[None, :, None, :]
+            + left[None, :, :, None] * kernel[None, ...] * d_right[:, :, None, :]
+        )
+        row_mass = tf.reduce_sum(coupling, axis=2)
+        valid_row_mass = tf.math.is_finite(row_mass) & (row_mass > 0)
+        valid_scaling &= tf.reduce_all(valid_row_mass, axis=1)
+        row_mass = tf.where(valid_row_mass, row_mass, tf.ones_like(row_mass))
+        d_row_mass = tf.reduce_sum(d_coupling, axis=3)
+        transport = coupling / row_mass[:, :, None]
+        d_transport = (
+            d_coupling / row_mass[None, :, :, None]
+            - coupling[None, ...] * d_row_mass[:, :, :, None]
+            / tf.square(row_mass)[None, :, :, None]
+        )
+        barycentric = tf.einsum("bij,bjd->bid", transport, children)
+        d_barycentric = tf.einsum(
+            "kbij,bjd->kbid", d_transport, children
+        ) + tf.einsum("bij,kbjd->kbid", transport, d_children)
+
+        carried_covariances = tf.einsum(
+            "bij,bjmn->bimn", transport, covariances
+        )
+        d_carried_covariances = (
+            tf.einsum(
+                "kbij,bjmn->kbimn", d_transport, covariances
+            )
+            + tf.einsum(
+                "bij,kbjmn->kbimn", transport, d_covariances
+            )
+        )
+        transport_valid = valid_scaling & tf.reduce_all(tf.math.is_finite(transport), [1,2])
+        transport_valid &= tf.reduce_all(tf.math.is_finite(d_transport), [0,2,3])
+    else:
+        (barycentric, d_barycentric, carried_covariances,
+         d_carried_covariances, transport, d_transport, transport_valid) = (
+            exact_block_transport_with_tangent(
+                children, d_children, weights, d_weights, covariances,
+                d_covariances, epsilon=epsilon,
+                iterations=sinkhorn_steps+balance_steps,
+                denominator_regularization=denominator_regularization))
 
     target_mean = tf.reduce_sum(weights[:, :, None] * children, axis=1)
     d_target_mean = tf.reduce_sum(
@@ -213,7 +269,7 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     gap = _sym(target_cov - plus_cov) + ridge_eye
     d_gap = _sym(d_target_cov - d_plus_cov)
     valid_gap, gap_chol = safe_cholesky(gap, "gap")
-    d_gap_chol = _chol_diff(gap_chol, d_gap)
+    d_gap_chol = cholesky_differential(gap_chol[None], d_gap, valid_gap[None])
 
     injected = barycentric + tf.einsum("bnj,bij->bni", design, gap_chol)
     d_injected = d_barycentric + tf.einsum(
@@ -242,17 +298,16 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
     )
 
     valid_target, target_chol = safe_cholesky(target_cov + ridge_eye, "target")
-    d_target_chol = _chol_diff(target_chol, d_target_cov)
+    d_target_chol = cholesky_differential(target_chol[None], d_target_cov, valid_target[None])
     valid_injected, injected_chol = safe_cholesky(injected_cov, "injected")
-    d_injected_chol = _chol_diff(injected_chol, d_injected_cov)
+    d_injected_chol = cholesky_differential(injected_chol[None], d_injected_cov, valid_injected[None])
 
-    # Combined validity: all three Cholesky decompositions must succeed
-    valid = valid_gap & valid_target & valid_injected
+    valid = valid_gap & valid_target & valid_injected & transport_valid
 
     rhs = tf.linalg.matrix_transpose(target_chol)
     d_rhs = tf.linalg.matrix_transpose(d_target_chol)
-    solved = tf.linalg.triangular_solve(injected_chol, rhs, adjoint=True)
-    d_solved = tf.linalg.triangular_solve(
+    solved = small_matrix.triangular_solve(injected_chol, rhs, adjoint=True)
+    d_solved = small_matrix.triangular_solve(
         injected_chol[None, ...],
         d_rhs
         - tf.linalg.matmul(
@@ -274,17 +329,6 @@ def batched_sinkhorn_contract_e_reset_triple_with_tangent(
         )
         + tf.einsum(
             "bnj,kbij->kbni", centered_injected, d_affine
-        )
-    )
-    carried_covariances = tf.einsum(
-        "bij,bjmn->bimn", transport, covariances
-    )
-    d_carried_covariances = (
-        tf.einsum(
-            "kbij,bjmn->kbimn", d_transport, covariances
-        )
-        + tf.einsum(
-            "bij,kbjmn->kbimn", transport, d_covariances
         )
     )
     return (

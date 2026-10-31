@@ -1,0 +1,135 @@
+The completed comparisons answer two different questions. Conditioning a child
+on its parent's transition and the current observation changes where that child
+is drawn. Weighting the parents changes how many children are allocated to each
+part of the incoming cloud. The original three-branch proposal is the comparator
+for the first change; conditional proposals with uniform parents isolate the
+second. The conditional-mixture arms retain their defensive branches. Thus
+uniform parents do not mean an observation-blind proposal: their children
+already use the observation.
+
+The five-model comparison uses $N=1008$, eight paired random streams and the
+saved FP64 GPU/XLA diagnostic runs. Each model has one fixed dataset and
+parameter configuration; $T=50$ except for range--bearing, where $T=20$.
+The SIR row is the nominal $T=50$ case, while the larger SIR campaign varies
+parameters and uses $T=10,20,50$. These settings describe the completed
+experiment. They are not independently tuned defaults for every model or
+evidence for production-precision accuracy.
+
+For a scalar quantity $a$ with reference $a_\star$, the tables report
+\begin{equation}
+ \overline a=\frac18\sum_{r=1}^8\widehat a_r,
+ \qquad
+ \operatorname{RMSE}(a)=
+ \left\{\frac18\sum_{r=1}^8(\widehat a_r-a_\star)^2\right\}^{1/2}.
+\end{equation}
+RMSE includes both displacement of the mean and dispersion across streams.
+For scores it is computed separately in the stated parameter coordinates;
+components with different units are not pooled. Likelihood entries are
+\emph{log} likelihoods. An apparently close mean can conceal large errors in
+individual runs, which is why both mean and RMSE are shown.
+In the tables below, a proposal cell written as $u\,(v)$ means mean estimate
+$u$ and RMSE $v$ relative to the displayed reference. ESS is reported as a
+time-and-stream average, so it is not an accuracy error measure.
+
+Only the LGSSM reference is exact: it is the Kalman likelihood and score.
+The KSC reference is a refined grid for the implemented seven-component
+observation-mixture target, not the unapproximated stochastic-volatility
+model. The predator--prey reference averages two adapted Zhao--Cui local-score
+fits; support, fit and differentiation-radius errors remain unresolved.
+Range--bearing uses sixteen particle/Fisher reference replicates with
+$65{,}536$ particles; score Monte Carlo standard errors are about $0.06502$
+and $0.02268$, and finite-particle bias remains possible. The displayed SIR
+reference is the rank-$40$, fit-$2$ adapted Zhao--Cui calculation. Its separate
+rank-$20$, fit-$17$ check is retained when interpreting an ordering. These
+references must not all be described as exact model oracles.
+
+\IfFileExists{chapters/observation_parent_comparison_tables.tex}
+ {\input{chapters/observation_parent_comparison_tables}}
+ {\input{../../chapters/observation_parent_comparison_tables}}
+
+The SIR score reductions relative to the original proposal are substantial
+in the measured runs. At nominal $T=50$, infection-score RMSE falls from
+about $18{,}649$ to $32.76$ with uniform conditional parents and $44.42$
+with weighted parents. The corresponding recovery values are $7905.32$,
+$7.23$ and $13.08$; noise values are $9593.82$, $3.85$ and $4.95$.
+The same dramatic statement does not transfer to every model. KSC persistence
+RMSE is $0.07445$ for the original proposal, $0.60944$ for uniform parents
+and $0.40706$ for weighted parents. In predator--prey, weighted parents have
+larger observed RMSE than the original in all six score components. These
+are adverse accuracy results even though the runs pass their recorded
+numerical-validity checks.
+
+Between the two conditional choices, uniform parents have lower observed
+score RMSE in both range--bearing components, five of six predator--prey
+components and all three nominal SIR components. Weighted parents have lower
+observed score RMSE in both KSC components and three of four LGSSM
+components. Weighted parents have lower log-likelihood RMSE in KSC,
+range--bearing and nominal SIR; uniform parents have lower values in LGSSM
+and predator--prey. These mixed comparisons make uniform parents a serious
+alternative when score accuracy is the priority.
+
+Across the twenty SIR parameter--horizon cells with usable references,
+Table~\ref{tab:parent-sir-allocation-counts} requires the same RMSE ordering
+against both reference fits. A reference-dependent ordering is left unresolved.
+At nominal $T=50$, the first and second reference score vectors are
+\begin{align*}
+  s^{(1)} &= (102.85487,-48.60288,-30.30761),\\
+  s^{(2)} &= (108.57912,-50.42205,-30.38459).
+\end{align*}
+Uniform parents have lower observed score RMSE in all three components
+against either fit.
+
+\begin{table}[htbp]
+\centering\small
+\begin{tabular}{lrrr}
+\toprule
+Quantity & Uniform lower & Weighted lower & Reference dependent\\
+\midrule
+Log likelihood & 5 & 15 & 0\\
+Infection score & 13 & 3 & 4\\
+Recovery score & 15 & 2 & 3\\
+Noise score & 13 & 7 & 0\\
+\bottomrule
+\end{tabular}
+\caption{Descriptive RMSE counts over twenty usable SIR cells. The counts do
+not constitute a statistical ranking or a probability of superiority.}
+\label{tab:parent-sir-allocation-counts}
+\end{table}
+
+Parent weighting has a more consistent benefit for weight balance in the SIR
+campaign. In every usable cell, its time-mean and time-minimum ESS exceed
+those of uniform conditional parents in all eight paired streams: $160/160$
+pairs for each summary. The increase in stream-averaged time-mean ESS ranges
+from $6.7\%$ to $102.7\%$. The direction also holds in all $33$ executed
+cells, or $264/264$ paired streams, including cells whose reference fails the
+accuracy screen. ESS can be compared there without relying on that reference.
+The KSC and range--bearing extensions also show higher time-mean ESS for
+weighted parents in all eight paired streams. This does not establish higher
+ESS at every time step or on every future dataset. In particular, the
+cross-model mean ESS values do not make either conditional proposal uniformly
+better than the original.
+
+The retained default is therefore an engineering choice for improved weight
+balance: observation-conditioned proposals with observation-weighted parents.
+Uniform conditional parents remain an explicit, competitive alternative.
+The default is not an accuracy-optimality claim. Both choices are markedly
+more accurate than the original in the nominal SIR score experiment; the
+KSC and predator--prey counterexamples prevent extending that statement to
+all models and parameters.
+
+All reported arms remain numerically viable under their saved checks.
+The five-model comparison establishes no statistical ranking. Eight streams
+on one dataset, approximate references and inherited controls limit its
+interpretation. The SIR analysis retains two exploratory componentwise
+findings that favor opposite parent rules, without a multiplicity correction;
+its large original-versus-conditional score differences do not pass the full
+paired mean-squared-error criterion. The next evidence for an accuracy choice
+is stronger references where needed, scope-specific calibration on disjoint
+data, and predeclared paired uncertainty across independent datasets.
+
+The numerical source is the checked CSV and source-hash manifest under
+\path{docs/plans/artifacts/observation-parent-all-model-comparison-20261028/}.
+The accompanying result note retains the target definitions, per-stream
+checks, inference limits and links to each completed campaign. The tables
+here are generated directly from that CSV so that the research note and
+monograph report the same measurements.

@@ -1,0 +1,57 @@
+{
+  "campaign_status": "COMPLETE_NEGATIVE_DIAGNOSTIC",
+  "replication_status": "INCOMPLETE",
+  "scientific_question": "Can the unchanged profiled Eq15 objective yield useful finite local fits on actual d5 paper-model backward inputs?",
+  "objective": "Mean squared Eq15 residual after analytically profiling positive lambda; sum objective differs by the fixed sample count only.",
+  "engineering_controls": "PASS",
+  "known_gaussian_recovery": {
+    "d1": "PASS",
+    "d5": "PASS",
+    "d20": "FAIL_LARGER_PERTURBATION",
+    "d80": "FAIL_LARGER_PERTURBATION"
+  },
+  "real_backward_sweeps": {
+    "attempted": 4,
+    "completed": 0,
+    "failed_time": 98,
+    "stationary_fits": 8,
+    "failed_fits": 4,
+    "same_start_800_step_retries": 4
+  },
+  "damping_repair": {
+    "candidates": [
+      1,
+      1000,
+      1000000
+    ],
+    "real_input_fits": 12,
+    "qualified": 0,
+    "d5_recovery_controls": 6,
+    "d5_recovery_controls_passed": 6
+  },
+  "fitted_adaptive_pilots": 0,
+  "floor_status": "LOCAL_PROTECTION_AND_HEALTHY_PARENT_CONTROLS_PASS; SOURCE_FORMULA_AND_DOWNSTREAM_QUALITY_UNRESOLVED",
+  "heuristic_dominance": "NOT_EVALUABLE_FOR_IAPF_NO_ELIGIBLE_FITTED_ARM",
+  "comparator_scope": "24 runs, one fresh d5/T100 dataset, N1000, 8 seeds per label; observation_only and fully_adapted coincide here, leaving two distinct particle strategies plus the exact Kalman oracle.",
+  "statistical_ranking": "NOT_ESTABLISHED",
+  "terminal_audit": "PASS",
+  "charges": {
+    "campaign_cpu_wall_seconds": 41.72550564899575,
+    "campaign_gpu_seconds": 0,
+    "combined_cpu_wall_seconds": 131.66177064899574,
+    "remaining_cpu_wall_seconds": 1668.3382293510042,
+    "remaining_gpu_hours": 36.56736346305556,
+    "launches": 6,
+    "launch_cap": 6
+  },
+  "next_action": "Recover the author's fitting implementation or formulate and review a finite local-branch selection hypothesis, with a new bounded plan. Preserve Eq15; no silent objective/bounds substitution.",
+  "not_concluded": [
+    "iAPF impossible or scientifically rejected",
+    "no useful finite local minimum exists",
+    "one floor or solver is superior",
+    "full iAPF or KDM replication complete",
+    "TensorFlow/GPU/XLA/default readiness"
+  ],
+  "plan": "/home/chakwong/BayesFilter/docs/plans/iapf-scale-aware-reconstruction-20260926.md",
+  "result": "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-scale-aware-reconstruction-20260926-01/result.md"
+}

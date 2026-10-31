@@ -1,0 +1,401 @@
+{
+  "schema": "bayesfilter.surrogate_hmc_master.v1",
+  "question": "Does imperfect full-DCTR surrogate HMC recover model parameter posteriors?",
+  "all_models_validated": false,
+  "coverage_complete": false,
+  "families": [
+    {
+      "id": "M01",
+      "family": "linear Gaussian",
+      "variants": [
+        "LG1",
+        "LG2",
+        "LG4",
+        "LG20",
+        "diagonal",
+        "triangular-all-parameter"
+      ],
+      "role": "model_inference",
+      "status": "PARTIAL_LINEAR_IMPLEMENTATION",
+      "variant_status": {
+        "LG1": "REFERENCE_CONTROL_TUNING_SAMPLING_AVAILABLE",
+        "LG2": "REFERENCE_CONSUMER_CALIBRATION_AVAILABLE",
+        "LG4": "SCOPE_UNRESOLVED",
+        "LG20": "SCOPE_UNRESOLVED",
+        "diagonal": "SCOPE_UNRESOLVED",
+        "triangular-all-parameter": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "resolved posterior comparisons",
+        "heuristic comparisons",
+        "remaining linear scopes"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M02",
+      "family": "actual stochastic volatility",
+      "variants": [
+        "synthetic",
+        "real-data",
+        "SV20",
+        "SV40"
+      ],
+      "role": "model_inference",
+      "status": "PARTIAL_SV_PREPARATION_AVAILABLE",
+      "variant_status": {
+        "synthetic": "SCOPE_UNRESOLVED",
+        "real-data": "SCOPE_UNRESOLVED",
+        "SV20": "REFERENCE_CONSUMER_CALIBRATION_AVAILABLE",
+        "SV40": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "affordable complete inference forecast",
+        "public tuning and retained comparisons",
+        "heuristic comparisons",
+        "remaining SV scopes"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M03",
+      "family": "transformed stochastic volatility",
+      "variants": [
+        "exact-transformed",
+        "KSC-mixture"
+      ],
+      "role": "model_inference",
+      "status": "PARTIAL_KSC_INFERENCE_AVAILABLE",
+      "variant_status": {
+        "exact-transformed": "SCOPE_UNRESOLVED",
+        "KSC-mixture": "TUNING_AND_RETAINED_COMPARISON_AVAILABLE"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "resolved KSC posterior comparisons",
+        "independent finite-D endpoint and reference",
+        "C tuning and retained comparisons",
+        "heuristic comparisons",
+        "exact-transformed variant and longer horizons"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M04",
+      "family": "generalized stochastic volatility",
+      "variants": [
+        "prior-mean-projection",
+        "native-two-state"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "prior-mean-projection": "SCOPE_UNRESOLVED",
+        "native-two-state": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M05",
+      "family": "predator-prey",
+      "variants": [
+        "six-parameter",
+        "PP20-restricted"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "six-parameter": "SCOPE_UNRESOLVED",
+        "PP20-restricted": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M06",
+      "family": "Austria SIR",
+      "variants": [
+        "physical-clipped",
+        "preclip-distinct-law"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "physical-clipped": "SCOPE_UNRESOLVED",
+        "preclip-distinct-law": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M07",
+      "family": "coupled nonlinear",
+      "variants": [
+        "coupled-state"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "coupled-state": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M08",
+      "family": "structural",
+      "variants": [
+        "affine",
+        "AR2",
+        "nonlinear-five-parameter",
+        "AR1-quadratic-completion"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "affine": "SCOPE_UNRESOLVED",
+        "AR2": "HEALTHY_B_R_AND_A_R_PILOTS_FORMAL_INCONCLUSIVE_FINITE_TARGET_PENDING",
+        "nonlinear-five-parameter": "SCOPE_UNRESOLVED",
+        "AR1-quadratic-completion": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "scope_findings": {
+        "AR2": {
+          "classification": "HEALTHY_MODEL_ENDPOINT_PILOT_FINITE_ENDPOINT_BLOCKED",
+          "finding": "Structural canonical B/R and independent A/R each completed 4x8000 healthy retained draws; formal equivalence is inconclusive. Finite-target tail failures still block D/R and C/D,C/R.",
+          "result": "docs/plans/surrogate-hmc-ar2-posterior-result-2026-09-23.md",
+          "finite_result": "docs/plans/surrogate-hmc-ar2-finite-result-2026-09-23.md",
+          "evidence": "docs/plans/artifacts/surrogate-hmc-closure-20260922-ar2-inference-01/report.json"
+        }
+      }
+    },
+    {
+      "id": "M09",
+      "family": "accumulation and growth",
+      "variants": [
+        "model-B",
+        "model-C"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "model-B": "SCOPE_UNRESOLVED",
+        "model-C": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M10",
+      "family": "nonlinear score-study",
+      "variants": [
+        "concrete-score-study"
+      ],
+      "role": "model_inference",
+      "status": "REFERENCE_CONSUMER_AVAILABLE",
+      "variant_status": {
+        "concrete-score-study": "POSTERIOR_REFERENCE_CONSUMER_MECHANICS_AVAILABLE"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "inference endpoint qualification",
+        "scope-specific calibration and tuning",
+        "retained comparisons"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M11",
+      "family": "SSL-LSTM",
+      "variants": [
+        "fixed",
+        "complexity-ladder"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "fixed": "SCOPE_UNRESOLVED",
+        "complexity-ladder": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M12",
+      "family": "hard-bound macrofinancial",
+      "variants": [
+        "hard-bound"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "hard-bound": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "M13",
+      "family": "range-bearing",
+      "variants": [
+        "range-bearing"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "range-bearing": "CONSUMER_ENGINEERING_PASSED_WITH_WARNING_POSTERIOR_PENDING"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "scoped controls",
+        "full-support parameter posterior endpoint/reference",
+        "public HMC tuning and retained comparisons",
+        "budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md",
+      "scope_findings": {
+        "range-bearing": {
+          "classification": "CONSUMER_ENGINEERING_PASSED_WITH_WARNING_FIXED_POINT_REFERENCE_ONLY",
+          "finding": "The wrapped law and nine-point T20 likelihood reference are qualified. The canonical consumer passes required engineering checks; its saved FP32 discrepancy is an owner-accepted warning. Scoped controls, a full-support parameter posterior endpoint/reference and HMC testing remain pending.",
+          "force_default_precision": "float32",
+          "force_tf32_default": true,
+          "force_jit_compile_default": true,
+          "saved_run_comparison_role": "explanatory_only",
+          "saved_run_warning_blocks_continuation": false,
+          "posterior_qualified": false,
+          "result": "docs/plans/surrogate-hmc-fp32-warning-policy-2026-09-24.md",
+          "evidence": "docs/plans/artifacts/surrogate-hmc-closure-20260924-fp32-policy-01/assessment/report.json",
+          "likelihood_reference": "docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-reference-03/m13-reference-trajectory/report.json"
+        }
+      }
+    },
+    {
+      "id": "M14",
+      "family": "BGS",
+      "variants": [
+        "concrete-upstream-instance-required"
+      ],
+      "role": "model_inference",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "concrete-upstream-instance-required": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "C01",
+      "family": "Gaussian mechanism controls",
+      "variants": [
+        "anisotropic",
+        "d100"
+      ],
+      "role": "mechanism_control",
+      "status": "ANISOTROPIC_CONTROL_IMPLEMENTED",
+      "variant_status": {
+        "anisotropic": "TUNING_AND_RETAINED_COMPARISON_AVAILABLE",
+        "d100": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "C02",
+      "family": "non-Gaussian mechanism controls",
+      "variants": [
+        "funnel",
+        "banana",
+        "mixture",
+        "varying-hessian"
+      ],
+      "role": "mechanism_control",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "funnel": "SCOPE_UNRESOLVED",
+        "banana": "SCOPE_UNRESOLVED",
+        "mixture": "SCOPE_UNRESOLVED",
+        "varying-hessian": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    },
+    {
+      "id": "C03",
+      "family": "German-credit posterior",
+      "variants": [
+        "data-version-required"
+      ],
+      "role": "mechanism_control",
+      "status": "SCOPE_UNRESOLVED",
+      "variant_status": {
+        "data-version-required": "SCOPE_UNRESOLVED"
+      },
+      "inference_status": "NOT_RUN",
+      "missing": [
+        "concrete scope card",
+        "qualified consumer and reference",
+        "scope-specific tuning and budget forecast"
+      ],
+      "source": "docs/plans/surrogate-hmc-all-models-master-program-2026-09-18.md"
+    }
+  ]
+}

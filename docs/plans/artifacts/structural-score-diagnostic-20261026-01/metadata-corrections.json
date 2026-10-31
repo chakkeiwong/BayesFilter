@@ -1,0 +1,18 @@
+{
+  "schema": "diagnostic_metadata_corrections_v1",
+  "original_artifacts_preserved": true,
+  "items": [
+    {
+      "artifact": "attempts/diagnostic-13-fp64-cpu/manifest.json",
+      "field": "dtype",
+      "recorded": "float32",
+      "corrected": "float64",
+      "reason": "Diagnostic-only manifest hardcode; executed fp64-only branch explicitly passed tf.float64."
+    },
+    {
+      "artifact": "attempts/diagnostic-11-final/results.json",
+      "field": "quadrature_T2.step_refinement",
+      "reason": "This recorded unperturbed likelihood differences (necessarily zero), not score refinement; inspect raw score rows 3,4,5 instead. Runner now records score_step_refinement."
+    }
+  ]
+}

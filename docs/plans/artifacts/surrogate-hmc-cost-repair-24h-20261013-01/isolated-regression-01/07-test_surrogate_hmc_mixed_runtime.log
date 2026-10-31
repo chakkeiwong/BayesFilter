@@ -1,0 +1,673 @@
+FFFFF.....                                                               [100%]
+=================================== FAILURES ===================================
+_ test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[lgssm] _
+
+name = 'lgssm'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72772ced2350>
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline(name, monkeypatch):
+        # Tiny CPU reference exception, never a campaign tuning scope.
+        monkeypatch.setattr(runtime, "N", 64)
+        case=runtime.configure_precision(runtime.load_case(name), POLICY)
+        h=2
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        theta=tf.stack([case.theta0,case.chart(tf.fill([case.p],tf.constant(.01,tf.float64)))[0]])
+        inputs=(theta,case.observations[:h],case.fixed[0],case.fixed[1][:h],
+                case.fixed[2][:h],case.beta)
+        actual=shared.make_batched_score_filter(case.spec,64,h,controls,tf.float64,
+                                               precision_policy=POLICY)
+        diagnostic,_=make_program(case.spec,64,h,controls,policy="both_fp32")
+        a,b=actual(*inputs),diagnostic(*inputs)
+        for key in a:
+            tf.debugging.assert_equal(a[key],b[key])
+        tf.debugging.assert_equal(a["valid"],[True,True])
+        tf.debugging.assert_equal(a["steps_completed"],[h,h])
+        assert actual.experimental_get_tracing_count()==1
+        assert actual.get_concrete_function().function_def.attr["_XlaMustCompile"].b
+    
+        # Protected pre-integration source, not an alternative runtime implementation.
+        source=Path("docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/runtime-before/bayesfilter/highdim/covariance_proposal_score_batch_tf.py")
+        spec=importlib.util.spec_from_file_location("_uniform_baseline_diagnostic",source)
+        baseline=importlib.util.module_from_spec(spec); spec.loader.exec_module(baseline)
+        ordinary=runtime.configure_precision(case, "uniform")
+        before=baseline.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        after=shared.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        values=tuple(tf.cast(x,tf.float32) for x in inputs)
+        old,new=before(*values),after(*values)
+        for key in old:
+>           tf.debugging.assert_equal(old[key],new[key])
+
+tests/test_surrogate_hmc_mixed_runtime.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x72778f4d3560>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(2, 4), dtype=float32, numpy=
+array([[-0.2549628 , -1.3192953 , -0.97791487,  0.10662044],
+       [-0.2572534 , -1.3219458 , -0.9784103 ,  0.10763217]],
+      dtype=float32)>
+y = <tf.Tensor: shape=(2, 4), dtype=float32, numpy=
+array([[-0.25496286, -1.3192953 , -0.9779148 ,  0.10662044],
+       [-0.2572534 , -1.3219459 , -0.97841036,  0.10763217]],
+      dtype=float32)>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[0, 0],
+       [0, 2],
+       [1, 1]...orresponding x values:', array([-0.2549628 , -0.97791487, -1.3219458 ], dtype=float32), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[0 0]
+E          [0 2]
+E          [1 1]]
+E         Corresponding x values:
+E         [-0.2549628  -0.97791487 -1.3219458 ]
+E         Corresponding y values:
+E         [-0.25496286 -0.9779148  -1.3219459 ]
+E         First 3 elements of x:
+E         [-0.2549628  -1.3192953  -0.97791487]
+E         First 3 elements of y:
+E         [-0.25496286 -1.3192953  -0.9779148 ]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+----------------------------- Captured stderr call -----------------------------
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791884326.233293 1335094 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+_ test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[ksc] _
+
+name = 'ksc'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x727514c2e990>
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline(name, monkeypatch):
+        # Tiny CPU reference exception, never a campaign tuning scope.
+        monkeypatch.setattr(runtime, "N", 64)
+        case=runtime.configure_precision(runtime.load_case(name), POLICY)
+        h=2
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        theta=tf.stack([case.theta0,case.chart(tf.fill([case.p],tf.constant(.01,tf.float64)))[0]])
+        inputs=(theta,case.observations[:h],case.fixed[0],case.fixed[1][:h],
+                case.fixed[2][:h],case.beta)
+        actual=shared.make_batched_score_filter(case.spec,64,h,controls,tf.float64,
+                                               precision_policy=POLICY)
+        diagnostic,_=make_program(case.spec,64,h,controls,policy="both_fp32")
+        a,b=actual(*inputs),diagnostic(*inputs)
+        for key in a:
+            tf.debugging.assert_equal(a[key],b[key])
+        tf.debugging.assert_equal(a["valid"],[True,True])
+        tf.debugging.assert_equal(a["steps_completed"],[h,h])
+        assert actual.experimental_get_tracing_count()==1
+        assert actual.get_concrete_function().function_def.attr["_XlaMustCompile"].b
+    
+        # Protected pre-integration source, not an alternative runtime implementation.
+        source=Path("docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/runtime-before/bayesfilter/highdim/covariance_proposal_score_batch_tf.py")
+        spec=importlib.util.spec_from_file_location("_uniform_baseline_diagnostic",source)
+        baseline=importlib.util.module_from_spec(spec); spec.loader.exec_module(baseline)
+        ordinary=runtime.configure_precision(case, "uniform")
+        before=baseline.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        after=shared.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        values=tuple(tf.cast(x,tf.float32) for x in inputs)
+        old,new=before(*values),after(*values)
+        for key in old:
+>           tf.debugging.assert_equal(old[key],new[key])
+
+tests/test_surrogate_hmc_mixed_runtime.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x72778f4d3560>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+array([[-0.08416262, -0.91142625],
+       [-0.08316574, -0.9152782 ]], dtype=float32)>
+y = <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+array([[-0.08416262, -0.9114262 ],
+       [-0.08316572, -0.9152783 ]], dtype=float32)>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[0, 1],
+       [1, 0],
+       [1, 1]...orresponding x values:', array([-0.91142625, -0.08316574, -0.9152782 ], dtype=float32), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[0 1]
+E          [1 0]
+E          [1 1]]
+E         Corresponding x values:
+E         [-0.91142625 -0.08316574 -0.9152782 ]
+E         Corresponding y values:
+E         [-0.9114262  -0.08316572 -0.9152783 ]
+E         First 3 elements of x:
+E         [-0.08416262 -0.91142625 -0.08316574]
+E         First 3 elements of y:
+E         [-0.08416262 -0.9114262  -0.08316572]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function make_batched_score_filter.<locals>.program at 0x727514189c60> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+WARNING  tensorflow:polymorphic_function.py:157 6 out of the last 6 calls to <function make_batched_score_filter.<locals>.program at 0x72751418b740> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+_ test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[predator_prey] _
+
+name = 'predator_prey'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7275545a4710>
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline(name, monkeypatch):
+        # Tiny CPU reference exception, never a campaign tuning scope.
+        monkeypatch.setattr(runtime, "N", 64)
+        case=runtime.configure_precision(runtime.load_case(name), POLICY)
+        h=2
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        theta=tf.stack([case.theta0,case.chart(tf.fill([case.p],tf.constant(.01,tf.float64)))[0]])
+        inputs=(theta,case.observations[:h],case.fixed[0],case.fixed[1][:h],
+                case.fixed[2][:h],case.beta)
+        actual=shared.make_batched_score_filter(case.spec,64,h,controls,tf.float64,
+                                               precision_policy=POLICY)
+        diagnostic,_=make_program(case.spec,64,h,controls,policy="both_fp32")
+        a,b=actual(*inputs),diagnostic(*inputs)
+        for key in a:
+            tf.debugging.assert_equal(a[key],b[key])
+        tf.debugging.assert_equal(a["valid"],[True,True])
+        tf.debugging.assert_equal(a["steps_completed"],[h,h])
+        assert actual.experimental_get_tracing_count()==1
+        assert actual.get_concrete_function().function_def.attr["_XlaMustCompile"].b
+    
+        # Protected pre-integration source, not an alternative runtime implementation.
+        source=Path("docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/runtime-before/bayesfilter/highdim/covariance_proposal_score_batch_tf.py")
+        spec=importlib.util.spec_from_file_location("_uniform_baseline_diagnostic",source)
+        baseline=importlib.util.module_from_spec(spec); spec.loader.exec_module(baseline)
+        ordinary=runtime.configure_precision(case, "uniform")
+        before=baseline.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        after=shared.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        values=tuple(tf.cast(x,tf.float32) for x in inputs)
+        old,new=before(*values),after(*values)
+        for key in old:
+>           tf.debugging.assert_equal(old[key],new[key])
+
+tests/test_surrogate_hmc_mixed_runtime.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x72778f4d3560>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(2, 6), dtype=float32, numpy=
+array([[-37.21441   ,  -0.45249027,  -0.04357261,   6.406857  ,
+      ...,
+       [-40.1241    ,  -0.4858202 ,  -0.04576421,   6.886184  ,
+          4.4748993 ,  -6.2489715 ]], dtype=float32)>
+y = <tf.Tensor: shape=(2, 6), dtype=float32, numpy=
+array([[-37.214405  ,  -0.45249036,  -0.04357262,   6.406857  ,
+      ...,
+       [-40.124092  ,  -0.48582017,  -0.0457642 ,   6.8861847 ,
+          4.4748993 ,  -6.248971  ]], dtype=float32)>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[0, 0],
+       [0, 1],
+       [0, 2]...esponding x values:', array([-37.21441   ,  -0.45249027,  -0.04357261], dtype=float32), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[0 0]
+E          [0 1]
+E          [0 2]]
+E         Corresponding x values:
+E         [-37.21441     -0.45249027  -0.04357261]
+E         Corresponding y values:
+E         [-37.214405    -0.45249036  -0.04357262]
+E         First 3 elements of x:
+E         [-37.21441     -0.45249027  -0.04357261]
+E         First 3 elements of y:
+E         [-37.214405    -0.45249036  -0.04357262]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+_ test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[sir_d18] _
+
+name = 'sir_d18'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72750e6bd050>
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline(name, monkeypatch):
+        # Tiny CPU reference exception, never a campaign tuning scope.
+        monkeypatch.setattr(runtime, "N", 64)
+        case=runtime.configure_precision(runtime.load_case(name), POLICY)
+        h=2
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        theta=tf.stack([case.theta0,case.chart(tf.fill([case.p],tf.constant(.01,tf.float64)))[0]])
+        inputs=(theta,case.observations[:h],case.fixed[0],case.fixed[1][:h],
+                case.fixed[2][:h],case.beta)
+        actual=shared.make_batched_score_filter(case.spec,64,h,controls,tf.float64,
+                                               precision_policy=POLICY)
+        diagnostic,_=make_program(case.spec,64,h,controls,policy="both_fp32")
+        a,b=actual(*inputs),diagnostic(*inputs)
+        for key in a:
+            tf.debugging.assert_equal(a[key],b[key])
+        tf.debugging.assert_equal(a["valid"],[True,True])
+        tf.debugging.assert_equal(a["steps_completed"],[h,h])
+        assert actual.experimental_get_tracing_count()==1
+        assert actual.get_concrete_function().function_def.attr["_XlaMustCompile"].b
+    
+        # Protected pre-integration source, not an alternative runtime implementation.
+        source=Path("docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/runtime-before/bayesfilter/highdim/covariance_proposal_score_batch_tf.py")
+        spec=importlib.util.spec_from_file_location("_uniform_baseline_diagnostic",source)
+        baseline=importlib.util.module_from_spec(spec); spec.loader.exec_module(baseline)
+        ordinary=runtime.configure_precision(case, "uniform")
+        before=baseline.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        after=shared.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        values=tuple(tf.cast(x,tf.float32) for x in inputs)
+        old,new=before(*values),after(*values)
+        for key in old:
+>           tf.debugging.assert_equal(old[key],new[key])
+
+tests/test_surrogate_hmc_mixed_runtime.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x72778f4d3560>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+array([[-0.7037255 ,  0.42294604, -5.705429  ],
+       [-1.2703713 ,  0.644638  , -5.783372  ]], dtype=float32)>
+y = <tf.Tensor: shape=(2, 3), dtype=float32, numpy=
+array([[-0.7037262 ,  0.42294607, -5.7054296 ],
+       [-1.2703617 ,  0.6446409 , -5.783371  ]], dtype=float32)>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[0, 0],
+       [0, 1],
+       [0, 2]...orresponding x values:', array([-0.7037255 ,  0.42294604, -5.705429  ], dtype=float32), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[0 0]
+E          [0 1]
+E          [0 2]]
+E         Corresponding x values:
+E         [-0.7037255   0.42294604 -5.705429  ]
+E         Corresponding y values:
+E         [-0.7037262   0.42294607 -5.7054296 ]
+E         First 3 elements of x:
+E         [-0.7037255   0.42294604 -5.705429  ]
+E         First 3 elements of y:
+E         [-0.7037262   0.42294607 -5.7054296 ]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+_ test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[range_bearing] _
+
+name = 'range_bearing'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x72757437e710>
+
+    @pytest.mark.parametrize("name", ["lgssm", "ksc", "predator_prey", "sir_d18", "range_bearing"])
+    def test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline(name, monkeypatch):
+        # Tiny CPU reference exception, never a campaign tuning scope.
+        monkeypatch.setattr(runtime, "N", 64)
+        case=runtime.configure_precision(runtime.load_case(name), POLICY)
+        h=2
+        controls=replace(case.controls,flow_steps=2,reset_steps=4,correction_steps=0)
+        theta=tf.stack([case.theta0,case.chart(tf.fill([case.p],tf.constant(.01,tf.float64)))[0]])
+        inputs=(theta,case.observations[:h],case.fixed[0],case.fixed[1][:h],
+                case.fixed[2][:h],case.beta)
+        actual=shared.make_batched_score_filter(case.spec,64,h,controls,tf.float64,
+                                               precision_policy=POLICY)
+        diagnostic,_=make_program(case.spec,64,h,controls,policy="both_fp32")
+        a,b=actual(*inputs),diagnostic(*inputs)
+        for key in a:
+            tf.debugging.assert_equal(a[key],b[key])
+        tf.debugging.assert_equal(a["valid"],[True,True])
+        tf.debugging.assert_equal(a["steps_completed"],[h,h])
+        assert actual.experimental_get_tracing_count()==1
+        assert actual.get_concrete_function().function_def.attr["_XlaMustCompile"].b
+    
+        # Protected pre-integration source, not an alternative runtime implementation.
+        source=Path("docs/plans/artifacts/surrogate-hmc-fresh-scope-advance-20261012-01/runtime-before/bayesfilter/highdim/covariance_proposal_score_batch_tf.py")
+        spec=importlib.util.spec_from_file_location("_uniform_baseline_diagnostic",source)
+        baseline=importlib.util.module_from_spec(spec); spec.loader.exec_module(baseline)
+        ordinary=runtime.configure_precision(case, "uniform")
+        before=baseline.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        after=shared.make_batched_score_filter(ordinary.spec,64,h,controls,tf.float32)
+        values=tuple(tf.cast(x,tf.float32) for x in inputs)
+        old,new=before(*values),after(*values)
+        for key in old:
+>           tf.debugging.assert_equal(old[key],new[key])
+
+tests/test_surrogate_hmc_mixed_runtime.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x72778f4d3560>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+array([[-0.46553397, -1.8835192 ],
+       [-0.4835394 , -1.8929572 ]], dtype=float32)>
+y = <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
+array([[-0.46552554, -1.8835046 ],
+       [-0.4835685 , -1.892946  ]], dtype=float32)>
+data = ['Condition x == y did not hold.', 'Indices of first 3 different values:', array([[0, 0],
+       [0, 1],
+       [1, 0]...orresponding x values:', array([-0.46553397, -1.8835192 , -0.4835394 ], dtype=float32), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 3 different values:
+E         [[0 0]
+E          [0 1]
+E          [1 0]]
+E         Corresponding x values:
+E         [-0.46553397 -1.8835192  -0.4835394 ]
+E         Corresponding y values:
+E         [-0.46552554 -1.8835046  -0.4835685 ]
+E         First 3 elements of x:
+E         [-0.46553397 -1.8835192  -0.4835394 ]
+E         First 3 elements of y:
+E         [-0.46552554 -1.8835046  -0.4835685 ]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+------------------------------ Captured log call -------------------------------
+WARNING  tensorflow:polymorphic_function.py:157 5 out of the last 5 calls to <function make_batched_score_filter.<locals>.program at 0x727724ba5760> triggered tf.function retracing. Tracing is expensive and the excessive number of tracings could be due to (1) creating @tf.function repeatedly in a loop, (2) passing tensors with different shapes, (3) passing Python objects instead of tensors. For (1), please define your @tf.function outside of the loop. For (2), @tf.function has reduce_retracing=True option that can avoid unnecessary retracing. For (3), please refer to https://www.tensorflow.org/guide/function#controlling_retracing and https://www.tensorflow.org/api_docs/python/tf/function for  more details.
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[lgssm]
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[ksc]
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[predator_prey]
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[sir_d18]
+FAILED tests/test_surrogate_hmc_mixed_runtime.py::test_actual_shared_factory_matches_isolated_diagnostic_and_uniform_baseline[range_bearing]
+5 failed, 5 passed, 2 warnings in 244.34s (0:04:04)

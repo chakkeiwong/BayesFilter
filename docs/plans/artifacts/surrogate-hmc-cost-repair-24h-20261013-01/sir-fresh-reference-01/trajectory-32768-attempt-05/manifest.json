@@ -1,0 +1,111 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_sir_trajectory_reference.py",
+    "worker",
+    "--particles",
+    "32768",
+    "--seeds",
+    "261015201",
+    "261015202",
+    "261015203",
+    "261015204",
+    "261015205",
+    "261015206",
+    "261015207",
+    "261015208",
+    "261015209",
+    "261015210",
+    "261015211",
+    "261015212",
+    "261015213",
+    "261015214",
+    "261015215",
+    "261015216",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/sir-fresh-reference-01/trajectory-32768-attempt-05"
+  ],
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/sir-fresh-point-reference-2026-10-14.md",
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "git_dirty": true,
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "cpu_only": false,
+  "jit_compile": true,
+  "dtype": "float64",
+  "tf32": false,
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "/GPU:0",
+  "gpu_devices": [
+    {
+      "compute_capability": [
+        8,
+        9
+      ],
+      "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+    }
+  ],
+  "particles": 32768,
+  "seeds": [
+    261015201,
+    261015202,
+    261015203,
+    261015204,
+    261015205,
+    261015206,
+    261015207,
+    261015208,
+    261015209,
+    261015210,
+    261015211,
+    261015212,
+    261015213,
+    261015214,
+    261015215,
+    261015216
+  ],
+  "theta": [
+    -0.017499999999999998,
+    -0.017499999999999998,
+    -0.017499999999999998
+  ],
+  "target_id": "canonical_sir_d18_x0_then_transition_observe_v1",
+  "observation_sha256": "f676f6a0ead43065a5be75572d505e49340aba523063b9a80d6236e1ffa99190",
+  "source_sha256": {
+    "scripts/run_sir_trajectory_reference.py": "12fab7923768bebae7fedb5c8a1e14509a2f656ec2d8fe95b3ecf0c65b9a25d9",
+    "bayesfilter/testing/nonlinear_trajectory_fisher_reference_tf.py": "9e1ba75295e11d4323995403f8d9e31fb0ea300cf18f0e2deb5656ae56f878e2",
+    "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+    "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+    "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795",
+    "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2"
+  },
+  "evidence_role": "independent_exact_weight_trajectory_reference_not_exact_oracle",
+  "score_method": "analytical_complete_data_Fisher_score",
+  "status": "COMPLETE",
+  "wall_seconds": 40.33067853492685,
+  "allocator": {
+    "current": 15872,
+    "peak": 337303552
+  }
+}

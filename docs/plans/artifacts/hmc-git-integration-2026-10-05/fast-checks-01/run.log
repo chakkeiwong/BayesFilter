@@ -1,0 +1,82 @@
+
+==================================== ERRORS ====================================
+___________ ERROR collecting tests/test_hmc_acceptance_accounting.py ___________
+ImportError while importing test module '/tmp/bayesfilter-hmc-v7-merge-20261005/tests/test_hmc_acceptance_accounting.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_acceptance_accounting.py:11: in <module>
+    from bayesfilter.testing.acceptance_decision_models import evidence_accounting
+bayesfilter/testing/acceptance_decision_models.py:18: in <module>
+    from bayesfilter.runtime.execution_budget import execution_budget
+E   ModuleNotFoundError: No module named 'bayesfilter.runtime.execution_budget'
+_________________ ERROR collecting tests/test_hmc_identity.py __________________
+ImportError while importing test module '/tmp/bayesfilter-hmc-v7-merge-20261005/tests/test_hmc_identity.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+bayesfilter/ops/symmetric_sylvester_tf.py:15: in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/load_library.py:54: in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   tensorflow.python.framework.errors_impl.NotFoundError: /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_identity.py:12: in <module>
+    from bayesfilter.inference.hmc_identity import (
+bayesfilter/inference/hmc_identity.py:18: in <module>
+    from bayesfilter.ops.host_tensor_io import (
+bayesfilter/ops/__init__.py:5: in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+bayesfilter/ops/symmetric_sylvester_tf.py:17: in <module>
+    raise ImportError(
+E   ImportError: Could not load BayesFilter symmetric Sylvester op at /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+______________ ERROR collecting tests/test_hmc_tuning_contract.py ______________
+ImportError while importing test module '/tmp/bayesfilter-hmc-v7-merge-20261005/tests/test_hmc_tuning_contract.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+bayesfilter/ops/symmetric_sylvester_tf.py:15: in <module>
+    _lib = tf.load_op_library(str(_LIB_PATH))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/site-packages/tensorflow/python/framework/load_library.py:54: in load_op_library
+    lib_handle = py_tf.TF_LoadLibrary(library_filename)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   tensorflow.python.framework.errors_impl.NotFoundError: /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+
+The above exception was the direct cause of the following exception:
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_hmc_tuning_contract.py:8: in <module>
+    from bayesfilter.inference import (
+bayesfilter/inference/__init__.py:810: in __getattr__
+    value = getattr(import_module(direct_module), name)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/ubuntu/anaconda3/envs/tfgpu/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/inference/hmc_bootstrap.py:18: in <module>
+    from bayesfilter.inference.hmc import (
+bayesfilter/inference/hmc.py:20: in <module>
+    from bayesfilter.inference.mass_matrix import (
+bayesfilter/inference/mass_matrix.py:16: in <module>
+    from bayesfilter.inference import mass_matrix_tf as native
+bayesfilter/inference/mass_matrix_tf.py:14: in <module>
+    from bayesfilter.ops.compiled_tensor_program_tf import tensor_program
+bayesfilter/ops/__init__.py:5: in <module>
+    from bayesfilter.ops.symmetric_sylvester_tf import (
+bayesfilter/ops/symmetric_sylvester_tf.py:17: in <module>
+    raise ImportError(
+E   ImportError: Could not load BayesFilter symmetric Sylvester op at /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so. Build it with the BayesFilter CMakeLists.txt before importing this module. Original error: /tmp/bayesfilter-hmc-v7-merge-20261005/bayesfilter/ops/_symmetric_sylvester_ops.so: cannot open shared object file: No such file or directory
+=========================== short test summary info ============================
+ERROR tests/test_hmc_acceptance_accounting.py
+ERROR tests/test_hmc_identity.py
+ERROR tests/test_hmc_tuning_contract.py
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 3 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+2 warnings, 3 errors in 6.79s

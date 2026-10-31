@@ -1,0 +1,2945 @@
+{
+  "command": [
+    "scripts/diagnose_sir_merge_roots.py",
+    "--repository",
+    ".",
+    "--source",
+    "docs/plans/artifacts/ledh-sir-postmerge-replay-20261021/attempt-01/before-source",
+    "--output",
+    "docs/plans/artifacts/ledh-sir-merge-repair-20261022/attempt-01-pretrace",
+    "--profile"
+  ],
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_commit": "4d6915cc66e701c4c7b657e094306d298fdd3e76",
+  "source": "docs/plans/artifacts/ledh-sir-postmerge-replay-20261021/attempt-01/before-source",
+  "input_sha256": "12ed4ac82c02146a01491db5f2f13485dcee8108c3970ffa35b215a637c40acc",
+  "dataset": 263043001,
+  "direction": 0,
+  "beta": 0.0,
+  "controls": {
+    "flow_substeps": 24,
+    "reset_policy": "contract_e",
+    "reset_epsilon": 1.0,
+    "reset_sinkhorn_steps": 5,
+    "reset_balance_steps": 32,
+    "reset_ridge": 1e-05,
+    "reset_denominator_regularization": 1e-07,
+    "correction_steps": 1,
+    "correction_strength": 0.2,
+    "correction_lm_damping": 0.01,
+    "correction_lm_scale_floor": 0.0001,
+    "correction_trust_radius": 0.5,
+    "pairwise_steps": 1,
+    "pairwise_strength": 0.02,
+    "pairwise_rms_cap": 2.0,
+    "coordinate_cap": 0.94,
+    "coordinate_cap_power": 8,
+    "moment_safety": false
+  },
+  "reset_seed": 263040002,
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "gpu_devices": [
+    "/physical_device:GPU:0"
+  ],
+  "tf32": false,
+  "dtype": "float64",
+  "jit_compile": true,
+  "cpu_only": false,
+  "diagnostic_only": true,
+  "plan": "docs/plans/ledh-sir-merge-repair-20261022.md",
+  "fields": {
+    "step-0-time_index.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-0-ancestor_indices.tensor": {
+      "dtype": "int32",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-program_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-ancestry_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-ukf_predict_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-ukf_update_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-callback_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-reset_numerical_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-reset_transport_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-guided_proposal_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-predicted_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-post_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-flow_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-flow_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-posterior_logits_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-reset_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-reset_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-hilbert_tie_count.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-0-state_map_saturation_rate.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-d_pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-d_children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-d_prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-observation.tensor": {
+      "dtype": "float64",
+      "shape": [
+        9
+      ]
+    },
+    "step-0-predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-d_predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-d_post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-d_post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-d_covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-0-reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-0-d_reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-0-states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-d_states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-d_outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-0-higher_moment_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-higher_moment_pairwise_configured.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-higher_moment_pairwise_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_pairwise_co_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_pairwise_co_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_maximum_pairwise_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_pairwise_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_minimum_pairwise_particle_cap_scale.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_coordinatewise_pre_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_coordinatewise_post_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_mean_coordinatewise_cap_displacement.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_fraction_coordinatewise_cap_active.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_minimum_coordinatewise_cap_derivative.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_target_source_id.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-0-higher_moment_materialized_shape_available.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-0-higher_moment_target_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-0-higher_moment_target_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-0-higher_moment_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-0-higher_moment_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-0-higher_moment_target_pairwise_co_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_target_pairwise_co_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_pairwise_co_skew_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_pairwise_co_kurtosis_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-0-higher_moment_projected_cumulant_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_projected_cumulant_third_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_projected_cumulant_fourth_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_minimum_pearson_feasibility_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_minimum_finite_particle_upper_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_diagonal_scaled_system_condition.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_diagonal_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_maximum_diagonal_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_applied.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_current_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_target_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_materialized_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_relative_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_normalized_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_affine_restoration_normalized_mean_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_enabled.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_trials.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_rejected_steps.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_minimum_step.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_input_valid.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_maximum_loss_increase.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_baseline_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_final_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_moment_safety_final_rejected.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-0-higher_moment_stage_raw_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-higher_moment_stage_raw_reset_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-0-higher_moment_stage_pre_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-higher_moment_stage_pre_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-0-higher_moment_stage_post_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-higher_moment_stage_post_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-0-higher_moment_stage_post_cap_offsets.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-0-higher_moment_stage_post_cap_offsets_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-1-time_index.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-1-ancestor_indices.tensor": {
+      "dtype": "int32",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-program_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-ancestry_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-ukf_predict_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-ukf_update_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-callback_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-reset_numerical_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-reset_transport_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-guided_proposal_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-predicted_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-post_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-flow_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-flow_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-posterior_logits_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-reset_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-reset_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-hilbert_tie_count.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-1-state_map_saturation_rate.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-d_pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-d_children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-d_prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-observation.tensor": {
+      "dtype": "float64",
+      "shape": [
+        9
+      ]
+    },
+    "step-1-predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-d_predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-d_post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-d_post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-d_covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-1-reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-1-d_reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-1-states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-d_states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-d_outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-1-higher_moment_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-higher_moment_pairwise_configured.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-higher_moment_pairwise_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_pairwise_co_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_pairwise_co_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_maximum_pairwise_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_pairwise_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_minimum_pairwise_particle_cap_scale.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_coordinatewise_pre_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_coordinatewise_post_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_mean_coordinatewise_cap_displacement.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_fraction_coordinatewise_cap_active.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_minimum_coordinatewise_cap_derivative.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_target_source_id.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-1-higher_moment_materialized_shape_available.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-1-higher_moment_target_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-1-higher_moment_target_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-1-higher_moment_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-1-higher_moment_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-1-higher_moment_target_pairwise_co_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_target_pairwise_co_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_pairwise_co_skew_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_pairwise_co_kurtosis_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-1-higher_moment_projected_cumulant_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_projected_cumulant_third_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_projected_cumulant_fourth_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_minimum_pearson_feasibility_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_minimum_finite_particle_upper_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_diagonal_scaled_system_condition.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_diagonal_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_maximum_diagonal_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_applied.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_current_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_target_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_materialized_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_relative_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_normalized_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_affine_restoration_normalized_mean_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_enabled.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_trials.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_rejected_steps.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_minimum_step.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_input_valid.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_maximum_loss_increase.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_baseline_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_final_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_moment_safety_final_rejected.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-1-higher_moment_stage_raw_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-higher_moment_stage_raw_reset_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-1-higher_moment_stage_pre_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-higher_moment_stage_pre_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-1-higher_moment_stage_post_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-higher_moment_stage_post_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-1-higher_moment_stage_post_cap_offsets.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-1-higher_moment_stage_post_cap_offsets_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-2-time_index.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-2-ancestor_indices.tensor": {
+      "dtype": "int32",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-program_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-ancestry_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-ukf_predict_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-ukf_update_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-callback_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-reset_numerical_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-reset_transport_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-guided_proposal_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-predicted_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-post_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-flow_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-flow_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-posterior_logits_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-reset_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-reset_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-hilbert_tie_count.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-2-state_map_saturation_rate.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-d_pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-d_children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-d_prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-observation.tensor": {
+      "dtype": "float64",
+      "shape": [
+        9
+      ]
+    },
+    "step-2-predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-d_predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-d_post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-d_post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-d_covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-2-reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-2-d_reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-2-states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-d_states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-d_outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-2-higher_moment_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-higher_moment_pairwise_configured.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-higher_moment_pairwise_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_pairwise_co_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_pairwise_co_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_maximum_pairwise_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_pairwise_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_minimum_pairwise_particle_cap_scale.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_coordinatewise_pre_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_coordinatewise_post_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_mean_coordinatewise_cap_displacement.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_fraction_coordinatewise_cap_active.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_minimum_coordinatewise_cap_derivative.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_target_source_id.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-2-higher_moment_materialized_shape_available.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-2-higher_moment_target_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-2-higher_moment_target_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-2-higher_moment_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-2-higher_moment_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-2-higher_moment_target_pairwise_co_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_target_pairwise_co_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_pairwise_co_skew_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_pairwise_co_kurtosis_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-2-higher_moment_projected_cumulant_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_projected_cumulant_third_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_projected_cumulant_fourth_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_minimum_pearson_feasibility_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_minimum_finite_particle_upper_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_diagonal_scaled_system_condition.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_diagonal_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_maximum_diagonal_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_applied.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_current_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_target_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_materialized_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_relative_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_normalized_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_affine_restoration_normalized_mean_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_enabled.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_trials.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_rejected_steps.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_minimum_step.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_input_valid.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_maximum_loss_increase.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_baseline_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_final_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_moment_safety_final_rejected.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-2-higher_moment_stage_raw_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-higher_moment_stage_raw_reset_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-2-higher_moment_stage_pre_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-higher_moment_stage_pre_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-2-higher_moment_stage_post_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-higher_moment_stage_post_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-2-higher_moment_stage_post_cap_offsets.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-2-higher_moment_stage_post_cap_offsets_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-3-time_index.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-3-ancestor_indices.tensor": {
+      "dtype": "int32",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-program_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-ancestry_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-ukf_predict_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-ukf_update_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-callback_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-reset_numerical_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-reset_transport_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-guided_proposal_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-predicted_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-post_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-flow_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-flow_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-posterior_logits_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-reset_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-reset_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-hilbert_tie_count.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-3-state_map_saturation_rate.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-d_pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-d_children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-d_prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-observation.tensor": {
+      "dtype": "float64",
+      "shape": [
+        9
+      ]
+    },
+    "step-3-predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-d_predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-d_post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-d_post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-d_covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-3-reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-3-d_reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-3-states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-d_states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-d_outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-3-higher_moment_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-higher_moment_pairwise_configured.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-higher_moment_pairwise_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_pairwise_co_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_pairwise_co_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_maximum_pairwise_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_pairwise_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_minimum_pairwise_particle_cap_scale.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_coordinatewise_pre_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_coordinatewise_post_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_mean_coordinatewise_cap_displacement.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_fraction_coordinatewise_cap_active.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_minimum_coordinatewise_cap_derivative.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_target_source_id.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-3-higher_moment_materialized_shape_available.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-3-higher_moment_target_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-3-higher_moment_target_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-3-higher_moment_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-3-higher_moment_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-3-higher_moment_target_pairwise_co_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_target_pairwise_co_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_pairwise_co_skew_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_pairwise_co_kurtosis_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-3-higher_moment_projected_cumulant_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_projected_cumulant_third_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_projected_cumulant_fourth_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_minimum_pearson_feasibility_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_minimum_finite_particle_upper_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_diagonal_scaled_system_condition.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_diagonal_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_maximum_diagonal_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_applied.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_current_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_target_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_materialized_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_relative_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_normalized_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_affine_restoration_normalized_mean_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_enabled.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_trials.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_rejected_steps.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_minimum_step.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_input_valid.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_maximum_loss_increase.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_baseline_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_final_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_moment_safety_final_rejected.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-3-higher_moment_stage_raw_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-higher_moment_stage_raw_reset_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-3-higher_moment_stage_pre_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-higher_moment_stage_pre_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-3-higher_moment_stage_post_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-higher_moment_stage_post_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-3-higher_moment_stage_post_cap_offsets.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-3-higher_moment_stage_post_cap_offsets_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-4-time_index.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-4-ancestor_indices.tensor": {
+      "dtype": "int32",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-program_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-ancestry_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-ukf_predict_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-ukf_update_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-callback_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-reset_numerical_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-reset_transport_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-guided_proposal_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-predicted_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-post_covariances_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-flow_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-flow_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-posterior_logits_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-reset_states_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-reset_tangents_finite.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-hilbert_tie_count.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-4-state_map_saturation_rate.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_incoming_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-d_pre_flow.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-d_children.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_posterior_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_prior_observation_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_prior_observation_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-d_prior_observation_log_normalizer.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_observation_log_density.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_posterior_logits.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-observation.tensor": {
+      "dtype": "float64",
+      "shape": [
+        9
+      ]
+    },
+    "step-4-predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-d_predicted_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-d_post_means.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-d_post_covariances.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-d_covariances_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        18
+      ]
+    },
+    "step-4-reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-4-d_reset_transport.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        64
+      ]
+    },
+    "step-4-states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-d_states_after_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-d_outgoing_log_weights.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64
+      ]
+    },
+    "step-4-higher_moment_valid.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-higher_moment_pairwise_configured.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-higher_moment_pairwise_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_pairwise_co_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_pairwise_co_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_maximum_pairwise_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_pairwise_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_minimum_pairwise_particle_cap_scale.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_coordinatewise_pre_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_coordinatewise_post_cap_absolute.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_mean_coordinatewise_cap_displacement.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_fraction_coordinatewise_cap_active.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_minimum_coordinatewise_cap_derivative.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_target_source_id.tensor": {
+      "dtype": "int32",
+      "shape": []
+    },
+    "step-4-higher_moment_materialized_shape_available.tensor": {
+      "dtype": "bool",
+      "shape": []
+    },
+    "step-4-higher_moment_target_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-4-higher_moment_target_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-4-higher_moment_skew_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-4-higher_moment_kurtosis_residual.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18
+      ]
+    },
+    "step-4-higher_moment_target_pairwise_co_skew.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_target_pairwise_co_kurtosis.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_pairwise_co_skew_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_pairwise_co_kurtosis_target_mask.tensor": {
+      "dtype": "float64",
+      "shape": [
+        18,
+        18
+      ]
+    },
+    "step-4-higher_moment_projected_cumulant_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_projected_cumulant_third_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_projected_cumulant_fourth_residual_norm.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_minimum_pearson_feasibility_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_minimum_finite_particle_upper_margin.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_diagonal_scaled_system_condition.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_diagonal_pre_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_maximum_diagonal_post_cap_particle_rms.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_applied.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_current_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_target_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_materialized_covariance_trace.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_relative_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_normalized_covariance_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_affine_restoration_normalized_mean_residual.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_enabled.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_trials.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_rejected_steps.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_minimum_step.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_input_valid.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_maximum_loss_increase.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_baseline_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_final_loss.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_moment_safety_final_rejected.tensor": {
+      "dtype": "float64",
+      "shape": []
+    },
+    "step-4-higher_moment_stage_raw_reset.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-higher_moment_stage_raw_reset_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-4-higher_moment_stage_pre_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-higher_moment_stage_pre_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-4-higher_moment_stage_post_cap.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-higher_moment_stage_post_cap_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    },
+    "step-4-higher_moment_stage_post_cap_offsets.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18
+      ]
+    },
+    "step-4-higher_moment_stage_post_cap_offsets_tangent.tensor": {
+      "dtype": "float64",
+      "shape": [
+        64,
+        18,
+        1
+      ]
+    }
+  },
+  "value": -517.9659467898192,
+  "score": [
+    -1831.958300347757
+  ],
+  "warm_seconds": [
+    0.4052640129812062,
+    0.539495931006968,
+    0.4659515970852226
+  ],
+  "initialization_seconds": 18.711334564955905,
+  "wall_seconds": 20.388397763017565,
+  "source_unchanged": true,
+  "allocator": {
+    "current": 12943616,
+    "peak": 31457280
+  }
+}

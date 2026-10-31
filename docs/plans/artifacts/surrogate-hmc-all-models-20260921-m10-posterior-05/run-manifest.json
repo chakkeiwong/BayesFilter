@@ -1,0 +1,73 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/prepare_surrogate_hmc_nonlinear_posterior.py",
+    "--gpu",
+    "--refine-from",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260921-m10-posterior-02",
+    "--subnormal-guard-repair",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260921-m10-posterior-05"
+  ],
+  "cpu_budget": 705.151456953,
+  "cpu_worker_seconds": 241.861501052,
+  "cuda_visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+  "data_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260920-m10-reference-01/claim-nominal/data.json",
+  "data_sha256": "594d1454676ff214e74b02719bfbe1df04128bd0c2c2a5bf5e0de45c3a455da1",
+  "data_version": "frozen nominal M10 FP32 claim observations",
+  "device": "/GPU:0",
+  "dtype": "float64",
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu",
+  "exit_code": 0,
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "gpu": true,
+  "jit_compile": true,
+  "memory_policy": {
+    "all_physical_devices_memory_growth": true,
+    "configured_before_logical_device_initialization": true,
+    "full_device_preallocation_disabled": true,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "plan": "docs/plans/surrogate-hmc-nonlinear-posterior-2026-09-21.md",
+  "refine_from": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260921-m10-posterior-02",
+  "result_file": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260921-m10-posterior-05/report.json",
+  "reuse_grids": {},
+  "seed": [
+    20260920,
+    14300
+  ],
+  "source_hashes": {
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/score_study/gaussian_tf.py": "5740a3f04f2f499c742d45e440987302a9dbdbd39f814b9ca74855cbc394f819",
+    "bayesfilter/score_study/nonlinear_tf.py": "794f31b2878895ed4e7dee19dd7a323959d4f97a5ce87560ce8d60ca6e7d378d",
+    "bayesfilter/testing/surrogate_hmc_nonlinear_posterior_reference.py": "e36b058030cf27d6c853849687fd171dd8bb9d2a709d7703127a33a152b12ccd",
+    "bayesfilter/testing/surrogate_hmc_nonlinear_quadrature.py": "fe27081a425f2b2ab38d26f72d35d27202e31040f04894d23737f186f1bfdb67",
+    "bayesfilter/testing/surrogate_hmc_nonlinear_reference.py": "9c32ab47cade3363a556361c39540d3a6fb2be31b35e2f7aa39c594fe143292a",
+    "docs/plans/surrogate-hmc-nonlinear-posterior-2026-09-21.md": "11454fb8b1a2aa6a0a4c27b95b3124828043a44692fa2ce4d392df04057de587",
+    "scripts/prepare_surrogate_hmc_nonlinear_posterior.py": "1a73b54ab6d55270b3b8c72736d43475c6090331a0bb07effe8b2bd1ec7f921b",
+    "scripts/screen_surrogate_hmc_nonlinear_tails.py": "c4ecfdbe7117662b055f40c50407d7ee36d6e08e3482621a5526a9143ecfe12f"
+  },
+  "status": "QUALIFIED_MODEL_POSTERIOR_REFERENCE",
+  "subnormal_guard_repair": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "tf32": false,
+  "wall_budget": 670.6433757159975,
+  "wall_seconds": 232.20367321302183
+}

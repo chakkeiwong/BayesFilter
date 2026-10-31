@@ -1,0 +1,81 @@
+{
+  "budget_seconds": 14400,
+  "worker_seconds": 32.635913809994236,
+  "attempts": [
+    {
+      "stage": "healthy-checks",
+      "particles": 0,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/highdim/test_covariance_proposal.py",
+        "tests/diagnostics/test_range_bearing_covariance_report.py"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 28.646370379952714,
+      "cpu_only": true,
+      "gpu_intentionally_hidden": true,
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-01/checks"
+    },
+    {
+      "stage": "ladder-check",
+      "particles": 4032,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-B",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+        "worker",
+        "--stage",
+        "ladder-check",
+        "--particles",
+        "4032",
+        "--dtype",
+        "float64",
+        "--no-tf32",
+        "--replicates",
+        "8",
+        "--gpu",
+        "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-01/checks",
+        "--plan-file",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/ledh-range-bearing-particle-ladder-2026-10-10.md"
+      ],
+      "exit_code": 1,
+      "wall_seconds": 3.989543430041522,
+      "cpu_only": false,
+      "gpu_intentionally_hidden": false,
+      "output": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-01/checks"
+    }
+  ],
+  "git_commit": "10884528ca8b1a7463895256d30b9655d69c0955",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_range_bearing_covariance_comparison.py",
+    "run",
+    "--particle-ladder",
+    "--particles",
+    "2016",
+    "--replicates",
+    "8",
+    "--dtype",
+    "float64",
+    "--no-tf32",
+    "--gpu",
+    "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "--budget-seconds",
+    "14400",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-range-bearing-particle-ladder-20261010-01",
+    "--plan-file",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/ledh-range-bearing-particle-ladder-2026-10-10.md"
+  ],
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/ledh-range-bearing-particle-ladder-2026-10-10.md",
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/ledh-range-bearing-particle-ladder-results-2026-10-10.md",
+  "created_utc": "2026-10-09T19:33:55.609676+00:00",
+  "baseline": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-range-bearing-covariance-20261009-07",
+  "continuation_veto": "exact block parity, derivative or baseline reuse failed"
+}

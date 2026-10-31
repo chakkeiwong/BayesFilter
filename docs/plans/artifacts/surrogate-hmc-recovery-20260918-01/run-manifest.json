@@ -1,0 +1,103 @@
+{
+  "schema": "bayesfilter.surrogate_hmc_evidence_recovery.v1",
+  "classification": "diagnostic_only_evidence_recovery_no_retained_inference",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "merged_main_commit": "6fbcf3147660c40d5d5644bbcbcc9fadbcb06aef",
+  "branch": "ledh-graceful-failure-execution-20260917",
+  "workspace": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+  "plan": "docs/plans/ledh-surrogate-hmc-recovery-plan-2026-09-18.md",
+  "result": "docs/plans/ledh-surrogate-hmc-recovery-result-2026-09-18.md",
+  "model_inventory": "docs/plans/ledh-surrogate-hmc-model-coverage-2026-09-18.md",
+  "continuation_proposal": "docs/plans/ledh-surrogate-hmc-inference-continuation-2026-09-18.md",
+  "environment": {
+    "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "conda_environment": "tftwogpu",
+    "tensorflow_version": "2.20.0-dev0+selfbuilt",
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "gpu_intentionally_hidden": true,
+    "jit_compile": false,
+    "exception": "tiny CPU reference arithmetic and existing HMC mechanics regressions"
+  },
+  "data_version": {
+    "toy": "deterministic states and samples in check_recovered_toy.py; no observed dataset",
+    "historical_results": "preserved files and Git source checksums in recovery-provenance.json"
+  },
+  "runs": [
+    {
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/check_recovered_toy.py"
+      ],
+      "working_directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917",
+      "exit_code": 0,
+      "wall_seconds": 3.178057101002196,
+      "cpu_worker_seconds": 3.1584809810000003,
+      "seeds": "N/A: deterministic arithmetic, no sampling",
+      "result": "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/toy-arithmetic-audit.json",
+      "log": "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/toy-arithmetic-audit.log",
+      "classification": "actual-source deterministic counterexamples"
+    },
+    {
+      "classification": "focused CPU-only shared-HMC mechanics regression; no posterior claim",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_neural_force_hmc.py::test_typed_binding_v2_builds_tensor_kernel_for_honestly_labeled_field",
+        "tests/test_neural_force_hmc.py::test_proposal_with_momentum_flip_is_an_involution",
+        "tests/test_neural_force_hmc.py::test_full_energy_trace_and_cached_endpoint_call_count",
+        "tests/test_neural_force_hmc.py::test_omitted_kinetic_rule_fails_known_swap_counterexample",
+        "tests/test_neural_force_hmc.py::test_batch_permutation_replay_shape_and_dtype"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5.530301624996355,
+      "cpu_worker_seconds": 5.472935,
+      "gpu_intentionally_hidden": true,
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "jit_compile": false,
+      "random_seeds": "fixed deterministic fixture seeds in the named tests; no retained chain",
+      "log": "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/shared-hmc-mechanics.log",
+      "working_directory": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917"
+    }
+  ],
+  "accounting": {
+    "per_check_wall_limit_seconds": 120,
+    "numerical_checks_limit": 2,
+    "numerical_checks_used": 2,
+    "gpu_device_seconds": 0,
+    "numerical_cpu_worker_seconds": 8.631415981,
+    "numerical_wall_seconds": 8.70835872599855,
+    "note": "Process measurements for the two checks only; read-only inspection and report preparation are not included. No substantive campaign attempt consumed. Numerical check allowance now closed."
+  },
+  "engineering_verdict": "historical toy MH/distance defects reproduced; five shared-HMC mechanics tests pass",
+  "scientific_verdict": "no posterior ranking or admission; imperfect-force research remains open",
+  "next_action": "one proposed additional bounded LG1 inference attempt, pending extension of the recorded three-attempt limit",
+  "preexisting_changes_preserved": [
+    "docs/plans/ledh-graceful-failure-execution-result-2026-09-18.md",
+    "docs/plans/ledh-lg1-regression-audit-2026-09-18.md",
+    "docs/plans/ledh-lg1-regression-audit-result-2026-09-18.md",
+    "docs/plans/artifacts/ledh-lg1-regression-audit-20260918-01/"
+  ],
+  "artifact_sha256": {
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/artifact-verification.json": "87d12d54124c81af6a7d31412cebc1273e1f7995e6de6f22b0894dc40d4a98bb",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/check_recovered_toy.py": "84e78bd7403794b3f34910fc2a62918df2960ef97726dad065c35334c79fa70b",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/phase4a_repair.log": "b9e702761c85c6fc64fe18ce0a8b5f7b09435c4e55806936fd7e76698c23d542",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/phase4a_sequential.log": "baec0024e55303b6d252c7d4eaa0da028999eecc30e9b9d4a5c629abb19f6fa0",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/preserved-phase2-summary.json": "b2539b3caef0447bb704b7252b6e144f7a047243ce0382eff4051e6de305a3c9",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/recovery-provenance.json": "571503733a49b4d3d0d90fe899847f2458ae011c4165961813171a5e9a651a82",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/repository-model-source-census.json": "4a0a79ba2ebaa3bb67b1f3dc1b8346b7df9a473c059e173ce3e511567209e103",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/shared-hmc-mechanics.json": "e7574033971c9e2647caff57374c45af28287d756c56cbcc0313ab250a6c1819",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/shared-hmc-mechanics.log": "54ecf82598f4b866371780035ae6e7b9b31d8cb19843035dae2ebd65fe769438",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/toy-arithmetic-audit.json": "557e50f16de8db53950d4519449e6b817ff39528b46206ca15b959557ed218ed",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/toy-arithmetic-audit.log": "d9a7680e80f9616dd41c4608658b7106581014b2b3f595fed23c976755be02f5",
+    "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/toy-script-as-recovered.py": "6947847749f6bf89f9d1a9baa4182a6a3ce198b231bf18774df3fad2b42209d4"
+  },
+  "document_sha256": {
+    "docs/plans/ledh-surrogate-hmc-recovery-plan-2026-09-18.md": "09804d33115eb01980781c23f4133fb9f281f26c8b0a1d878a9114130b2ec24a",
+    "docs/plans/ledh-surrogate-hmc-recovery-result-2026-09-18.md": "7644d17d63c160cccdd619a0bbd3496d5e7c12a995e137e79409a3919a21b1b7",
+    "docs/plans/ledh-surrogate-hmc-model-coverage-2026-09-18.md": "7a9238d4d6e476b37a5fe7562859771f576e96408a3005a40a780e36b00f6120",
+    "docs/plans/ledh-surrogate-hmc-inference-continuation-2026-09-18.md": "d8059d08198215709d3f1f6d0638c825cc6260c9eec57ee3cfe3a0ff3755c199"
+  },
+  "artifact_verification": "docs/plans/artifacts/surrogate-hmc-recovery-20260918-01/artifact-verification.json"
+}

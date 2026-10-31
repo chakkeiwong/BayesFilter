@@ -1,0 +1,39 @@
+{
+  "command": [
+    "/home/ubuntu/anaconda3/envs/tfgpu/bin/python",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/audit_current_source_prices.py",
+    "--repo",
+    "/home/ubuntu/python/BayesFilter",
+    "--source",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/source-23/source",
+    "--price",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/prices/result.json",
+    "--enclosing-receipt",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-resource-observed-grant-01/receipt.json",
+    "--baseline-price",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-serial-restored-01/result.json",
+    "--baseline-price",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/gpu-price-source23-qr-funnel-grant-02/result.json",
+    "--output",
+    "docs/plans/artifacts/hmc-v7-release-2026-10-02/three-family-price-audit-grant-02"
+  ],
+  "cwd": "/home/ubuntu/python/BayesFilter",
+  "started_utc": "2026-10-04T15:15:25.220746+00:00",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "-1",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTRAOP_THREADS": "2",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "OMP_NUM_THREADS": "2",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "cpu_affinity": [
+    20,
+    21,
+    22,
+    23
+  ],
+  "gpu_intentionally_hidden": true,
+  "resource": "cpu_reference",
+  "plan": "docs/plans/bayesfilter-hmc-v7-release-plan-2026-10-02.md"
+}

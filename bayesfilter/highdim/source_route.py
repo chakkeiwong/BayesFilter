@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import math
+from collections.abc import Mapping
+from dataclasses import dataclass
+from itertools import pairwise
 from pathlib import Path
-from typing import Mapping
 
 import tensorflow as tf
 
+from bayesfilter.highdim import source_route_numerics_tf as numerics_tf
+from bayesfilter.highdim import source_route_preparation_tf as preparation_tf
 from bayesfilter.highdim.bases import (
     BoundedInterval,
     LegendreBasis1D,
@@ -26,9 +29,36 @@ from bayesfilter.highdim.diagnostics import (
     assert_tf_float64,
     freeze_mapping,
 )
-from bayesfilter.highdim.fitting import FixedTTFitConfig, FixedTTFitSampleBatch, FixedTTFitter
+from bayesfilter.highdim.fitting import (
+    FixedTTFitConfig,
+    FixedTTFitSampleBatch,
+    FixedTTFitter,
+)
 from bayesfilter.highdim.fixed_branch import BranchIdentity, BranchManifest
 from bayesfilter.highdim.models import zhao_cui_sir_austria_model
+from bayesfilter.highdim.source_route_gate_runtime_tf import (
+    finite_tensor,
+    line_probe_program,
+    spectrum_rank_program,
+    support_statistics,
+)
+from bayesfilter.highdim.source_route_preparation_runtime_tf import (
+    coordinate_transform_program,
+    deterministic_weighted_resample_program,
+    fit_guard_arrays,
+    guard_line_program,
+    guard_line_selection_program,
+    guard_line_unique_program,
+    normal_matrix_program,
+    normalized_set_weights,
+    prior_sample_program,
+    seed_state,
+    source_push_program,
+    target_values_program,
+    target_values_with_shift_program,
+    uniform_log_weights_program,
+    weighted_mean_target_program,
+)
 from bayesfilter.highdim.squared_tt import (
     SquaredTTDensity,
     SquaredTTMarginal,
@@ -406,7 +436,7 @@ class SourceRouteCoordinateFrame:
         return int(self.mu.shape[0])
 
     def log_abs_det(self) -> tf.Tensor:
-        return tf.math.log(tf.abs(tf.linalg.det(self.matrix)))
+        return numerics_tf.log_abs_det(self.matrix)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -432,9 +462,10 @@ class SourceRouteSampleDiagnostics:
         ess = tf.convert_to_tensor(self.effective_sample_size, dtype=tf.float64)
         if ess.shape.rank != 0:
             raise ValueError(f"effective_sample_size: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.math.is_finite(ess).numpy()) or bool((ess <= 0.0).numpy()):
-            raise ValueError(f"effective_sample_size: {HighDimStatus.NONFINITE_VALUE.value}")
-        if bool((ess > float(self.sample_count) + 1e-9).numpy()):
+        ess = numerics_tf.positive(ess, "effective_sample_size")
+        if tf.inside_function():
+            ess = tf.where(ess <= float(self.sample_count) + 1e-9, ess, tf.constant(float("nan"), ess.dtype))
+        elif bool((ess > float(self.sample_count) + 1e-9).numpy()):
             raise ValueError("effective_sample_size cannot exceed sample_count")
         if int(self.enhancement_attempts) < 0:
             raise ValueError("enhancement_attempts must be nonnegative")
@@ -468,8 +499,8 @@ class SourceRouteNormalizerContribution:
         ):
             if value.shape.rank != 0:
                 raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
-            if not bool(tf.math.is_finite(value).numpy()):
-                raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
+        log_z = numerics_tf.finite(log_z, "log_transport_normalizer")
+        shift = numerics_tf.finite(shift, "shift_constant")
         if str(self.log_abs_det_policy) not in ("included_in_target", "separate_term"):
             raise ValueError("log_abs_det_policy must be included_in_target or separate_term")
         object.__setattr__(self, "log_transport_normalizer", log_z)
@@ -477,7 +508,7 @@ class SourceRouteNormalizerContribution:
         object.__setattr__(self, "log_abs_det_policy", str(self.log_abs_det_policy))
 
     def log_increment(self) -> tf.Tensor:
-        return self.log_transport_normalizer - self.shift_constant
+        return numerics_tf.normalizer_increment(self.log_transport_normalizer, self.shift_constant)
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -508,11 +539,8 @@ class SourceRouteSampleBatch:
             raise ValueError(f"log_weights: {HighDimStatus.INVALID_SHAPE.value}")
         assert_tf_float64("samples", samples)
         assert_tf_float64("log_weights", log_weights)
-        if not bool(
-            tf.reduce_all(tf.math.is_finite(samples)).numpy()
-            and tf.reduce_all(tf.math.is_finite(log_weights)).numpy()
-        ):
-            raise ValueError(f"SourceRouteSampleBatch: {HighDimStatus.NONFINITE_VALUE.value}")
+        samples = numerics_tf.finite(samples, "SourceRouteSampleBatch")
+        log_weights = numerics_tf.finite(log_weights, "SourceRouteSampleBatch")
         if int(self.time_index) < 0:
             raise ValueError("time_index must be nonnegative")
         if not str(self.route_label).strip():
@@ -679,13 +707,9 @@ class SourceRouteTarget:
             raise ValueError(f"reference_points: {HighDimStatus.INVALID_SHAPE.value}")
         if int(reference.shape[0]) != self.coordinate_frame.dimension:
             raise ValueError(f"reference_points: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(reference)).numpy()):
-            raise ValueError(f"reference_points: {HighDimStatus.NONFINITE_VALUE.value}")
-        return (
-            tf.linalg.matmul(self.coordinate_frame.matrix, reference)
-            + self.coordinate_frame.mu[:, tf.newaxis]
-        )
+        return numerics_tf.physical_points(reference, self.coordinate_frame.mu, self.coordinate_frame.matrix)
 
+    @numerics_tf.compiled_method
     def negative_log_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         physical = self.physical_points_from_reference(reference_points)
         negative_log_physical = _finite_vector(
@@ -705,6 +729,7 @@ class SourceRouteTarget:
             shift_constant=self.shift_constant,
         )
 
+    @numerics_tf.compiled_method
     def log_target_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         return -self.negative_log_density(reference_points)
 
@@ -767,6 +792,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"log_normalizer: {HighDimStatus.NONFINITE_VALUE.value}")
         object.__setattr__(self, "route_label", str(self.route_label))
 
+    @numerics_tf.compiled_method
     def inverse_transport(self, reference_points: tf.Tensor) -> tf.Tensor:
         result = tf.convert_to_tensor(
             self.transport_object.inverse_transport(reference_points),
@@ -774,10 +800,9 @@ class SourceRouteTransportProtocol:
         )
         if result.shape != tf.convert_to_tensor(reference_points, dtype=tf.float64).shape:
             raise ValueError(f"inverse_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(f"inverse_transport: {HighDimStatus.NONFINITE_VALUE.value}")
-        return result
+        return numerics_tf.finite(result, "inverse_transport")
 
+    @numerics_tf.compiled_method
     def log_reference_density(self, reference_points: tf.Tensor) -> tf.Tensor:
         if not callable(getattr(self.transport_object, "log_reference_density", None)):
             raise TypeError(
@@ -792,6 +817,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"log_reference_density: {HighDimStatus.INVALID_SHAPE.value}")
         return values
 
+    @numerics_tf.compiled_method
     def forward_transport(self, local_points: tf.Tensor) -> tf.Tensor:
         result = tf.convert_to_tensor(
             self.transport_object.forward_transport(local_points),
@@ -799,10 +825,9 @@ class SourceRouteTransportProtocol:
         )
         if result.shape != tf.convert_to_tensor(local_points, dtype=tf.float64).shape:
             raise ValueError(f"forward_transport: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(f"forward_transport: {HighDimStatus.NONFINITE_VALUE.value}")
-        return result
+        return numerics_tf.finite(result, "forward_transport")
 
+    @numerics_tf.compiled_method
     def conditional_inverse_transport(
         self,
         conditioning_points: tf.Tensor,
@@ -820,21 +845,17 @@ class SourceRouteTransportProtocol:
             raise ValueError(
                 f"conditional_inverse_transport: {HighDimStatus.INVALID_SHAPE.value}"
             )
-        if not bool(tf.reduce_all(tf.math.is_finite(result)).numpy()):
-            raise ValueError(
-                f"conditional_inverse_transport: {HighDimStatus.NONFINITE_VALUE.value}"
-            )
-        return result
+        return numerics_tf.finite(result, "conditional_inverse_transport")
 
+    @numerics_tf.compiled_method
     def eval_pdf(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _finite_vector("eval_pdf", self.transport_object.eval_pdf(local_points))
         local = tf.convert_to_tensor(local_points, dtype=tf.float64)
         if local.shape.rank != 2 or values.shape != (int(local.shape[1]),):
             raise ValueError(f"eval_pdf: {HighDimStatus.INVALID_SHAPE.value}")
-        if not bool(tf.reduce_all(values > 0.0).numpy()):
-            raise ValueError(f"eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-        return values
+        return numerics_tf.positive(values, "eval_pdf")
 
+    @numerics_tf.compiled_method
     def potential(self, local_points: tf.Tensor) -> tf.Tensor:
         values = _finite_vector("potential", self.transport_object.potential(local_points))
         local = tf.convert_to_tensor(local_points, dtype=tf.float64)
@@ -842,6 +863,7 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"potential: {HighDimStatus.INVALID_SHAPE.value}")
         return values
 
+    @numerics_tf.compiled_method
     def proposal_log_density(
         self,
         *,
@@ -872,11 +894,12 @@ class SourceRouteTransportProtocol:
             raise ValueError(f"marginalize: {HighDimStatus.INVALID_SHAPE.value}")
         return result
 
+    @numerics_tf.compiled_method
     def log_normalizer(self) -> tf.Tensor:
         value = tf.convert_to_tensor(self.transport_object.log_normalizer(), dtype=tf.float64)
-        if value.shape.rank != 0 or not bool(tf.math.is_finite(value).numpy()):
+        if value.shape.rank != 0:
             raise ValueError(f"log_normalizer: {HighDimStatus.NONFINITE_VALUE.value}")
-        return value
+        return numerics_tf.finite(value, "log_normalizer")
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -1878,8 +1901,11 @@ class SourceRouteSequentialResult:
 
     @property
     def log_marginal_likelihood(self) -> tf.Tensor:
-        increments = [step.normalizer_increment for step in self.steps]
-        return tf.reduce_sum(tf.stack(increments))
+        from bayesfilter.highdim.source_route_sequential_tf import total_log_normalizer
+
+        normalizers = tuple(step.retained_samples.normalizer.log_transport_normalizer for step in self.steps)
+        shifts = tuple(step.retained_samples.normalizer.shift_constant for step in self.steps)
+        return total_log_normalizer(tf.stack(normalizers), tf.stack(shifts))
 
     def manifest_payload(self) -> Mapping[str, object]:
         return {
@@ -3032,10 +3058,7 @@ def _p59_author_sir_uniform_log_weights(sample_count: int) -> tf.Tensor:
     n = int(sample_count)
     if n <= 0:
         raise ValueError("sample_count must be positive")
-    return tf.fill(
-        [n],
-        -tf.math.log(tf.cast(n, tf.float64)),
-    )
+    return uniform_log_weights_program(n, jit_compile=True)()
 
 
 def _p59_author_sir_prior_sample_batch(
@@ -3047,16 +3070,13 @@ def _p59_author_sir_prior_sample_batch(
     n = int(sample_count)
     if n <= 0:
         raise ValueError("sample_count must be positive")
-    generator = tf.random.Generator.from_seed(int(seed))
-    initial_chol = tf.linalg.cholesky(model.initial_covariance)
-    noise = generator.normal([n, model.state_dim()], dtype=tf.float64)
-    x0 = model.initial_mean[tf.newaxis, :] + tf.linalg.matmul(
-        noise,
-        initial_chol,
-        transpose_b=True,
+    samples = prior_sample_program(
+        model.parameter_dim(), model.state_dim(), n, jit_compile=True
+    )(
+        model.initial_mean,
+        model.initial_covariance,
+        seed_state(seed),
     )
-    theta = tf.zeros([model.parameter_dim(), n], dtype=tf.float64)
-    samples = tf.concat([theta, tf.transpose(x0)], axis=0)
     return SourceRouteSampleBatch(
         samples=samples,
         log_weights=_p59_author_sir_uniform_log_weights(n),
@@ -3095,42 +3115,49 @@ def _p59_author_sir_source_push_result(
     time_index: int,
     process_noise_seed: int,
 ) -> SourceRoutePushResult:
+    if not isinstance(previous_batch, SourceRouteSampleBatch):
+        raise TypeError("previous_batch must be a SourceRouteSampleBatch")
+    if previous_batch.route_label != SOURCE_FAITHFUL_ROUTE_LABEL:
+        raise ValueError("source push requires source_faithful_filtering input")
     n = previous_batch.sample_count
+    d = model.parameter_dim()
     m = model.state_dim()
-    generator = tf.random.Generator.from_seed(int(process_noise_seed))
-    transition_noise = generator.normal([n, m], dtype=tf.float64)
+    if d < 0 or m <= 0:
+        raise ValueError("parameter_dim must be nonnegative and state_dim positive")
+    if previous_batch.dimension != d + m:
+        raise ValueError("previous_batch dimension must equal parameter_dim + state_dim")
+    if int(time_index) <= previous_batch.time_index:
+        raise ValueError("time_index must advance")
     y_t = tf.convert_to_tensor(observation, dtype=tf.float64)
-
-    def transition_fn(previous_samples: tf.Tensor, step_index: int) -> tf.Tensor:
-        values = tf.convert_to_tensor(previous_samples, dtype=tf.float64)
-        theta = tf.transpose(values[: model.parameter_dim(), :])
-        previous_state = tf.transpose(values[model.parameter_dim() :, :])
-        pushed = model.transition_push_from_standard_normal(
-            theta,
-            previous_state,
-            transition_noise,
-            t=int(step_index),
-        )
-        return tf.transpose(pushed)
-
-    def log_likelihood_fn(propagated_samples: tf.Tensor, step_index: int) -> tf.Tensor:
-        values = tf.convert_to_tensor(propagated_samples, dtype=tf.float64)
-        theta = tf.transpose(values[: model.parameter_dim(), :])
-        current_state = tf.transpose(values[model.parameter_dim() :, :])
-        return model.observation_log_density(
-            theta,
-            current_state,
-            y_t,
-            t=int(step_index),
-        )
-
-    return source_route_push_and_augment_samples(
-        previous_batch=previous_batch,
-        transition_fn=transition_fn,
-        log_likelihood_fn=log_likelihood_fn,
-        parameter_dim=model.parameter_dim(),
-        state_dim=m,
+    transition_noise = normal_matrix_program(n, m, jit_compile=True)(
+        seed_state(process_noise_seed)
+    )
+    propagated_samples, propagated_log_weights, augmented_samples, _ = source_push_program(
+        model, d, m, n, int(time_index), jit_compile=True
+    )(
+        previous_batch.samples,
+        previous_batch.log_weights,
+        transition_noise,
+        y_t,
+    )
+    propagated = SourceRouteSampleBatch(
+        samples=propagated_samples,
+        log_weights=propagated_log_weights,
         time_index=int(time_index),
+        route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+        sample_origin="propagated",
+    )
+    augmented = SourceRouteSampleBatch(
+        samples=augmented_samples,
+        log_weights=propagated_log_weights,
+        time_index=int(time_index),
+        route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+        sample_origin="augmented_propagated",
+    )
+    return SourceRoutePushResult(
+        propagated_batch=propagated,
+        augmented_batch=augmented,
+        diagnostics=augmented.diagnostics(enhancement_attempts=0),
     )
 
 
@@ -3140,21 +3167,13 @@ def _p59_author_sir_deterministic_weighted_resample(
     log_weights: tf.Tensor,
 ) -> tuple[tf.Tensor, tf.Tensor]:
     values = tf.convert_to_tensor(samples, dtype=tf.float64)
-    weights = tf.exp(normalize_log_weights(log_weights))
-    if values.shape.rank != 2 or weights.shape != (int(values.shape[1]),):
+    log_weights = _finite_vector("log_weights", log_weights)
+    if values.shape.rank != 2 or log_weights.shape != (int(values.shape[1]),):
         raise ValueError(f"resample inputs: {HighDimStatus.INVALID_SHAPE.value}")
     n = int(values.shape[1])
-    positions = (
-        tf.cast(tf.range(n), tf.float64) + tf.constant(0.5, dtype=tf.float64)
-    ) / tf.cast(n, tf.float64)
-    cdf = tf.cumsum(weights)
-    cdf = tf.concat(
-        [cdf[:-1], tf.ones([1], dtype=tf.float64)],
-        axis=0,
-    )
-    indices = tf.searchsorted(cdf, positions, side="left", out_type=tf.int32)
-    indices = tf.minimum(indices, tf.fill([n], n - 1))
-    return tf.gather(values, indices, axis=1), indices
+    return deterministic_weighted_resample_program(
+        int(values.shape[0]), n, jit_compile=True
+    )(values, log_weights)
 
 
 def _p59_author_sir_source_fit_data_for_step(
@@ -3210,19 +3229,13 @@ def _p59_author_sir_source_fit_data_for_step(
         samples=push.augmented_batch.samples,
         log_weights=push.augmented_batch.log_weights,
     )
-    local_unclipped = tf.linalg.solve(
-        frame.matrix,
-        resampled - frame.mu[:, tf.newaxis],
+    local_unclipped, _clipped_mask, clip_fraction, local_fit_points, physical_fit_points = (
+        coordinate_transform_program(
+            int(resampled.shape[0]), int(resampled.shape[1]), jit_compile=True
+        )(frame.matrix, frame.mu, resampled)
     )
-    clipped_mask = tf.abs(local_unclipped) > tf.constant(1.0, dtype=tf.float64)
-    clip_fraction = tf.reduce_mean(tf.cast(clipped_mask, tf.float64))
     if bool((clip_fraction >= 1.0).numpy()):
         raise ValueError("source_fit_data_all_local_entries_clipped")
-    local_fit_points = tf.clip_by_value(local_unclipped, -1.0, 1.0)
-    physical_fit_points = (
-        tf.linalg.matmul(frame.matrix, local_fit_points)
-        + frame.mu[:, tf.newaxis]
-    )
     prior_log_density, transition_log_density, likelihood_log_density = (
         _p59_author_sir_source_density_callbacks(model, observations[t])
     )
@@ -3238,14 +3251,10 @@ def _p59_author_sir_source_fit_data_for_step(
         time_index=t,
         previous_retained_object=previous_for_density,
     )
-    local_negative_log = negative_log_physical - frame.log_abs_det()
-    shift = tf.reduce_min(local_negative_log)
-    shifted = source_route_shifted_negative_log_target(
-        negative_log_target=local_negative_log,
-        shift_constant=shift,
-    )
-    target_values = tf.exp(-0.5 * shifted)
-    if not bool(tf.reduce_all(tf.math.is_finite(target_values)).numpy()):
+    local_negative_log, shift, target_values, target_valid = target_values_program(
+        n, jit_compile=True
+    )(negative_log_physical, frame.log_abs_det())
+    if not bool(target_valid.numpy()):
         raise ValueError("nonfinite_source_fit_target_values")
     manifest = {
         "fit_data_mode": P63_AUTHOR_SIR_SOURCE_FIT_DATA_MODE,
@@ -3340,19 +3349,13 @@ def _p69_author_sir_source_diagnostic_data_for_step(
         samples=push.augmented_batch.samples,
         log_weights=push.augmented_batch.log_weights,
     )
-    local_unclipped = tf.linalg.solve(
-        frame.matrix,
-        resampled - frame.mu[:, tf.newaxis],
+    local_unclipped, _clipped_mask, clip_fraction, local_points, physical_points = (
+        coordinate_transform_program(
+            int(resampled.shape[0]), int(resampled.shape[1]), jit_compile=True
+        )(frame.matrix, frame.mu, resampled)
     )
-    clipped_mask = tf.abs(local_unclipped) > tf.constant(1.0, dtype=tf.float64)
-    clip_fraction = tf.reduce_mean(tf.cast(clipped_mask, tf.float64))
     if bool((clip_fraction >= 1.0).numpy()):
         raise ValueError("diagnostic_data_all_local_entries_clipped")
-    local_points = tf.clip_by_value(local_unclipped, -1.0, 1.0)
-    physical_points = (
-        tf.linalg.matmul(frame.matrix, local_points)
-        + frame.mu[:, tf.newaxis]
-    )
     prior_log_density, transition_log_density, likelihood_log_density = (
         _p59_author_sir_source_density_callbacks(model, observations[t])
     )
@@ -3368,13 +3371,10 @@ def _p69_author_sir_source_diagnostic_data_for_step(
         time_index=t,
         previous_retained_object=previous_for_density,
     )
-    local_negative_log = negative_log_physical - frame.log_abs_det()
-    shifted = source_route_shifted_negative_log_target(
-        negative_log_target=local_negative_log,
-        shift_constant=shift_constant,
-    )
-    target_values = tf.exp(-0.5 * shifted)
-    if not bool(tf.reduce_all(tf.math.is_finite(target_values)).numpy()):
+    local_negative_log, target_values, target_valid = target_values_with_shift_program(
+        n, jit_compile=True
+    )(negative_log_physical, frame.log_abs_det(), shift_constant)
+    if not bool(target_valid.numpy()):
         raise ValueError("nonfinite_source_diagnostic_target_values")
     manifest = {
         "fit_data_mode": P63_AUTHOR_SIR_SOURCE_FIT_DATA_MODE,
@@ -3436,22 +3436,9 @@ def _p59_author_sir_36d_coordinate_frame_for_time(
 ) -> SourceRouteCoordinateFrame:
     if int(time_index) < 1:
         raise ValueError("time_index must be positive")
-    previous = model.initial_mean
-    current = model.transition_mean(previous)[0]
-    for _ in range(2, int(time_index) + 1):
-        previous = current
-        current = model.transition_mean(previous)[0]
-    center = tf.concat([model.transition_mean(model.initial_mean)[0], model.initial_mean], axis=0)
-    if int(time_index) != 1:
-        center = tf.concat([current, previous], axis=0)
-    scale = tf.concat(
-        [
-            tf.sqrt(tf.linalg.diag_part(model.process_covariance)),
-            tf.sqrt(tf.linalg.diag_part(model.initial_covariance)),
-        ],
-        axis=0,
-    )
-    matrix = tf.linalg.diag(scale)
+    center, matrix = preparation_tf.coordinate_frame_program(model)(
+        tf.constant(int(time_index), tf.int32), model.initial_mean,
+        model.process_covariance, model.initial_covariance)
     return SourceRouteCoordinateFrame(
         mu=center,
         matrix=matrix,
@@ -3460,17 +3447,7 @@ def _p59_author_sir_36d_coordinate_frame_for_time(
 
 
 def _p59_author_sir_reference_points(sample_count: int, target_dim: int) -> tf.Tensor:
-    columns = []
-    base = tf.linspace(
-        tf.constant(-0.75, dtype=tf.float64),
-        tf.constant(0.75, dtype=tf.float64),
-        int(target_dim),
-    )
-    for index in range(int(sample_count)):
-        shift = tf.cast(index, tf.float64) / tf.cast(max(int(sample_count) - 1, 1), tf.float64)
-        shifted = tf.math.floormod(base + 0.17 * shift + 1.0, 2.0) - 1.0
-        columns.append(shifted)
-    return tf.stack(columns, axis=1)
+    return preparation_tf.reference_points_program(int(sample_count), int(target_dim), False)()
 
 
 def _p59_reference_convention() -> MeasureConvention:
@@ -4466,12 +4443,10 @@ def _p72_normalize_set_weights(weights: tf.Tensor) -> tf.Tensor:
     tensor = tf.convert_to_tensor(weights, dtype=tf.float64)
     if tensor.shape.rank != 1:
         raise ValueError(f"weights: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
+    normalized, valid = normalized_set_weights(tensor)
+    if not bool(valid.numpy()):
         raise ValueError(f"weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    total = tf.reduce_sum(tensor)
-    if bool(tf.reduce_any(tensor < 0.0).numpy()) or bool((total <= 0.0).numpy()):
-        raise ValueError(f"weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor / total
+    return normalized
 
 
 def p72_training_batch_from_fit_and_guard(
@@ -4501,9 +4476,10 @@ def p72_training_batch_from_fit_and_guard(
     alpha = float(alpha_guard)
     if alpha < 0.0 or not math.isfinite(alpha):
         raise ValueError("alpha_guard must be finite nonnegative")
-    points = tf.transpose(tf.concat([fit, guard], axis=1))
-    targets = tf.concat([fit_targets, guard_targets], axis=0)
-    weights = tf.concat([fit_set_weights, alpha * guard_set_weights], axis=0)
+    points, targets, weights = fit_guard_arrays(
+        fit, guard, fit_targets, guard_targets, fit_set_weights, guard_set_weights,
+        tf.constant(alpha, tf.float64),
+    )
     manifest = {
         "policy_id": "p72_fit_guard_training_batch.v1",
         "fit_point_count": int(fit.shape[1]),
@@ -4547,7 +4523,7 @@ def p72_support_clipping_coverage(
         fit = tf.convert_to_tensor(fit_points, dtype=tf.float64)
         fit_hash = (
             _p69_hash_tensor("p72_support_fit_points_hash.v1", fit)
-            if bool(tf.reduce_all(tf.math.is_finite(fit)).numpy())
+            if bool(finite_tensor(fit).numpy())
             else None
         )
         return {
@@ -4565,10 +4541,13 @@ def p72_support_clipping_coverage(
         raise ValueError(f"{role}_support: {HighDimStatus.INVALID_SHAPE.value}")
     point_count = int(local.shape[1])
     fit_count = int(fit.shape[1])
-    fit_is_finite = bool(tf.reduce_all(tf.math.is_finite(fit)).numpy())
+    (local_finite, fit_finite, distances_available, nearest_min_value,
+     nearest_median_value, nearest_max_value, fit_loo_max_value,
+     saturated_fraction) = support_statistics(local, fit)
+    fit_is_finite = bool(fit_finite.numpy())
     if point_count <= 0 or fit_count <= 0:
         reasons.append("empty_cloud")
-    local_is_finite = bool(tf.reduce_all(tf.math.is_finite(local)).numpy())
+    local_is_finite = bool(local_finite.numpy())
     if not local_is_finite:
         reasons.append("nonfinite_cloud")
     if not fit_is_finite:
@@ -4584,21 +4563,9 @@ def p72_support_clipping_coverage(
             warnings.append("positive_clip_fraction")
     if max_abs is not None and (not math.isfinite(max_abs)):
         reasons.append("nonfinite_local_max_abs_before_clip")
-    if point_count > 0 and fit_count > 0 and local_is_finite and fit_is_finite:
-        distances = tf.norm(local[:, :, tf.newaxis] - fit[:, tf.newaxis, :], axis=0)
-        nearest = tf.reduce_min(distances, axis=1)
-        fit_pairwise = tf.norm(fit[:, :, tf.newaxis] - fit[:, tf.newaxis, :], axis=0)
-        large = tf.constant(1e300, dtype=tf.float64)
-        fit_leave_one_out = (
-            tf.reduce_min(fit_pairwise + tf.eye(fit_count, dtype=tf.float64) * large, axis=1)
-            if fit_count > 1
-            else tf.zeros([fit_count], dtype=tf.float64)
-        )
-    else:
-        nearest = tf.constant([], dtype=tf.float64)
-        fit_leave_one_out = tf.constant([], dtype=tf.float64)
-    nearest_max = None if int(nearest.shape[0]) <= 0 else float(tf.reduce_max(nearest).numpy())
-    fit_loo_max = None if int(fit_leave_one_out.shape[0]) <= 0 else float(tf.reduce_max(fit_leave_one_out).numpy())
+    available = bool(distances_available.numpy())
+    nearest_max = float(nearest_max_value.numpy()) if available else None
+    fit_loo_max = float(fit_loo_max_value.numpy()) if available else None
     if nearest_max is not None and fit_loo_max is not None and fit_loo_max > 0.0:
         if nearest_max > 10.0 * fit_loo_max:
             warnings.append("cloud_far_from_fit_support")
@@ -4620,19 +4587,15 @@ def p72_support_clipping_coverage(
             if fit_is_finite
             else None
         ),
-        "nearest_fit_distance_min": None if int(nearest.shape[0]) <= 0 else float(tf.reduce_min(nearest).numpy()),
-        "nearest_fit_distance_median": None if int(nearest.shape[0]) <= 0 else _p60_tensor_median_float(nearest),
+        "nearest_fit_distance_min": float(nearest_min_value.numpy()) if available else None,
+        "nearest_fit_distance_median": float(nearest_median_value.numpy()) if available else None,
         "nearest_fit_distance_max": nearest_max,
         "fit_leave_one_out_distance_max": fit_loo_max,
         "clip_fraction": clipped,
         "point_any_saturated_fraction": (
             None
             if point_count <= 0
-            else float(
-                tf.reduce_mean(
-                    tf.cast(tf.reduce_any(tf.abs(local) >= 1.0, axis=0), tf.float64)
-                ).numpy()
-            )
+            else float(saturated_fraction.numpy())
         ),
         "local_max_abs_before_clip": max_abs,
         "effective_support_role": "finite_cloud_diagnostic_not_continuum_support",
@@ -4653,41 +4616,26 @@ def p72_guard_line_points(
         raise ValueError(f"line_points: {HighDimStatus.INVALID_SHAPE.value}")
     if int(fit.shape[1]) <= 0 or int(guard.shape[1]) <= 0:
         raise ValueError("line point construction requires nonempty clouds")
-    center = tf.reduce_mean(fit, axis=1, keepdims=True)
-    distances = tf.norm(guard - center, axis=0)
-    sorted_indices = tf.argsort(distances)
-    selected = tf.gather(
-        sorted_indices,
-        tf.constant(
-            [0, int(guard.shape[1]) // 2, int(guard.shape[1]) - 1],
-            dtype=tf.int32,
-        ),
-    )
-    endpoints = tf.gather(guard, selected, axis=1)
-    starts = tf.repeat(center, repeats=int(endpoints.shape[1]), axis=1)
     fractions = tuple(float(value) for value in line_fractions)
-    pieces = []
-    for fraction in fractions:
-        frac = tf.constant(fraction, dtype=tf.float64)
-        pieces.append((1.0 - frac) * starts + frac * endpoints)
-    raw_line_points = tf.concat(pieces, axis=1)
-    unique_columns = []
-    unique_start_indices = []
-    seen_columns = set()
-    endpoint_count = int(endpoints.shape[1])
-    for column_index, column in enumerate(tf.transpose(raw_line_points).numpy()):
-        key = tuple(float(f"{float(value):.17g}") for value in column)
-        if key in seen_columns:
-            continue
-        seen_columns.add(key)
-        unique_columns.append(column)
-        unique_start_indices.append(column_index % endpoint_count)
-    line_points = tf.transpose(tf.constant(unique_columns, dtype=tf.float64))
+    if not fractions:
+        raise ValueError("line_fractions must be nonempty")
+    dimension = int(fit.shape[0])
+    raw_line_points, selected = guard_line_program(
+        dimension, int(fit.shape[1]), int(guard.shape[1]), len(fractions)
+    )(fit, guard, tf.constant(fractions, tf.float64))
+    order, count = guard_line_unique_program(dimension, int(raw_line_points.shape[1]))(
+        raw_line_points
+    )
+    # Only the variable-length public tensor schema is resolved on the host;
+    # interpolation, duplicate detection and column selection are compiled.
+    line_points, start_indices = guard_line_selection_program(
+        dimension, int(raw_line_points.shape[1]), int(count.numpy())
+    )(raw_line_points, order)
     manifest = {
         "policy_id": "p72_guard_line_points.v1",
         "line_fractions": fractions,
-        "selected_guard_indices": tuple(int(i) for i in selected.numpy()),
-        "line_start_indices": tuple(int(i) for i in unique_start_indices),
+        "selected_guard_indices": tuple(selected.numpy().tolist()),
+        "line_start_indices": tuple(start_indices.numpy().tolist()),
         "line_point_count": int(line_points.shape[1]),
         "raw_line_point_count": int(raw_line_points.shape[1]),
         "line_hash": _p69_hash_tensor("p72_guard_line_points_hash.v1", line_points),
@@ -4711,15 +4659,30 @@ def p72_line_probe_diagnostics(
     targets = tf.convert_to_tensor(line_target_values, dtype=tf.float64)
     if points.shape.rank != 2 or targets.shape != (int(points.shape[1]),):
         raise ValueError(f"line_probe: {HighDimStatus.INVALID_SHAPE.value}")
-    predictions = tf.convert_to_tensor(fitted_tt.evaluate(tf.transpose(points)), dtype=tf.float64)
-    if predictions.shape != targets.shape:
-        raise ValueError(f"line_probe_prediction: {HighDimStatus.INVALID_SHAPE.value}")
-    residual = tf.abs(predictions - targets)
     scale = max(float(target_scale), 1e-300)
+    starts = tf.constant([], tf.float64)
+    indices = tf.constant([], tf.int32)
+    endpoint_mode = "none"
+    if start_prediction_values is not None:
+        starts = tf.convert_to_tensor(start_prediction_values, dtype=tf.float64)
+        if starts.shape.rank != 1 or starts.shape[0] is None or int(starts.shape[0]) <= 0:
+            raise ValueError(f"line_start_predictions: {HighDimStatus.INVALID_SHAPE.value}")
+        endpoint_mode = "maximum"
+        if line_start_indices is not None:
+            indices = tf.convert_to_tensor(line_start_indices, dtype=tf.int32)
+            if indices.shape.num_elements() != int(points.shape[1]):
+                raise ValueError(f"line_start_indices: {HighDimStatus.INVALID_SHAPE.value}")
+            endpoint_mode = "indices"
+    program = line_probe_program(fitted_tt, tuple(points.shape), tuple(starts.shape),
+                                 tuple(indices.shape), endpoint_mode)
+    (predictions, maximum, maximum_residual, rms, growth,
+     valid_indices) = program(points, targets, starts, indices, tf.constant(scale, tf.float64))
+    # XLA gathers can clamp invalid indices; preserve rejection at the host.
+    tf.debugging.assert_equal(valid_indices, True, message="line_start_indices out of range")
     reasons: list[str] = []
-    max_abs = float(tf.reduce_max(tf.abs(predictions)).numpy())
-    max_residual = float(tf.reduce_max(residual).numpy())
-    rms_residual = float(tf.sqrt(tf.reduce_mean(tf.square(residual))).numpy())
+    max_abs = float(maximum.numpy())
+    max_residual = float(maximum_residual.numpy())
+    rms_residual = float(rms.numpy())
     if not math.isfinite(max_abs) or not math.isfinite(max_residual) or not math.isfinite(rms_residual):
         reasons.append("line_nonfinite")
     if max_abs > P72_LINE_GROWTH_REL_VETO * scale:
@@ -4729,22 +4692,9 @@ def p72_line_probe_diagnostics(
     if rms_residual > P72_RESIDUAL_RMS_REL_VETO * scale:
         reasons.append("line_rms_residual_veto")
     growth_ratio = None
-    line_start_indices_available = False
+    line_start_indices_available = endpoint_mode == "indices"
     if start_prediction_values is not None:
-        starts = tf.convert_to_tensor(start_prediction_values, dtype=tf.float64)
-        if starts.shape.rank != 1 or starts.shape[0] is None or int(starts.shape[0]) <= 0:
-            raise ValueError(f"line_start_predictions: {HighDimStatus.INVALID_SHAPE.value}")
-        start_scale = tf.maximum(tf.abs(starts), tf.constant(scale, dtype=tf.float64))
-        if line_start_indices is None:
-            denominators = tf.ones_like(predictions) * tf.reduce_max(start_scale)
-        else:
-            indices = tf.reshape(tf.convert_to_tensor(line_start_indices, dtype=tf.int32), [-1])
-            if int(indices.shape[0]) != int(points.shape[1]):
-                raise ValueError(f"line_start_indices: {HighDimStatus.INVALID_SHAPE.value}")
-            denominators = tf.gather(start_scale, indices)
-            line_start_indices_available = True
-        ratios = tf.abs(predictions) / denominators
-        growth_ratio = float(tf.reduce_max(ratios).numpy())
+        growth_ratio = float(growth.numpy())
         if not math.isfinite(growth_ratio) or growth_ratio > P72_LINE_GROWTH_REL_VETO:
             reasons.append("line_endpoint_growth_veto")
     return {
@@ -4841,6 +4791,11 @@ def p72_condition_effective_rank_gate(
     reasons: list[str] = []
     condition_values: list[float] = []
     effective_ranks: list[float] = []
+    spectra = tuple(tf.convert_to_tensor(record["scaled_augmented_singular_values"], tf.float64)
+                    for record in records if record.get("scaled_augmented_singular_values") is not None)
+    ranks, available = spectrum_rank_program(tuple(tuple(value.shape) for value in spectra))(
+        spectra, tf.constant(P72_EFFECTIVE_RANK_TOL, tf.float64))
+    recorded_ranks = iter(zip(ranks.numpy().tolist(), available.numpy().tolist(), strict=True))
     for record in records:
         condition_raw = record.get(
             "scaled_augmented_condition_number",
@@ -4853,15 +4808,10 @@ def p72_condition_effective_rank_gate(
                 reasons.append("p72_condition_admission_veto")
         singular_values = record.get("scaled_augmented_singular_values")
         if singular_values is not None:
-            values = tf.reshape(tf.convert_to_tensor(singular_values, dtype=tf.float64), [-1])
-            if int(values.shape[0]) == 0 or not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
+            rank_value, rank_available = next(recorded_ranks)
+            if not rank_available:
                 reasons.append("p72_effective_rank_unavailable")
                 continue
-            max_sv = tf.reduce_max(values)
-            active = tf.reduce_sum(
-                tf.cast(values > P72_EFFECTIVE_RANK_TOL * max_sv, tf.float64)
-            )
-            rank_value = float(active.numpy())
             effective_ranks.append(rank_value)
             if rank_value < P72_EFFECTIVE_RANK_MIN:
                 reasons.append("p72_effective_rank_veto")
@@ -5530,16 +5480,10 @@ def _source_route_constant_path_initial_cores(
         raise ValueError(f"constant_value: {HighDimStatus.NONFINITE_VALUE.value}")
     if bool((values <= 0.0).numpy()):
         raise ValueError(f"constant_value: {HighDimStatus.NONFINITE_VALUE.value}")
-    cores = []
-    for axis in range(len(ranks) - 1):
-        core_values = tf.zeros(
-            [int(ranks[axis]), int(basis_dim), int(ranks[axis + 1])],
-            dtype=tf.float64,
-        )
-        entry = values if axis == 0 else tf.constant(1.0, dtype=tf.float64)
-        indices = tf.constant([[0, 0, 0]], dtype=tf.int64)
-        cores.append(TTCore(tf.tensor_scatter_nd_update(core_values, indices, [entry])))
-    return tuple(cores)
+    packed = preparation_tf.initial_cores_program(tuple(ranks), int(basis_dim), False)(
+        values, tf.constant(0., tf.float64))
+    return tuple(TTCore(packed[axis, :left, :, :right])
+                 for axis, (left, right) in enumerate(pairwise(ranks)))
 
 
 def _source_route_seeded_channel_initial_cores(
@@ -5563,46 +5507,11 @@ def _source_route_seeded_channel_initial_cores(
         raise ValueError(f"basis_dim: {HighDimStatus.INVALID_SHAPE.value}")
     max_rank = max(int(rank) for rank in ranks)
     extra_count = max(max_rank - 1, 0)
-    seeded_scale = (
-        values * tf.constant(float(epsilon) / float(extra_count), dtype=tf.float64)
-        if extra_count > 0
-        else tf.constant(0.0, dtype=tf.float64)
-    )
-    cores = []
-    for axis in range(dim):
-        left_rank = int(ranks[axis])
-        right_rank = int(ranks[axis + 1])
-        core_values = tf.zeros(
-            [left_rank, int(basis_dim), right_rank],
-            dtype=tf.float64,
-        )
-        updates = []
-        indices = []
-        if left_rank > 0 and right_rank > 0:
-            indices.append([0, 0, 0])
-            updates.append(values if axis == 0 else tf.constant(1.0, dtype=tf.float64))
-        for channel in range(1, min(left_rank, right_rank)):
-            basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-            indices.append([channel, basis_index, channel])
-            updates.append(tf.constant(1.0, dtype=tf.float64))
-        if axis == 0:
-            for channel in range(1, right_rank):
-                basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-                indices.append([0, basis_index, channel])
-                updates.append(seeded_scale)
-        if axis == dim - 1:
-            for channel in range(1, left_rank):
-                basis_index = _p70_seeded_basis_index(axis=axis, channel=channel, basis_dim=int(basis_dim))
-                indices.append([channel, basis_index, 0])
-                updates.append(tf.constant(1.0, dtype=tf.float64))
-        if indices:
-            core_values = tf.tensor_scatter_nd_update(
-                core_values,
-                tf.constant(indices, dtype=tf.int64),
-                tf.stack(updates),
-            )
-        cores.append(TTCore(core_values))
-    return tuple(cores)
+    per_channel = float(epsilon) / extra_count if extra_count else 0.
+    packed = preparation_tf.initial_cores_program(tuple(ranks), int(basis_dim), True)(
+        values, tf.constant(per_channel, tf.float64))
+    return tuple(TTCore(packed[axis, :left, :, :right])
+                 for axis, (left, right) in enumerate(pairwise(ranks)))
 
 
 def _p70_seeded_basis_index(*, axis: int, channel: int, basis_dim: int) -> int:
@@ -5674,44 +5583,23 @@ def _p70_channel_activity_diagnostics(
     rank = int(fit_rank)
     if len(cores) != dim:
         raise ValueError(f"cores: {HighDimStatus.INVALID_SHAPE.value}")
-    scores_by_bond = []
-    first_scores: list[float] = []
-    for bond in range(max(dim - 1, 0)):
-        left = cores[bond].values
-        right = cores[bond + 1].values
-        bond_scores = []
-        channel_count = min(int(left.shape[2]), int(right.shape[0]))
-        for channel in range(channel_count):
-            left_norm = float(tf.norm(left[:, :, channel]).numpy())
-            right_norm = float(tf.norm(right[channel, :, :]).numpy())
-            score = left_norm * right_norm
-            bond_scores.append(score)
-            if channel == 0:
-                first_scores.append(score)
-        scores_by_bond.append(tuple(bond_scores))
-    a_ref = max(first_scores) if first_scores else 0.0
-    if not math.isfinite(a_ref) or a_ref <= 0.0:
-        threshold = math.inf
-        status = "rank_channel_activity_failed"
-    else:
-        threshold = max(
-            P70_CHANNEL_ACTIVITY_ABS_TOL,
-            P70_CHANNEL_ACTIVITY_REL_TOL * a_ref,
-        )
-        status = "ok"
+    width = max(int(core.values.shape[1]) for core in cores)
+    padded_rank = max(rank, *(max(int(core.values.shape[0]), int(core.values.shape[2])) for core in cores))
+    packed = tf.stack(tuple(tf.pad(core.values, [[0, padded_rank - core.values.shape[0]],
+        [0, width - core.values.shape[1]], [0, padded_rank - core.values.shape[2]]]) for core in cores))
+    channel_counts = tuple(min(int(left.values.shape[2]), int(right.values.shape[0]))
+                           for left, right in pairwise(cores))
+    scores, reference, cutoff, counts, inactive, valid = preparation_tf.channel_activity(
+        packed, tf.constant(channel_counts, tf.int32), rank, P70_CHANNEL_ACTIVITY_ABS_TOL,
+        P70_CHANNEL_ACTIVITY_REL_TOL)
+    scores_by_bond = tuple(tuple(row[:count]) for row, count in zip(
+        scores.numpy().tolist(), channel_counts, strict=True))
+    a_ref, threshold = float(reference.numpy()), float(cutoff.numpy())
+    status = "ok" if bool(valid.numpy()) else "rank_channel_activity_failed"
     b_min = max(1, math.ceil(0.25 * max(dim - 1, 0)))
-    active_counts = {}
-    inactive_channels = []
-    for channel in range(1, rank):
-        active_count = 0
-        for bond_scores in scores_by_bond:
-            if channel < len(bond_scores) and bond_scores[channel] >= threshold:
-                active_count += 1
-        active_counts[channel] = active_count
-        if active_count < b_min:
-            inactive_channels.append(channel)
-    if inactive_channels:
-        status = "rank_channel_activity_failed"
+    active_counts = dict(enumerate(counts.numpy().tolist()[1:rank], start=1))
+    inactive_channels = tuple(index for index, is_inactive in enumerate(inactive.numpy().tolist())
+                              if is_inactive)
     return {
         "status": status,
         "score_by_bond": tuple(scores_by_bond),
@@ -5806,18 +5694,12 @@ def _weighted_mean_target_value(target_values: tf.Tensor, weights: tf.Tensor) ->
         raise ValueError(f"target_values: {HighDimStatus.INVALID_SHAPE.value}")
     if int(targets.shape[0]) != int(fit_weights.shape[0]):
         raise ValueError(f"target_values: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(
-        tf.reduce_all(tf.math.is_finite(targets)).numpy()
-        and tf.reduce_all(tf.math.is_finite(fit_weights)).numpy()
-    ):
+    mean, valid = weighted_mean_target_program(int(targets.shape[0]), jit_compile=True)(
+        targets, fit_weights
+    )
+    if not bool(valid.numpy()):
         raise ValueError(f"target_values: {HighDimStatus.NONFINITE_VALUE.value}")
-    if bool(
-        tf.reduce_any(targets <= 0.0).numpy()
-        or tf.reduce_any(fit_weights < 0.0).numpy()
-        or (tf.reduce_sum(fit_weights) <= 0.0).numpy()
-    ):
-        raise ValueError(f"target_values: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tf.reduce_sum(fit_weights * targets) / tf.reduce_sum(fit_weights)
+    return mean
 
 
 def _source_route_initial_core_values(
@@ -5835,17 +5717,7 @@ def _source_route_initial_core_values(
 
 
 def _p59_author_sir_unit_reference_points(sample_count: int, target_dim: int) -> tf.Tensor:
-    columns = []
-    base = tf.linspace(
-        tf.constant(0.15, dtype=tf.float64),
-        tf.constant(0.85, dtype=tf.float64),
-        int(target_dim),
-    )
-    for index in range(int(sample_count)):
-        shift = tf.cast(index, tf.float64) / tf.cast(max(int(sample_count), 1), tf.float64)
-        shifted = tf.math.floormod(base + 0.13 * shift, 0.8) + 0.1
-        columns.append(shifted)
-    return tf.stack(columns, axis=1)
+    return preparation_tf.reference_points_program(int(sample_count), int(target_dim), True)()
 
 
 def _p59_author_sir_defensive_tau_tensor() -> tf.Tensor:
@@ -8183,6 +8055,7 @@ class SourceRouteRetainedObject:
         object.__setattr__(self, "diagnostics", freeze_mapping(self.diagnostics))
 
 
+@numerics_tf.compiled
 def normalize_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     """Return log weights normalized to sum to one."""
 
@@ -8190,6 +8063,7 @@ def normalize_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     return values - tf.reduce_logsumexp(values)
 
 
+@numerics_tf.compiled
 def effective_sample_size_from_log_weights(log_weights: tf.Tensor) -> tf.Tensor:
     """Compute ESS from finite log weights."""
 
@@ -8216,6 +8090,7 @@ def source_route_needs_enhancement(
     return bool((diagnostics.effective_sample_size < required).numpy())
 
 
+@numerics_tf.compiled
 def source_route_proposal_log_weights(
     *,
     log_target_density: tf.Tensor,
@@ -8239,6 +8114,7 @@ def source_route_proposal_log_weights(
     return log_target - log_proposal
 
 
+@numerics_tf.compiled
 def source_route_proposal_log_weights_from_negative_log_target(
     *,
     negative_log_target: tf.Tensor,
@@ -8255,6 +8131,7 @@ def source_route_proposal_log_weights_from_negative_log_target(
     return -neg_log_target - log_proposal
 
 
+@numerics_tf.compiled
 def source_route_discrete_log_normalizer_from_correction(
     *,
     log_proposal_density: tf.Tensor,
@@ -8271,6 +8148,7 @@ def source_route_discrete_log_normalizer_from_correction(
     return tf.reduce_logsumexp(log_proposal + correction)
 
 
+@numerics_tf.compiled
 def source_route_equal_weight_log_normalizer_estimate(
     correction_log_weights: tf.Tensor,
 ) -> tf.Tensor:
@@ -8423,20 +8301,13 @@ def source_route_generate_retained_samples(
         raise ValueError(f"reference_samples: {HighDimStatus.INVALID_SHAPE.value}")
     if int(reference.shape[0]) != target.coordinate_frame.dimension:
         raise ValueError(f"reference_samples: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(reference)).numpy()):
-        raise ValueError(f"reference_samples: {HighDimStatus.NONFINITE_VALUE.value}")
-    local_samples = transport.inverse_transport(reference)
-    physical_samples = target.physical_points_from_reference(local_samples)
-    proposal_log_density = transport.proposal_log_density(
-        local_points=local_samples,
-        reference_points=reference,
-    )
-    target_log_density = target.log_target_density(local_samples)
-    correction = source_route_proposal_log_weights(
-        log_target_density=target_log_density,
-        log_proposal_density=proposal_log_density,
-    )
-    normalized_correction = normalize_log_weights(correction)
+    from bayesfilter.highdim.source_route_runtime_tf import retained_program
+
+    reference = numerics_tf.finite(reference, "reference_samples")
+    program = retained_program(target, transport, reference.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    (physical_samples, proposal_log_density, target_log_density, correction,
+     normalized_correction, ess, log_z) = evaluate(reference)
     retained_batch = SourceRouteSampleBatch(
         samples=physical_samples,
         log_weights=normalized_correction,
@@ -8444,9 +8315,10 @@ def source_route_generate_retained_samples(
         route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
         sample_origin="retained_from_transport",
     )
-    diagnostics = retained_batch.diagnostics()
+    diagnostics = SourceRouteSampleDiagnostics(sample_count=retained_batch.sample_count,
+                                               effective_sample_size=ess)
     normalizer = SourceRouteNormalizerContribution(
-        log_transport_normalizer=transport.log_normalizer(),
+        log_transport_normalizer=log_z,
         shift_constant=target.shift_constant,
         log_abs_det_policy=target.log_abs_det_policy,
     )
@@ -8488,24 +8360,12 @@ def source_route_previous_marginal_log_density(
     if points.shape.rank != 2 or int(points.shape[0]) != len(keep):
         raise ValueError(f"physical_points: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("physical_points", points)
-    if not bool(tf.reduce_all(tf.math.is_finite(points)).numpy()):
-        raise ValueError(f"physical_points: {HighDimStatus.NONFINITE_VALUE.value}")
-    transport = SourceRouteTransportProtocol(
-        previous_retained_object.transport_object
-    )
-    marginal_transport = transport.marginalize(keep)
-    mu_prefix = tf.gather(frame.mu, keep)
-    matrix_prefix = tf.gather(tf.gather(frame.matrix, keep, axis=0), keep, axis=1)
-    local_points = tf.linalg.solve(
-        matrix_prefix,
-        points - mu_prefix[:, tf.newaxis],
-    )
-    eval_pdf = _source_route_eval_marginal_pdf(marginal_transport, local_points)
-    if not bool(tf.reduce_all(eval_pdf > 0.0).numpy()):
-        raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-    log_density = tf.math.log(eval_pdf) - tf.math.log(
-        tf.abs(tf.linalg.det(matrix_prefix))
-    )
+    from bayesfilter.highdim.source_route_runtime_tf import previous_marginal_program
+
+    points = numerics_tf.finite(points, "physical_points")
+    program, marginal_transport = previous_marginal_program(previous_retained_object, keep, points.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    local_points, log_density = evaluate(points)
     return SourceRoutePreviousMarginalDensityResult(
         previous_retained_object=previous_retained_object,
         keep_axes=keep,
@@ -8668,9 +8528,7 @@ def _source_route_eval_marginal_pdf(marginal_transport: object, local_points: tf
         raise TypeError("marginal transport must provide eval_pdf or normalized_retained_density_values")
     if values.shape != (int(local.shape[1]),):
         raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.reduce_all(tf.math.is_finite(values)).numpy()):
-        raise ValueError(f"previous_marginal_eval_pdf: {HighDimStatus.NONFINITE_VALUE.value}")
-    return values
+    return numerics_tf.finite(values, "previous_marginal_eval_pdf")
 
 
 def source_route_sequential_negative_log_physical_density(
@@ -8708,41 +8566,24 @@ def source_route_sequential_negative_log_physical_density(
         raise TypeError("transition_log_density_fn must be callable")
     if not callable(likelihood_log_density_fn):
         raise TypeError("likelihood_log_density_fn must be callable")
-    input_axes = tuple(range(d)) + tuple(range(d + m, d + 2 * m))
-    prior_points = tf.gather(points, input_axes, axis=0)
     if int(time_index) == 1:
         if prior_log_density_fn is None or not callable(prior_log_density_fn):
             raise TypeError("t=1 requires callable prior_log_density_fn")
-        prior_log_density = _finite_vector(
-            "prior_log_density",
-            prior_log_density_fn(prior_points),
-        )
     else:
         if prior_log_density_fn is not None:
             raise ValueError("t>1 uses previous retained marginal, not prior_log_density_fn")
         if previous_retained_object is None:
             raise TypeError("t>1 requires previous_retained_object")
-        keep_axes = tuple(range(d + m))
-        previous_density = source_route_previous_marginal_log_density(
-            previous_retained_object=previous_retained_object,
-            physical_points=prior_points,
-            keep_axes=keep_axes,
-        )
-        prior_log_density = previous_density.log_density
-    transition_log_density = _finite_vector(
-        "transition_log_density",
-        transition_log_density_fn(points, int(time_index)),
-    )
-    likelihood_log_density = _finite_vector(
-        "likelihood_log_density",
-        likelihood_log_density_fn(points, int(time_index)),
-    )
-    if (
-        prior_log_density.shape != transition_log_density.shape
-        or prior_log_density.shape != likelihood_log_density.shape
-    ):
-        raise ValueError(f"source sequential density: {HighDimStatus.INVALID_SHAPE.value}")
-    return -prior_log_density - transition_log_density - likelihood_log_density
+        if not isinstance(previous_retained_object, SourceRouteRetainedObject):
+            raise TypeError("previous_retained_object must be SourceRouteRetainedObject")
+        if d + m > previous_retained_object.coordinate_frame.dimension:
+            raise ValueError(f"keep_axes: {HighDimStatus.INVALID_SHAPE.value}")
+    from bayesfilter.highdim.source_route_sequential_tf import physical_density_program
+
+    program = physical_density_program(int(time_index), d, m, transition_log_density_fn,
+        likelihood_log_density_fn, prior_log_density_fn, previous_retained_object, points.shape)
+    evaluate = program.inline_function if tf.inside_function() else program
+    return numerics_tf.finite(evaluate(points), "source sequential density")
 
 
 def source_route_default_operation_audit(
@@ -8815,58 +8656,47 @@ def source_route_run_sequential_fixed_hmc(
     if audit.status != "PASS_SOURCE_ROUTE_OPERATION_COVERAGE":
         raise ValueError("branch_audit must pass source-route operation coverage")
 
+    from bayesfilter.highdim.source_route_sequential_tf import (
+        sequential_program,
+        unpack_step,
+    )
+
+    program, prepared, lengths = sequential_program(specs)
+    numerical = program(*(spec.reference_samples for spec in specs))
     previous_retained: SourceRouteRetainedObject | None = None
     steps: list[SourceRouteSequentialStepResult] = []
-    for spec in specs:
+    # Numerical date evaluation is complete. This loop constructs identities,
+    # host validation records and the existing heterogeneous public result.
+    for index, spec in enumerate(specs):
         step_target = _source_route_step_target_from_components(
             spec=spec,
             previous_retained_object=previous_retained,
         )
-        current_reference = spec.transport.inverse_transport(spec.reference_samples)
-        current_physical = step_target.physical_points_from_reference(
-            current_reference
-        )
+        (physical, proposal, target_log, correction, weights, ess, log_z,
+         previous_physical, previous_local, previous_log) = unpack_step(
+            numerical[index], prepared[index][2], lengths[index])
         if spec.time_index == 1:
             previous_marginal_density = None
         else:
-            if previous_retained is None:
-                raise ValueError("t>1 requires previous retained object")
-            if (
-                spec.previous_marginal_keep_axes is None
-                or spec.previous_marginal_input_axes is None
-            ):
-                raise ValueError("t>1 requires previous marginal axes")
-            previous_physical = tf.gather(
-                current_physical,
-                spec.previous_marginal_input_axes,
-                axis=0,
-            )
-            previous_marginal_density = source_route_previous_marginal_log_density(
+            previous_marginal_density = SourceRoutePreviousMarginalDensityResult(
                 previous_retained_object=previous_retained,
-                physical_points=previous_physical,
                 keep_axes=spec.previous_marginal_keep_axes,
+                marginal_transport=specs[index-1].transport.marginalize(spec.previous_marginal_keep_axes),
+                physical_points=previous_physical,
+                local_points=previous_local,
+                log_density=previous_log,
             )
 
-        component_negative_log = spec.density_components.negative_log_physical_density(
-            physical_points=current_physical,
-            time_index=spec.time_index,
-            previous_retained_object=previous_retained,
-        )
-        target_negative_log = _finite_vector(
-            "target_negative_log_physical_density",
-            step_target.negative_log_physical_density_fn(current_physical),
-        )
-        tf.debugging.assert_near(
-            target_negative_log,
-            component_negative_log,
-            atol=1e-10,
-        )
-
-        retained_samples = source_route_generate_retained_samples(
-            target=step_target,
-            transport=spec.transport,
-            reference_samples=spec.reference_samples,
-            time_index=spec.time_index,
+        retained_samples = SourceRouteRetainedSampleResult(
+            retained_batch=SourceRouteSampleBatch(samples=physical, log_weights=weights,
+                time_index=spec.time_index, route_label=SOURCE_FAITHFUL_ROUTE_LABEL,
+                sample_origin="retained_from_transport"),
+            proposal_log_density=proposal, target_log_density=target_log,
+            correction_log_weights=correction,
+            diagnostics=SourceRouteSampleDiagnostics(sample_count=spec.reference_samples.shape[1],
+                                                      effective_sample_size=ess),
+            normalizer=SourceRouteNormalizerContribution(log_transport_normalizer=log_z,
+                shift_constant=spec.target.shift_constant, log_abs_det_policy=spec.target.log_abs_det_policy),
         )
         diagnostics = {
             "phase": "P57-M6",
@@ -8989,14 +8819,6 @@ def source_route_recenter(
     log_weight_tensor = tf.convert_to_tensor(log_weights, dtype=tf.float64)
     if log_weight_tensor.shape != (int(sample_tensor.shape[1]),):
         raise ValueError(f"log_weights: {HighDimStatus.INVALID_SHAPE.value}")
-    finite_columns = tf.reduce_all(tf.math.is_finite(sample_tensor), axis=0)
-    finite_weights = tf.math.is_finite(log_weight_tensor)
-    keep = tf.logical_and(finite_columns, finite_weights)
-    if not bool(tf.reduce_any(keep).numpy()):
-        raise ValueError(f"samples/log_weights: {HighDimStatus.NONFINITE_VALUE.value}")
-    sample_tensor = tf.boolean_mask(sample_tensor, keep, axis=1)
-    log_weight_tensor = tf.boolean_mask(log_weight_tensor, keep)
-    weights = tf.exp(normalize_log_weights(log_weight_tensor))
     if float(expansion_factor) <= 0.0:
         raise ValueError("expansion_factor must be positive")
     jitter = float(covariance_jitter)
@@ -9009,30 +8831,10 @@ def source_route_recenter(
     if min_ess < 0.0:
         raise ValueError("min_ess_for_quantile_scale must be nonnegative")
     assert_tf_float64("samples", sample_tensor)
-    mu = tf.reduce_sum(sample_tensor * weights[tf.newaxis, :], axis=1)
-    centered = sample_tensor - mu[:, tf.newaxis]
-    covariance = tf.einsum("n,in,jn->ij", weights, centered, centered)
-    covariance = 0.5 * (covariance + tf.transpose(covariance))
-    if jitter > 0.0:
-        dim = int(sample_tensor.shape[0])
-        covariance = covariance + tf.eye(dim, dtype=tf.float64) * tf.constant(
-            jitter,
-            dtype=tf.float64,
-        )
-    matrix = tf.linalg.cholesky(covariance)
-    ess = effective_sample_size_from_log_weights(log_weight_tensor)
-    if bool(use_quantile_scale) and bool((ess > min_ess).numpy()):
-        standardized = tf.linalg.triangular_solve(matrix, centered, lower=True)
-        scale_diag = _source_route_computeL_quantile_scale(
-            standardized,
-            weights,
-            quantile_fraction=q,
-        )
-        matrix = tf.matmul(matrix, tf.linalg.diag(scale_diag))
-    matrix = matrix * tf.constant(
-        float(expansion_factor),
-        dtype=tf.float64,
-    )
+    mu, matrix, valid = preparation_tf.recenter(sample_tensor, log_weight_tensor,
+        float(expansion_factor), jitter, q, min_ess, use_quantile_scale=bool(use_quantile_scale))
+    if not bool(valid.numpy()):
+        raise ValueError(f"samples/log_weights: {HighDimStatus.NONFINITE_VALUE.value}")
     return SourceRouteCoordinateFrame(
         mu=mu,
         matrix=matrix,
@@ -9051,11 +8853,10 @@ def source_route_reference_log_density_from_physical(
     if log_density.shape.rank not in (0, 1):
         raise ValueError(f"log_physical_density: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("log_physical_density", log_density)
-    if not bool(tf.reduce_all(tf.math.is_finite(log_density)).numpy()):
-        raise ValueError(f"log_physical_density: {HighDimStatus.NONFINITE_VALUE.value}")
-    return log_density + coordinate_frame.log_abs_det()
+    return numerics_tf.reference_log_density(log_density, coordinate_frame.matrix)
 
 
+@numerics_tf.compiled
 def source_route_shifted_negative_log_target(
     *,
     negative_log_target: tf.Tensor,
@@ -9071,12 +8872,7 @@ def source_route_shifted_negative_log_target(
         raise ValueError(f"shift_constant: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64("negative_log_target", target)
     assert_tf_float64("shift_constant", shift)
-    if not bool(
-        tf.reduce_all(tf.math.is_finite(target)).numpy()
-        and tf.math.is_finite(shift).numpy()
-    ):
-        raise ValueError(f"source_route_shifted_negative_log_target: {HighDimStatus.NONFINITE_VALUE.value}")
-    return target - shift
+    return numerics_tf.finite(target, "negative_log_target") - numerics_tf.finite(shift, "shift_constant")
 
 
 def source_route_log_normalizer_update(
@@ -9086,14 +8882,14 @@ def source_route_log_normalizer_update(
 ) -> tf.Tensor:
     """Return the source-style log-likelihood increment `log(z) - const`."""
 
-    normalizer = SourceRouteNormalizerContribution(
-        log_transport_normalizer=log_transport_normalizer,
-        shift_constant=shift_constant,
-        log_abs_det_policy="included_in_target",
-    )
-    return normalizer.log_increment()
+    log_z = tf.convert_to_tensor(log_transport_normalizer, tf.float64)
+    shift = tf.convert_to_tensor(shift_constant, tf.float64)
+    if log_z.shape.rank != 0 or shift.shape.rank != 0:
+        raise ValueError(f"normalizer contribution: {HighDimStatus.INVALID_SHAPE.value}")
+    return numerics_tf.normalizer_increment(log_z, shift)
 
 
+@numerics_tf.compiled
 def source_route_residual_negative_log_target(
     *,
     full_negative_log_target: tf.Tensor,
@@ -9110,6 +8906,7 @@ def source_route_residual_negative_log_target(
     return full - preconditioner
 
 
+@numerics_tf.compiled
 def source_route_preconditioned_target_identity_error(
     *,
     full_negative_log_target: tf.Tensor,
@@ -9265,34 +9062,20 @@ def _source_route_computeL_quantile_scale(
     normalized_weights = tf.convert_to_tensor(weights, dtype=tf.float64)
     if samples.shape.rank != 2 or normalized_weights.shape != (int(samples.shape[1]),):
         raise ValueError(f"quantile scale: {HighDimStatus.INVALID_SHAPE.value}")
-    q = tf.constant(float(quantile_fraction), dtype=tf.float64)
-    normal_q = tfp_normal_quantile(q)
-    scales = []
-    for axis in range(int(samples.shape[0])):
-        values = samples[axis, :]
-        order = tf.argsort(values, stable=True)
-        sorted_values = tf.gather(values, order)
-        sorted_weights = tf.gather(normalized_weights, order)
-        cumulative = tf.cumsum(sorted_weights)
-        left_index = tf.argmax(tf.cast(cumulative > q, tf.int32), output_type=tf.int32)
-        right_index = tf.argmax(
-            tf.cast(cumulative > (1.0 - q), tf.int32),
-            output_type=tf.int32,
-        )
-        width = tf.gather(sorted_values, right_index) - tf.gather(sorted_values, left_index)
-        scale = -width / normal_q / 2.0
-        scales.append(tf.maximum(scale, tf.constant(1e-12, dtype=tf.float64)))
-    return tf.stack(scales)
+    q = float(quantile_fraction)
+    if not math.isfinite(q) or not 0. < q < 1.:
+        raise ValueError("probability must be in (0, 1)")
+    return preparation_tf.quantile_scale(samples, normalized_weights, q)
 
 
+@numerics_tf.compiled
 def tfp_normal_quantile(probability: tf.Tensor) -> tf.Tensor:
     """Return the standard-normal quantile using TensorFlow primitives."""
 
     p = tf.convert_to_tensor(probability, dtype=tf.float64)
     if p.shape.rank != 0:
         raise ValueError(f"probability: {HighDimStatus.INVALID_SHAPE.value}")
-    if not bool(tf.math.is_finite(p).numpy()) or not bool((p > 0.0).numpy() and (p < 1.0).numpy()):
-        raise ValueError("probability must be in (0, 1)")
+    p = tf.where(tf.math.is_finite(p) & (p > 0.) & (p < 1.), p, tf.constant(float("nan"), tf.float64))
     return tf.sqrt(tf.constant(2.0, dtype=tf.float64)) * tf.math.erfinv(
         2.0 * p - 1.0
     )
@@ -9303,9 +9086,7 @@ def _finite_vector(name: str, value: tf.Tensor) -> tf.Tensor:
     if tensor.shape.rank != 1:
         raise ValueError(f"{name}: {HighDimStatus.INVALID_SHAPE.value}")
     assert_tf_float64(name, tensor)
-    if not bool(tf.reduce_all(tf.math.is_finite(tensor)).numpy()):
-        raise ValueError(f"{name}: {HighDimStatus.NONFINITE_VALUE.value}")
-    return tensor
+    return numerics_tf.finite(tensor, name)
 
 
 def _finite_same_shape_vectors(

@@ -1,0 +1,68 @@
+{
+  "command": [
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_optimization.py",
+    "--worker",
+    "filter",
+    "--model",
+    "ksc",
+    "--arm",
+    "candidate",
+    "--output",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-optimization-20261021-01/filter-ksc-candidate-02"
+  ],
+  "git_commit": "d189c429542eb3a682677ce7fc463c3b796b69ea",
+  "python": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "plan": "docs/plans/surrogate-hmc-optimization-implementation-2026-10-21.md",
+  "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-optimization-20261021-01/filter-ksc-candidate-02/result.json",
+  "backend": "TensorFlow GPU XLA",
+  "dtype": "float32",
+  "tf32": false,
+  "gpu_access": "escalated",
+  "jit_compile": true,
+  "source_sha256": {
+    "scripts/run_surrogate_hmc_optimization.py": "261570bd75a7af01a521f8c0fe947bc73c4e0765eaf1237eb75407adaf9d179f",
+    "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "8947515c408475e46749497482727e8daff6e3e4a9528d8dcac089f3d92660ca",
+    "bayesfilter/highdim/covariance_proposal_native_models_tf.py": "2ac5e3769e1ac41a1d3006772694e4fd55a98a8b540b0a7e81110996f6b13c91",
+    "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "928fdd18d80da472475e5a3b7f375918592e81ae562fab0e12237a7ef64b8cff",
+    "bayesfilter/highdim/covariance_proposal_nonshared_gaussian_tf.py": "4f86288b7246ba60f6630d8e660717f9f302096eb2fec69ffd2bc0764fcc35c2",
+    "bayesfilter/testing/surrogate_hmc_sir_neutra.py": "32c6fe07bef918948e6bef343785081b171afb82e0c2f0a702d85af13a1318fc",
+    "bayesfilter/testing/surrogate_hmc_five_model.py": "84e812413f63fdddb6ce373e15666abf32695d918596a6e0133e9ffa5eb3462e",
+    "bayesfilter/inference/neutra_transport.py": "895132e622d4a1cc22a8b3b03055416f386f8a25595b4d5fb895884b10ca8b79",
+    "bayesfilter/inference/neutra_transport_core.py": "e2ee81730484383a4e29c4d27bb20012961e4281fa09dfa396e602955dab8cc3",
+    "bayesfilter/inference/neural_force_hmc.py": "94ff38f56bafec547d3c35bab716448a75130971d4af020577a5b99d83e62644"
+  },
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow_version": "2.20.0-dev0+selfbuilt",
+  "devices": [
+    "PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')"
+  ],
+  "cuda_visible_devices": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+  "hardware": [
+    "0, NVIDIA GeForce RTX 5080, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, 5331 MiB, 44 %",
+    "1, NVIDIA GeForce RTX 4080 SUPER, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, 583 MiB, 37 %"
+  ],
+  "status": "COMPLETE",
+  "wall_seconds": 50.00118094205391
+}

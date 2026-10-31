@@ -1,0 +1,505 @@
+{
+  "status": "PASS",
+  "scope": "LORENZ_PRECISION_NONHARM_DIAGNOSTIC",
+  "replication": "INCOMPLETE",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "device": "GPU",
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "candidates": [
+    {
+      "policy": "nearest_precision",
+      "eligible": false,
+      "healthy_checks": [
+        {
+          "name": "valid_without_activation",
+          "passed": true
+        },
+        {
+          "name": "A",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "b",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "c",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "x",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ancestors",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "log_incremental_weight",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "logZ",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ess",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "stopping",
+          "passed": true
+        }
+      ],
+      "healthy_valid": true,
+      "healthy_protections": 0.0,
+      "rejected_design_valid": false,
+      "iterations": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "safety": {
+        "protection_count": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            13.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "minimum_fraction": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "minimum_raw_margin": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.010046784712195663,
+            0.009949202042778603,
+            0.009727832389177708,
+            0.009589236889154668
+          ],
+          [
+            0.010747550472256678,
+            0.009952049948364131,
+            0.010352971975196763,
+            0.009593150406809959
+          ],
+          [
+            -1.0,
+            0.008659270688385791,
+            0.008693529329959399,
+            0.008535840140537612
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "maximum_relative_change": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.7648023384529,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "minimum_forward_precision_margin": 1.4901161089002269e-08,
+      "rejected_design_finite": false,
+      "trace_counts": {
+        "healthy_controller": 1,
+        "healthy_fit": 1,
+        "healthy_forward": 1,
+        "rejected_controller": 1,
+        "rejected_fit": 1,
+        "rejected_forward": 1
+      },
+      "verdict": "REJECTED_NONHARM_SCREEN",
+      "saved_history": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt78_c2_lorenz_precision_safety/nearest_precision",
+      "seconds": 27.56104260298889
+    },
+    {
+      "policy": "backtrack_precision",
+      "eligible": false,
+      "healthy_checks": [
+        {
+          "name": "valid_without_activation",
+          "passed": true
+        },
+        {
+          "name": "A",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "b",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "c",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "x",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ancestors",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "log_incremental_weight",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "logZ",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "ess",
+          "passed": true,
+          "bitwise_equal": true,
+          "max_error": 0.0
+        },
+        {
+          "name": "stopping",
+          "passed": true
+        }
+      ],
+      "healthy_valid": true,
+      "healthy_protections": 0.0,
+      "rejected_design_valid": false,
+      "iterations": [
+        4,
+        4,
+        4,
+        4
+      ],
+      "safety": {
+        "protection_count": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            7.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "minimum_fraction": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.25,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.03125,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "minimum_raw_margin": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            0.010046784712195663,
+            0.009949202042778603,
+            0.009727832389177708,
+            0.009589236889154668
+          ],
+          [
+            0.01074755047225021,
+            0.00995204994836486,
+            0.01035297197519759,
+            0.00959315040680595
+          ],
+          [
+            -0.13250910920907752,
+            0.008659270688464357,
+            0.008693529329987548,
+            0.00853584014051803
+          ],
+          [
+            -0.6939670055453204,
+            0.008250685897978633,
+            0.008228726029934871,
+            0.008260585026556183
+          ]
+        ],
+        "maximum_relative_change": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.1349486172429715,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.8885904116355005,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "minimum_forward_precision_margin": 0.004904676414129043,
+      "rejected_design_finite": false,
+      "trace_counts": {
+        "healthy_controller": 1,
+        "healthy_fit": 1,
+        "healthy_forward": 1,
+        "rejected_controller": 1,
+        "rejected_fit": 1,
+        "rejected_forward": 1
+      },
+      "verdict": "REJECTED_NONHARM_SCREEN",
+      "saved_history": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/attempt78_c2_lorenz_precision_safety/backtrack_precision",
+      "seconds": 41.46973869705107
+    }
+  ],
+  "checks": [
+    {
+      "name": "shared_kernel_snapshot",
+      "passed": true
+    },
+    {
+      "name": "hash_normal.bin",
+      "passed": true
+    },
+    {
+      "name": "hash_uniform.bin",
+      "passed": true
+    },
+    {
+      "name": "unprotected_healthy_valid",
+      "passed": true
+    },
+    {
+      "name": "both_predeclared_candidates_evaluated",
+      "passed": true
+    }
+  ],
+  "heuristic_dominance_verdict": "NOT_ASSESSED_SAFETY_ONLY",
+  "wall_seconds": 84.7625397508964,
+  "eligible_policies": [],
+  "next_validation_policy": null,
+  "interpretation": "Completed safety evaluation only. Candidate eligibility does not certify correctness, variance reduction, source-code replication, or default readiness.",
+  "allocator": {
+    "current": 104316160,
+    "peak": 317629696
+  }
+}

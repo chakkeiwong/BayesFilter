@@ -1,0 +1,42 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791444932.803112 3142159 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791444932.807016 3142159 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791444932.820556 3142159 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791444932.820649 3142159 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791444932.820659 3142159 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791444932.820665 3142159 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791444936.775797 3142159 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1791444953.488038 3142159 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791444996.969590 3142159 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+lg20-t10 4096 control 0 valid True
+lg20-t10 4096 control 1 valid True
+lg20-t10 4096 dataset 100 complete
+lg20-t10 4096 dataset 101 complete
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 370, in worker
+    row[policy]=ex.one(evaluate(filt(chosen,policy),tf.constant([theta],tf.float32),
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 541, in <module>
+    if __name__=="__main__": main()
+                             ^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 538, in main
+    worker(args)
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 370, in worker
+    row[policy]=ex.one(evaluate(filt(chosen,policy),tf.constant([theta],tf.float32),
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 97, in evaluate
+    check();tick=time.monotonic()
+    ^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_marginal_expanded.py", line 95, in check
+    if time.time() >= args.deadline: raise TimeoutError("worker/campaign budget exhausted")
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: worker/campaign budget exhausted

@@ -1,0 +1,206 @@
+2026-09-16 11:37:44.173895: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-16 11:37:44.183416: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789529864.197644  725677 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1789529864.201008  725677 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789529864.212853  725677 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789529864.212925  725677 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789529864.212932  725677 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789529864.212938  725677 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-16 11:37:44.217174: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1789529866.940377  725677 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1789529866.940994  725677 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 13153 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+================================================================================
+Phase 4a: LEDH Surrogate-Force HMC Ultra-Short Diagnostic
+================================================================================
+
+Configuration (master program Phase 4a):
+  LGSSM d=3, T=50, N=252 particles (Phase 3.5 validated size)
+  2 arms: exact-force (zero damping) vs damped-force (ε=0.01)
+  2 chains × 1000 steps per arm (parallel batched execution)
+  Budget: 2 GPU-hours (1 hour per arm)
+
+Success criterion (diagnostic only):
+  If W₂ < threshold → proceed to Phase 4b
+  If W₂ > threshold → method broken, STOP
+
+GPU memory policy: memory_growth_verified
+GPU devices: ['/physical_device:GPU:0', '/physical_device:GPU:1']
+CUDA_VISIBLE_DEVICES=unset
+
+[1/7] Loading LGSSM T=50 frozen observations...
+  T=50, dtype=<dtype: 'float64'>
+[2/7] Creating diagonal LGSSM model...
+  State dimension: 3
+[3/7] Generating frozen particles and noises (N=252)...
+  Frozen ω seed: 81100
+  Particles: 252
+[4/7] Setting shared LEDH parameters (Contract E)...
+  ✓ Contract E parameters set
+[5/7] Creating dual-parameter targets...
+  ✓ Exact-force target (zero damping)
+  ✓ Damped-force target (ε=0.01)
+  ✓ Exact-force target (zero damping)
+  ✓ Damped-force target (ε=0.01)
+
+[6/7] HMC configuration:
+  Chains: 2 (sequential, not batched)
+  Burn-in: 1000
+  Samples: 1000
+  Initial step size: 0.01
+  Leapfrog steps: 10
+  Initial theta: [1.  1.  1.  0.5 0.3]
+
+[7/7] Running HMC chains...
+================================================================================
+
+Arm 1: Exact-force HMC (zero damping)
+--------------------------------------------------------------------------------
+  Chain 1/2...
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789529869.820222  725677 cuda_solvers.cc:175] Creating GpuSolver handles for stream 0x5f89fa7f9750
+W0000 00:00:1789533236.182741  725952 cholesky_op_gpu.cu.cc:205] Cholesky decomposition was not successful for batch 0. The input might not be valid. Filling lower-triangular output with NaNs.
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter/docs/benchmarks/ledh_surrogate_hmc_phase4a_diagnostic.py", line 529, in <module>
+    main()
+  File "/home/chakwong/BayesFilter/docs/benchmarks/ledh_surrogate_hmc_phase4a_diagnostic.py", line 370, in main
+    samples_chain, trace_chain = run_hmc_single_chain(
+                                 ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter/docs/benchmarks/ledh_surrogate_hmc_phase4a_diagnostic.py", line 153, in run_hmc_single_chain
+    return tfp.mcmc.sample_chain(
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/sample.py", line 359, in sample_chain
+    (_, _, final_kernel_results), (all_states, trace) = loop_util.trace_scan(
+                                                        ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/internal/loop_util.py", line 232, in trace_scan
+    _, final_state, _, trace_arrays = tf.while_loop(
+                                      ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 660, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 241, in while_loop_v2
+    return while_loop(
+           ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 488, in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 479, in <lambda>
+    body = lambda i, lv: (i + 1, orig_body(*lv))
+                                 ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/internal/loop_util.py", line 222, in _body
+    state = loop_fn(state, elem)
+            ^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/sample.py", line 352, in _trace_scan_fn
+    seed, next_state, current_kernel_results = loop_util.smart_for_loop(
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/internal/loop_util.py", line 111, in smart_for_loop
+    return tf.while_loop(
+           ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 660, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 241, in while_loop_v2
+    return while_loop(
+           ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 488, in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/internal/loop_util.py", line 113, in <lambda>
+    body=lambda i, *args: [i + 1] + list(body_fn(*args)),
+                                         ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/sample.py", line 349, in _seeded_one_step
+    kernel.one_step(*state_and_results, **one_step_kwargs))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/dual_averaging_step_size_adaptation.py", line 489, in one_step
+    new_state, new_inner_results = self.inner_kernel.one_step(
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py", line 527, in one_step
+    next_state, kernel_results = self._impl.one_step(
+                                 ^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/metropolis_hastings.py", line 191, in one_step
+    ] = self.inner_kernel.one_step(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/hmc.py", line 705, in one_step
+    ] = integrator(current_momentum_parts,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/leapfrog_integrator.py", line 291, in __call__
+    ] = tf.while_loop(
+        ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 660, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 241, in while_loop_v2
+    return while_loop(
+           ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 488, in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/leapfrog_integrator.py", line 293, in <lambda>
+    body=lambda i, *args: [i + 1] + list(_one_step(  # pylint: disable=no-value-for-parameter,g-long-lambda
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/leapfrog_integrator.py", line 336, in _one_step
+    [next_target, next_target_grad_parts] = mcmc_util.maybe_call_fn_and_grads(
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py", line 297, in maybe_call_fn_and_grads
+    result, grads = _value_and_gradients(fn, fn_arg_list, result, grads)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/mcmc/internal/util.py", line 268, in _value_and_gradients
+    result = fn(*fn_arg_list)
+             ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter/bayesfilter/inference/ledh_dual_parameter_target.py", line 148, in __call__
+    return target_with_surrogate_gradient(theta)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/custom_gradient.py", line 339, in __call__
+    return self._d(self._f, a, k)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/custom_gradient.py", line 293, in decorated
+    return _eager_mode_decorator(wrapped, args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/custom_gradient.py", line 539, in _eager_mode_decorator
+    result, grad_fn = f(*args, **kwargs)
+                      ^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter/bayesfilter/inference/ledh_dual_parameter_target.py", line 115, in target_with_surrogate_gradient
+    exact_value, _, _ = canonical_batch_fused_value_score(
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 269, in canonical_batch_fused_value_score
+    values, scores = tf.map_fn(
+                     ^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 660, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 588, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py", line 636, in map_fn_v2
+    return map_fn(
+           ^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/deprecation.py", line 588, in new_func
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py", line 496, in map_fn
+    _, r_a = while_loop.while_loop(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 488, in while_loop
+    loop_vars = body(*loop_vars)
+                ^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/while_loop.py", line 479, in <lambda>
+    body = lambda i, lv: (i + 1, orig_body(*lv))
+                                 ^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/map_fn.py", line 486, in compute
+    result_value = autographed_fn(elems_value)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/autograph/impl/api.py", line 693, in wrapper
+    raise e.ag_error_metadata.to_exception(e)
+tensorflow.python.framework.errors_impl.InvalidArgumentError: in user code:
+
+    File "/home/chakwong/BayesFilter/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 260, in evaluate_row  *
+        tf.debugging.assert_near(
+
+    InvalidArgumentError: Expected 'tf.Tensor(False, shape=(), dtype=bool)' to be true. Summarized data: b'direction changed the primal canonical value.  '
+    b'x and y not equal to tolerance rtol = tf.Tensor(1e-12, shape=(), dtype=float64), atol = tf.Tensor(1e-12, shape=(), dtype=float64)'
+    b'x (shape=(1,) dtype=float64) = '
+    nan
+    b'y (shape=(1,) dtype=float64) = '
+    nan
+

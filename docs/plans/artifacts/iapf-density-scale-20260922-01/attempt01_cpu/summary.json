@@ -1,0 +1,40 @@
+{
+  "cases": 30,
+  "environment": {
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "build": {
+      "cpu_compiler": "/home/chakwong/python/results/gpu/tf-dual-gpu-sm120-exec-20260807-20260807-184528/route_b/clang20-ubuntu-gcc11",
+      "cuda_compute_capabilities": [
+        "sm_89",
+        "compute_120"
+      ],
+      "cuda_version": "12.8.1",
+      "cudnn_version": "9",
+      "is_cuda_build": true,
+      "is_rocm_build": false,
+      "is_tensorrt_build": false
+    },
+    "memory_policy": {
+      "mode": "CPU_reference_GPU_intentionally_hidden"
+    },
+    "device": "cpu",
+    "dtype": "float64",
+    "jit_compile": true,
+    "tf32": false,
+    "visible_devices": "-1"
+  },
+  "R": {
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "docs/benchmarks/diagnose_iapf_density_scale.R",
+      "/home/chakwong/BayesFilter/docs/plans/artifacts/iapf-density-scale-20260922-01/attempt01_cpu"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 2.05205992795527
+  },
+  "diagnostic_flags": 8,
+  "all_gradient_bounds_pass": true,
+  "all_healthy_nonharm_pass": true,
+  "source_attempt": null
+}

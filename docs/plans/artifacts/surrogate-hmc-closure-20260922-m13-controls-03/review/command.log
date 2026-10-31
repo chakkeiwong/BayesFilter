@@ -1,0 +1,40 @@
+..................................F..................................... [100%]
+=================================== FAILURES ===================================
+__________ test_localization_changes_only_the_named_protection_group ___________
+
+    def test_localization_changes_only_the_named_protection_group():
+        arms = m13.localization_candidates()
+        strong, weak = arms["strong"], arms["weak"]
+        expected = {"reset_ridge": {"reset_ridge"},
+            "lm": {"correction_lm_damping", "correction_lm_scale_floor"},
+            "trust_caps": {"correction_trust_radius", "pairwise_rms_cap", "coordinate_cap"}}
+        for name, keys in expected.items():
+            settings = arms["restore_"+name]
+            assert {k for k in settings if settings[k] != weak[k]} == keys
+            assert all(settings[k] == strong[k] for k in keys)
+>       assert all(c["reset_contract_id"] == "contract_e_chol_v1" for c in arms.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_surrogate_hmc_m13_controls.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0x7da407752160>
+
+>   assert all(c["reset_contract_id"] == "contract_e_chol_v1" for c in arms.values())
+               ^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'reset_contract_id'
+
+tests/test_surrogate_hmc_m13_controls.py:125: KeyError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_surrogate_hmc_m13_controls.py::test_localization_changes_only_the_named_protection_group
+1 failed, 71 passed, 2 warnings in 18.25s

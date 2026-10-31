@@ -1,5 +1,179 @@
 # Implementation and validation plan for modern HMC methods
 
+## Active continuation — 30 October 2026
+
+Remote main, including the new LEDH conditional-parent, SIR, KSC and
+range-bearing changes, is merged in the isolated integration checkout
+`/tmp/BayesFilter-modern-hmc-integration-20261030`. LEDH source paths match
+remote byte-for-byte. The shared dirty workspace remains preserved. See the
+[integration record](bayesfilter-modern-hmc-ledh-integration-2026-10-30.md).
+
+C3 is complete: all seven members assessed, four pass all declared checks.
+The [C4 raw-draw audit](bayesfilter-modern-hmc-c4-raw-precision-result-2026-10-30.md)
+also completes: all seven members and all 31 quantities reproduce stored
+calculations and decisions, with all 643 original source/input hashes intact.
+The failed first reader confused active and model coordinates; its repair is
+regression-tested and does not alter C3 outcomes. Batch-scale sensitivity and
+finite-run/reference uncertainty remain open.
+
+Next: execute the reviewed [fixed-count replication](bayesfilter-modern-hmc-c4-fixed-count-replication-2026-10-30.md), one fresh, fixed-10,000-draw cohort
+for all seven members, preserving warmup/health checks and original outcomes.
+Compare its terminal estimates with replayed early-stop prefixes; neither
+reference values nor favorable candidates determine stopping. The existing
+C3 numerical source is the comparator, while new LEDH integration remains
+separate. No ranking, broad reliability, default or release claim follows.
+C2 wider migration/P19, C4 tail calibration, C5 independent SIR, and C6/N8
+release/book reconciliation remain open. Historical status snapshots below
+do not reopen completed work or supply additional budget.
+
+### Fixed-count continuation launched
+
+The reviewed C4 run launched at **17:30:03 Asia/Shanghai on 30 October 2026**
+on the original bound GPU0, with memory growth enabled. Detached supervisor
+1100045 and worker 1100048 use versioned root
+`N5/c4-fixed-count-20261030-01/posterior-01`. Source checks and original-evidence
+reload are progressing; no launch error is recorded. Exact live status is in
+that root's `manifest.json` and `evidence/progress.json`. The supervisor records
+60-second heartbeats and 30-minute capacity reassessments, and preserves chunks
+for source-matched recovery. This status is a launch snapshot, not completion.
+
+The typical measured projection is 10.86 hours; the 98,215-second reservation
+(27.28 hours) covers original maximum warmup and workload variation. With
+3,600 seconds withheld for this integration/preparation, the unreserved upper
+balance is 58,914.47980995933 seconds. Separate SIR remains 7,363.064379416s.
+The next review must settle supervisor wall once and inspect every member,
+including early-stop versus fixed-count reference outcomes.
+
+Merged-source checks pass: 72 C3/LEDH tests, 10 real MacroFinance tests, and
+139 additional numerical tests. The updated driver/recovery/reader preflight
+passes 38 tests; its final 11-test driver run includes the extra paired-prefix
+regression. Suites overlap; these counts must not be summed as distinct tests.
+
+<!-- C3-AUTOMATIC-CONTINUATION -->
+## C3 automatic continuation — 2026-10-29T21:04:02.386742+00:00
+
+Current continuation status: **posterior_assessment_completed**.
+Exact progress: N5/c3-posterior-20261029-01/continuation-01/status.json.
+Posterior reservation: 98215s; actual pricing charge: 3394.607s.
+Unreserved balance after reservation: 80861.960s; SIR remains separate.
+Posterior inclusive charge: 18347.480s.
+Remaining upper balance after settlement: 160729.480s, preparation still withheld.
+Members passing all declared checks: 4 of 7.
+C3 diagnostic success does not grant posterior/default/release promotion.
+C2 migration, C4 reliability, C5 independent SIR and C6/N8 reconciliation remain open.
+<!-- C3-AUTOMATIC-CONTINUATION -->
+
+## C3 terminal review — 30 October 2026
+
+The seven-member posterior assessment finished at **05:03:49 Asia/Shanghai**
+with exit code 0. L=9,13,18,25 at epsilon=.4 passed all declared sequential
+and independent-reference checks. L=3/.4 and L=5/.4 reached the retained cap
+without sufficient precision; L=25/.2 passed internal checks but narrowly
+failed the reference screen (.101648 versus .1). All seven retain tuning
+membership. No numerical hard veto was recorded; all 643 source/input hashes
+match. See the [terminal result and audit](bayesfilter-modern-hmc-c3-posterior-result-2026-10-30.md).
+
+This C3 assessment is complete; the master is not. No posterior worker remains
+active. Next is C4 estimator/tail reliability, including the internal-stopping
+versus reference-validation discrepancy. C2 wider migration/P19, C5 independent
+SIR and C6/N8 integration/book/release reconciliation remain open. No thresholds
+were relaxed, candidates dropped, or comparative ranking established. The
+settled remaining upper balance is 160729.47980995933s (44.6471h), preparation
+still withheld; separate SIR funds remain 7363.064379416s.
+
+## Historical C3 preparation — 29 October 2026, 23:02 Asia/Shanghai
+
+The following is the preserved pre-launch snapshot; the terminal review above
+supersedes its live-process, pricing and remaining-work statements.
+
+**Independent reference work passed its declared checks; seven-member GPU
+pricing is now running.** The reviewed [C3 continuation](bayesfilter-modern-hmc-c3-reference-continuation-2026-10-29.md)
+and [reference result](bayesfilter-modern-hmc-c3-reference-result-2026-10-29.md)
+control the next work. Do not rerun the completed 1,248-trial qualification.
+
+C3a independently reproduced the covariance likelihood at 28 full-target
+points (maximum value discrepancy 2.8422e-14); central-difference scores passed
+the declared combined tolerances. C3b initially failed: the inherited
+generating-parameter geometry produced concentrated weights and a .118814-SD
+reference envelope. Independent multistart optimization, checked local
+curvature, broader proposal components and fresh calibration/validation streams
+repaired this reference-proposal problem without changing the target or
+relaxing the .02-SD screen. All 31 quantities now pass, with maximum empirical
+envelope .00218096 SD. This is an operational integration check, not proof
+of global mode coverage or a calibrated simultaneous error bound.
+
+The expanded reference/recovery suite passes 66 tests, and seven additional checks against the exact frozen numerical source pass. The GPU/XLA
+quantity preflight passes at all 28 saved points and all 31 quantities, maximum
+discrepancy 1.4211e-14. Actual cost pricing started at 23:01:16 on October 29
+under detached supervisor 977947 and worker 977950, using the original bound
+GPU0 with verified memory growth. At 23:15 the L=3/.4 and L=5/.4 price
+blocks were complete and L=9/.4 was running; no error was recorded.
+The automatic continuation observer is live. Its block above is the
+current authority for subsequent launch and terminal status.
+
+Active root: N5/c3-posterior-20261029-01/price-01. Its inclusive cap is 7200s.
+The supervisor records progress every 60s and reassesses capacity every 1800s;
+it does not require an idle GPU or stop on its own high utilization. Every
+verified member gets a 1000-transition-per-chain price block. Pricing draws
+are excluded from posterior estimates. Freeze the subsequent posterior
+reservation from actual all-member costs, then use the shared sequential
+controller, fresh seeds and durable chunks. Any missing price remains a gap;
+do not select only the cheapest or apparently favorable member.
+
+Reference attempts cost 300.54860805615317s in total; preflight supervisor
+cost 18.11339380289428s, within the 3600s preparation reserve. After retaining
+that preparation reserve and reserving 7200s for pricing, the unreserved upper
+balance is 175271.56712023835s. Do not separately charge the preflight child
+or add the released reference reservation as new credit. SIR funds remain
+7363.064379416s, untouched. Preparation overhead remains to be settled.
+
+C3 posterior assessment is still open. C2 wider migration/P19, C4 estimator
+and nonlinear-tail reliability, C5 independent-fit SIR and C6/N8 examples,
+integration and official-book/release reconciliation remain open. Conditional
+N6/N7 research is not automatically a scoped-release prerequisite. All
+candidates remain experimental; these checks establish no ranking, posterior
+promotion, new default or release. NUTS remains excluded.
+
+## Qualification closeout — 29 October 2026, historical snapshot
+
+**Public GPU qualification is complete; the overall master remains incomplete.**
+The fresh nine-candidate campaign ended successfully at **11:51:16 Asia/Shanghai
+on 29 October**, after **10h 38m 46s**. Trusted inspection confirms both workers
+exited. See the [terminal result](bayesfilter-modern-hmc-public-qualification-result-2026-10-29.md),
+[engineering repair](bayesfilter-modern-hmc-public-gpu-result-2026-10-29.md)
+and [compact evidence](../validation/modern-hmc-20261029-public-gpu/README.md).
+
+All **1,248 independent trials** returned across 48 work items; no partial or
+missing returned chunk remains. Accounting ties exactly, all 629 frozen source
+hashes match, and controller/audit/export/reload membership agrees. **Seven
+candidates passed fresh qualification and were exported and reloaded**, with
+preserved endpoints and finite continuation: L=3,5,9,13,18,25 at epsilon=.4,
+plus L=25 at .2. L=3 and L=5 at .8 failed movement screening and remain
+recorded as candidate-local failures. R-hat stayed reporting-only during
+tuning. NUTS was excluded. No posterior, ranking, default or release claim follows.
+
+The public GPU repair is installed and engineering checks pass. Qualification
+used clean commit f9291ee4437aa8c00dabbe331bffc6871b574c5c and a frozen copy of
+the installed consumer, with fresh streams. Legacy CPU defaults/global pin
+remain unchanged. Preserve original C1 evidence and the new completed campaign
+under N5/public-qualification-20261029-01; neither requires restarting.
+
+Next: resolve C3 estimands, precision, independent-reference uncertainty, fresh
+streams and sequential assessment before posterior execution. Historical truth
+recovery is not an independent posterior reference. C2 wider migration/P19,
+C3 posterior assessment, C4 estimator/tail reliability, C5 independent-fit SIR
+and C6/N8 integration, book and release reconciliation remain open. Conditional
+N6/N7 research need not block a scoped optional release.
+
+Inclusive settlement charges **38325.626110966085 seconds** once and releases
+**56106.373889033915 seconds** of unused reservation. Remaining unreserved
+allocation is at most **186372.1157282945 seconds (51.77h)**, keeping 3600
+engineering and 7200 preparation seconds withheld pending overhead settlement.
+Separate SIR balance remains 7363.064379416 seconds. This creates no new credit.
+No qualification worker or active reservation remains. Earlier launch/deadline
+statements below are historical; the former October30 deadline is no longer
+a live schedule.
+
 <!-- BEGIN MODERN-HMC-72H-20261027 -->
 
 ## Additional 72-hour allocation — 27 October 2026
@@ -215,9 +389,9 @@ consumer qualification, power and affordability are still unproved.
 | C1a | Closed: operational recovery and prior evidence preserved | Preserve original 384 trials/385 charges and old outcomes |
 | C1c | Closed for tested engineering scope | Row isolation, first-failure trace, early veto and lost-return/replay accounting pass; no global numerical-correctness claim |
 | C1b | Closed for the frozen nine-candidate MacroFinance diagnostic: all 1,312 trials returned, seven candidates verified/exported/reloaded, and two candidates failed movement checks | Preserve the two failures as candidate-local outcomes; no ranking, posterior or consumer admission follows |
-| C2 | Explicit binding installed and verified; wider admission open | 21 source tests, 33 numerical regressions and direct installed public-builder parity pass. Global pin unchanged; downstream consumers must opt in. External master still lacks P19 evidence |
-| C3 | Metadata preflight complete; posterior contract open | Seven diagnostic members intact, with numerical-handoff authority false. Bind the public GPU adapter and specify estimands, precision and independent reference before fresh qualification/retained execution |
-| C4 | Arithmetic diagnosis closed; estimator/tail reliability open | All 288 generated validation endpoints and 5,376 tail profiles audited; original refusals preserved. Specify fresh tail-aware validation before sampling; lugsail already exists |
+| C2 | Public GPU engineering and scoped qualification complete; wider admission open | 1,248 trials, seven verified/exported/reloaded candidates and two movement rejections; all source/accounting checks pass. Legacy pin unchanged; wider consumer migration and missing P19 remain separate |
+| C3 | Complete for the seven-member frozen MacroFinance assessment | Four pass all declared screens; three remain incomplete. Preserve all seven outcomes and the frozen source. No ranking or release promotion |
+| C4 | Saved-scalar and raw-C3 arithmetic audits complete; estimator/tail reliability open | All seven C3 members and 31 quantities reproduce exactly within roundoff. Run a prospectively frozen fixed-count cohort, then separately qualify tail reliability; no threshold or default change |
 | C5 | Open: informative independent SIR fits | Price against separate allocation, otherwise report under-budgeted |
 | C6 / N8 | Guide repair complete; release reconciliation open | Reconcile examples, CI integration coverage, chapter/build and exclusions; no unsupported default promotion |
 

@@ -1,0 +1,82 @@
+{
+  "environment": {
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "build": {
+      "cpu_compiler": "/home/chakwong/python/results/gpu/tf-dual-gpu-sm120-exec-20260807-20260807-184528/route_b/clang20-ubuntu-gcc11",
+      "cuda_compute_capabilities": [
+        "sm_89",
+        "compute_120"
+      ],
+      "cuda_version": "12.8.1",
+      "cudnn_version": "9",
+      "is_cuda_build": true,
+      "is_rocm_build": false,
+      "is_tensorrt_build": false
+    },
+    "memory_policy": {
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "mode": "memory_growth",
+      "physical_devices": [
+        {
+          "device": "/physical_device:GPU:0",
+          "device_details": {
+            "compute_capability": [
+              8,
+              9
+            ],
+            "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+          },
+          "memory_growth": true
+        }
+      ],
+      "all_physical_devices_memory_growth": true,
+      "full_device_preallocation_disabled": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "configured_before_logical_device_initialization": true,
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "device": "gpu",
+    "dtype": "float64",
+    "jit_compile": true,
+    "tf32": false,
+    "visible_devices": "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+    "allocator": {
+      "current": 7168,
+      "peak": 5058816
+    }
+  },
+  "evaluations": 342,
+  "checks": {
+    "finite": true,
+    "valid_cdf": true,
+    "baseline_replay": true,
+    "tail_replay": true,
+    "oracle_initial_value": true,
+    "oracle_probability": true,
+    "oracle_postinitial_ess": true,
+    "diagonal_KL_identity": true,
+    "trace_counts": true,
+    "case_count": true
+  },
+  "max_errors": {
+    "baseline_replay": 0.0,
+    "tail_replay": 0.0,
+    "oracle_initial_value": 5.684341886080802e-14,
+    "oracle_probability": 0.0,
+    "oracle_postinitial_ess": 8.881784197001252e-16,
+    "diagonal_KL_identity": 8.881784197001252e-16
+  },
+  "trace_counts": {
+    "(2, 128)": 1,
+    "(2, 256)": 1,
+    "(5, 256)": 1,
+    "(5, 512)": 1,
+    "(10, 512)": 1,
+    "(10, 128)": 1,
+    "(10, 256)": 1
+  },
+  "passed": true,
+  "statistical_ranking": null,
+  "default_changed": false
+}

@@ -1,0 +1,54 @@
+--- docs/plans/artifacts/surrogate-hmc-cost-repair-24h-20261013-01/literature-prior-other-four-advance-01/predator_prey/filter-tuning/predator_prey/source/bayesfilter/testing/surrogate_hmc_five_model.py
++++ bayesfilter/testing/surrogate_hmc_five_model.py
+@@ -514,7 +514,7 @@
+     return record
+ 
+ 
+-def make_tuning_config(case, scope):
++def make_tuning_config(case, scope, *, target_accept_prob=.7, initial_step_size=.01):
+     import sys
+     from bayesfilter.inference import (
+         TensorFlowHMCKernelTuningConfig, VerifiedTensorFlowHMCConfig,
+@@ -522,13 +522,13 @@
+     nomination = TensorFlowHMCKernelTuningConfig(
+         parameter_dimension=case.p, evidence_role="candidate",
+         mass_window_results=(128, 256), step_adaptation_results=256,
+-        verification_results=128, max_leapfrog_steps=4, initial_step_size=.01,
++        verification_results=128, max_leapfrog_steps=4, initial_step_size=initial_step_size,
+         budget_provenance="five-model N4032 master enforces the owner-selected wall budget",
+         initial_step_size_provenance="small standardized-coordinate hypothesis, adapted on own target",
+         geometry_provenance="identity coordinate-metric warm start, own-target windows with 10 percent identity shrinkage; not an assertion about prior covariance",
+         target_scope=scope,
+         acceptance_policy=FourChainMeanBandAcceptancePolicy(overall_band=(.5, 1.), per_chain_band=(.3, 1.)),
+-        target_accept_prob=.7, verification_repair_rounds=1, step_repair_factor=2.,
++        target_accept_prob=target_accept_prob, verification_repair_rounds=1, step_repair_factor=2.,
+         mass_shrinkage=.1, covariance_jitter=0.,
+         eigenvalue_floor=64*sys.float_info.epsilon, max_condition_number=sys.float_info.epsilon**-.5,
+         seed=(6111117, 61), use_xla=True, energy_error_max=1000.)
+@@ -542,12 +542,23 @@
+         chunk_results=250, check_every_results=1000)
+ 
+ 
+-def inference(case, output, selection_path):
++def inference(case, output, selection_path, *, resume_manifest=None,
++              target_accept_prob=None, initial_step_size=None):
+     """Public-tuner nomination, adaptive warmup and cumulative retained sampling."""
+-    from bayesfilter.inference import tune_hmc_kernel
++    from dataclasses import replace
++    from bayesfilter.inference import tune_hmc_kernel, VerifiedTensorFlowHMCConfig
+     load_selection(case, selection_path)
+     components = bindings(case)
+-    config = make_tuning_config(case, components["scope"])
++    if resume_manifest is not None:
++        if target_accept_prob is not None or initial_step_size is not None:
++            raise ValueError("resuming a frozen kernel cannot also request retuning")
++        parent = Path(resume_manifest).resolve()
++        config = replace(VerifiedTensorFlowHMCConfig.from_payload(read(parent)["config"]),
++                         resume_manifest=str(parent))
++    else:
++        config = make_tuning_config(case, components["scope"],
++            target_accept_prob=.7 if target_accept_prob is None else target_accept_prob,
++            initial_step_size=.01 if initial_step_size is None else initial_step_size)
+     save(Path(output)/"hmc-config.json", dict(config=config.payload(), scope=case.scope(),
+          endpoint=components["reference_role"], posterior_sampling_includes_public_verification_draws=True,
+          redundant_validation_phase=False))

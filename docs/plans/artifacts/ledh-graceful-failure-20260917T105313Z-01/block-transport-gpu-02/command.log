@@ -1,0 +1,43 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789647639.208860 2035411 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1789647639.231650 2035411 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789647639.386965 2035411 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647639.387047 2035411 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647639.387055 2035411 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789647639.387057 2035411 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1789647641.180482 2035411 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 35, in <module>
+    v,dv,c,dc,valid,row,drow=fn(theta)
+                             ^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 53, in quick_execute
+    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Input 0 to node `while/range` with op Range must be a compile-time constant.
+
+XLA compilation requires that operator arguments that represent shapes or dimensions be evaluated to concrete values at compile time. This error means that a shape or dimension argument could not be evaluated at compile time, usually because the value of the argument depends on a parameter to the computation, on a variable, or on a stateful operation such as a random number generator.
+
+Stack trace for op definition: 
+File "BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 35, in <module>
+File "BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 26, in evaluate
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_unified_reset_tf.py", line 114, in batched_sinkhorn_contract_e_reset_triple_with_tangent
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_unified_reset_tf.py", line 197, in batched_sinkhorn_contract_e_reset_triple_with_tangent
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_exact_block_transport_tf.py", line 44, in exact_block_transport_with_tangent
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_exact_block_transport_tf.py", line 42, in cost_body
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_exact_block_transport_tf.py", line 37, in geometry
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_exact_block_transport_tf.py", line 34, in take
+
+	 [[{{node while/range}}]]
+	tf2xla conversion failed while converting while_body_134_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+
+Stack trace for op definition: 
+File "BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 35, in <module>
+File "BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/block_gpu_validation.py", line 26, in evaluate
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_unified_reset_tf.py", line 114, in batched_sinkhorn_contract_e_reset_triple_with_tangent
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_unified_reset_tf.py", line 197, in batched_sinkhorn_contract_e_reset_triple_with_tangent
+File "BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_exact_block_transport_tf.py", line 44, in exact_block_transport_with_tangent
+
+	 [[while]]
+	tf2xla conversion failed while converting __inference_evaluate_2111[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_evaluate_2111]

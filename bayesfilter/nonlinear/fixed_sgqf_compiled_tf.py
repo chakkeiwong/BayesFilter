@@ -14,6 +14,9 @@ import tensorflow as tf
 
 
 def _symmetrize(matrix):
+    # Avoid Grappler's scalar transpose rewrite inside nested recurrences.
+    if matrix.shape[-2:] == (1, 1):
+        return 0.5 * (matrix + matrix)
     return 0.5 * (matrix + tf.linalg.matrix_transpose(matrix))
 
 

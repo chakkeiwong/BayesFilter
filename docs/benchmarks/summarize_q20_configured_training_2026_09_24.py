@@ -49,6 +49,18 @@ def main():
             int(math.floor((1.-probability)*(resamples-1)))])
         return {"mean":tf.reduce_mean(delta,axis=0),"bootstrap_interval":bounds,
             "standard_error":tf.math.reduce_std(delta,axis=0)/tf.sqrt(tf.constant(n-1,tf.float64))}
+    def geometry(bank):
+        physical=tf.ensure_shape(tf.constant(bank["blocks"]["physical"],tf.float64),[bank["rows"],4])
+        tf.debugging.assert_all_finite(physical,"nonfinite physical diagnostic draws")
+        weight=physical[:,2]
+        positive=int(tf.reduce_sum(tf.cast(weight>0.,tf.int32)))
+        negative=int(tf.reduce_sum(tf.cast(weight<0.,tf.int32)))
+        return {**{k:v for k,v in bank.items() if k!="blocks"},
+            "observation_weight_sign":{"parameter":"observation_weight.0.0","physical_index":2,
+                "rows":bank["rows"],"positive_rows":positive,"negative_rows":negative,
+                "zero_rows":bank["rows"]-positive-negative,"positive_fraction":positive/bank["rows"],
+                "role":"explanatory transport-draw coverage diagnostic",
+                "posterior_probability_estimate":False}}
     rows=[]
     for candidate in request["candidates"]:
         final=read(candidate["measurement"])
@@ -77,7 +89,7 @@ def main():
             "fixed_checkpoint_loss_improvement":statistics["bootstrap_interval"][1][0]<0.,
             "fixed_checkpoint_score_improvement":statistics["bootstrap_interval"][1][1]<0.,
             "standard_1000_point_probe":probe,
-            "geometry":{k:v for k,v in final.items() if k not in ("blocks",)},
+            "geometry":geometry(final),
             "measurement_sha256":hashlib.sha256(Path(candidate["measurement"]).read_bytes()).hexdigest()}
         row["fixed_checkpoint_training_improvement"]=row["fixed_checkpoint_loss_improvement"] and row["fixed_checkpoint_score_improvement"]
         rows.append(row)
@@ -91,7 +103,7 @@ def main():
             "interpretation":"conditional evidence for these seeded fits versus the saved baseline; no general superiority claim"}
     result={"status":"training_comparison_complete","baseline":request["baseline"],
         "baseline_sha256":hashlib.sha256(Path(request["baseline"]).read_bytes()).hexdigest(),
-        "baseline_geometry":{k:v for k,v in baseline.items() if k!="blocks"},
+        "baseline_geometry":geometry(baseline),
         "comparisons":rows,"families":families,"paired_rows":n,"bootstrap_resamples":resamples,
         "bootstrap_seed":[20260924,491],"interval_probability":probability,"multiplicity_allowance":10,
         "statistics_order":["reverse_kl_loss_difference","squared_score_residual_difference"],

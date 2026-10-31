@@ -1,0 +1,172 @@
+.F.F....                                                                 [100%]
+=================================== FAILURES ===================================
+________ test_adapter_dimensions_and_transition_tangent[sir_d18-18-9-3] ________
+
+name = 'sir_d18', d = 18, o = 9, p = 3
+
+    @pytest.mark.parametrize("name,d,o,p", [("predator_prey",2,2,6),("sir_d18",18,9,3)])
+    def test_adapter_dimensions_and_transition_tangent(name,d,o,p):
+        spec = NonlinearSQMCSpec(name)
+        theta = spec.default_theta(tf.float64)
+        direction = tf.ones([p],tf.float64) * .01
+        model,_ = spec.model(theta,direction)
+        state = spec.initial_mean(tf.float64)[None,:]
+        dstate = tf.ones([1,d],tf.float64)*.003
+        analytical = model.transition_mean_tangent_fn(theta,state,dstate)
+        eps = 1e-4
+        plus,_ = spec.model(theta+eps*direction,direction)
+        minus,_ = spec.model(theta-eps*direction,direction)
+        finite_difference = (plus.transition_mean_fn(theta+eps*direction,state+eps*dstate)
+                            -minus.transition_mean_fn(theta-eps*direction,state-eps*dstate))/(2*eps)
+        tf.debugging.assert_near(analytical,finite_difference,atol=2e-6,rtol=2e-5)
+        assert model.observation_fn(state).shape == (1,o)
+        assert (spec.dimension,spec.observation_dimension,spec.parameter_count)==(d,o,p)
+        for dtype in (tf.float32,tf.float64):
+>           observed = spec.observations(1,261101,dtype=dtype,jit_compile=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/highdim/test_sqmc_nonlinear_master.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/sqmc_nonlinear_tf.py:77: in observations
+    return _simulation(self, horizon, dtype.name, jit_compile)(
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/sqmc_nonlinear_tf.py:90: in simulate
+    model, _ = spec.model(theta, tf.zeros_like(theta))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/sqmc_nonlinear_tf.py:62: in model
+    model, set_direction = factory(theta, dtype=theta.dtype)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_models_tf.py:48: in austria_sir_canonical_model
+    base = zhao_cui_sir_austria_model()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/models.py:1332: in zhao_cui_sir_austria_model
+    return SpatialSIRSSM(
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SpatialSIRSSM(kappa=<tf.Tensor 'Fill:0' shape=(9,) dtype=float64>, nu=<tf.Tensor 'Fill_1:0' shape=(9,) dtype=float64>,...='diagnose_negative_after_noise', rk4_variant='zhao_cui_sir_step', process_noise_policy='clip_susceptible_after_noise')
+
+    def __post_init__(self) -> None:
+        kappa = tf.convert_to_tensor(self.kappa, dtype=tf.float64)
+        nu = tf.convert_to_tensor(self.nu, dtype=tf.float64)
+        initial_mean = tf.convert_to_tensor(self.initial_mean, dtype=tf.float64)
+        delta = tf.convert_to_tensor(self.delta, dtype=tf.float64)
+        rk4_internal_step = tf.convert_to_tensor(self.rk4_internal_step, dtype=tf.float64)
+        if kappa.shape.rank != 1 or nu.shape != kappa.shape:
+            raise ValueError(f"SIR parameters: {HighDimStatus.INVALID_SHAPE.value}")
+        compartments = int(kappa.shape[0])
+        state_dim = 2 * compartments
+        if initial_mean.shape != (state_dim,):
+            raise ValueError(f"initial_mean: {HighDimStatus.INVALID_SHAPE.value}")
+        if delta.shape.rank != 0 or rk4_internal_step.shape.rank != 0:
+            raise ValueError(f"time step: {HighDimStatus.INVALID_SHAPE.value}")
+        if not bool(
+>           tf.reduce_all(tf.math.is_finite(kappa)).numpy()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            and tf.reduce_all(tf.math.is_finite(nu)).numpy()
+            and tf.reduce_all(tf.math.is_finite(initial_mean)).numpy()
+            and tf.math.is_finite(delta).numpy()
+            and tf.math.is_finite(rk4_internal_step).numpy()
+            and (tf.reduce_all(kappa > 0.0)).numpy()
+            and (tf.reduce_all(nu > 0.0)).numpy()
+            and (delta > 0.0).numpy()
+            and (rk4_internal_step > 0.0).numpy()
+        ):
+E       AttributeError: 'SymbolicTensor' object has no attribute 'numpy'
+
+bayesfilter/highdim/models.py:636: AttributeError
+_______________ test_campaign_consumes_shared_executor[sir_d18] ________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x715d88524610>
+name = 'sir_d18'
+
+    @pytest.mark.parametrize("name", ["predator_prey","sir_d18"])
+    def test_campaign_consumes_shared_executor(monkeypatch,name):
+        """Prove 9-observation SIR reaches the same canonical executor as PP."""
+        spec = NonlinearSQMCSpec(name)
+        seen=[]
+        def checked(model,theta,states,covs,noise,obs,**kw):
+            seen.append((tuple(obs.shape),kw["moment_safety"],kw["pairwise_steps"]))
+            assert model.process_covariance.shape==(spec.dimension,spec.dimension)
+            return tf.reduce_sum(theta),tf.ones([1],theta.dtype)
+        monkeypatch.setattr(common,"canonical_value_and_analytical_score",checked)
+        common._kernel.cache_clear()
+        controls,design=master.arm_settings("guarded_pairwise",master.BASE)
+        n=2*spec.dimension
+        theta=spec.default_theta(tf.float64)
+>       value,score,valid=common.value_and_score(spec,"iid_dual_cap",controls,theta,
+            tf.zeros([1,spec.observation_dimension],tf.float64),261102,n,
+            jit_compile=False,reset_design_kind=design)
+
+tests/highdim/test_sqmc_nonlinear_master.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+bayesfilter/highdim/sqmc_campaign_tf.py:141: in value_and_score
+    value, score, valid, directional_values = kernel(theta, *inputs, observations)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+bayesfilter/highdim/sqmc_campaign_tf.py:123: in compute
+    _, values, scores = tf.while_loop(lambda i, *_: i < spec.parameter_count, body, (0, values, scores))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/sqmc_campaign_tf.py:116: in body
+    model, _ = spec.model(theta, direction)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/sqmc_nonlinear_tf.py:62: in model
+    model, set_direction = factory(theta, dtype=theta.dtype)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/ledh_canonical_models_tf.py:48: in austria_sir_canonical_model
+    base = zhao_cui_sir_austria_model()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+bayesfilter/highdim/models.py:1332: in zhao_cui_sir_austria_model
+    return SpatialSIRSSM(
+<string>:15: in __init__
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SpatialSIRSSM(kappa=<tf.Tensor 'while/Fill:0' shape=(9,) dtype=float64>, nu=<tf.Tensor 'while/Fill_1:0' shape=(9,) dty...='diagnose_negative_after_noise', rk4_variant='zhao_cui_sir_step', process_noise_policy='clip_susceptible_after_noise')
+
+    def __post_init__(self) -> None:
+        kappa = tf.convert_to_tensor(self.kappa, dtype=tf.float64)
+        nu = tf.convert_to_tensor(self.nu, dtype=tf.float64)
+        initial_mean = tf.convert_to_tensor(self.initial_mean, dtype=tf.float64)
+        delta = tf.convert_to_tensor(self.delta, dtype=tf.float64)
+        rk4_internal_step = tf.convert_to_tensor(self.rk4_internal_step, dtype=tf.float64)
+        if kappa.shape.rank != 1 or nu.shape != kappa.shape:
+            raise ValueError(f"SIR parameters: {HighDimStatus.INVALID_SHAPE.value}")
+        compartments = int(kappa.shape[0])
+        state_dim = 2 * compartments
+        if initial_mean.shape != (state_dim,):
+            raise ValueError(f"initial_mean: {HighDimStatus.INVALID_SHAPE.value}")
+        if delta.shape.rank != 0 or rk4_internal_step.shape.rank != 0:
+            raise ValueError(f"time step: {HighDimStatus.INVALID_SHAPE.value}")
+        if not bool(
+>           tf.reduce_all(tf.math.is_finite(kappa)).numpy()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            and tf.reduce_all(tf.math.is_finite(nu)).numpy()
+            and tf.reduce_all(tf.math.is_finite(initial_mean)).numpy()
+            and tf.math.is_finite(delta).numpy()
+            and tf.math.is_finite(rk4_internal_step).numpy()
+            and (tf.reduce_all(kappa > 0.0)).numpy()
+            and (tf.reduce_all(nu > 0.0)).numpy()
+            and (delta > 0.0).numpy()
+            and (rk4_internal_step > 0.0).numpy()
+        ):
+E       AttributeError: 'SymbolicTensor' object has no attribute 'numpy'
+
+bayesfilter/highdim/models.py:636: AttributeError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_sqmc_nonlinear_master.py::test_adapter_dimensions_and_transition_tangent[sir_d18-18-9-3]
+FAILED tests/highdim/test_sqmc_nonlinear_master.py::test_campaign_consumes_shared_executor[sir_d18]
+2 failed, 6 passed, 2 warnings in 6.59s

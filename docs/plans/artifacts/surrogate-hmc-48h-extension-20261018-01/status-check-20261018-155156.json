@@ -1,0 +1,120 @@
+{
+  "checked_utc": "2026-10-18T15:51:56.071885+00:00",
+  "purpose": "Status inspection; no new experiment or scientific ranking",
+  "state_source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/state.json",
+  "current_model": "predator_prey",
+  "deadline_utc": "2026-10-20T08:00:41.921494+00:00",
+  "remaining_worker_seconds_estimate": 146492.84478799702,
+  "supervisor_pid": 3835358,
+  "active_master_pid": 3843697,
+  "processes_confirmed_live_in_escalated_ps": true,
+  "models": {
+    "predator_prey": {
+      "source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/predator_prey-retry-01/predator_prey/inference/public-tuning/fresh-progress.json",
+      "status": "RUNNING",
+      "counts": {
+        "verification": 5000,
+        "warmup": 3000
+      },
+      "warmup_ready": true,
+      "last_event": {
+        "check_due": true,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": true,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true
+        },
+        "count": 5000,
+        "diagnostics": {
+          "chain_transition_count": 1000,
+          "force_fallback_count": 0,
+          "force_fallback_count_by_chain": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "force_fallback_fraction": 0.0,
+          "force_fallback_policy": "warn_deterministic_position_force_v1",
+          "warnings": []
+        },
+        "index": 19,
+        "passed": false,
+        "phase": "verification",
+        "rhat": {
+          "bulk": [
+            1.0007307781378754,
+            1.0003921976311243,
+            1.0061107451825684,
+            1.0011121172388164,
+            1.0115888745545702,
+            1.01037853101084
+          ],
+          "folded": [
+            1.000411029878913,
+            1.000587077736285,
+            1.0018079699695521,
+            1.0013412965191275,
+            1.0019979079435994,
+            1.0044260928288884
+          ],
+          "maximum": [
+            1.0007307781378754,
+            1.000587077736285,
+            1.0061107451825684,
+            1.0013412965191275,
+            1.0115888745545702,
+            1.01037853101084
+          ]
+        },
+        "rhat_draws_per_chain": 5000,
+        "threshold": 1.01
+      }
+    },
+    "range_bearing": {
+      "source": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-48h-extension-20261018-01/run/range_bearing/range_bearing/inference/public-tuning/fresh-progress.json",
+      "status": "HEALTH_VETO",
+      "counts": {
+        "verification": 0,
+        "warmup": 1500
+      },
+      "warmup_ready": false,
+      "last_event": {
+        "check_due": false,
+        "checks": {
+          "all_chains_moved": true,
+          "endpoint_valid": true,
+          "energy_valid": false,
+          "final_state_matches": true,
+          "finite": true,
+          "no_divergences": true
+        },
+        "count": 1500,
+        "diagnostics": {
+          "chain_transition_count": 1000,
+          "force_fallback_count": 1,
+          "force_fallback_count_by_chain": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "force_fallback_fraction": 0.001,
+          "force_fallback_policy": "warn_deterministic_position_force_v1",
+          "warnings": [
+            "deterministic_proposal_force_fallback"
+          ]
+        },
+        "index": 5,
+        "passed": false,
+        "phase": "warmup",
+        "rhat": null
+      }
+    }
+  },
+  "decision": "Continue existing predator-prey worker; SIR follows automatically. Range-bearing energy-guard failure remains unresolved.",
+  "not_concluded": "Five-model completion, posterior accuracy, or statistical superiority."
+}

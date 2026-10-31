@@ -200,7 +200,8 @@ def test_fixed_sgqf_score_matches_dense_fallback() -> None:
     tf.debugging.assert_near(candidate.score, baseline.score, atol=2e-12, rtol=2e-12)
 
 
-def test_fixed_replay_score_matches_dense_local_products(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fixed_replay_score_matches_dense_local_products(monkeypatch: pytest.MonkeyPatch, request) -> None:
+    request.addfinalizer(zhaocui_adapter._fixed_replay_program.cache_clear)
     config = _config(1)
     theta = _theta(config)
     observations = tf.constant([[0.12], [-0.03]], tf.float64)
@@ -233,6 +234,9 @@ def test_fixed_replay_score_matches_dense_local_products(monkeypatch: pytest.Mon
 
     monkeypatch.setattr(zhaocui_adapter, "ssl_lstm_transition_state_jvp", dense_transition_jvp)
     monkeypatch.setattr(zhaocui_adapter, "ssl_lstm_observation_state_jvp", dense_observation_jvp)
+    # The independent dense oracle must trace its patched callbacks, not reuse
+    # the candidate's previously compiled numerical owner.
+    zhaocui_adapter._fixed_replay_program.cache_clear()
     baseline, _ = tf_ssl_lstm_zhaocui_fixed_score(
         observations,
         theta,

@@ -1,0 +1,83 @@
+# Surrogate-HMC campaign reusable approvals; updated 2026-09-27 at owner request.
+# Exact argv prefixes; permits both repository-relative and absolute launcher paths.
+# Run repository-relative commands with the BayesFilter checkout as workdir.
+# Scientific scope and compute limits remain those of the approved campaign.
+# The existing default.rules interpreter approval is not broadened or duplicated here.
+# All shell pipeline segments must match; avoid leading env assignments, redirects,
+# heredocs, alternate flag order, and bash wrappers for these direct commands.
+# File-based rules are loaded when Codex starts.
+prefix_rule(pattern=["rg", "-n"], decision="allow")
+prefix_rule(pattern=["rg", "--files"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "status"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "diff", "--no-ext-diff", "--no-textconv"], decision="allow")
+prefix_rule(pattern=["git", "-C", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917", "rev-parse"], decision="allow")
+prefix_rule(pattern=["codex", "execpolicy", "check"], decision="allow")
+prefix_rule(pattern=["ps", "-eo"], decision="allow")
+prefix_rule(pattern=["ps", "-p"], decision="allow")
+prefix_rule(pattern=["nvidia-smi"], decision="allow")
+prefix_rule(pattern=["free", "-h"], decision="allow")
+prefix_rule(pattern=["sed", "-n"], decision="allow")
+prefix_rule(pattern=["tail", "-10"], decision="allow")
+prefix_rule(pattern=["tail", "-60"], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "-m", "pytest"], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", "-m", "bayesfilter.testing.surrogate_hmc_closure_diagnostics"], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/audit_surrogate_hmc_sv_force_health.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/audit_surrogate_hmc_sv_force_health.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/calibrate_surrogate_hmc_lg1_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/calibrate_surrogate_hmc_lg1_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/calibrate_surrogate_hmc_linear_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/calibrate_surrogate_hmc_linear_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/calibrate_surrogate_hmc_mcse_randomization.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/calibrate_surrogate_hmc_mcse_randomization.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/calibrate_surrogate_hmc_nonlinear_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/calibrate_surrogate_hmc_nonlinear_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/calibrate_surrogate_hmc_sv_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/calibrate_surrogate_hmc_sv_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/diagnose_surrogate_hmc_lg1_likelihood.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/diagnose_surrogate_hmc_lg1_likelihood.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/diagnose_surrogate_hmc_m13_fresh_start.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/diagnose_surrogate_hmc_m13_fresh_start.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/diagnose_surrogate_hmc_mcse.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/diagnose_surrogate_hmc_mcse.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/inspect_surrogate_hmc_archives.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/inspect_surrogate_hmc_archives.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_ksc.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_ksc.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_ksc_finite.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_ksc_finite.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_ksc_posterior.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_ksc_posterior.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_lg1_finite_reference.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_lg1_finite_reference.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_lg1_reference.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_lg1_reference.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_linear_reference.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_linear_reference.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_nonlinear_posterior.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_nonlinear_posterior.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_nonlinear_reference.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_nonlinear_reference.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_sv_posterior.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_sv_posterior.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/prepare_surrogate_hmc_sv_reference.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_sv_reference.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_gaussian_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_gaussian_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_lg1_finite_endpoint.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_lg1_finite_endpoint.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_lg1_tuner.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_lg1_tuner.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_linear_consumer.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_linear_consumer.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_linear_endpoint.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_linear_endpoint.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_nonlinear_consumer.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_nonlinear_consumer.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_nonlinear_endpoint.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_nonlinear_endpoint.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_nonlinear_quadrature.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_nonlinear_quadrature.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_sv_consumer.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_sv_consumer.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/qualify_surrogate_hmc_sv_endpoint.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/qualify_surrogate_hmc_sv_endpoint.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_gaussian_controls.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_gaussian_controls.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_ksc.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_ksc.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_ksc_finite.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_ksc_finite.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_lg1_finite.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_lg1_finite.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_m13_assessment.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_assessment.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_m13_initialization_repair.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_initialization_repair.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_m13_retained.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_retained.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_m13_rwm_resume.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_m13_rwm_resume.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_nonlinear.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_nonlinear.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_program.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_program.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_sv.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_sv.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_tensorflow_gpu_probe.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_tensorflow_gpu_probe.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/sample_surrogate_hmc_lg1.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/sample_surrogate_hmc_lg1.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/screen_surrogate_hmc_nonlinear_tails.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/screen_surrogate_hmc_nonlinear_tails.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/surrogate_hmc_lg1_probe.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/surrogate_hmc_lg1_probe.py"]], decision="allow")
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/tune_surrogate_hmc_lg1.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/tune_surrogate_hmc_lg1.py"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_recovery.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_recovery.py"], ["check", "start", "execute", "status"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/install_surrogate_hmc_recovery_rules.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/install_surrogate_hmc_recovery_rules.py"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_performance_repair.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py"], ["run", "worker"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_five_model_master.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py"], ["audit", "run", "worker", "campaign", "stage-worker", "status"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/install_surrogate_hmc_performance_rules.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/install_surrogate_hmc_performance_rules.py"], ["preview", "install", "verify"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_performance_repair.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py"], ["run", "worker", "regression"]], decision="allow")
+
+prefix_rule(pattern=["/home/chakwong/anaconda3/envs/tftwogpu/bin/python", ["scripts/run_surrogate_hmc_performance_repair.py", "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py"], ["run", "worker", "regression", "precision", "advance"]], decision="allow")

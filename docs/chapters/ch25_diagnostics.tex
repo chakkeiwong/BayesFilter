@@ -54,6 +54,11 @@ wrapper retains its historical strict inequality and declared coordinate/ESS
 screens, while using the same diagnostic arithmetic. The generic entry point
 for a verified member is \path{run_hmc_posterior}.
 
+The completed surrogate-HMC campaign uses cumulative retained-sample R-hat
+for its completion screen. Acceptance, ESS, MCSE and finite energy error remain
+reported explanatory diagnostics; the actual settings and numerical targets are
+specified in Chapter~\ref{ch:bf-surrogate-hmc-five-models}.
+
 Repeated successful windows are useful evidence of stability in the region
 visited. Overlapping windows are not independent replications, and all chains
 can remain in one unrepresentative mode. A small R-hat cannot detect a mode no
@@ -160,6 +165,18 @@ bound for HMC.
 The autocorrelation option retains the identified TFP 0.25 positive-pairs ESS
 calculation. Rank-normalized bulk ESS is useful for exploration diagnostics,
 but original-scale mean uncertainty needs the ESS of the actual functional.
+For strongly antithetic finite chains, the named TFP estimator can return a
+negative finite ESS. Its denominator is
+$-1+2\sum_{k\in\mathcal I}(1-k/n)\widehat\rho_k$, where $\mathcal I$
+contains the lags retained by positive-pair truncation. Positivity of the
+retained unweighted pairs alone does not make this denominator positive.
+An October 2026 reproduction using preserved Gaussian AR(1) paths with
+$\rho=-0.99$ gave the same negative denominators in BayesFilter, installed
+TFP~0.25 and independent covariance arithmetic. BayesFilter therefore marks
+the resulting mean MCSE as unavailable. Taking an absolute value or silently
+substituting the separately identified monotone estimator would change the
+procedure rather than correct an arithmetic error.
+
 For a quantile, BayesFilter follows the indicator-ESS and order-statistic
 construction in \citet[section 4.4]{vehtari2021rank}, with the explicitly named
 TFP positive-pairs indicator ESS. The pooled percentile preserves equal
@@ -196,6 +213,42 @@ The fixed-count comparison uses the same declared estimator. A change to any
 of these choices requires a fresh fit identity, including when a previous fit
 has already saved its final summary. Otherwise a cached result could silently
 be attributed to a policy that never produced it.
+
+A completed October 2026 stress experiment makes these limitations concrete.
+It used four stationary chains, 128 replications at each of correlations
+$0,0.99,-0.99$, and Gaussian or exponentiated-Gaussian margins. The two
+margins shared latent paths; they were paired conditions, not independent
+replications. Means, squared coordinates and a fixed event probability were
+compared with their known expectations. Twelve of 144 prespecified
+fixed/stopped interval screens rejected a nominal $5\%$ miss probability
+after Bonferroni-adjusted exact binomial intervals; all twelve concerned
+fixed endpoints. For positively correlated lognormal squares, both original
+lugsail and the optional per-chain maximum missed in 23 of 128 replications.
+The corresponding adjusted interval for miss probability was
+$[0.0791,0.3249]$. Autocorrelation also failed that screen.
+Most dependent conditions never passed the declared stopping checks by
+10000 draws per chain, leaving their stopped coverage unmeasured. Original
+lugsail was unavailable for all 128 strongly antithetic Gaussian coordinate
+cases; autocorrelation was unavailable for 72. These results establish
+limitations of the tested settings, not a ranking or an adequate replacement.
+The complete design, denominators and reproduction records are in
+\path{docs/plans/bayesfilter-mcse-stationary-stress-result-2026-10-18.md}.
+
+A separate-seed follow-up added two longer-batch hypotheses and fixed-endpoint
+controls using the exact variance of the mean, together with a Student
+interval for independent Gaussian chain means. All 768 condition records
+completed; the paired margins represented 384 independent latent four-chain
+units. Of 231 prespecified screens, 22 of 108 fixed method screens and three
+of 108 conditional stopped method screens flagged undercoverage. The stopped
+failures concerned IID lognormal squares. None of the 15 fixed control
+screens flagged, but the wide adjusted intervals do not establish adequate
+coverage. Most strongly dependent cells never stopped, so their stopped
+coverage remains unmeasured. Longer batches left both undercoverage and some
+unavailable estimates. This diagnostic therefore selects no replacement
+estimator; stationary initialization also gives no evidence about burn-in.
+It leaves acceptance-based tuning membership unchanged. The complete result
+and independent-audit limits are recorded in
+\path{docs/plans/bayesfilter-mcse-dependence-interval-result-2026-10-18.md}.
 
 Absolute accuracy requirements must be interpreted in the units of the
 functional. For independent normal observations with standard deviation $s$

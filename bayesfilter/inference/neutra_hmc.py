@@ -1875,6 +1875,14 @@ def run_sequential_neutra_hmc(*args: Any, **kwargs: Any) -> Any:
     """Dispatch to the shared or archived-output controller by call contract."""
 
     config = kwargs.get("config")
+    if "run_chunk" in kwargs:
+        # The public frozen-force tuner supplies its own compiled transition
+        # and archive callbacks. Preserve its tested cumulative controller;
+        # do not replace the sampler or replay protocol at this boundary.
+        from .hmc_sequential_verification import run_sequential_verification
+        if args or config is None or not callable(kwargs["run_chunk"]):
+            raise NeuTraHMCError("verified callback contract requires config and run_chunk")
+        return run_sequential_verification(**kwargs)
     if config is None and len(args) >= 3:
         config = args[2]
     if isinstance(config, _ArchivedSequentialNeuTraHMCConfig):

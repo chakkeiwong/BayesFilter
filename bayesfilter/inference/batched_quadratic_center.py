@@ -6,9 +6,10 @@ The final factor satisfies LL'=diag(s) K^-1 diag(s); it is not momentum mass.
 An exact incumbent change invalidates the fitted anchor. No MAP, posterior
 covariance, whitening, HMC, GPU or whole-initializer XLA claim follows.
 
-Orchestration is bounded and eager; target calls remain fixed-batch and the
-trust kernel is reusable TF/XLA. Robust score fitting is compiled without XLA
-because MatrixSolveLs(fast=False) is not an admitted whole-XLA path.
+Uniform-cloud and paired-local refinement execute as one stable TF/XLA program
+with a native round loop. The host validates inputs and formats completed
+histories. Composition with the multistart locator is a separate execution
+boundary; whole-initializer XLA is unproved.
 """
 
 from __future__ import annotations
@@ -23,12 +24,13 @@ from bayesfilter.inference.batched_local_center import (
     BatchedLocalCenterConfig,
     locate_batched_local_center,
 )
+from bayesfilter.inference.mass_matrix_tf import eigenpair_program
 from bayesfilter.inference.paired_score_pilot_tf import (
-    fit_paired_score_precision_tf,
-    paired_score_probe_designs_tf,
     validate_paired_steps,
 )
-from bayesfilter.inference.score_curvature_tf import fit_dense_score_precision_tf
+from bayesfilter.inference.quadratic_round_report import paired_quadratic_result
+from bayesfilter.inference.quadratic_rounds_tf import quadratic_controller
+from bayesfilter.ops.compiled_tensor_program_tf import in_xla_context
 
 
 def _norm(vector):
@@ -58,7 +60,8 @@ def solve_spd_quadratic_trust_region_tf(precision, linear, radius):
     finite &= tf.math.is_finite(scale) & (scale > 0)
     safe_scale = tf.where(finite, scale, 1.0)
     safe_matrix = tf.where(finite, symmetric / safe_scale, tf.eye(dimension, dtype=tf.float64))
-    eigenvalues, eigenvectors = tf.linalg.eigh(safe_matrix)
+    eigenvalues, eigenvectors = (eigenpair_program(dimension)(safe_matrix)
+                                if in_xla_context() else tf.linalg.eigh(safe_matrix))
     valid = finite & tf.reduce_all(eigenvalues > 0) & tf.reduce_all(tf.math.is_finite(eigenvalues))
     safe_eigenvalues = tf.where(valid, eigenvalues, tf.ones_like(eigenvalues))
     projected = tf.linalg.matvec(eigenvectors, tf.where(valid, vector / safe_scale, 0.0), transpose_a=True)
@@ -179,7 +182,7 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
     fixed-center regional curvature/audit must use independent streams.
     """
     if not tf.executing_eagerly():
-        raise RuntimeError("bounded initializer orchestration requires eager execution")
+        raise RuntimeError("initializer validation and reporting require eager execution")
     cfg = BatchedQuadraticCenterConfig() if config is None else config
     center = tf.convert_to_tensor(center, tf.float64)
     scale = tf.convert_to_tensor(scale, tf.float64)
@@ -194,169 +197,16 @@ def refine_batched_quadratic_center(callback, center, scale, *, config=None, _in
     planned = cfg.planned_rows(dimension)
     if planned > cfg.max_physical_rows:
         raise ValueError("whole refinement exceeds max_physical_rows before target calls")
-    rows = max(32, 4 * dimension) if cfg.rows_per_cloud is None else cfg.rows_per_cloud
-    if cfg.pilot_method == "paired_local":
-        rows = 2 * dimension
-    details = {"physical_rows": 0, "callback_batches": 0, "padded_rows": 0,
-               "invalid_rows": 0, "planned_physical_rows": planned, "selected_evaluation_index": -1,
-               "rounds": [], "candidate_batches": [], "full_initializer_xla": False,
-               "jit_compile_trust": cfg.jit_compile_trust, "seed": cfg.seed,
-               "pilot_method": cfg.pilot_method, "paired_steps": cfg.paired_steps}
-    incumbent = [center, tf.constant(-math.inf, tf.float64), tf.zeros_like(center)]
-
-    def finish(status, factor=None, precision=None):
-        accepted = status == "local_center_candidate"
-        return BatchedQuadraticCenterResult(accepted, status, *incumbent,
-                                           factor if accepted else None,
-                                           precision if accepted else None, details)
-
-    def evaluate(points, role, record=True):
-        collected = []
-        for start in range(0, int(points.shape[0]), cfg.batch_size):
-            chunk = points[start:start + cfg.batch_size]
-            padding = cfg.batch_size - int(chunk.shape[0])
-            chunk = tf.concat((chunk, tf.repeat(chunk[-1:], padding, axis=0)), axis=0)
-            first_index = details["physical_rows"]
-            details["physical_rows"] += cfg.batch_size
-            details["padded_rows"] += padding
-            if not bool(tf.reduce_all(tf.math.is_finite(chunk))):
-                return None
-            details["callback_batches"] += 1
-            values, scores, eligible = (tf.convert_to_tensor(item) for item in callback(chunk))
-            if values.dtype != tf.float64 or scores.dtype != tf.float64 or eligible.dtype != tf.bool:
-                raise TypeError("callback must return float64 values/scores and bool eligibility")
-            if values.shape != (cfg.batch_size,) or scores.shape != chunk.shape or eligible.shape != values.shape:
-                raise ValueError("callback returned an invalid fixed-batch shape")
-            valid = eligible & tf.math.is_finite(values) & tf.reduce_all(tf.math.is_finite(scores), axis=1)
-            details["invalid_rows"] += int(tf.reduce_sum(tf.cast(~valid, tf.int32)))
-            details["candidate_batches"].append({"role": role, "first_index": first_index,
-                                                "positions": chunk, "values": values,
-                                                "scores": scores, "valid": valid})
-            if record:
-                masked = tf.where(valid, values, tf.constant(-math.inf, tf.float64))
-                selected = tf.argmax(masked, output_type=tf.int32)
-                if bool(masked[selected] > incumbent[1]):
-                    incumbent[:] = [chunk[selected], values[selected], scores[selected]]
-                    details["selected_evaluation_index"] = first_index + int(selected)
-            if not bool(tf.reduce_all(valid)):
-                return None
-            count = cfg.batch_size - padding if record else cfg.batch_size
-            collected.append((values[:count], scores[:count]))
-        return tf.concat([item[0] for item in collected], 0), tf.concat([item[1] for item in collected], 0)
-
-    def replay():
-        result = evaluate(incumbent[0][None, :], "replay", record=False)
-        if result is None:
-            return False
-        return all(bool(tf.reduce_all(tf.abs(actual - expected) <= cfg.replay_atol + cfg.replay_rtol * tf.abs(expected)))
-                   for actual, expected in zip(result, incumbent[1:]))
-
-    if evaluate(center[None, :], "initial") is None:
-        return finish("initial_target_invalid")
-    if _initial_evidence is not None and not all(
-        bool(tf.reduce_all(tf.abs(actual - expected) <= cfg.replay_atol + cfg.replay_rtol * tf.abs(expected)))
-        for actual, expected in zip(incumbent[1:], _initial_evidence)
-    ):
-        return finish("localizer_refinement_replay_mismatch")
-    if _initial_evidence is not None:
-        incumbent[1:] = _initial_evidence
-    signature = [tf.TensorSpec([dimension, dimension], tf.float64),
-                 tf.TensorSpec([dimension], tf.float64), tf.TensorSpec([], tf.float64)]
-    trust = tf.function(solve_spd_quadratic_trust_region_tf, input_signature=signature,
-                        autograph=False, jit_compile=cfg.jit_compile_trust)
-    fit_signature = [tf.TensorSpec([dimension], tf.float64)] + [tf.TensorSpec([rows, dimension], tf.float64)] * 4
-
-    def fit(center_score, offsets, scores, check_offsets, check_scores):
-        if cfg.pilot_method == "paired_local":
-            return fit_paired_score_precision_tf(
-                center_score, offsets, scores, check_offsets, check_scores, steps=cfg.paired_steps,
-                precision_condition_cap=cfg.precision_condition_cap,
-                model_relative_rmse_cap=cfg.model_relative_rmse_cap)
-        return fit_dense_score_precision_tf(center_score, offsets, scores,
-                                            selection_offsets=check_offsets, selection_scores=check_scores)
-
-    fitted = tf.function(fit, input_signature=fit_signature, autograph=False, jit_compile=False)
-    radius = tf.constant(cfg.initial_trust_radius, tf.float64)
-    for round_index in range(cfg.max_fit_rounds):
-        if not replay():
-            return finish("replay_mismatch")
-        anchor, anchor_value, anchor_score = incumbent
-        partitions = []
-        if cfg.pilot_method == "paired_local":
-            designs = paired_score_probe_designs_tf(dimension, seed=cfg.seed, round_index=round_index,
-                                                   steps=cfg.paired_steps)
-            for offsets, role in zip(designs, ("paired_fit_large", "paired_fit_small", "model_check")):
-                evaluated = evaluate(anchor[None, :] + offsets * scale, role)
-                if evaluated is None:
-                    return finish("curvature_target_invalid")
-                if role == "model_check":
-                    partitions.append(offsets)
-                partitions.append(evaluated[1] * scale)
-        else:
-            for partition in range(2):
-                offsets = tf.random.stateless_uniform([rows, dimension], [cfg.seed, 2 * round_index + partition],
-                                                      minval=-cfg.fit_half_width, maxval=cfg.fit_half_width,
-                                                      dtype=tf.float64)
-                evaluated = evaluate(anchor[None, :] + offsets * scale, "fit" if partition == 0 else "model_check")
-                if evaluated is None:
-                    return finish("curvature_target_invalid")
-                partitions.extend((offsets, evaluated[1] * scale))
-        center_score = anchor_score * scale
-        if not bool(tf.reduce_all(tf.math.is_finite(center_score))) or not all(
-            bool(tf.reduce_all(tf.math.is_finite(value))) for value in partitions
-        ):
-            return finish("nonfinite_scaled_score")
-        try:
-            model = fitted(center_score, *partitions)
-        except tf.errors.InvalidArgumentError:
-            return finish("quadratic_fit_numerical_failure")
-        precision = model["raw_precision"]
-        good_model = model["raw_spd"] & (model["design_rank"] == dimension)
-        good_model &= tf.reduce_all(tf.math.is_finite(precision))
-        good_model &= model["precision_condition"] <= cfg.precision_condition_cap
-        good_model &= model["selection_relative_rmse"] <= cfg.model_relative_rmse_cap
-        if cfg.pilot_method == "paired_local":
-            good_model &= model["accepted"]
-        report = {"anchor": anchor, "anchor_value": anchor_value, "radius": radius,
-                  "model": model, "cloud_changed_incumbent": tf.reduce_any(incumbent[0] != anchor)}
-        details["rounds"].append(report)
-        if not bool(good_model):
-            return finish("quadratic_model_rejected")
-        cholesky = tf.linalg.cholesky(precision)
-        solved = tf.linalg.triangular_solve(cholesky, tf.linalg.diag(scale))
-        covariance = tf.matmul(solved, solved, transpose_a=True)
-        factor = tf.linalg.cholesky(covariance)
-        reconstructed = factor @ tf.transpose(factor)
-        covariance_scale = tf.reduce_max(tf.abs(covariance))
-        reconstruction = tf.linalg.norm((reconstructed - covariance) / covariance_scale)
-        reconstruction /= tf.linalg.norm(covariance / covariance_scale)
-        factor_valid = tf.reduce_all(tf.math.is_finite(factor)) & tf.reduce_all(tf.linalg.diag_part(factor) > 0)
-        factor_valid &= tf.math.is_finite(reconstruction) & (reconstruction <= 1e-10)
-        if not bool(factor_valid):
-            return finish("pilot_factorization_failed")
-        centeredness = _norm(tf.linalg.matvec(factor, anchor_score, transpose_a=True))
-        report["centeredness"] = centeredness
-        if not bool(tf.math.is_finite(centeredness)):
-            return finish("nonfinite_centeredness")
-        if bool(centeredness <= cfg.centeredness_cap) and not bool(report["cloud_changed_incumbent"]):
-            if not replay():
-                return finish("replay_mismatch")
-            details["fit_trace_count"] = fitted.experimental_get_tracing_count()
-            details["trust_trace_count"] = trust.experimental_get_tracing_count()
-            return finish("local_center_candidate", factor, precision)
-        step = trust(precision, center_score, radius)
-        if not bool(step["valid"]):
-            return finish("trust_solve_failed")
-        proposed = evaluate((anchor + scale * step["step"])[None, :], "proposal")
-        predicted = step["predicted_improvement"]
-        actual = tf.constant(-math.inf, tf.float64) if proposed is None else proposed[0][0] - anchor_value
-        ratio = tf.where(predicted > 0, actual / predicted, tf.constant(-math.inf, tf.float64))
-        report.update(step=step, actual_improvement=actual, ratio=ratio,
-                      trust_step_accepted=tf.math.is_finite(ratio) & (actual > 0) & (ratio > 0.1))
-        radius = tf.where(~tf.math.is_finite(ratio) | (ratio < 0.25), radius * 0.25,
-                          tf.where((ratio > 0.75) & step["boundary_active"],
-                                   tf.minimum(2 * radius, cfg.maximum_trust_radius), radius))
-    return finish("refinement_round_limit")
+    # The explicit non-JIT option selects the complete graph reference. Each
+    # family shares the same ordered TensorFlow recurrence and result schema.
+    program = quadratic_controller(callback, dimension, cfg, jit_compile=cfg.jit_compile_trust)
+    value, score = ((tf.constant(0., tf.float64), tf.zeros_like(center))
+                    if _initial_evidence is None else _initial_evidence)
+    computed = program(center, scale, tf.convert_to_tensor(cfg.seed, tf.int32),
+        tf.constant(_initial_evidence is not None), tf.convert_to_tensor(value, tf.float64),
+        tf.convert_to_tensor(score, tf.float64))
+    return paired_quadratic_result(computed, cfg, dimension, jit_compile=cfg.jit_compile_trust,
+        trace_count=program.experimental_get_tracing_count())
 
 
 def initialize_batched_posterior_local_location_scale(callback, initial_positions, scale, *, config=None, locator_config=None):

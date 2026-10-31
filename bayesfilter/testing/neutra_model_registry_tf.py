@@ -291,8 +291,11 @@ def _constant_truth(tf: Any, values: tuple[float, ...]) -> Any:
     return tf.constant(values, tf.float64)
 
 
-LGSSM_SIGNATURE = "bd40a828bc4916e5e09a8e6135f315ebc45c06844aed38a506d6296c2642557d"
-LGSSM_ADAPTER_SIGNATURE = "1ddb0a1106488871643e79ce0a575db6871e24963332119cc8a20a436d84b872"
+# The September 17 XLA change (3582b4ac5) changed the bound source checksum.
+# September 24 L2 audit reconstructs the previous signature exactly from the
+# pre-change source; historical artifacts keep that old identity.
+LGSSM_SIGNATURE = "b0f2f0f8ca967399e2a80914629377bd776ed1e5e1d881cbd2c353b21522d153"
+LGSSM_ADAPTER_SIGNATURE = "011a4edb222ffd9131de430a74e5fb6cfea2904664162e36a8a1da164a92e17b"
 PP_UKF_SIGNATURE = "d3ed745b4f755582bfce46b24992e9d626e10c1409c46b0518ca8cfc673fc2f5"
 PP_SGQF_SIGNATURE = "373326607b8cb06f274f03e0a523a47b24b83e35c8b37c8d264b500a6234fbac"
 SIR_SGQF_SIGNATURE = "43968c975409021dcabe931081f0d1efaaae431b5b9245929a5786fe566e545d"

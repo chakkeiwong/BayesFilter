@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, "docs", "benchmarks"))
 import numpy as np, tensorflow as tf
 import bayesfilter.highdim.fitting as fitting
 from bayesfilter.highdim.squared_tt_engine_xla_tf import _solve_scaled_qr
-from bayesfilter.highdim.squared_tt_engine_v0_tf import EngineConfig, run_value_filter_branch_axis
+from bayesfilter.highdim.squared_tt_engine_v0_tf import EngineConfig, run_value_filter_branch_axis_reference as run_value_filter_branch_axis
 from run_p1b_lgssm_value_ladder_20260817 import _case
 
 DT = tf.float64

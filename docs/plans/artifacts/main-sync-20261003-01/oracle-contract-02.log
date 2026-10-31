@@ -1,0 +1,118 @@
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+_____________________ test_oracle_contract_battery_passes ______________________
+
+    def test_oracle_contract_battery_passes():
+        """Execute the full oracle battery - all must pass to satisfy the contract.
+    
+        This is the binding gate: analytical JVP implementations vs autodiff oracle.
+        A failure here means a tangent does not match its reference, which violates
+        the claim-integrity contract established in Phase 2C.
+    
+        **Phase 1 while-loop conversion constraints (2026-09-14):**
+        The following 3 tests are expected to fail during Phase 1, as they require
+        annealed_stages > 1, which is deferred to a future phase:
+        - test_annealed_telescope_score_matches_oracle
+        - test_annealed_telescope_with_reset_score_matches_oracle
+        - test_annealed_with_full_production_program_matches_oracle
+    
+        These failures validate that Phase 1 constraint enforcement is working correctly.
+        """
+        oracle_node_ids = _collect_oracle_tests()
+        if not oracle_node_ids:
+            pytest.fail(
+                "Oracle contract battery is empty - collection found no oracle tests"
+            )
+    
+        # Phase 1 while-loop conversion: temporarily skip annealed telescope tests
+        # These require annealed_stages > 1, which is not supported in Phase 1
+        phase1_skip_patterns = [
+            "test_annealed_telescope_score_matches_oracle",
+            "test_annealed_telescope_with_reset_score_matches_oracle",
+            "test_annealed_with_full_production_program_matches_oracle",
+        ]
+        filtered_node_ids = [
+            node_id
+            for node_id in oracle_node_ids
+            if not any(pattern in node_id for pattern in phase1_skip_patterns)
+        ]
+    
+        if not filtered_node_ids:
+            pytest.fail(
+                "Oracle contract battery is empty after Phase 1 filtering - "
+                "all oracle tests were skipped"
+            )
+    
+        # Run the collected oracle tests (excluding Phase 1 skips)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                *filtered_node_ids,
+                "-v",
+                "--tb=short",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=REPO_ROOT,
+            env={**subprocess.os.environ, "CUDA_VISIBLE_DEVICES": "-1"},
+        )
+    
+        if result.returncode != 0:
+>           pytest.fail(
+                f"Oracle contract violated: {result.returncode} test(s) failed\n\n"
+                f"STDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
+            )
+E           Failed: Oracle contract violated: 1 test(s) failed
+E           
+E           STDOUT:
+E           ============================= test session starts ==============================
+E           platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /home/chakwong/anaconda3/envs/tftwogpu/bin/python
+E           cachedir: .pytest_cache
+E           rootdir: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917
+E           configfile: pytest.ini
+E           plugins: cov-7.1.0, anyio-4.14.2
+E           collecting ... collected 9 items
+E           
+E           tests/highdim/test_ledh_canonical_score_stages.py::test_s3_flow_parameter_tangent_matches_oracle PASSED [ 11%]
+E           tests/highdim/test_ledh_canonical_score_step.py::test_s4_s8_one_step_increment_score_matches_oracle PASSED [ 22%]
+E           tests/highdim/test_ledh_canonical_score_ukf_tangent.py::test_s1_predict_tangent_matches_oracle_nonlinear PASSED [ 33%]
+E           tests/highdim/test_ledh_canonical_score_ukf_tangent.py::test_s5_update_tangent_matches_oracle PASSED [ 44%]
+E           tests/highdim/test_ledh_canonical_score_full.py::test_full_chained_score_matches_oracle_nonlinear PASSED [ 55%]
+E           tests/highdim/test_ledh_canonical_score_full.py::test_full_program_score_with_reset_and_dualcap_matches_oracle PASSED [ 66%]
+E           tests/highdim/test_ledh_canonical_score_full.py::test_hilbert_permutation_ancestry_score_matches_oracle FAILED [ 77%]
+E           tests/highdim/test_ledh_unified_reset.py::test_analytical_tangents_match_autodiff_oracle PASSED [ 88%]
+E           tests/highdim/test_ledh_unified_correction.py::test_analytical_tangents_match_autodiff_oracle PASSED [100%]
+E           
+E           =================================== FAILURES ===================================
+E           ____________ test_hilbert_permutation_ancestry_score_matches_oracle ____________
+E           tests/highdim/test_ledh_canonical_score_full.py:431: in test_hilbert_permutation_ancestry_score_matches_oracle
+E               assert any(
+E           tests/highdim/test_ledh_canonical_score_full.py:433: in <genexpr>
+E               step["ancestor_indices"].numpy(), np.arange(initial.shape[0])
+E               ^^^^^^^^^^^^^^^^^^^^^^^^
+E           E   KeyError: 'ancestor_indices'
+E           ----------------------------- Captured stderr call -----------------------------
+E           2026-10-03 21:35:08.845597: E tensorflow/core/util/util.cc:131] oneDNN supports DT_BOOL only on platforms with AVX-512. Falling back to the default Eigen-based implementation if present.
+E           =============================== warnings summary ===============================
+E           ../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+E             /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+E               if (distutils.version.LooseVersion(tf.__version__) <
+E           
+E           ../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+E             /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+E               distutils.version.LooseVersion(required_tensorflow_version)):
+E           
+E           -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+E           =========================== short test summary info ============================
+E           FAILED tests/highdim/test_ledh_canonical_score_full.py::test_hilbert_permutation_ancestry_score_matches_oracle
+E           =================== 1 failed, 8 passed, 2 warnings in 52.93s ===================
+E           
+E           
+E           STDERR:
+
+tests/contracts/test_oracle_contract.py:141: Failed
+=========================== short test summary info ============================
+FAILED tests/contracts/test_oracle_contract.py::test_oracle_contract_battery_passes
+1 failed, 2 passed in 104.39s (0:01:44)

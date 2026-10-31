@@ -1,0 +1,105 @@
+{
+  "schema": "bayesfilter.sir_fp32_batch_capacity_supervisor.v1",
+  "started_utc": "2026-10-20T18:41:20.379707+00:00",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/benchmark_sir_fp32_batch_capacity.py",
+    "run",
+    "--output",
+    "docs/plans/artifacts/sir-native-batching-20261021-01/gpu-first",
+    "--devices",
+    "gpu",
+    "--batches",
+    "4",
+    "--plan",
+    "docs/plans/sir-native-batching-execution-2026-10-21.md",
+    "--total-seconds",
+    "650",
+    "--arm-seconds",
+    "600"
+  ],
+  "plan": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/sir-native-batching-execution-2026-10-21.md",
+  "results": [
+    {
+      "arm": "gpu-b4",
+      "device": "gpu",
+      "batch_size": 4,
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/benchmark_sir_fp32_batch_capacity.py",
+        "worker",
+        "--output",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-first/gpu-b4",
+        "--device",
+        "gpu",
+        "--batch",
+        "4",
+        "--gpu",
+        "GPU-68251639-fe82-8f81-3ccc-2953c32e805b",
+        "--gpu-limit-mib",
+        "12288",
+        "--plan",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/sir-native-batching-execution-2026-10-21.md"
+      ],
+      "exit_code": 0,
+      "stop_reason": null,
+      "wall_seconds": 108.82119778898777,
+      "peak_rss_bytes_sampled": 2117525504,
+      "realtime_wall_seconds": 108.82119870185852,
+      "peak_hwm_bytes_sampled": 2117525504,
+      "minimum_available_host_bytes": 24689868800,
+      "result": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-first/gpu-b4/result.json",
+      "log": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/sir-native-batching-20261021-01/gpu-first/gpu-b4.log",
+      "gpu_before": {
+        "utc": "2026-10-20T18:41:20.562041+00:00",
+        "returncode": 0,
+        "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6871 MiB, 16 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2510 MiB, 79 %",
+        "stderr": ""
+      },
+      "gpu_after": {
+        "utc": "2026-10-20T18:43:09.433990+00:00",
+        "returncode": 0,
+        "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6897 MiB, 4 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2574 MiB, 91 %",
+        "stderr": ""
+      },
+      "worker_status": "COMPLETED_FULL_HORIZON",
+      "last_phase": "complete"
+    }
+  ],
+  "total_budget_seconds": 650,
+  "per_arm_seconds": 600,
+  "rss_limit_bytes": 25769803776,
+  "minimum_system_available_bytes": 6442450944,
+  "gpu_allocator_limit_mib": 12288,
+  "gpu_snapshot_before": {
+    "utc": "2026-10-20T18:41:20.484945+00:00",
+    "returncode": 0,
+    "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6871 MiB, 15 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2510 MiB, 52 %",
+    "stderr": ""
+  },
+  "memory_before": {
+    "MemTotal": 49255911424,
+    "MemAvailable": 26416209920,
+    "SwapTotal": 12884901888,
+    "SwapFree": 5440503808
+  },
+  "cpu_info": "Architecture:                         x86_64\nCPU op-mode(s):                       32-bit, 64-bit\nAddress sizes:                        48 bits physical, 48 bits virtual\nByte Order:                           Little Endian\nCPU(s):                               32\nOn-line CPU(s) list:                  0-31\nVendor ID:                            AuthenticAMD\nModel name:                           AMD Ryzen 9 9950X 16-Core Processor\nCPU family:                           26\nModel:                                68\nThread(s) per core:                   2\nCore(s) per socket:                   16\nSocket(s):                            1\nStepping:                             0\nBogoMIPS:                             8583.99\nFlags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext perfctr_core ssbd ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx_vnni avx512_bf16 clzero xsaveerptr arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm avx512_vp2intersect\nVirtualization:                       AMD-V\nHypervisor vendor:                    Microsoft\nVirtualization type:                  full\nL1d cache:                            768 KiB (16 instances)\nL1i cache:                            512 KiB (16 instances)\nL2 cache:                             16 MiB (16 instances)\nL3 cache:                             32 MiB (1 instance)\nNUMA node(s):                         1\nNUMA node0 CPU(s):                    0-31\nVulnerability Gather data sampling:   Not affected\nVulnerability Itlb multihit:          Not affected\nVulnerability L1tf:                   Not affected\nVulnerability Mds:                    Not affected\nVulnerability Meltdown:               Not affected\nVulnerability Mmio stale data:        Not affected\nVulnerability Reg file data sampling: Not affected\nVulnerability Retbleed:               Not affected\nVulnerability Spec rstack overflow:   Not affected\nVulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:             Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP always-on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                  Not affected\nVulnerability Tsx async abort:        Not affected\n",
+  "git_commit": "f6bb90a00da87e2093aabded18e1372bfe493535",
+  "script_sha256": "5078f46721c03c1c7371b9e12598c65daae60abd61d55825aeddb533895391a3",
+  "plan_sha256": "41589e1c2883f54eb6493107f8a3fcad6ab0d4064afa193adeaf3eaa860e919f",
+  "wall_seconds": 109.05532752303407,
+  "finished_utc": "2026-10-20T18:43:09.435020+00:00",
+  "realtime_wall_seconds": 109.05532717704773,
+  "memory_after": {
+    "MemTotal": 49255911424,
+    "MemAvailable": 26268794880,
+    "SwapTotal": 12884901888,
+    "SwapFree": 5440765952
+  },
+  "gpu_snapshot_after": {
+    "utc": "2026-10-20T18:43:09.491564+00:00",
+    "returncode": 0,
+    "csv": "index, uuid, name, memory.total [MiB], memory.used [MiB], utilization.gpu [%]\n0, GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a, NVIDIA GeForce RTX 5080, 16303 MiB, 6897 MiB, 4 %\n1, GPU-68251639-fe82-8f81-3ccc-2953c32e805b, NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 2574 MiB, 91 %",
+    "stderr": ""
+  }
+}

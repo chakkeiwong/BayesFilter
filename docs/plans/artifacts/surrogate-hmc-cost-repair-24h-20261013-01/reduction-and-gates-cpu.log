@@ -1,0 +1,111 @@
+......F...                                                               [100%]
+=================================== FAILURES ===================================
+__________________ test_nonfinite_logits_preserve_invalidity ___________________
+
+    def test_nonfinite_logits_preserve_invalidity():
+        x=tf.constant([[float("-inf"),float("-inf")],[float("inf"),1.],[float("nan"),1.]],tf.float32)
+        value,weights=logsumexp_and_weights(x)
+        tf.debugging.assert_equal(tf.math.is_finite(value),tf.math.is_finite(tf.reduce_logsumexp(x,-1)))
+>       tf.debugging.assert_equal(tf.math.is_finite(weights),tf.math.is_finite(tf.nn.softmax(x,-1)))
+
+tests/highdim/test_covariance_proposal_transport_reduction.py:24: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py:153: in error_handler
+    raise e.with_traceback(filtered_tb) from None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+sym = '==', opname = 'assert_equal'
+op_func = <function equal at 0x7db4673a9760>, static_func = <ufunc 'equal'>
+x = <tf.Tensor: shape=(3, 2), dtype=bool, numpy=
+array([[False, False],
+       [False,  True],
+       [False, False]])>
+y = <tf.Tensor: shape=(3, 2), dtype=bool, numpy=
+array([[False, False],
+       [False,  True],
+       [False,  True]])>
+data = ['Condition x == y did not hold.', 'Indices of first 1 different values:', array([[2, 1]]), 'Corresponding x values:', array([False]), 'Corresponding y values:', ...]
+summarize = 3, message = None, name = None
+
+    def _binary_assert(sym, opname, op_func, static_func, x, y, data, summarize,
+                       message, name):
+      """Generic binary elementwise assertion.
+    
+      Implements the behavior described in _binary_assert_doc() above.
+      Args:
+        sym: Mathematical symbol for the test to apply to pairs of tensor elements,
+          i.e. "=="
+        opname: Name of the assert op in the public API, i.e. "assert_equal"
+        op_func: Function that, if passed the two Tensor inputs to the assertion (x
+          and y), will return the test to be passed to reduce_all() i.e.
+        static_func: Function that, if passed numpy ndarray versions of the two
+          inputs to the assertion, will return a Boolean ndarray with containing
+          True in all positions where the assertion PASSES.
+          i.e. np.equal for assert_equal()
+        x:  Numeric `Tensor`.
+        y:  Numeric `Tensor`, same dtype as and broadcastable to `x`.
+        data:  The tensors to print out if the condition is False.  Defaults to
+          error message and first few entries of `x`, `y`.
+        summarize: Print this many entries of each tensor.
+        message: A string to prefix to the default message.
+        name: A name for this operation (optional).  Defaults to the value of
+          `opname`.
+    
+      Returns:
+        See docstring template in _binary_assert_doc().
+      """
+      with ops.name_scope(name, opname, [x, y, data]):
+        x = ops.convert_to_tensor(x, name='x')
+        y = ops.convert_to_tensor(y, name='y')
+    
+        if context.executing_eagerly():
+          test_op = op_func(x, y)
+          condition = math_ops.reduce_all(test_op)
+          if condition:
+            return
+    
+          # If we get here, the assertion has failed.
+          # Default to printing 3 elements like control_flow_ops.Assert (used
+          # by graph mode) does. Also treat negative values as "print
+          # everything" for consistency with Tensor::SummarizeValue().
+          if summarize is None:
+            summarize = 3
+          elif summarize < 0:
+            summarize = 1e9  # Code below will find exact size of x and y.
+    
+          if data is None:
+            data = _make_assert_msg_data(sym, x, y, summarize, test_op)
+    
+          if message is not None:
+            data = [message] + list(data)
+    
+>         raise errors.InvalidArgumentError(
+              node_def=None,
+              op=None,
+              message=('\n'.join(_pretty_print(d, summarize) for d in data)))
+E         tensorflow.python.framework.errors_impl.InvalidArgumentError: Condition x == y did not hold.
+E         Indices of first 1 different values:
+E         [[2 1]]
+E         Corresponding x values:
+E         [False]
+E         Corresponding y values:
+E         [ True]
+E         First 3 elements of x:
+E         [False False False]
+E         First 3 elements of y:
+E         [False False False]
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/ops/check_ops.py:488: InvalidArgumentError
+=============================== warnings summary ===============================
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+../anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/highdim/test_covariance_proposal_transport_reduction.py::test_nonfinite_logits_preserve_invalidity
+1 failed, 9 passed, 2 warnings in 4.01s

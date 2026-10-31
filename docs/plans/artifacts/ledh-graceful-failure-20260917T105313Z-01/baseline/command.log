@@ -1,0 +1,15 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1789642651.781203 1976674 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1789642651.803170 1976674 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789642651.962207 1976674 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789642651.962289 1976674 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789642651.962296 1976674 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789642651.962298 1976674 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-17 18:57:35.318694: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+healthy {'result': [-4.4698582934543625, [-0.39633162869729477]]}
+upper_nan {'result': [True, [[1.0, 0.0], [0.0, 1.0]]]}
+infinite_input {'result': [True, [[inf, 0.0], [0.0, 1.0]]]}
+shape_2_1 {'result': [2]}
+invalid_sigma {'result': [[[[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]], [[[0.0, 0.0], [nan, nan], [nan, nan], [nan, nan], [nan, nan]]], False]}
+invalid_actual_batch {'exception': 'InvalidArgumentError', 'message': 'in user code:\n\n    File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_batch_fused_tf.py", line 228, in evaluate_direction  *\n        value, score = canonical_value_and_analytical_score(\n    File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 761, in canonical_value_and_analytical_score  *\n        annealed_seed=annealed_seed,\n    File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/bayesfilter/highdim/ledh_canonical_score_tf.py", line 490, in time_loop_body  *\n        tf.debugging.assert_equal(\n\n    InvalidArgumentError: higher-moment Contract-E correction is invalid\n    Condition x == y did not hold.\n    First 1 elements of x:\n    [False]\n    First 1 elements of y:\n    [ True]\n'}
+Saved docs/plans/artifacts/ledh-graceful-failure-20260917T105313Z-01/baseline.json

@@ -2447,7 +2447,7 @@ def _gradient_diagnostic(
             tape.watch(component)
         objective, value = _objective_from_components(tensors, args, theta_components)
     gradients = tape.gradient(objective, theta_components)
-    jacobian_columns = [tape.jacobian(value, component) for component in theta_components]
+    jacobian_columns = [tape.jacobian(value, component, experimental_use_pfor=False) for component in theta_components]
     del tape
     connected = [gradient is not None for gradient in gradients]
     gradient_values = [

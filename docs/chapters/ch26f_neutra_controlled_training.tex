@@ -1,0 +1,716 @@
+\chapter[Learning Transports Without Losing Modes]{Learning Transports Without Losing Posterior Modes}
+\label{ch:neutra-controlled-training}
+
+A useful transport must reconcile two tasks. It must allocate probability to
+the relevant regions of the posterior, and it must give Hamiltonian dynamics
+coordinates in which numerical trajectories can move efficiently. Neither
+task follows merely from a decreasing variational loss. The mixture examples
+in Chapter~\ref{ch:rare-regions-transport} make this distinction measurable:
+their probabilities and a reference transport are known, yet an estimated
+transport can fit the centers of the modes while misrepresenting the valley.
+
+Gaussianizing a posterior is stronger than covariance whitening. Centering
+and scaling can give a multimodal distribution mean zero and identity
+covariance while leaving its nonlinear score unchanged in character. On a
+connected support equal to $\mathbb R^d$, the exact identity
+$\nabla\log\pi_z(z)=-z$ instead implies
+$\log\pi_z(z)+\|z\|^2/2$ is constant; normalization then identifies the
+standard Gaussian density. A finite collection of score probes only tests
+this identity at its sampled locations.
+
+The appropriate response is to separate the sources of approximation. We first
+establish that the sampler and its diagnostics work with a known transport.
+We then distinguish error in the weighted training distribution from error in
+fitting that distribution, and distinguish both from the effect of a subsequent
+variational refinement. This ordering is particularly valuable when a long
+sequence of repairs has changed several components at once.
+
+\section[An exact transport control]{Separating learning from sampling}
+
+Let $F_1$ be the cumulative distribution function of the first marginal in
+\eqref{eq:rare-mixture-target}, and let $Z_1,Z_2$ be independent standard
+normals. Define
+\begin{equation}
+ t(z_1)=F_1^{-1}(\Phi(z_1)),\qquad
+ T(z)=\begin{pmatrix}t(z_1)\\z_2\end{pmatrix},\qquad
+ T_w(z)=\begin{pmatrix}t(z_1)\\z_2+c(t(z_1)^2-26)\end{pmatrix},
+ \label{eq:controlled-exact-transports}
+\end{equation}
+where $c=0.1$ for the warped benchmark. The derivative matrices are
+\begin{equation}
+ J_T=\begin{pmatrix}t'&0\\0&1\end{pmatrix},\qquad
+ J_{T_w}=\begin{pmatrix}t'&0\\2ctt'&1\end{pmatrix}.
+\end{equation}
+Both determinants equal $t'$. Since $F_1(t(z_1))=\Phi(z_1)$,
+$\pi_1(t)t'=\phi(z_1)$. The warped target evaluated at $T_w(z)$ equals
+$\pi_1(t(z_1))\phi(z_2)$, because subtracting the warp recovers $z_2$.
+Consequently,
+\begin{equation}
+ \pi(T(z))|\det J_T(z)|=\phi(z_1)\phi(z_2),\qquad
+ \pi_w(T_w(z))|\det J_{T_w}(z)|=\phi(z_1)\phi(z_2).
+ \label{eq:controlled-gaussian-pullback}
+\end{equation}
+The potential in these latent coordinates is quadratic and its score is $-z$.
+The large marginal derivative at the valley therefore does not, by itself,
+create a difficult exact latent target.
+
+Numerical evaluation needs a separate check. A root finder locates $t$, but
+differentiating its finite branch decisions is not the mathematical inverse
+derivative. Implicit differentiation gives
+\begin{equation}
+ t'=\frac{\phi(z_1)}{\pi_1(t)},\qquad
+ t''=t'\left[-z_1-(\log\pi_1)'(t)t'\right].
+ \label{eq:controlled-inverse-derivatives}
+\end{equation}
+The second formula follows by differentiating $\log t'$. Logarithmic CDF and
+survival-function comparisons avoid subtracting nearly equal tail
+probabilities. A numerical check must compare the computed target-plus-log-
+Jacobian expression and its derivative with
+\eqref{eq:controlled-gaussian-pullback}; evaluating an analytic Gaussian
+potential alone would bypass errors in that computation.
+
+Three controls answer different questions: independent exact posterior samples
+test the assessment procedure; Gaussian latent HMC with exact physical decoding
+tests tuning and finite-run information; and the numerical change-of-variables
+calculation tests transformation and differentiation. A failure of the latter
+invalidates dependent numerical evidence. A stochastic diagnostic failure in
+the former two requires assessment of its frequency and cause, rather than
+an immediate declaration that the sampler is mathematically wrong.
+
+The Gaussian control also makes trajectory resonances explicit. For unit
+mass and potential $z^2/2$, one leapfrog step acts on position and momentum as
+\begin{equation}
+ \begin{pmatrix}z'\\v'\end{pmatrix}
+ =M_\epsilon\begin{pmatrix}z\\v\end{pmatrix},\qquad
+ M_\epsilon=
+ \begin{pmatrix}
+ 1-\epsilon^2/2&\epsilon\\
+ -\epsilon(1-\epsilon^2/4)&1-\epsilon^2/2
+ \end{pmatrix}.
+ \label{eq:controlled-gaussian-leapfrog}
+\end{equation}
+This follows by substituting the half momentum update into the position
+update and then applying the second half momentum update. The determinant is
+one, and for $0<\epsilon<2$ its eigenvalues are $e^{\pm i\omega}$ with
+$\cos\omega=1-\epsilon^2/2$. At $\epsilon=1$, $\omega=\pi/3$:
+lengths $L=3,9,18$ give $M_\epsilon^L=\pm I$, so position either alternates
+sign or remains fixed, regardless of the refreshed momentum. High acceptance
+cannot rescue these trajectories. At $\epsilon=\sqrt2$, the angle is
+$\pi/2$, and $L=5,13,25$ all give the same matrix. Different trajectory
+lengths therefore need not provide different Gaussian kernels.
+
+There is also an exact stationary acceptance expression in this two-dimensional
+control. Let $\lambda\geq1$ be the larger eigenvalue of
+$(M_\epsilon^L)^\top M_\epsilon^L$; the other is $1/\lambda$. Under the
+stationary joint position--momentum Gaussian law, rotational invariance gives
+\begin{equation}
+ 2\Delta H=(\lambda-1)U-(1-\lambda^{-1})V,
+ \qquad U,V\ \hbox{independent }\chi^2_2.
+\end{equation}
+To see the acceptance identity, append the usual momentum flip to the
+leapfrog proposal and denote the resulting involution by $F$. Volume
+preservation gives $dy=dx$ under $y=F(x)$, while
+$e^{-H(x)}e^{-\Delta H(x)}=e^{-H(y)}$ and
+$\Delta H(y)=-\Delta H(x)$. Thus the positive-energy part of the acceptance
+integral equals the probability of a negative-energy proposal. Adding its
+unit-acceptance negative-energy part gives
+$\mathbb E\min(1,e^{-\Delta H})=2\Pr(\Delta H<0)$ when $\lambda>1$.
+Since $U$ and $V$ are independent exponentials with the same scale,
+$\Pr(U<V/\lambda)=\int_0^\infty e^{-\lambda u/2}
+ e^{-u/2}\,du/2=1/(1+\lambda)$, and hence
+\begin{equation}
+ \mathbb E\alpha=\frac{2}{1+\lambda}.
+\end{equation}
+The formula extends continuously to acceptance one at $\lambda=1$.
+For $\epsilon=\sqrt2$ and odd $L$, $\lambda=2$ and the expectation is
+$2/3$. These identities explain the control's observed search behavior; they
+do not determine acceptance for an imperfect learned map or establish
+posterior precision. In particular, a nominal acceptance target does not
+exclude a resonant or strongly correlated trajectory.
+
+\section[The training distribution]{The weighted distribution actually supplied to the optimizer}
+
+Suppose independent sampling replication $r$ supplies points $x_{ri}$ and
+normalized weights $w_{ri}$, with $\sum_i w_{ri}=1$. Equal treatment of $R$
+replications defines the empirical training measure
+\begin{equation}
+ \widehat\pi_R=\frac{1}{R}\sum_{r=1}^{R}\sum_iw_{ri}\delta_{x_{ri}},
+ \qquad
+ \widehat L_F(\theta)=-\frac{1}{R}\sum_{r,i}w_{ri}\log q_\theta(x_{ri}).
+ \label{eq:controlled-pooled-teacher}
+\end{equation}
+A replication with more saved rows does not thereby receive more probability
+mass. If each replication is self-normalized importance sampling, pooling
+does not remove its finite-sample ratio bias. Replication labels remain useful
+for estimating variability and identifying domination by one unusually
+weighted run. For umbrella data, the window-normalization and overlap
+requirements of \citet{thiede2016emus} remain necessary before this pooled
+measure is meaningful.
+
+For disjoint regions $B_k$, let $b_k=\widehat\pi_R(B_k)$ and let
+$\widehat\pi_{R,k}$ be the normalized conditional empirical measure. If a
+minibatch draws $n_k$ points from each conditional distribution, then
+\begin{equation}
+ \widehat\ell_F(\theta)
+ =-\sum_k\frac{b_k}{n_k}\sum_{j=1}^{n_k}\log q_\theta(X_{kj}),
+ \qquad X_{kj}\sim\widehat\pi_{R,k},
+\end{equation}
+has conditional expectation $\widehat L_F$. Allocating extra rows to the
+valley improves its representation in individual updates without assigning
+it a false posterior mass. Resampling the entire bank according to its tiny
+valley mass would discard much of the information deliberately collected there.
+
+The actual bank must be assessed on mode weights, conditional shape, and event
+probabilities. A sampling method that passes across repeated runs does not
+certify the particular replication later used for training. Conversely, a
+correct empirical bank does not guarantee that the optimizer can fit it.
+For the known mixture we can isolate these errors by constructing a separate
+oracle bank: draw $U$ uniformly over each interval
+$[F_1(a_k),F_1(a_{k+1})]$, set $X_1=F_1^{-1}(U)$, draw an independent
+$X_2$, and attach the exact interval probability. Oracle-trained success is
+evidence about fitting, not evidence that the estimated teacher works.
+The conditional draws and stratum probabilities are exact in real arithmetic,
+but their empirical bank is finite. This control removes uncertainty about
+importance weights and stratum masses; it does not remove empirical
+approximation within each stratum.
+
+\section[Combined forward and reverse training]{Keeping example-based training during energy refinement}
+
+\citet{noe2019boltzmanngenerators} combine maximum-likelihood training on
+examples with energy-based training; their Methods equation~(9) permits both
+terms, and supplementary Figure~S2 compares their effects on a double well.
+This provides a direct source for testing joint forward and reverse objectives
+without replacing the IAF architecture. In our notation,
+\begin{align}
+ L_F(\theta)&=-\mathbb E_\pi\log q_\theta(X),\\
+ L_R(\theta)&=\mathbb E_{Z\sim\phi_d}
+ \left[-\log\gamma(T_\theta(Z))-\log|\det J_{T_\theta}(Z)|\right],\\
+ L_\lambda(\theta)&=L_R(\theta)+\lambda L_F(\theta),\qquad\lambda>0.
+ \label{eq:controlled-joint-loss}
+\end{align}
+Using $q_\theta(T_\theta(z))=\phi_d(z)/|\det J_{T_\theta}(z)|$ and
+$\pi=\gamma/\mathcal Z$, we obtain
+\begin{align}
+ \mathrm{KL}(q_\theta\|\pi)
+ &=\mathbb E_{\phi_d}\log\phi_d(Z)+L_R(\theta)+\log\mathcal Z,\\
+ \mathrm{KL}(\pi\|q_\theta)
+ &=\mathbb E_\pi\log\pi(X)+L_F(\theta).
+\end{align}
+Thus $L_\lambda$ differs from
+$\mathrm{KL}(q_\theta\|\pi)+\lambda\mathrm{KL}(\pi\|q_\theta)$ only
+by constants independent of $\theta$. The unknown normalizer does not affect
+its gradient. Replacing $\pi$ by \eqref{eq:controlled-pooled-teacher}, however,
+replaces the forward expectation by an empirical one and introduces a distinct
+approximation.
+
+The forward loss reported by the optimizer is a cross entropy, so its absolute
+level must not be read as a KL divergence. For these benchmarks its reference
+level can be bounded almost exactly. Let $C$ denote the mixture label and put
+$h_b(p)=-p\log p-(1-p)\log(1-p)$. The entropy identity for a discrete label
+and a continuous observation gives
+\begin{equation}
+ h(\pi)=\log(2\pi e)+h_b(1/3)-H(C\mid X).
+ \label{eq:controlled-target-entropy}
+\end{equation}
+The Bayes classification boundary is $t=-\log(2)/10$, obtained by equating
+the two weighted marginal Gaussian densities. Its error probability is
+\begin{equation}
+ e_C=\tfrac13\Phi(-t-5)+\tfrac23\Phi(t-5)
+     \simeq2.697\times10^{-7}.
+\end{equation}
+For the binary error indicator $E=\mathbf1\{C\ne\widehat C(X)\}$, knowing
+$X$ and $E$ determines $C$. Therefore
+$H(C\mid X)=H(E\mid X)\leq H(E)=h_b(e_C)$, while conditional entropy is
+nonnegative. Substitution into \eqref{eq:controlled-target-entropy} yields
+\begin{equation}
+ 3.4743868<h(\pi)<3.4743913.
+\end{equation}
+The warp has determinant one and hence preserves this entropy. A forward cross
+entropy near $3.5003$ consequently corresponds to a forward KL near $0.0259$,
+subject to the loss estimate's Monte Carlo error. This converts the units of
+the reported loss; it does not certify either its gradient accuracy or its
+sampling consequences.
+
+This comparison also has an exact interpretation in the learned coordinates.
+Let $\pi_{z,\theta}(z)=\pi(T_\theta(z))e^{d_\theta(z)}$, with
+$d_\theta(z)=\log|\det J_{T_\theta}(z)|$. The density ratio obeys
+\begin{equation}
+ \frac{\pi(T_\theta(z))}{q_\theta(T_\theta(z))}
+ =\frac{\pi_{z,\theta}(z)}{\phi_d(z)}.
+\end{equation}
+Changing variables in each KL integral therefore gives
+\begin{equation}
+ \mathrm{KL}(\pi\|q_\theta)
+ =\mathrm{KL}(\pi_{z,\theta}\|\phi_d),\qquad
+ \mathrm{KL}(q_\theta\|\pi)
+ =\mathrm{KL}(\phi_d\|\pi_{z,\theta}).
+ \label{eq:controlled-latent-kl}
+\end{equation}
+With exact expectations, the combined objective does seek a Gaussian latent
+distribution in both KL directions. The unresolved issue is what these
+integrated density errors imply about derivatives and finite HMC trajectories.
+Replacing the forward expectation by a finite teacher bank weakens even that
+population-level interpretation.
+
+For a partition $B_k$, write $p_k=\pi(B_k)$, $v_k=q_\theta(B_k)$ and
+$\pi_k=\pi(\cdot\mid B_k)$, $q_k=q_\theta(\cdot\mid B_k)$. On $B_k$,
+$\pi/q_\theta=(p_k/v_k)(\pi_k/q_k)$, so substitution into the KL integral
+gives
+\begin{align}
+ \mathrm{KL}(\pi\|q_\theta)
+ &=\sum_k\int_{B_k}p_k\pi_k(x)
+       \left[\log\frac{p_k}{v_k}+\log\frac{\pi_k(x)}{q_k(x)}\right]dx\\
+ &=\sum_kp_k\log\frac{p_k}{v_k}
+       +\sum_kp_k\mathrm{KL}(\pi_k\|q_k).
+ \label{eq:controlled-kl-partition}
+\end{align}
+If a mode has $p_k>0$ while $v_k$ approaches zero, its forward penalty grows
+without bound. Pure reverse KL does not impose this penalty: a proposal fitted
+to the right component of the separated mixture has reverse KL close to
+$-\log(2/3)$. Retaining the forward term therefore addresses a specific loss
+of mode coverage. It does not eliminate nonconvex local optima or ensure
+accurate derivatives in a region whose $p_k$ is extremely small.
+
+The size of that penalty matters. For the broad valley, take the exact
+probability $p=0.001349898$ and a proposal assigning $v=0.016$, almost twelve
+times too much probability. Applying \eqref{eq:controlled-kl-partition} to the
+event and its complement gives a forward mass contribution
+$p\log(p/v)+(1-p)\log[(1-p)/(1-v)]\approx0.0114$ nats and a reverse mass
+contribution of about $0.0250$ nats. Thus a seemingly small global KL can
+coexist with a large relative error for a rare event. Stratified minibatches
+reduce the variance of that event's gradient contribution, but correct
+probability weighting leaves its expected contribution proportional to $p$.
+Giving the event equal objective weight would change the objective; it would
+not be a more accurate estimator of the same forward KL.
+
+The author's double-well notebook retains unit weights for both ML and KL
+after ML pretraining. We use $\lambda=1$ as that source-based baseline, not
+as a universally optimal coefficient. The archived implementation also contains
+an energy clipping transformation. Our analytic-target experiment omits that
+transformation explicitly so that $L_R$ continues to use $\gamma$, rather than
+a modified energy. Source fidelity requires identifying this difference.
+
+The gradients must differentiate the same objectives. Define
+$A_\theta(z)=\partial T_\theta(z)/\partial\theta$. With column gradients,
+the ordinary reparameterized reverse gradient is
+\begin{equation}
+ \nabla_\theta L_R
+ =-\mathbb E_{\phi_d}\left[
+ A_\theta(Z)^\mathsf T\nabla_x\log\gamma(T_\theta(Z))
+ +\partial_\theta d_\theta(Z)\right].
+ \label{eq:controlled-reverse-gradient}
+\end{equation}
+Here $Z$ is held fixed while differentiating; interchange of differentiation
+and expectation requires the usual integrability conditions. A value/score
+interface to the target supplies $\nabla_x\log\gamma$, which equals the
+posterior score because $\mathcal Z$ does not depend on the map parameters.
+
+For a forward-training observation $x$, the physical point is fixed but its
+inverse image $z_\theta=T_\theta^{-1}(x)$ changes. Implicit differentiation
+of $T_\theta(z_\theta)=x$ gives
+\begin{equation}
+ \frac{\partial z_\theta}{\partial\theta}
+ =-J_{T_\theta}(z_\theta)^{-1}A_\theta(z_\theta).
+ \label{eq:controlled-parameter-inverse-derivative}
+\end{equation}
+Substituting this into the derivative of
+$-\log\phi_d(z_\theta)+d_\theta(z_\theta)$ yields
+\begin{equation}
+ \nabla_\theta[-\log q_\theta(x)]
+ =\partial_\theta d_\theta(z_\theta)
+ -A_\theta(z_\theta)^\mathsf T J_{T_\theta}(z_\theta)^{-\mathsf T}
+       [z_\theta+\nabla_z d_\theta(z_\theta)].
+ \label{eq:controlled-forward-gradient}
+\end{equation}
+The partial derivatives on the right hold $z$ fixed; the second term supplies
+the inverse map's dependence on $\theta$. Averaging this expression with the
+corrected stratum weights gives the minibatch forward gradient. Treating the
+training observations and their weights as fixed is appropriate, whereas
+stopping the derivative through the inverse map would omit a required term.
+As a sign check, in one dimension with $T_a(z)=az$ and $a>0$, the expression
+reduces to $(1-z_a^2)/a$, the derivative of
+$\log a+x^2/(2a^2)$ up to its constant.
+
+The simultaneous gradient is
+\begin{equation}
+ g_\lambda=g_R+\lambda g_F.
+\end{equation}
+One Adam update using this sum is not generally equivalent to two successive
+Adam updates, because Adam updates its first and second moments after each
+gradient. Objective comparisons must also control whether those moments are
+reset. We therefore distinguish preserved-state forward continuation from
+reset-matched forward, reverse and combined branches starting at the same map.
+The inverse-density evaluations in the forward term make their costs different;
+equal numbers of updates are not equal computational effort.
+
+\section[Optimization and geometry]{Optimization, capacity, and derivative accuracy}
+
+An update limit is a computational allocation. To assess progress between
+distinct maps $q_a,q_b$ on independent heldout points, define
+$D_i=\log q_b(X_i)-\log q_a(X_i)$. The paired mean estimates the decrease
+in forward cross entropy, and its uncertainty uses the variability of $D_i$,
+not the separate variances of two unrelated estimates. Correlated chains and
+weighted banks require block or replication uncertainty instead of an iid
+standard error.
+
+Failure to distinguish the mean from zero does not establish a plateau. A
+practical plateau requires sufficiently precise evidence that further
+improvement larger than a declared resolution is absent over the assessed
+interval. That resolution remains an operational stopping choice. A run still
+improving at its compute ceiling is under-budgeted, while a stationary poor
+fit motivates an optimizer or capacity experiment. Neither outcome proves
+that the IAF family cannot represent the target.
+
+The conditional scale convention $s_j=b_j+c\tanh(h_j/c)$ bounds the nonlinear
+log-scale contribution, but does not bound every conditioner derivative or
+off-diagonal Jacobian term. The score residual from
+\eqref{eq:rare-pullback-score} should therefore be inspected on Gaussian-base
+points, independent posterior points pulled back through the map, and directed
+physical points spanning several valley slices. These sampling measures answer
+different questions. A finite maximum is not a uniform bound.
+
+The residual has a useful second expression. The density induced by the map
+satisfies
+\begin{equation}
+ \log q_\theta(T_\theta(z))+\log|\det J_{T_\theta}(z)|
+ =\log\phi_d(z).
+\end{equation}
+Differentiating with respect to $z$ and subtracting the resulting identity
+from the transformed posterior score gives
+\begin{equation}
+ r_\theta(z)=J_{T_\theta}(z)^\mathsf T
+ \left[\nabla_x\log\pi(x)-\nabla_x\log q_\theta(x)\right]_{x=T_\theta(z)}.
+ \label{eq:controlled-score-error-amplification}
+\end{equation}
+Thus the residual depends on both the physical density's score error and the
+map's stretching in the direction of that error. The bound
+$\|r_\theta\|\leq\|J_{T_\theta}\|_2
+\|\nabla\log\pi-\nabla\log q_\theta\|$ makes the sensitivity explicit.
+For example, stretching of $2.4\times10^5$, comparable to the exact marginal
+transport at the valley center, would amplify a score error of $10^{-3}$
+aligned with that direction to a residual of about $240$. This illustrates
+sensitivity; it is not a measurement of either factor for a particular fitted
+map. The exact map itself has zero score error and zero residual.
+
+The counterexample in \eqref{eq:rare-kl-score-counterexample} explains why
+derivative checks remain necessary even when both KL objectives are small.
+An alternative perturbation gives explicit rates for both divergences.
+Consider the following smooth density in one latent coordinate, with $k>1$
+and $a_k=k^{-1/2}$:
+\begin{equation}
+ p_k(z)=\phi(z)\{1+a_k\sin(kz)\}.
+ \label{eq:controlled-small-kl-density}
+\end{equation}
+It is positive, and it integrates to one because the Gaussian is even and
+the sine is odd. Put $u=a_k\sin(kz)$. The inequality $\log(1+u)\leq u$
+and $\mathbb E_\phi u=0$ give
+\begin{equation}
+ \mathrm{KL}(p_k\|\phi)
+ =\mathbb E_\phi[(1+u)\log(1+u)]
+ \leq\mathbb E_\phi(u+u^2)\leq a_k^2.
+\end{equation}
+For the other direction, Taylor's theorem applied to $-\log(1+u)$ gives
+$-\log(1+u)\leq-u+u^2/[2(1-a_k)^2]$, since $|u|\leq a_k<1$.
+Therefore
+\begin{equation}
+ \mathrm{KL}(\phi\|p_k)\leq\frac{a_k^2}{2(1-a_k)^2}.
+\end{equation}
+Both divergences tend to zero. Yet its Gaussian score residual is
+\begin{equation}
+ r_k(z)=\frac{d}{dz}\log p_k(z)+z
+       =\frac{a_k k\cos(kz)}{1+a_k\sin(kz)}.
+\end{equation}
+Using $\mathbb E_\phi\cos^2(kZ)=(1+e^{-2k^2})/2$, we obtain
+\begin{equation}
+ \mathbb E_\phi r_k(Z)^2
+ \geq \frac{a_k^2k^2}{2(1+a_k)^2}(1+e^{-2k^2})
+ \longrightarrow\infty.
+ \label{eq:controlled-kl-score-counterexample}
+\end{equation}
+Small, rapidly varying density errors can thus have large derivatives. For
+example, $k=10^6$ and $a_k=10^{-3}$ give upper bounds of $10^{-6}$ for both
+KL divergences, while the residual RMS exceeds $700$. This counterexample
+does not identify the cause of a particular trained map's error. It shows
+why minimizing a sum of forward and reverse KL, by itself, cannot guarantee
+accurate scores without additional regularity or derivative evidence.
+
+\begin{figure}[htbp]
+ \centering
+ \includegraphics[width=\textwidth]{figures/neutra_kl_score_bounds.pdf}
+ \caption{Deterministic bounds for \eqref{eq:controlled-small-kl-density}.
+ Both KL upper bounds decrease with oscillation frequency, while the lower
+ bound on Gaussian score-residual RMS grows. The right panel drops the
+ positive $e^{-2k^2}$ term in \eqref{eq:controlled-kl-score-counterexample},
+ retaining a valid lower bound. These are mathematical bounds, not fitted
+ transport results.}
+ \label{fig:controlled-kl-score-bounds}
+\end{figure}
+
+If density fits are adequate but derivative errors remain harmful, an optional
+geometric objective can be derived. For fixed physical reference measures
+$\nu_k$ and declared nonnegative coefficients $a_k$, consider
+\begin{equation}
+ G(\theta)=\sum_k a_k\mathbb E_{X\sim\nu_k}
+   \left[\|r_\theta(T_\theta^{-1}(X))\|^2\right].
+ \label{eq:controlled-geometric-objective}
+\end{equation}
+Writing $\delta s_\theta(x)=\nabla\log\pi(x)-\nabla\log q_\theta(x)$,
+put $z_\theta=T_\theta^{-1}(x)$ and $J_\theta=J_{T_\theta}(z_\theta)$.
+Equation~\eqref{eq:controlled-score-error-amplification} expresses the
+integrand as
+\begin{equation}
+ \|r_\theta(z_\theta)\|^2
+ =\delta s_\theta(x)^\mathsf T J_\theta J_\theta^\mathsf T
+      \delta s_\theta(x).
+\end{equation}
+It therefore weights physical score errors by a metric that also changes with
+the fitted map.
+This is an explicit local extension, not the original NeuTra training
+prescription. The inverse derivative in
+\eqref{eq:controlled-parameter-inverse-derivative} remains necessary: the
+derivative of the residual includes both its explicit parameter dependence
+and its change through $z_\theta$. Dropping the latter
+term computes a different derivative. The physical score at fixed $x$ can be
+stored. More explicitly, the total derivative of the residual is
+\begin{equation}
+ B_\theta(x)
+ =\partial_\theta r_\theta(z_\theta)
+  -[\partial_z r_\theta(z_\theta)]
+       J_{T_\theta}(z_\theta)^{-1}A_\theta(z_\theta).
+\end{equation}
+Applying the derivative of a squared norm then gives
+\begin{equation}
+ \nabla_\theta G
+ =2\sum_k a_k\mathbb E_{\nu_k}
+       [B_\theta(X)^\mathsf T r_\theta(T_\theta^{-1}(X))],
+ \label{eq:controlled-geometric-gradient}
+\end{equation}
+provided differentiation can be interchanged with these fixed-measure
+expectations. The matrix $B_\theta$ has one row per residual coordinate and
+one column per parameter; its second term accounts for keeping the physical
+point fixed as the map changes. Mixed and higher derivatives of the map still
+need numerical and computational validation before such an objective is
+useful. For a scalar check, take $T_a(z)=az$, $a>0$, and a target
+$N(0,\tau^2)$. Then $r_a(z)=(1-a^2/\tau^2)z$, so at fixed $x$
+the residual is $x/a-ax/\tau^2$ and its derivative is
+$B_a(x)=-x/a^2-x/\tau^2$. Holding $z$ fixed would instead give
+$-2x/\tau^2$, missing the required inverse dependence. These expressions
+apply where the required derivatives exist. With the canonical unit-parameter
+ELU, the first derivative is continuous at zero but the second derivative has
+different one-sided limits. Tests of an implemented geometric objective would
+therefore need to distinguish ordinary differentiable points from activation
+boundaries; a single directional check at a smooth point would not settle its
+behavior at every such boundary.
+
+The reaction-coordinate entropy objective in
+\citet{noe2019boltzmanngenerators} has a different purpose: it deliberately
+encourages sampling of high-energy transition configurations. Exact correction
+can recover posterior expectations from an appropriate proposal, but spreading
+proposal mass along a reaction coordinate is not the same as making the
+posterior pullback Gaussian. These mechanisms should be tested separately.
+
+\section[Sampling and confirmation]{Evidence from posterior computation}
+
+For a frozen proposal density $q$, an independence proposal is accepted with
+probability
+\begin{equation}
+ \alpha(x,y)=\min\left\{1,\frac{\gamma(y)q(x)}{\gamma(x)q(y)}\right\}.
+\end{equation}
+This permits global jumps without requiring the proposal to equal the target.
+\citet{gabrie2022adaptiveflows} combine such moves with local exploration and
+discuss mixtures of separately trained maps. If two fixed kernels preserve
+$\pi$, their composition preserves $\pi$ because $\pi K_1K_2=\pi K_2=\pi$;
+the composition need not itself satisfy detailed balance. These fixed-kernel
+identities do not prove convergence of an arbitrary finite adaptive run.
+Training-sample collection must distinguish adapting exploration from frozen,
+assessed sampling.
+
+For NeuTra HMC, the frozen map is used with the exact transformed target and
+identity latent mass. Independent verification of a step-size/trajectory pair
+precedes posterior assessment. Known mode locations can supply a separate
+start bank with within-mode variation; they are not posterior samples. Agreement
+of chains started entirely within one learned component does not test the
+missing component. Final confirmation must also use fresh streams after map
+selection.
+
+For a stationary event indicator with integrated autocorrelation time $\tau_A$,
+the Markov-chain central limit approximation is
+\begin{equation}
+ \operatorname{Var}(\widehat a)\simeq\frac{a(1-a)\tau_A}{N},\qquad
+ N_{\mathrm{eff},A}=N/\tau_A,
+ \qquad
+ \frac{\operatorname{MCSE}(\widehat a)}{a}
+ \simeq\sqrt{\frac{1-a}{aN_{\mathrm{eff},A}}}.
+ \label{eq:controlled-event-precision}
+\end{equation}
+This assumes a suitable central limit theorem and an estimable autocorrelation
+sum; a trace with few events cannot validate those assumptions merely by
+returning a finite ESS. For the broad valley, a 20 percent relative MCSE needs
+about $18{,}500$ independent-equivalent observations, and 10 percent needs about
+$74{,}000$. Four chains capped at $10{,}000$ retained draws each therefore do
+not routinely support the latter goal. The much rarer central event remains
+a task for deliberate estimators rather than an ordinary-HMC observation gate.
+
+\citet{hoffman2019neutra} explicitly note that an inadequate map can slow tail
+mixing. A failed frozen-map run can accordingly indicate poor coordinates,
+inadequate kernel search, or insufficient retained information. It does not
+prove an incorrect invariant distribution. Conversely, a valid invariant
+distribution alone does not establish an accurate finite posterior estimate.
+
+\section[Implementation and evidence]{Implementation and recorded evidence}
+
+The controlled experiment retains the shared canonical IAF implementation and
+uses one checked Adam update for the combined objective. It preserves
+parameters, optimizer moments, iteration counts, teacher identity and unique
+random streams at checkpoints. Exact references, estimated teachers and
+learned-map results are stored separately. The controller refreshes its next
+phase after each result: continuing progress receives further budget,
+teacher failure receives a bounded sampling repair, an optimizer plateau
+receives a declared capacity or learning-rate experiment, and an inconclusive
+kernel search receives its declared wider search. An invalid common reference
+stops dependent work.
+
+The experiment crosses the two targets with oracle and importance-weighted
+teachers and development seeds $11$ and $37$. The architecture has three
+canonical IAF stages and two ELU hidden layers per stage. Each parent uses a
+$1{,}024$-update pilot at widths $16$ and $32$ and learning rates
+$3\times10^{-4}$ and $10^{-3}$ to nominate a configuration by heldout forward
+loss. That nomination allocates subsequent training; it does not establish
+posterior quality. The kernel initializer's variance-scale multiplier $0.2$
+is a previously investigated local training choice, distinct from the author's
+$0.02$ choice. The optimizer
+uses batches of $256$, Adam coefficients $(0.9,0.999)$ and numerical offset
+$10^{-8}$, with no gradient clipping. These inherited optimizer choices remain
+hypotheses for these targets. The ordinary training rungs are $2{,}048$,
+$8{,}192$ and $32{,}768$ updates; continuation preserves its declared ancestor
+and optimizer state. The combined branch uses $\lambda=1$.
+
+All numerical work here uses TensorFlow/TFP with XLA and FP64 as a diagnostic
+reference. The experiment does not evaluate the intended FP32/TF32 training
+policy. The teacher arms follow the same pilot protocol but can select different
+widths and learning rates, so their comparison does not isolate teacher quality
+at a fixed architecture and optimizer. Within a case the objective branches
+share their initial fitted map. Their costs differ, and the two development
+seeds do not support a statistical ranking of objectives. Hardware is shared
+with other workloads; the recorded process times account for resource use but
+do not establish device throughput.
+
+The numerical exact-transport checks on both targets used $1{,}001$ directed
+points. Maximum errors were $3.6\times10^{-15}$ in log density,
+$3.6\times10^{-10}$ in score, and $2.3\times10^{-16}$ in marginal probability.
+Eight independent iid streams, paired across the two targets, passed the
+declared retained-sample and reference checks in all sixteen evaluations.
+The Gaussian HMC control passed on both targets after the resonance and
+finite-information repairs described above. The passing run used
+$\epsilon=1.6817928305$, $L=5$, $2{,}000$ discarded warm-up draws and
+$9{,}000$ retained draws per chain. Its broad-event relative MCSE was about
+$18.9$ percent. These finite controls establish feasibility for this
+experiment; their small replication count does not calibrate a general
+false-rejection rate or nominal sequential coverage.
+
+The first oracle-teacher fit illustrates why the learning question remains
+separate. After $32{,}768$ forward updates, the median Gaussian-base residual
+was $0.312$, but the maximum over the directed valley slices was about $433$.
+That maximum is descriptive, and the measured forward objective was still
+improving. Subsequent pure reverse and combined refinements therefore cannot
+be interpreted as comparisons of globally optimized densities. Joint training
+and its preserved-Adam continuation brought the selected map to $131{,}072$
+lifetime updates, including its forward-trained ancestor. Its estimated reverse
+KL was $0.0299$ and its Gaussian-probe median residual was $0.168$, but the
+directed maximum was about $1{,}181$; Figure~\ref{fig:controlled-valley-residuals}
+shows the latter diagnostic across the valley. The same $1{,}000$ Gaussian
+probes had a mean residual norm of $6.39$, a 99th percentile of about $102$,
+and a maximum of about $1{,}029$. Thus the low median concealed substantial
+errors already visible in the ordinary probe bank. These tail summaries are
+descriptive and are not precise estimates of population extreme quantiles.
+The last paired joint-objective
+gain was $0.00476$ with standard error $0.00746$, which did not establish the
+declared operational plateau. The bounded HMC procedure failed to qualify this
+case. A subsequent completion pass excluded the already completed failed
+kernel and assessed three remaining verified settings at the same retained
+cap. Each produced $40{,}000$ retained draws in total; their broad-valley
+counts were $1$, $8$, and $15$, compared with approximately $54$ expected
+visits for $40{,}000$ stationary draws. The expected count uses linearity of
+expectation, but its sampling variation depends on serial dependence; a
+binomial uncertainty calculation would not be justified for these chains.
+All three failed the declared event checks, with estimated relative MCSEs
+of approximately $100$, $68$, and $55$ percent. Such sparse counts also make
+the MCSE estimates fragile. The operational conclusion is that these kernels
+did not deliver the specified finite-sample event accuracy. Neither these
+residuals nor the incomplete optimization justify a claim
+that the IAF family cannot solve the problem.
+
+\begin{figure}[htbp]
+ \centering
+ \includegraphics[width=\textwidth]{figures/neutra_controlled_valley_residuals.pdf}
+ \caption{Directed score residuals for the first oracle-mixture case after
+ joint training and continuation. Each curve fixes the physical second
+ coordinate and evaluates $1{,}001$ locations across the valley. These points
+ were deliberately placed; their norms are not a posterior error distribution
+ or a uniform bound. The figure reads the saved FP64 diagnostics of the
+ $131{,}072$-lifetime-update map and makes no comparison of methods.}
+ \label{fig:controlled-valley-residuals}
+\end{figure}
+
+The completed training phase comprised $48$ fit jobs across the eight
+target--teacher--seed cases. All stopped at their work allocations; none
+established the operational plateau. Table~\ref{tab:controlled-final-maps}
+records the final joint checkpoints, including their one continuation. The
+within-case objective branches and earlier checkpoints remain in the full
+result record. This table describes the final maps; it does not rank them or
+select them for posterior use.
+
+\begin{table}[htbp]
+ \centering\small
+ \begin{tabular}{llrrrrr}
+ \toprule
+ Target & Teacher & Seed & \shortstack{Lifetime\\updates} &
+ \shortstack{Estimated\\reverse KL} & \shortstack{Median\\residual} &
+ \shortstack{Directed\\maximum}\\
+ \midrule
+ Unwarped & Oracle & 11 & 131072 & 0.0299 & 0.168 & 1181\\
+ Unwarped & Oracle & 37 & 73728 & 0.0255 & 0.156 & 3702\\
+ Unwarped & Estimated & 11 & 73728 & 0.0205 & 0.135 & 4873\\
+ Unwarped & Estimated & 37 & 73728 & 0.0084 & 0.103 & 3286\\
+ Warped & Oracle & 11 & 24576 & 0.0253 & 0.222 & 1563\\
+ Warped & Oracle & 37 & 106496 & 0.0101 & 0.117 & 3635\\
+ Warped & Estimated & 11 & 131072 & 0.0210 & 0.091 & 4124\\
+ Warped & Estimated & 37 & 131072 & 0.0261 & 0.150 & 1673\\
+ \bottomrule
+ \end{tabular}
+ \caption{Final joint maps from the FP64 controlled experiment. The median
+ uses the standard $1{,}000$ Gaussian-base probes; the maximum uses five
+ directed physical valley slices. These are different sampling measures.
+ Reverse KL estimates use a separate finite Gaussian bank. All values are
+ descriptive; posterior qualification is assessed separately.}
+ \label{tab:controlled-final-maps}
+\end{table}
+
+Four continuations completed only one new checkpoint, leaving no within-job
+paired loss change. Among those with multiple new checkpoints, the last
+joint-loss standard errors ranged from about $0.0035$ to $0.0078$ nats,
+larger than the $0.001$-nat plateau resolution even before the three-standard-
+error margin. This is inconclusive optimization evidence. It does not support
+the prerequisite for the optional geometric objective, which was therefore
+neither implemented nor executed in this campaign. Its derivation above is a
+proposal for a distinct experiment.
+
+The complete posterior execution record belongs in the accompanying campaign
+result note. The substantive success criterion remains a finite posterior
+computation that passes the declared physical-space accuracy and information
+requirements, together with its measured computational cost and limitations.
+
+In the completed eight-case campaign, no learned map passed fresh posterior
+confirmation. The exact transport, independent-reference and exact Gaussian
+controls passed for both targets, so the result is a failure of the bounded
+learned-map training and sampling procedure under this evidence contract. The
+fit failures cannot be attributed solely to importance-weight estimation,
+because the exact conditional oracle teacher also failed. At the same time,
+all forty-eight fit jobs stopped at their work allocations, and the plateau
+criterion was never established. Incomplete optimization, capacity, local
+geometry and finite HMC information therefore remain competing explanations.
+The optional geometric objective was not executed; its prerequisite of an
+adequate stationary density fit was not demonstrated.
+
+\input{chapters/ch26f_neutra_literature_remedies}
+\input{chapters/ch26f_neutra_nonlinearity_results}

@@ -1,0 +1,416 @@
+{
+  "role": "CPU graph prefix and eager map diagnostic; not tuning or GPU evidence",
+  "gpu_intentionally_hidden": true,
+  "jit_compile": false,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/plans/artifacts/range-bearing-warmup-fallback-20261015-01/inspect-map.py"
+  ],
+  "source_sha256": "dbce2dc10efa85923c978aaac03c98284740a82bd0e14a99947e394096597b4b",
+  "input_scope": {
+    "model": "range_bearing",
+    "target_id": "m13_range_bearing",
+    "horizon": 20,
+    "particles": 4032,
+    "state_dimension": 4,
+    "parameter_dimension": 2,
+    "dtype": "float32",
+    "tf32": false,
+    "jit_compile": true,
+    "force_batch_size": 2,
+    "precision_policy": "uniform",
+    "pairwise_dtype": "float32",
+    "tuning_seed_offset": 200,
+    "chunk_policy": "dpf_transport_exact_divisor_cap3000_v1",
+    "chunk_size": 2016,
+    "data_sha256": "f2e8f99d54d91cf221fa7f9cd0741c2327371f487374fb42277ad8abb5945b0d",
+    "prior": {
+      "id": "literature-model-priors-v1",
+      "coordinates": "q",
+      "normalized": true,
+      "chart": "affine",
+      "chart_scales": [
+        0.6931471805599453,
+        0.6931471805599453
+      ],
+      "jacobian": "physical-to-theta and theta-to-q Jacobians included",
+      "evidence": "docs/papers/surrogate-hmc-priors-2026-10-15/README.md",
+      "source": "Sarkka-Nummenmaa 2009 section III; Sarkka-Hartikainen 2013 sections 2,3",
+      "process_variance_multiplier": "exp(2*theta[0])",
+      "observation_variance_multiplier": "exp(2*theta[1])",
+      "inverse_gamma_shape": 1.0,
+      "inverse_gamma_scale": 1.0,
+      "adaptation": "independent static IG priors on common Q/R multipliers, preserving fixed covariance shapes",
+      "nominal": [
+        0.0,
+        0.0
+      ]
+    },
+    "source_sha256": {
+      "bayesfilter/testing/surrogate_hmc_five_model.py": "e9d2176cc30b709a0acc3f5f34e627f9a1670624500151e272bb68834a392c1e",
+      "bayesfilter/testing/surrogate_hmc_literature_priors.py": "41093423681f1762e49f97500b90b631523bc98e27b9e1ca4f725ce9049ad675",
+      "bayesfilter/highdim/covariance_proposal_shared_gaussian_tf.py": "cfefe4dbaf5edd53d1fdba77485d18068ae26e730b9fa56e9fbf75caf3296d7e",
+      "bayesfilter/testing/surrogate_hmc_scope_tuning.py": "3bd4a904a41689cdf754f1ca2dc46ddfd91c539a1f2b2989f2bc6503ae04787d",
+      "bayesfilter/highdim/analytical_jet_tf.py": "df0cd10c03ce3a94e226bf48dde05dcdbc775f98a463fb2c615bc0f2d23eb083",
+      "bayesfilter/highdim/covariance_proposal_score_tf.py": "edfc5e0bfba549b8efc68f8c4aa47883ddf468a70ec1d08ad91c96a097978982",
+      "bayesfilter/highdim/covariance_proposal_score_batch_tf.py": "933135f1be600510c5e26b587fb3f8476802ed77c1837f076a75b4e6231190f2",
+      "bayesfilter/highdim/covariance_proposal_score_moments_tf.py": "99eee2cc4ad01ba373d5ea89e4b002681ede650078edcd5cf60d17166b3d6c6d",
+      "docs/benchmarks/run_ledh_covariance_proposal.py": "8b66c273505ca939491dace10cc073cb91d8860c8d48713d1b00f871780eee30",
+      "scripts/run_range_bearing_covariance_comparison.py": "268c4a527305c4b07a3c70b79decf379401989f980ff29a8966f7d6716fab512",
+      "bayesfilter/highdim/sqmc_lgssm_tf.py": "f638d079f840a85fb820721d14793f95f740ed3cad87234eda1b57390de2b453",
+      "bayesfilter/highdim/sqmc_ksc_tf.py": "da2659666b7a58dd83a914a9cbee0c20c706ce008414b3b8bc4ffa4ea3085443",
+      "bayesfilter/highdim/sqmc_nonlinear_tf.py": "0a82eb8f991b0b55651acae22fb1cbce8a73343e5c4b0b10268eb296b63a1cf6",
+      "bayesfilter/highdim/covariance_proposal_beta_tf.py": "4a84f8387a7f1e0c4614cb9a7ed2114420e50e974f3fc40662d64cffd6666951",
+      "bayesfilter/highdim/ledh_kalman_oracle_tf.py": "f8467f93ecc17f580684507d69f8c38cdf27a4bab7fff5196ff96e046bee6904",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "61074fcede112511cdb69deec9a347519cf262ab794ebb0a31f87eaa1c8f7469",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "32d13d69798d7a76ccbf0347e6adafdce36a3624b6520bb5472eae3ab72533aa",
+      "bayesfilter/highdim/ledh_marginal_weights_tf.py": "ae3890d5e8a1635417ebbe3a93f927e16ba1158895095792d0486d5e371832a3",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/highdim/sqmc_campaign_tf.py": "9b1c85c15deab0988eebdb9ef21980c4d9cb341632d6663e0fa0bcc45282984e",
+      "bayesfilter/ops/slogdet_tf.py": "93594135ddebc824c8f05b38b1ef4bd4b5b94aa9b4c861c992355846672990af",
+      "bayesfilter/testing/nonlinear_bootstrap_fisher_reference_tf.py": "d7f9be66fab3c928e2d2a1bbb4373d955c09fb844c292f5eb7d09411244961fa",
+      "bayesfilter/testing/surrogate_hmc_m13_reference.py": "69b83f461a3bd378809439f2f757a180c43ad0fc8175cd2e9f87f638255d4513",
+      "experiments/dpf_implementation/tf_tfp/fixtures/range_bearing_tf.py": "5d63a3ffc2147e33235de0764f4b35fd9ff1c818fcf037b95e2888927fd27274",
+      "bayesfilter/testing/surrogate_hmc_m13_trajectory_reference.py": "05d7ea7d57c559859fad0e7aa7ee364c57860886c672c72434dcc04bca06438a",
+      "bayesfilter/highdim/covariance_proposal_tf.py": "907451f2f0615f43751249bbf6b23ec25f4a1c5563a96472d662f15c9ac437aa",
+      "bayesfilter/highdim/covariance_proposal_transport_tf.py": "0a39d953798daa281744b22c05b68485304c802ff0e551ce4f60dbad833c1486",
+      "bayesfilter/highdim/covariance_proposal_moments_tf.py": "91dac402c4594288df90f342112be41bd437a3dd72cf60ef0a705a7e32c03014",
+      "bayesfilter/highdim/ledh_canonical_models_tf.py": "153f795002b44774b0c3fdd180304da2afe9de83b2d9ea1cc14d2c999838c5f2",
+      "bayesfilter/highdim/models.py": "8b9cf4bf62375538299090fb8e15b4b66606c68d5ee9121e91a36216b2b97795"
+    }
+  },
+  "prefix_valid": [
+    true,
+    true
+  ],
+  "rows": [
+    {
+      "dtype": "float32",
+      "flow_steps": 8,
+      "valid": false,
+      "minimum_margin": 1.1460325310963526e-07,
+      "minimum_by_component": [
+        0.5333333015441895,
+        0.23521840572357178,
+        1.1460325310963526e-07
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        4.745593362720513e-10,
+        0.0038001772481948137,
+        0.0038001772481948137,
+        0.004140888806432486
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.762332022190094,
+        0.0003105176438111812
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753631830215454,
+        16.015615463256836
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9577897787094116,
+        -0.0009759664535522461
+      ],
+      "information_max": 16.015615463256836,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.498500794172287,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    },
+    {
+      "dtype": "float32",
+      "flow_steps": 16,
+      "valid": true,
+      "minimum_margin": 0.033156976103782654,
+      "minimum_by_component": [
+        0.5333333015441895,
+        0.23521840572357178,
+        0.033156976103782654
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        0.00013918796321377158,
+        0.0038001772481948137,
+        0.0038001772481948137,
+        0.004197848495095968
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.7675573825836182,
+        0.13976478576660156
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753631830215454,
+        16.015615463256836
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9788948893547058,
+        0.4995120167732239
+      ],
+      "information_max": 16.015615463256836,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.498500794172287,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    },
+    {
+      "dtype": "float32",
+      "flow_steps": 32,
+      "valid": true,
+      "minimum_margin": 0.06447451561689377,
+      "minimum_by_component": [
+        0.5333333015441895,
+        0.23521840572357178,
+        0.06447451561689377
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        0.00027244692319072783,
+        0.0038001772481948137,
+        0.0038001772481948137,
+        0.004225653130561113
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.7700951099395752,
+        0.19554129242897034
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753631830215454,
+        16.015615463256836
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9894474744796753,
+        0.7497559785842896
+      ],
+      "information_max": 16.015615463256836,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.498500794172287,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    },
+    {
+      "dtype": "float64",
+      "flow_steps": 8,
+      "valid": true,
+      "minimum_margin": 1.6593318904206461e-07,
+      "minimum_by_component": [
+        0.5333333333333333,
+        0.23521810224205167,
+        1.6593318904206461e-07
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        6.871106973461977e-10,
+        0.0038001773934297754,
+        0.0038001773934297754,
+        0.004140887674809968
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.7623320064046544,
+        0.00031053516294818437
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753634575022908,
+        16.01561585235547
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9577897839061068,
+        -0.0009759907722168837
+      ],
+      "information_max": 16.01561585235547,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.49850079864263536,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    },
+    {
+      "dtype": "float64",
+      "flow_steps": 16,
+      "valid": true,
+      "minimum_margin": 0.033156933665597604,
+      "minimum_by_component": [
+        0.5333333333333333,
+        0.23521810224205167,
+        0.033156933665597604
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        0.00013918779910412785,
+        0.0038001773934297754,
+        0.0038001773934297754,
+        0.004197848947912331
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.7675573460310288,
+        0.13976486608967145
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753634575022908,
+        16.01561585235547
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9788948919530535,
+        0.49951200461389156
+      ],
+      "information_max": 16.01561585235547,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.49850079864263536,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    },
+    {
+      "dtype": "float64",
+      "flow_steps": 32,
+      "valid": true,
+      "minimum_margin": 0.06447457803652759,
+      "minimum_by_component": [
+        0.5333333333333333,
+        0.23521810224205167,
+        0.06447457803652759
+      ],
+      "worst_component": 2,
+      "worst_particle": 436,
+      "covariance_eigenvalues": [
+        0.0002724469913591653,
+        0.0038001773934297754,
+        0.0038001773934297754,
+        0.004225649855433136
+      ],
+      "map_singular_values": [
+        1.0,
+        1.0,
+        0.7700947857650265,
+        0.1955412725137916
+      ],
+      "local_information_eigenvalues": [
+        0.0,
+        0.0,
+        0.6753634575022908,
+        16.01561585235547
+      ],
+      "first_euler_factors": [
+        1.0,
+        1.0,
+        0.9894474459765267,
+        0.7497560023069458
+      ],
+      "information_max": 16.01561585235547,
+      "parameter_theta": [
+        0.7790956497192383,
+        -0.15553376078605652
+      ],
+      "ancestor": [
+        0.4891374707221985,
+        0.30572745203971863,
+        0.09363327920436859,
+        0.5623731017112732
+      ],
+      "predicted_mean": [
+        0.49850079864263536,
+        0.36196476221084595,
+        0.09363327920436859,
+        0.5623731017112732
+      ]
+    }
+  ],
+  "wall_seconds": 56.728249245999905
+}

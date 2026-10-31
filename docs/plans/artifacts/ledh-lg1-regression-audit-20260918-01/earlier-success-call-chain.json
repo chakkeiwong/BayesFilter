@@ -1,0 +1,83 @@
+{
+  "classification": "static_call_chain_check_not_numerical_parity",
+  "recorded_commit": "36e1f04260ba350ab796fbd9278d8527d255b8ed",
+  "source_matches": [
+    {
+      "path": "docs/benchmarks/run_ledh_trust_region_phase3_lgssm_t50.py",
+      "recorded_source_equals_current": true,
+      "sha256": "f1f06a1e9f68bf9c460296f7ae0152a0885a07b83b69d0f557c350116b61019c"
+    },
+    {
+      "path": "docs/benchmarks/run_moment_retuned_genut_whole_leaderboard.py",
+      "recorded_source_equals_current": true,
+      "sha256": "81c1af76bfa4eb3e9d3e8d9b727ea3a13976cc48ec31b2fe7c807c8bff1f9bb8"
+    },
+    {
+      "path": "bayesfilter/highdim/cubature_genut_filter.py",
+      "recorded_source_equals_current": true,
+      "sha256": "5440f470efdd1cb18dc7f864e5f516a8d5d3f1ad6b00bb703f0d7617709572d1"
+    },
+    {
+      "path": "bayesfilter/highdim/cubature_genut_adapters.py",
+      "recorded_source_equals_current": true,
+      "sha256": "9d312a17a916e4f908b6888202c17ae63cd1ff7ee2ef6dbf5ee3e429c16fcf7c"
+    }
+  ],
+  "target": {
+    "event_order": "stationary_initial_draw_then_observe_y0_then_transitions",
+    "horizon": 50,
+    "model": "lgssm_T50",
+    "observation_dimension": 3,
+    "parameter_dimension": 5,
+    "particle_count": 1008,
+    "source_observation_sha256": "8aa2e8102ef25d6accf5d30b9c341621af26fce151ac85133c5a0a6a44671e17",
+    "state_dimension": 3
+  },
+  "recorded_status": "SUCCESS",
+  "selected_label": "d1e-03_f1e-06_r0.1",
+  "selected_controls": {
+    "balance_steps": 8,
+    "coordinatewise_standardized_cap": 0.98,
+    "coordinatewise_standardized_cap_power": 8,
+    "epsilon": 2.0,
+    "higher_moment_correction_steps": 4,
+    "higher_moment_floor": 1e-05,
+    "higher_moment_lm_damping": 0.001,
+    "higher_moment_lm_scale_floor": 1e-06,
+    "higher_moment_strength": 0.2,
+    "higher_moment_trust_radius": 0.1,
+    "pairwise_moment_correction_steps": 4,
+    "pairwise_moment_floor": 1e-05,
+    "pairwise_moment_strength": 0.02,
+    "pairwise_particle_rms_cap": 2.0,
+    "ridge": 1e-05,
+    "sinkhorn_steps": 8
+  },
+  "rows_count": 4,
+  "evaluator_calls": [
+    "finite_value_score",
+    "float",
+    "int",
+    "tf.device",
+    "tf.ensure_shape",
+    "tf.function"
+  ],
+  "stage_calls": [
+    "_restore_cloud_jvp_core",
+    "adapter.initial_tangent",
+    "adapter.initial_value",
+    "adapter.observation_tangent",
+    "adapter.observation_value",
+    "adapter.transition_residual",
+    "adapter.transition_tangent",
+    "adapter.transition_value",
+    "affine_restore_cloud_jvp",
+    "higher_moment_shape_jvp",
+    "tf.ensure_shape",
+    "tf.reshape",
+    "tf.shape"
+  ],
+  "validity_gate_source": "def _valid(row: dict[str, Any], controls: dict[str, Any]) -> bool:\n    \"\"\"Check if evaluation passes hard validity gates.\"\"\"\n    if not row.get('finite', False):\n        return False\n    if not row.get('program_valid', False):\n        return False\n    residual_keys = ['maximum_physical_affine_mean_residual', 'maximum_physical_affine_covariance_residual', 'maximum_normalized_physical_affine_mean_residual', 'maximum_normalized_physical_affine_covariance_residual']\n    for key in residual_keys:\n        if key in row and row[key] > RESIDUAL_TOL:\n            return False\n    if controls.get('coordinatewise_standardized_cap', 0.0) > 0.0:\n        post_cap = row.get('maximum_coordinatewise_post_cap_absolute', float('inf'))\n        if post_cap >= 1.000001:\n            return False\n    return True",
+  "transition_source": "def transition_value(theta: tf.Tensor, particles: tf.Tensor, noise: tf.Tensor, _time: tf.Tensor) -> tf.Tensor:\n    phi, q_scale, _ = physical(theta)\n    return particles * phi[None, :] + q_scale * noise",
+  "claim_boundary": "This specific SUCCESS report exercised the staged Cubature/GenUT candidate, not the canonical UKF/LEDH-flow recursion. Other prior LGSSM reports are not adjudicated."
+}

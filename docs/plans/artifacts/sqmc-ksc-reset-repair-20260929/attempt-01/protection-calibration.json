@@ -1,0 +1,112 @@
+{
+  "cpu_only": true,
+  "gpu_intentionally_hidden": true,
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "docs/benchmarks/run_sqmc_ksc_reset_repair.py",
+    "--mode",
+    "prepare"
+  ],
+  "radius": 8.0,
+  "curve": [
+    {
+      "radius": 2.0,
+      "fixture": "normal",
+      "max_standardized": 3.294894569807878,
+      "max_displacement": 0.16044107862874624,
+      "max_derivative_deviation": 0.33501268316548316,
+      "exact_identity": false
+    },
+    {
+      "radius": 2.0,
+      "fixture": "moderate_skew",
+      "max_standardized": 5.492009080028581,
+      "max_displacement": 1.640061968887677,
+      "max_derivative_deviation": 0.8927811595333037,
+      "exact_identity": false
+    },
+    {
+      "radius": 2.0,
+      "fixture": "mixture",
+      "max_standardized": 2.651617780153752,
+      "max_displacement": 0.02299146288847398,
+      "max_derivative_deviation": 0.10286626581593761,
+      "exact_identity": false
+    },
+    {
+      "radius": 4.0,
+      "fixture": "normal",
+      "max_standardized": 3.294894569807878,
+      "max_displacement": 0.0,
+      "max_derivative_deviation": 0.0,
+      "exact_identity": true
+    },
+    {
+      "radius": 4.0,
+      "fixture": "moderate_skew",
+      "max_standardized": 5.492009080028581,
+      "max_displacement": 0.0681041242414766,
+      "max_derivative_deviation": 0.1319440677787299,
+      "exact_identity": false
+    },
+    {
+      "radius": 4.0,
+      "fixture": "mixture",
+      "max_standardized": 2.651617780153752,
+      "max_displacement": 0.0,
+      "max_derivative_deviation": 0.0,
+      "exact_identity": true
+    },
+    {
+      "radius": 8.0,
+      "fixture": "normal",
+      "max_standardized": 3.294894569807878,
+      "max_displacement": 0.0,
+      "max_derivative_deviation": 0.0,
+      "exact_identity": true
+    },
+    {
+      "radius": 8.0,
+      "fixture": "moderate_skew",
+      "max_standardized": 5.492009080028581,
+      "max_displacement": 0.0,
+      "max_derivative_deviation": 0.0,
+      "exact_identity": true
+    },
+    {
+      "radius": 8.0,
+      "fixture": "mixture",
+      "max_standardized": 2.651617780153752,
+      "max_displacement": 0.0,
+      "max_derivative_deviation": 0.0,
+      "exact_identity": true
+    }
+  ],
+  "stress_input": [
+    -1000000.0,
+    -20.0,
+    -8.1,
+    8.1,
+    20.0,
+    1000000.0
+  ],
+  "stress_output": [
+    -15.84,
+    -15.138549768358056,
+    -8.099994577265292,
+    8.099994577265292,
+    15.138549768358056,
+    15.84
+  ],
+  "stress_derivative": [
+    0.0,
+    0.1709363807507801,
+    0.9998373250162291,
+    0.9998373250162291,
+    0.1709363807507801,
+    0.0
+  ],
+  "stress_valid": true,
+  "rationale": "smallest tested identity region covering declared healthy fixtures; independent of KSC accuracy",
+  "limitation": "bounded before affine covariance restore; no final support bound"
+}

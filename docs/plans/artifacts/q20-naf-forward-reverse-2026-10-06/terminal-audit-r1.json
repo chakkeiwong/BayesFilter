@@ -1,0 +1,139 @@
+{
+  "audit_passed": true,
+  "active_worker": null,
+  "records": [
+    {
+      "attempt": "price-20261006T103006",
+      "status": "failed",
+      "phase": "price",
+      "wall_seconds": 900.2194286528975,
+      "artifact_files": 0,
+      "source_files": 647,
+      "scientific_result_available": false
+    },
+    {
+      "attempt": "price-20261006T104727",
+      "status": "failed",
+      "phase": "price",
+      "wall_seconds": 640.4806990521029,
+      "artifact_files": 0,
+      "source_files": 647,
+      "scientific_result_available": false
+    },
+    {
+      "attempt": "price-20261006T105808",
+      "status": "complete",
+      "phase": "price",
+      "wall_seconds": 414.3830999103375,
+      "artifact_files": 21,
+      "source_files": 647,
+      "result_status": "teacher_repair_required",
+      "result_sha256": "1eea9c881151649436593e1c9cb9949afb329d0fa3fc5b0957bdaf909b709b1d"
+    },
+    {
+      "attempt": "reuse-smc-20261006T111325",
+      "status": "complete",
+      "phase": "reuse-smc",
+      "wall_seconds": 141.38775177719072,
+      "artifact_files": 28,
+      "source_files": 647,
+      "result_status": "teacher_available",
+      "result_sha256": "058eb94cb57d402b106a46b1264c838557e5daa30134242426f1b77689b5c08d"
+    },
+    {
+      "attempt": "fit-20261006T111646",
+      "status": "failed",
+      "phase": "fit",
+      "wall_seconds": 35.60160110378638,
+      "artifact_files": 0,
+      "source_files": 647,
+      "scientific_result_available": false
+    },
+    {
+      "attempt": "fit-20261006T111910",
+      "status": "complete",
+      "phase": "fit",
+      "wall_seconds": 764.7010002732277,
+      "artifact_files": 69,
+      "source_files": 647,
+      "result_status": "short_pair_viable",
+      "result_sha256": "ed885a1d5f4fafa3389131449d45872fd08db1ac93a09d283761ddb583dc85b9",
+      "complete_1000_point_probes": [
+        "forward512",
+        "reverse32"
+      ],
+      "coverage_passed": true,
+      "endpoint": "reverse32",
+      "score_residual_norm": {
+        "median": 8.336929962454704,
+        "p95": 208.66719300269978,
+        "p99": 479.5142094853318,
+        "max": 745.1293463864072,
+        "mean": 44.02213941028605,
+        "rms": 101.35951861692386
+      }
+    },
+    {
+      "attempt": "fit-extended-20261006T114852",
+      "status": "complete",
+      "phase": "fit-extended",
+      "wall_seconds": 2323.3812512559816,
+      "artifact_files": 93,
+      "source_files": 647,
+      "result_status": "short_pair_viable",
+      "result_sha256": "cc8c994baf93250fc25c8d47e4c837c87d1851d7dec579ca5b33ac23ccf1c32d",
+      "complete_1000_point_probes": [
+        "forward2048",
+        "reverse128"
+      ],
+      "coverage_passed": true,
+      "endpoint": "reverse128",
+      "score_residual_norm": {
+        "median": 1.9953136612182898,
+        "p95": 25.869998052992752,
+        "p99": 74.28118780631654,
+        "max": 671.2209092891692,
+        "mean": 6.555643777576689,
+        "rms": 26.453817734154658
+      }
+    },
+    {
+      "attempt": "continue-reverse-20261006T123655",
+      "status": "complete",
+      "phase": "continue-reverse",
+      "wall_seconds": 1052.636406622827,
+      "artifact_files": 18,
+      "source_files": 647,
+      "result_status": "reverse_continuation_viable",
+      "result_sha256": "54ee557316b11fc38a7efed40df8acc416e7b7cc5474448a12feeb254494b81d",
+      "complete_1000_point_probes": [
+        "reverse256"
+      ],
+      "coverage_passed": true,
+      "endpoint": "reverse256",
+      "score_residual_norm": {
+        "median": 1.6809909002571328,
+        "p95": 23.91853983150984,
+        "p99": 57.43553791944407,
+        "max": 279.9873182541911,
+        "mean": 5.2704794765359315,
+        "rms": 15.216265831166966
+      }
+    },
+    {
+      "attempt": "engineering-accounting-r1",
+      "status": "complete",
+      "phase": "engineering-accounting",
+      "wall_seconds": 648.0719420965761,
+      "artifact_files": 0,
+      "source_files": 0
+    }
+  ],
+  "remaining_budget": {
+    "gpu_process_seconds": 105674.4904531387,
+    "cpu_core_seconds": 92964.576086
+  },
+  "measured_gpu_process_seconds": 6272.791250750888,
+  "cpu_accounting_note": "See engineering-accounting artifact for measured checks and explicit contingency reserve.",
+  "scope": "artifact integrity, finite training mechanics, terminal probe completeness and accounting; no posterior or whitening admission"
+}

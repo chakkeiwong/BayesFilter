@@ -150,22 +150,8 @@ def _frozen_adapter(tf, adapter_class, fixture: Mapping[str, object]):
 
 
 def _frozen_hint_factory(tf, fixture: Mapping[str, object], horizon: int):
-    hints = fixture["moment_hints"][:horizon]
-    next_index = {"value": 0}
-
-    def initial_hint(_observation):
-        if next_index["value"] != 0:
-            raise RuntimeError("frozen hints were consumed out of order")
-        next_index["value"] = 1
-        return tf.constant(hints[0]["mean"], tf.float64), tf.constant(hints[0]["covariance"], tf.float64)
-
-    def predictive_hint(time_index, _observation):
-        if int(time_index) != next_index["value"]:
-            raise RuntimeError("frozen hints were consumed out of order")
-        next_index["value"] += 1
-        return tf.constant(hints[time_index]["mean"], tf.float64), tf.constant(hints[time_index]["covariance"], tf.float64)
-
-    return initial_hint, predictive_hint
+    from bayesfilter.highdim.frozen_moment_hints_tf import frozen_moment_hint_callbacks
+    return frozen_moment_hint_callbacks(fixture["moment_hints"], horizon)
 
 
 def _save_snapshot(tf, snapshot_api, snapshot, output_root: Path) -> Mapping[str, object]:

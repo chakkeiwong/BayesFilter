@@ -1,0 +1,486 @@
+\section{Marginalizing the ancestor}
+\label{sec:bf-pfpf-marginal-weights}
+
+The ancestor-conditioned identity is correct under its stated assumptions.
+Nevertheless, a child moved near a different ancestor's predictive mass can
+receive an extreme weight when its correction uses only its own ancestor.
+In the range--bearing example, narrow transition distributions separate nearby
+predictive components while nonlinear observations move children across them.
+Marginalization evaluates how much predictive and proposal density all
+ancestors assign to the same child. It changes the finite estimator; it does
+not repair an algebraic error in the original identity.
+
+Condition on the incoming cloud, observation, and offline controls. Let
+$\omega_j$ be normalized weights and $m_j$ zero-innovation transition means.
+The implemented extension requires additive full-rank Gaussian transitions:
+\begin{equation}
+ f_j(x)=\mathcal N(x;m_j,Q_\theta),\qquad
+ p_N(x)=\sum_j\omega_j f_j(x),\qquad
+ Z_N=\int g_\theta(y_t\mid x)p_N(x)\,dx.
+ \label{eq:bf-marginal-predictive}
+\end{equation}
+Here $Q_\theta$ is the transition-noise covariance, not the UKF predicted
+covariance $P^j$ used to construct the flow. Substituting one for the other
+would change the proposal density.
+
+The auxiliary path depends on the ancestor and observation but not on the
+child's current innovation. Consequently its finite Euler steps define an
+affine map $F_j(u)=B_ju+c_j$. For $M_{jr}=I+\epsilon_r A_{jr}$, accumulate
+\begin{equation}
+ B_{j,0}=I,\ c_{j,0}=0,\qquad
+ B_{j,r+1}=M_{jr}B_{j,r},\quad
+ c_{j,r+1}=M_{jr}c_{j,r}+\epsilon_r b_{jr}.
+ \label{eq:bf-marginal-affine}
+\end{equation}
+This is the same ordered sequence that moves the actual particle. The
+auxiliary endpoint is $a_j=F_j(m_j)$, so
+\begin{equation}
+ q_j(x)=\mathcal N(x;a_j,S_j),\quad S_j=B_jQ_\theta B_j^\top,\qquad
+ q_N(x)=\sum_j\omega_jq_j(x).
+ \label{eq:bf-marginal-proposal}
+\end{equation}
+The determinant correction is already present through $S_j$; adding a separate
+determinant would count it twice. Every component covariance must be positive
+definite. A singular transition, including an AR(2) state representation with
+deterministic coordinates, requires a derivation in the innovation measure
+and is unsupported by this full-state Gaussian formula.
+
+For one child $X_i\sim q_i$ per ancestor, compare
+\begin{align}
+ V_i^{\rm anc}&=\omega_i g_\theta(y_t\mid X_i)f_i(X_i)/q_i(X_i),\notag\\
+ V_i^{\rm mar}&=\omega_i g_\theta(y_t\mid X_i)p_N(X_i)/q_N(X_i).
+ \label{eq:bf-marginal-weight}
+\end{align}
+The outer $\omega_i$ is necessary because every component supplies one child.
+If instead $M$ labels were sampled independently from $\omega$, the estimator
+would average $M$ mixture ratios with coefficient $1/M$.
+
+Assume $g_\theta p_N$ is integrable and $q_N>0$ wherever $g_\theta p_N>0$.
+For random children having the stated conditional marginal densities,
+\begin{align}
+ \mathbb E\!\left[\sum_iV_i^{\rm mar}\mid\hbox{incoming cloud}\right]
+ &=\sum_i\omega_i\int q_i(x)g_\theta(y_t\mid x)
+                                  \frac{p_N(x)}{q_N(x)}\,dx\notag\\
+ &=\int g_\theta(y_t\mid x)p_N(x)\,dx=Z_N.
+ \label{eq:bf-marginal-identity}
+\end{align}
+Independence between children is unnecessary for this expectation calculation.
+Cancellation of $q_i$ gives the same expectation for the old weights. Both
+therefore target the incoming cloud's predictive mixture; their distribution
+of finite-sample error differs.
+
+This applies the marginal-particle-filter construction
+\citep[Section~3]{klaas2005marginal} to the actual affine LEDH proposals.
+For a random label $J\sim\omega$ and $X\mid J\sim q_J$, conditioning
+$g(X)f_J(X)/q_J(X)$ on $X$ gives $g(X)p_N(X)/q_N(X)$.
+The law of total variance gives a Rao--Blackwell variance inequality if second
+moments exist. That argument concerns a random label, and does not establish
+smaller variance for one fixed child per ancestor, smaller log-likelihood
+error, or a more accurate score. Fixing the random design and composing
+deterministic resets over time also removes any justification for reading
+\eqref{eq:bf-marginal-identity} as an unbiasedness theorem for that finite
+log likelihood. For an identity flow, $q_j=f_j$ and both weight laws reduce
+to $\omega_i g(X_i)$, providing a useful algebraic check.
+
+\section{The analytical total score}
+\label{sec:bf-pfpf-marginal-total-score}
+
+Fix base innovations, reset designs, and offline controls, and write the
+finite log likelihood as $\widehat\ell_N(\theta)$. The analytical recursion
+computes its total derivative. It does not hold particle locations fixed or
+substitute the derivative of the exact model likelihood. Let $D$ denote a
+parameter-direction derivative on a neighborhood where the program is valid
+and differentiable; it includes previous particles, weights, UKF covariances,
+both flow paths, and the current evaluation point.
+
+For $u=C^{-1}(x-\mu)$, direct differentiation of a Gaussian log density gives
+\begin{equation}
+ D\log\mathcal N(x;\mu,C)
+ =u^\top(D\mu-Dx)+\tfrac12u^\top(DC)u
+                         -\tfrac12\operatorname{tr}(C^{-1}DC).
+ \label{eq:bf-marginal-gaussian-tangent}
+\end{equation}
+The first term includes the moving child; the others differentiate the
+quadratic form and covariance determinant. In a proposal component,
+\begin{equation}
+ DS_j=(DB_j)QB_j^\top+B_j(DQ)B_j^\top+B_jQ(DB_j)^\top,\qquad
+ DB_{j,r+1}=(DM_{jr})B_{j,r}+M_{jr}DB_{j,r}.
+ \label{eq:bf-marginal-covariance-tangent}
+\end{equation}
+The code obtains $Da_j$ from the existing auxiliary-path tangent, not from
+a separately constructed flow.
+
+For FP32 execution, the covariance products receive a selective precision
+check. Write $\widetilde S_j$ for the covariance obtained by the ordinary
+matrix products, and use the scale-free symmetry measure
+\begin{equation}
+ \rho_j=\max_{a,b}\left|
+ \frac{(\widetilde S_j)_{ab}}{\|\widetilde S_j\|_{\max}}-
+ \frac{(\widetilde S_j)_{ba}}{\|\widetilde S_j\|_{\max}}\right|,
+ \qquad \tau_d=8d\,2^{-23}.
+ \label{eq:bf-marginal-symmetry-precision}
+\end{equation}
+The zero matrix is assigned $\rho_j=0$ and still fails the subsequent
+positive-definiteness check. When $\widetilde S_j$ is finite and
+$\rho_j>\tau_d$, the code recomputes both $S_j$ and its differential in
+\eqref{eq:bf-marginal-covariance-tangent} using FP64 matrix products, then
+casts them back to FP32. All other component products retain their original
+values. The same final symmetry, finiteness and positive-definiteness checks
+apply after recomputation. No ridge, eigenvalue clipping or relaxed tolerance
+is introduced, and FP64 inputs keep their original calculation.
+
+The analytical tangent follows the selected arithmetic branch. At a boundary
+where that branch changes, smoothness is not asserted. This numerical repair
+therefore needs separate assessment near switching boundaries before an HMC
+force claim. The filter trace records the number of recomputed component
+covariances at every observation; the batch diagnostic consumer preserves
+these counts. The statistical weighting identity is unchanged by this
+precision policy, while its finite numerical evaluation is changed on
+otherwise rejected components.
+
+For either mixture $h_N=\sum_j\omega_jh_j$, define responsibilities
+$r_j^h=\omega_jh_j(X_i)/h_N(X_i)$. Differentiating the sum then dividing gives
+\begin{equation}
+ D\log h_N(X_i)=\sum_j r_j^h
+                   \{D\log\omega_j+D\log h_j(X_i)\}.
+ \label{eq:bf-marginal-mixture-tangent}
+\end{equation}
+These responsibilities are coefficients of the first derivative.
+Differentiating them again here would incorrectly add second-derivative terms.
+Consequently,
+\begin{align}
+ D\log V_i^{\rm mar}
+ &=D\log\omega_i+D\log g_\theta(y_t\mid X_i)
+                    +D\log p_N(X_i)-D\log q_N(X_i),\notag\\
+ \widehat\ell_N&=\sum_t\log\sum_iV_{ti},\qquad
+ D\widehat\ell_N=\sum_t\sum_i w_{ti}D\log V_{ti},\notag\\
+ Dw_{ti}&=w_{ti}\left(D\log V_{ti}-\sum_jw_{tj}D\log V_{tj}\right),
+ \qquad w_{ti}=V_{ti}/\sum_jV_{tj}.
+ \label{eq:bf-marginal-filter-score}
+\end{align}
+These finite-program identities determine the quantity the implementation
+must compute. Accuracy relative to the model score is a separate question.
+Angle-branch boundaries and failed factorizations remain explicit validity
+conditions.
+
+\section{The complete October 2026 marginal-extension recursion}
+\label{sec:bf-pfpf-current-recursion}
+
+This section names the earlier marginal-extension implementation explicitly.
+It is preserved as a derivation and historical diagnostic snapshot.  The
+current covariance-guided shared consumer used by the five-model HMC campaign
+is the three-branch recurrence documented in Chapter~\ref{ch:bf-ukf-covariance-proposal}.
+
+The executable filter performs the following sequence at each observation.
+Its score uses analytical recursive tangents; automatic differentiation and
+finite differences are independent diagnostic checks.
+\begin{enumerate}
+ \item Carry incoming particles, weights, particle-local UKF covariances and
+ their parameter tangents. The initial distribution includes its parameter
+ dependence.
+ \item Predict each UKF covariance. Form its zero-innovation anchor and actual
+ transition draw. Evolve both through the same local affine LEDH steps, carrying
+ their tangents and the discrete determinant.
+ \item Use \eqref{eq:bf-pfpf-alg1-weight} for the default ancestor policy.
+ For the optional marginal policy, also carry $B_j,DB_j$ in that loop and use
+ the complete mixtures and tangents in
+ \eqref{eq:bf-marginal-weight}--\eqref{eq:bf-marginal-filter-score}.
+ No component truncation or nearest-ancestor approximation is used.
+ \item Accumulate the log normalizer and score, normalize the weights, and
+ perform the UKF observation covariance update.
+ \item Apply entropic transport and the existing Contract E--Chol reset,
+ carrying covariances through the same transport. The total derivative includes
+ direct source-moment/weight dependence and dependence through transport.
+ A transported-cloud-only derivative would be wrong.
+ \item Apply the existing GenUT higher-moment correction, including diagonal
+ and pairwise controls, trust-region constraints and coordinate caps, with its
+ analytical derivative and validity checks. Carry the equally weighted
+ outgoing cloud and reset covariances into the next observation.
+\end{enumerate}
+The statistical change is step 3. Its changed weights also alter subsequent
+moments, transport, correction, and future flow paths. Those algorithms are
+unchanged, but their inputs and outputs generally differ.
+
+The consumer \path{canonical_batch_fused_value_score} forwards
+\path{importance_weight_policy} to the shared executor
+\path{ledh_canonical_score_tf.py}. That executor calls
+\path{marginal_prior_ratio_tangent} in
+\path{ledh_marginal_weights_tf.py}. The default is \texttt{ancestor};
+the extension requires \path{marginal_mixture}. Unsupported transition
+callbacks, innovation geometries, and incompatible modes fail explicitly.
+Marginal weighting, OT reset, and GenUT correction are BayesFilter extensions;
+they are not claimed to be unchanged Li--Coates Algorithm~1.
+
+Both mixtures sum every component using log-sum-exp and exact equal
+row/column tiles. The extent is $K=N$ for $N\leq3000$; otherwise it is the
+largest divisor of $N$ at most 3000. Thus $N=4096$ uses $K=2048$.
+Tiling bounds intermediate storage but retains quadratic pair count, so
+runtime must be compared alongside error.
+
+For stationary LGSSMs, the initial covariance and its directional derivative
+satisfy
+\begin{align}
+ P_0-FP_0F^\top&=Q,\notag\\
+ DP_0-F(DP_0)F^\top
+   &=(DF)P_0F^\top+FP_0(DF)^\top+DQ.
+ \label{eq:bf-marginal-stationary-initialization}
+\end{align}
+The derivative includes both transition and process-noise dependence.
+The implementation uses $\lVert F\rVert_2<1$ as a sufficient stability
+certificate; this deliberately rejects some stable nonnormal matrices.
+For FP32 inputs, its small Gram matrix, equation residual, and tangent
+right-hand side now use FP64 products. The Lyapunov solves and returned
+covariances remain FP32, and the filter retains TF32. This avoids evaluating a
+full-FP32 residual tolerance with lower-precision TF32 products, without
+changing the stationary law or loosening the validity check.
+
+\section{Evidence from the three models}
+\label{sec:bf-pfpf-marginal-evidence}
+
+The completed 5 October experiment tested scalar LGSSM at $T=2$,
+three-state LGSSM at $T=2,10$, and scalar KSC stochastic volatility at
+$T=10,20$. KSC retained the seven-component observation mixture and corrected
+scale derivative. Each scope had three parameter points, one untouched
+dataset and 32 paired designs at $N=256$. References were exact Kalman values
+and scores for LGSSM and refined one-dimensional integration for KSC.
+All 15 comparisons had simultaneous paired upper bounds below the declared
+deterioration margin 0.05 for absolute log-likelihood error and
+$0.1\|s-s_{\rm ref}\|_2/\sqrt p$. This supports material non-inferiority
+conditional on those datasets, not improvement in every model or replication
+across datasets.
+
+The four-state, two-observation range--bearing experiment also used $N=4096$.
+The table gives mean absolute log-likelihood errors over 32 paired designs;
+the difficult regime reduces process-noise scale. Quadrature provided the
+$T=1$ reference and a larger replicated PF with Fisher scores the $T=20$
+reference.
+\begin{center}
+\begin{tabular}{llrrr}
+\toprule
+Horizon & Regime & Ancestor & Marginal & Bootstrap PF\\
+\midrule
+1 & Nominal & 1.083 & 0.125 & 0.059\\
+1 & Low process noise & 2.428 & 0.497 & 0.045\\
+20 & Nominal & 1.271 & 0.143 & 0.122\\
+20 & Low process noise & 21.294 & 0.770 & 0.489\\
+\bottomrule
+\end{tabular}
+\end{center}
+Paired intervals support smaller likelihood and scaled-score errors than the
+ancestor policy in all four cells. The difficult $T=20$ mean scaled-score error
+decreased from 6.325 to 0.351. Bootstrap PF nevertheless had smaller observed
+likelihood error in every row. This is a partial repair; the simple-comparator
+check prevents promotion. Reference Monte Carlo error and finite-particle
+bias remain relevant at $T=20$.
+
+Fourteen full-filter FP64 finite-difference cases covered every physical
+parameter direction of the seven scopes and both policies. Saved default
+regressions were unchanged, an $N=4096$ mixture primitive passed an exact-tile
+comparison, and 23 focused tests passed. The first full-filter derivative checks
+used batch size one. The 6 October checks subsequently compared distinct
+parameter rows in one batch with separate consumer calls: all tested values
+and scores agreed exactly, with largest relative finite-difference discrepancy
+$1.78\times10^{-5}$. Fresh $T=1$ range--bearing quadrature and the larger
+replicated PF reference agreed within recorded uncertainty. At $N=4096$,
+three repeated evaluations of each policy at two M13 parameter points were
+finite and exactly repeatable. The largest FP32/FP64 difference was $0.00530$
+in log likelihood and $0.00340$ in scaled score, both below the declared 0.05
+materiality margin. These precision checks support retaining FP32 for the
+campaign; they do not compare either filter with the model truth.
+
+As of 6 October at 10:00 UTC, fresh-data replication has finished for
+scalar and three-state LGSSM at $T=10,20$, scalar KSC at $T=10,20$, and
+four-state range--bearing at $T=10$, all with $N=1024$. The three-state
+$T=20$ comparison resolved at eight independently generated datasets;
+the others used sixteen. Every dataset had 32 paired particle designs. Dataset-level paired error differences, rather than individual
+designs, determined the uncertainty intervals.
+
+All twelve LGSSM parameter cells met the predeclared 0.05 non-inferiority
+margin for both likelihood and scaled-score error. Simultaneously adjusted
+approximate Student intervals supported smaller value error in two cells
+and smaller score error in six; the other comparisons did not establish a
+ranking. KSC at $T=10$ met non-inferiority at two of its three points.
+The remaining point was inconclusive after 16 datasets: mean likelihood error decreased
+from 0.193 to 0.116, but the adjusted interval for the paired difference was
+$[-0.300,0.146]$, including deterioration larger than the 0.05 margin.
+At $T=20$, KSC met the score criterion at all three points, while the
+likelihood criterion remained inconclusive at the same evaluation point.
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Scope & Non-inferior cells & Smaller value error & Smaller score error\\
+\midrule
+LGSSM $d=1,T=10$ & $3/3$ & $0/3$ & $2/3$\\
+LGSSM $d=1,T=20$ & $3/3$ & $1/3$ & $2/3$\\
+LGSSM $d=3,T=10$ & $3/3$ & $1/3$ & $1/3$\\
+LGSSM $d=3,T=20$ & $3/3$ & $0/3$ & $1/3$\\
+KSC $d=1,T=10$ & $2/3$ & $0/3$ & $0/3$\\
+KSC $d=1,T=20$ & $2/3$ & $0/3$ & $0/3$\\
+M13 $d=4,T=10$ & $2/2$ & $2/2$ & $2/2$\\
+\bottomrule
+\end{tabular}
+\end{center}
+With eight or sixteen dataset clusters, interval coverage remains approximate. The exact
+Kalman filter remains the accuracy and cost reference for LGSSM.
+
+At both range--bearing points, the paired intervals support lower likelihood
+and score error than the ancestor policy, after allowing for reference
+uncertainty. For nominal process noise, mean likelihood error decreased from
+2.693 to 0.476 and scaled-score error from 0.617 to 0.119. For low process
+noise, the corresponding changes were 23.614 to 3.029 and 5.956 to 0.964.
+The likelihood-error difference intervals were $[-4.344,-0.091]$ and
+$[-35.136,-6.035]$. These comparisons support a partial repair of the
+ancestor method. They do not support promotion over simple filters:
+bootstrap likelihood errors were 0.252 and 0.569, and EKF errors were
+0.190 and 0.266. Those simple-filter means are descriptive comparisons,
+not uncertainty-supported rankings. Under the declared conservative
+comparison rule, their smaller observed errors veto promotion.
+
+The first $N=1024$ runs at $d=10,T=10$, $d=20,T=10$, and
+$d=20,T=240$ failed before the first observation. GPU checks localized the
+initial failure to TF32 matrix products: a valid stationary covariance failed
+a residual check calibrated to FP32 rounding. Computing only the small
+initialization products in FP64, while retaining FP32 solves and FP32/TF32
+filtering, restored validity in all 24 isolated dimension/parameter/precision
+checks. The largest FP32 covariance and tangent relative errors against an
+independent spectral solution were $5.9\times10^{-7}$ and
+$1.4\times10^{-6}$. Full-filter regressions preserved LG1, LG3 and KSC values
+and scores within the declared $5\times10^{-5}$ scaled tolerance; the largest
+change was $3.6\times10^{-6}$. A tiny range--bearing fixture remained invalid
+with identical results and status in both versions; the separate healthy
+engineering fixtures passed after the repair.
+
+The subsequent $d=10,20$, $T=10$ calibration runs passed initialization but
+failed later at mixture-weight factorization under both tested control sets.
+They produced no valid paired accuracy comparison. The failure triggered
+the selective precision repair described below; it does not contradict the
+marginal identity.
+At the time of that October snapshot, the remaining horizon and particle-count
+scopes continued under the stated time limit; rejected scopes and unfinished
+comparisons were explicit there.  They are historical status statements, not a
+claim that the current five-model HMC campaign is still waiting for its run.
+
+A bounded follow-up captured the covariance inputs from the unchanged consumer.
+With TF32 enabled, the failing pushed-covariance products had relative
+asymmetries $1.53\times10^{-5}$ and $1.25\times10^{-4}$ for $d=10$ and
+$1.26\times10^{-4}$ for the failing $d=20$ point, exceeding the existing
+dimension-aware symmetry margins. Finiteness and positive symmetric-part
+eigenvalues still held. TF32 disabled made all tested points valid, and
+recomputing $BQB^{\mathsf T}$ in FP64 before casting to FP32 was valid at every
+point. The instrumented and untouched consumer statuses agreed. This localizes
+the observed rejection to TF32 product rounding at the validity guard. An unconditional FP64-product repair recovered all 24 tested
+$d=10,20$, $T=10$ full-filter cases and passed the analytical derivative
+check, whose maximum relative discrepancy was $7.41\times10^{-8}$.
+It nevertheless failed the no-harm screen on three healthy low-noise
+range--bearing rows: the maximum changes were $0.0273$ in log likelihood
+and $0.1132$ in scaled score, exceeding the $0.005$ engineering margin.
+That candidate has not been adopted. These are changes from the original
+calculation, not measured changes in accuracy. The narrower selective repair
+passed the six-scope diagnostic: it recovered all twelve formerly invalid
+high-dimensional rows and left every previously valid tested likelihood and
+score identical. All 24 tested $d=10,20$ rows were valid. Its implementation
+uses \eqref{eq:bf-marginal-symmetry-precision}.
+
+Comparing the integrated consumer with saved results from a previous process
+then exceeded the same no-harm margin on two healthy range--bearing rows.
+Removing the new diagnostic outputs did not remove the discrepancy. A
+controlled repeat showed that the unchanged archived implementation itself
+differed from its saved result by as much as $0.01530$ in log likelihood and
+$0.19890$ in scaled score. In that process, two independently traced original
+consumers and the integrated repair agreed exactly on all eight
+range--bearing rows, including repeated calls. These findings do not establish
+a repair-specific deterioration; they identify an unresolved reproducibility
+limitation between FP32/TF32 executions in separate processes. The numerical
+or compilation mechanism responsible has not been isolated.
+
+The final paired check loaded and traced the actual archived and integrated
+public consumers in one process across all six $T=10$ scopes. All 68 rows
+passed the unchanged criterion: every previously valid value and score was
+identical, and all twelve previously invalid high-dimensional rows became
+valid with positive recorded repair counts. This supports continuing the
+optional component experiment with the selective repair. It does not establish
+smoothness at a precision-switch boundary or process-independent numerical
+agreement. The earlier failed reproduction remains part of the evidence.
+
+A later snapshot on 6 October adds LGSSM $d=1,3,T=50$: all three
+parameter points pass the declared likelihood and score non-inferiority
+checks, using sixteen and eight fresh datasets respectively. Range--bearing
+$T=20$ at the nominal point supports lower likelihood and score errors than
+ancestor weighting: mean absolute likelihood errors are $3.9274$ and $0.6125$,
+and mean scaled score errors are $1.0036$ and $0.1595$. The respective
+reference-adjusted paired intervals are $[-5.9883,-0.6416]$ and
+$[-1.5036,-0.1846]$. Simple bootstrap and Gaussian likelihood estimates
+still have lower observed errors, so this does not establish an advantage
+over those comparators. At the low-noise point, one of 512 ancestor runs
+failed while all marginal runs were valid. This is an invalid baseline
+comparison; dropping that row would condition the comparison on successful
+baseline runs and is not permitted.
+
+The campaign covers horizons $10,20,50,120,240$, LGSSM dimensions
+$1,3,10,20$, and the native KSC and range--bearing models. Nonlinear
+dimension extensions still need specified model equations. Both LEDH and
+simple filters use FP32/TF32 for timing; FP64 is reserved for independent
+accuracy references. Equal-runtime matching remains incomplete: for example,
+only 16 and 17 of 512 range--bearing rows met the timing window at the two
+points. No complete equal-runtime comparison can yet be claimed. The original
+elapsed times included conversion of tensors into reports, and LEDH
+returned substantially more diagnostics than the simple filters. The revised
+master synchronizes inferential outputs before stopping its computation
+timer and records serialization separately. Bootstrap
+filtering supplies a likelihood alone, whereas the LEDH call also supplies
+its score, so these timings cannot establish relative efficiency for HMC
+forces.
+A synchronized warmed-call diagnostic separated XLA output from report
+serialization. At $T=10,N=1024$, KSC marginal-mixture versus bootstrap
+medians were $0.05497$ versus $0.00292$ seconds at synchronization and
+$0.08846$ versus $0.00294$ seconds report-ready; M13 medians were $0.16341$
+versus $0.00240$ and $0.19733$ versus $0.00242$ seconds. The roughly
+$0.033$-second LEDH serialization component is absent from the bootstrap
+payload. The measurements expose unequal reporting overhead. The sparse runtime
+matches also reflect inaccurate predictions from individual timing calls;
+a fixed number of initial warm calls was also inadequate for KSC. With
+bounded timing warm-up, separately calibrated repeat counts and all evaluated
+designs retained, eight of eight KSC rows and seven of eight M13 rows matched
+the $[0.8,1.2]$ cost-ratio window. The unmatched M13 row had ratio $0.767$.
+The revised master freezes counts using separate calibration data and reports
+actual paired costs; this test does not establish complete equal-runtime
+coverage or a statistical speed ranking. The execution plan and current per-scope results are recorded in
+\begingroup\def\UrlBreaks{\do\/\do-\do.}\path{docs/plans/surrogate-hmc-marginal-expanded-execution-2026-10-06.md}\endgroup.
+
+The scientific goal remains testing surrogate HMC. A fixed finite likelihood
+defines a numerical target; using a learned surrogate force is another choice.
+When that force constructs a reversible, volume-preserving proposal and a
+Metropolis test evaluates the chosen endpoint target, the target in the test
+determines the invariant law. Force accuracy alone does not establish agreement
+of that law with the statistical posterior. The experiments above test the
+likelihood/score component and supply no new posterior draws, acceptance,
+effective sample sizes or R-hat evidence.
+
+
+
+The source continuation repeats its engineering and precision checks before
+new comparisons. Multiple-row parity for both policies again had zero
+discrepancy, and the maximum finite-difference relative error was
+$1.78\times10^{-5}$. At $N=4096$, the maximum FP32/FP64 log-value difference
+was $0.00952$ across the repeated range--bearing checks; the maximum scaled
+score difference was $0.00217$. Repeated calls within each compiled graph
+were identical. These are component precision checks, distinct from the
+unresolved reproduction between processes.
+
+A feasibility pilot for LGSSM $d=20,T=240,N=1024$ found valid paired controls.
+Its measured candidate-call estimate for four datasets was approximately
+$10\,827$ seconds, excluding compilation, reference refinement, other
+comparators and any extension to eight or sixteen datasets. This exceeds
+the two-hour allowance for one scope worker. The longer comparisons may
+therefore retain partial results at their time limits; pilot validity is
+not evidence that their accuracy criteria have passed. The master preserves
+such partial data and reports the unfinished grid explicitly.
+
+The continuation calibrates controls on fresh dataset index 2 and reserves
+indices 100 onward for its new comparisons. Earlier completed comparisons
+retain their source-version identity and are not relabeled as reruns of the
+repaired implementation. All computation remains inside the original
+24 GPU-worker-hour ceiling. The statistical objective is still to determine
+whether the value and analytical score are suitable components for the later
+surrogate-HMC experiment; this expanded filter campaign supplies no new
+posterior chains.

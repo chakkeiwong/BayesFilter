@@ -1,0 +1,79 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791732664.050760 3371309 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1791732664.055028 3371309 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1791732664.067721 3371309 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791732664.067778 3371309 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791732664.067785 3371309 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1791732664.067786 3371309 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+I0000 00:00:1791732666.433877 3371309 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1791732666.789562 3371309 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1791732667.442008 3371309 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+Traceback (most recent call last):
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py", line 102, in worker
+    candidate,compile_new=evaluate(new,*values)
+                          ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_performance_repair.py", line 99, in evaluate
+    begin=time.monotonic(); output=fn(*inputs)
+                                   ^^^^^^^^^^^
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/util/traceback_utils.py", line 153, in error_handler
+    raise e.with_traceback(filtered_tb) from None
+  File "/home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow/python/eager/execute.py", line 59, in quick_execute
+    except TypeError as e:
+tensorflow.python.framework.errors_impl.InternalError: Invalid TensorList shape: element_type: TUPLE
+tuple_shapes {
+  element_type: F32
+  dimensions: 4
+  dimensions: 4
+  dimensions: 2016
+  dimensions: 2016
+  layout {
+    minor_to_major: 3
+    minor_to_major: 2
+    minor_to_major: 1
+    minor_to_major: 0
+    tail_padding_alignment_in_elements: 1
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+tuple_shapes {
+  element_type: S32
+  layout {
+    tail_padding_alignment_in_elements: 1
+  }
+}
+, expected: element_type: TUPLE
+tuple_shapes {
+  element_type: F32
+  dimensions: 4
+  dimensions: 4
+  dimensions: 4032
+  dimensions: 4032
+  layout {
+    minor_to_major: 3
+    minor_to_major: 2
+    minor_to_major: 1
+    minor_to_major: 0
+    tail_padding_alignment_in_elements: 1
+  }
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+  is_dynamic_dimension: false
+}
+tuple_shapes {
+  element_type: S32
+  layout {
+    tail_padding_alignment_in_elements: 1
+  }
+}
+
+	 [[{{node while/while_4/TensorArrayV2Write_1/TensorListSetItem}}]]
+	tf2xla conversion failed while converting while_while_4_body_7438_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+	 [[while/while_4]]
+	tf2xla conversion failed while converting while_body_1491_const_0[]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions.
+	 [[while]]
+	tf2xla conversion failed while converting __inference_program_9436[_XlaMustCompile=true,config_proto=6399381512057327405,executor_type=11160318154034397263]. Run with TF_DUMP_GRAPH_PREFIX=/path/to/dump/dir and --vmodule=xla_compiler=2 to obtain a dump of the compiled functions. [Op:__inference_program_9436]

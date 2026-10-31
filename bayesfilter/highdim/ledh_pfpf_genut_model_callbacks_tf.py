@@ -427,10 +427,7 @@ class LatentPreclipSIRTeacherModel:
 
 
 def austria_sir_callbacks(model: LatentPreclipSIRSSM) -> LEDHGenUTModelCallbacks:
-    infectious_matrix = tf.stack(
-        [tf.one_hot(2 * index + 1, 18, dtype=tf.float32) for index in range(9)],
-        axis=0,
-    )
+    infectious_matrix = tf.one_hot(2 * tf.range(9) + 1, 18, dtype=tf.float32)
 
     standard_score_model = LatentPreclipSIRTeacherModel(
         sir_score.static_spec_from_model(model)

@@ -1,0 +1,338 @@
+{
+  "status": "PASS",
+  "scope": "SAVED_RBF_COVERAGE_MECHANISM_DIAGNOSTIC",
+  "replication": "INCOMPLETE",
+  "gpu_memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      },
+      {
+        "device": "/physical_device:GPU:1",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "dtype": "float64",
+  "tf32": false,
+  "jit_compile": true,
+  "numpy_runtime": false,
+  "pfor": false,
+  "cpu_only": false,
+  "seeds": "N/A: deterministic saved-policy analysis",
+  "checks": [
+    {
+      "name": "fixed_scope",
+      "passed": true
+    },
+    {
+      "name": "top16_reconstruction_qr_seed20261009.0",
+      "passed": true,
+      "weight_error": 0.0,
+      "positive_knot_error": 0.0
+    },
+    {
+      "name": "top16_reconstruction_svd_seed20261009.0",
+      "passed": true,
+      "weight_error": 0.0,
+      "positive_knot_error": 0.0
+    },
+    {
+      "name": "top16_reconstruction_qr_seed20261010.0",
+      "passed": true,
+      "weight_error": 0.0,
+      "positive_knot_error": 0.0
+    },
+    {
+      "name": "top16_reconstruction_svd_seed20261010.0",
+      "passed": true,
+      "weight_error": 0.0,
+      "positive_knot_error": 0.0
+    },
+    {
+      "name": "no_kill_oracle_2049",
+      "passed": true,
+      "max_logZ_error": 8.526512829121202e-14
+    },
+    {
+      "name": "retained_identities_2049",
+      "passed": true,
+      "forward_backward_error": 4.547473508864641e-13,
+      "initial_analytic_error": 2.842170943040401e-14
+    },
+    {
+      "name": "replay62_2049",
+      "passed": true,
+      "max_mass_error": 0.0
+    },
+    {
+      "name": "retained_valid_paths_2049",
+      "passed": true
+    },
+    {
+      "name": "retained_one_trace_2049",
+      "passed": true
+    },
+    {
+      "name": "full_identities_2049",
+      "passed": true,
+      "forward_backward_error": 4.547473508864641e-13,
+      "initial_analytic_error": 2.842170943040401e-14
+    },
+    {
+      "name": "full_valid_paths_2049",
+      "passed": true
+    },
+    {
+      "name": "full_one_trace_2049",
+      "passed": true
+    },
+    {
+      "name": "shared_graphs_once_2049",
+      "passed": true
+    },
+    {
+      "name": "no_kill_oracle_4097",
+      "passed": true,
+      "max_logZ_error": 5.684341886080802e-14
+    },
+    {
+      "name": "retained_identities_4097",
+      "passed": true,
+      "forward_backward_error": 2.8421709430404007e-13,
+      "initial_analytic_error": 0.0
+    },
+    {
+      "name": "replay62_4097",
+      "passed": true,
+      "max_mass_error": 0.0
+    },
+    {
+      "name": "retained_valid_paths_4097",
+      "passed": true
+    },
+    {
+      "name": "retained_one_trace_4097",
+      "passed": true
+    },
+    {
+      "name": "full_identities_4097",
+      "passed": true,
+      "forward_backward_error": 2.8421709430404007e-13,
+      "initial_analytic_error": 0.0
+    },
+    {
+      "name": "full_valid_paths_4097",
+      "passed": true
+    },
+    {
+      "name": "full_one_trace_4097",
+      "passed": true
+    },
+    {
+      "name": "shared_graphs_once_4097",
+      "passed": true
+    }
+  ],
+  "grids": [
+    {
+      "points": 2049,
+      "arms": {
+        "retained": [
+          {
+            "arm": "qr_seed20261009.0",
+            "worst_time": 78,
+            "posterior_path_mass": 0.10527685082775817,
+            "posterior_mass": 0.040409691590619995,
+            "proposal_mass": 2.946613068668839e-12,
+            "filtering_mass": 0.17317076954180435,
+            "fitting_particles_in_region": 330
+          },
+          {
+            "arm": "svd_seed20261009.0",
+            "worst_time": 78,
+            "posterior_path_mass": 0.1052768551678469,
+            "posterior_mass": 0.040409691590619995,
+            "proposal_mass": 2.9466130686671216e-12,
+            "filtering_mass": 0.17317076954180435,
+            "fitting_particles_in_region": 330
+          },
+          {
+            "arm": "qr_seed20261010.0",
+            "worst_time": 93,
+            "posterior_path_mass": 0.06723541885913709,
+            "posterior_mass": 0.025901164757415947,
+            "proposal_mass": 1.824805860246151e-13,
+            "filtering_mass": 0.6196156963393404,
+            "fitting_particles_in_region": 385
+          },
+          {
+            "arm": "svd_seed20261010.0",
+            "worst_time": 93,
+            "posterior_path_mass": 0.06723541597245952,
+            "posterior_mass": 0.025901164757415947,
+            "proposal_mass": 1.8248058496041595e-13,
+            "filtering_mass": 0.6196156963393404,
+            "fitting_particles_in_region": 385
+          }
+        ],
+        "full": [
+          {
+            "arm": "qr_seed20261009.0",
+            "worst_time": 70,
+            "posterior_path_mass": 6.350425711021401e-05,
+            "posterior_mass": 2.254911970771276e-05,
+            "proposal_mass": 4.400534461478416e-15,
+            "filtering_mass": 0.01240277584547867,
+            "fitting_particles_in_region": 0
+          },
+          {
+            "arm": "svd_seed20261009.0",
+            "worst_time": 70,
+            "posterior_path_mass": 6.350425711021401e-05,
+            "posterior_mass": 2.254911970771276e-05,
+            "proposal_mass": 4.4005345131876636e-15,
+            "filtering_mass": 0.01240277584547867,
+            "fitting_particles_in_region": 0
+          },
+          {
+            "arm": "qr_seed20261010.0",
+            "worst_time": 10,
+            "posterior_path_mass": 4.0633026735625855e-05,
+            "posterior_mass": 2.1781669010973783e-05,
+            "proposal_mass": 1.3880473183040304e-13,
+            "filtering_mass": 0.02707343522706565,
+            "fitting_particles_in_region": 158
+          },
+          {
+            "arm": "svd_seed20261010.0",
+            "worst_time": 10,
+            "posterior_path_mass": 4.0633026735625855e-05,
+            "posterior_mass": 2.1781669010973783e-05,
+            "proposal_mass": 1.3880434524879165e-13,
+            "filtering_mass": 0.02707343522706565,
+            "fitting_particles_in_region": 158
+          }
+        ]
+      }
+    },
+    {
+      "points": 4097,
+      "arms": {
+        "retained": [
+          {
+            "arm": "qr_seed20261009.0",
+            "worst_time": 78,
+            "posterior_path_mass": 0.10546002852249026,
+            "posterior_mass": 0.04050685443026497,
+            "proposal_mass": 4.098448909999803e-12,
+            "filtering_mass": 0.17451584585465615,
+            "fitting_particles_in_region": 330
+          },
+          {
+            "arm": "svd_seed20261009.0",
+            "worst_time": 78,
+            "posterior_path_mass": 0.1054600324447309,
+            "posterior_mass": 0.04050685443026497,
+            "proposal_mass": 4.098448909997415e-12,
+            "filtering_mass": 0.17451584585465615,
+            "fitting_particles_in_region": 330
+          },
+          {
+            "arm": "qr_seed20261010.0",
+            "worst_time": 93,
+            "posterior_path_mass": 0.0673277579932916,
+            "posterior_mass": 0.025912856918896315,
+            "proposal_mass": 2.689290961940462e-13,
+            "filtering_mass": 0.6196202831160172,
+            "fitting_particles_in_region": 385
+          },
+          {
+            "arm": "svd_seed20261010.0",
+            "worst_time": 93,
+            "posterior_path_mass": 0.06732775543279079,
+            "posterior_mass": 0.025912856918896315,
+            "proposal_mass": 2.6892909462572545e-13,
+            "filtering_mass": 0.6196202831160172,
+            "fitting_particles_in_region": 385
+          }
+        ],
+        "full": [
+          {
+            "arm": "qr_seed20261009.0",
+            "worst_time": 70,
+            "posterior_path_mass": 6.565340930386743e-05,
+            "posterior_mass": 2.2682683265952925e-05,
+            "proposal_mass": 5.582846419881093e-15,
+            "filtering_mass": 0.012548698012164194,
+            "fitting_particles_in_region": 0
+          },
+          {
+            "arm": "svd_seed20261009.0",
+            "worst_time": 70,
+            "posterior_path_mass": 6.565340930386743e-05,
+            "posterior_mass": 2.2682683265952925e-05,
+            "proposal_mass": 5.582846478486322e-15,
+            "filtering_mass": 0.012548698012164194,
+            "fitting_particles_in_region": 0
+          },
+          {
+            "arm": "qr_seed20261010.0",
+            "worst_time": 10,
+            "posterior_path_mass": 3.833642038653107e-05,
+            "posterior_mass": 1.9595437156247753e-05,
+            "proposal_mass": 1.1849254770952208e-13,
+            "filtering_mass": 0.02436746821494474,
+            "fitting_particles_in_region": 158
+          },
+          {
+            "arm": "svd_seed20261010.0",
+            "worst_time": 10,
+            "posterior_path_mass": 3.833642038653107e-05,
+            "posterior_mass": 1.9595437156247753e-05,
+            "proposal_mass": 1.1849220163329757e-13,
+            "filtering_mass": 0.02436746821494474,
+            "fitting_particles_in_region": 158
+          }
+        ]
+      }
+    }
+  ],
+  "device": "/job:localhost/replica:0/task:0/device:GPU:0",
+  "criterion": "Saved-policy replay and numerical identities; mechanism quantities explanatory only",
+  "nonclaims": [
+    "No full-basis backward refit",
+    "No finite-particle hitting law",
+    "No QR/SVD quality ranking",
+    "No fitting or default promotion"
+  ],
+  "wall_seconds": 14.053745029028505,
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "allocator": {
+    "current": 34639872,
+    "peak": 315556096
+  }
+}

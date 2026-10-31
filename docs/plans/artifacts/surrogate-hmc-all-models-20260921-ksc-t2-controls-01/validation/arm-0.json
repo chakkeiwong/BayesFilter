@@ -1,0 +1,1085 @@
+{
+  "controls": {
+    "coordinate_cap": 16.0,
+    "coordinate_cap_power": 8,
+    "correction_lm_damping": 0.001,
+    "correction_lm_scale_floor": 1e-06,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_trust_radius": 0.1,
+    "pairwise_rms_cap": 2.0,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "reset_balance_steps": 8,
+    "reset_epsilon": 2.0,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-05,
+    "reset_sinkhorn_steps": 8,
+    "substeps": 10
+  },
+  "fixtures": {
+    "nominal": {
+      "chart": "theta=.1+.8*Phi(q); physical prior plus Jacobian once",
+      "chunk_policy": {
+        "col_blocks": 1,
+        "col_chunk_size": 1024,
+        "num_particles": 1024,
+        "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "row_blocks": 1,
+        "row_chunk_size": 1024
+      },
+      "control_status": "hypothesis until independent scope selection",
+      "d": 1,
+      "dataset_sha256": "e7b4967acfa042275d80bfdd17e205e3c53c51b6e57385756398cfba05030f3d",
+      "derivative": "analytical_recursive_all_parameter_dependencies",
+      "dtype": "float32",
+      "initial_law": "stationary parameter-dependent initial state; transition before observation",
+      "input_generation": "tiny CPU fixed-input diagnostic exception; no training",
+      "input_sha256": {
+        "base": "5f6d3bbbe99d3d48d8896ad35a6992fabf4dc821217f7fe2555f96b8c182ee87",
+        "design": "844d225c735418d2f1858e75ea3f3565ca8ca4e25a8f53ac73f9d37567fa2dbb",
+        "noise": "ffd820992acc6201bd0c1a23b6096e6726527f5d37beb431d08f1ca317e7e12d",
+        "observations": "11f864a8ddfbf20a8316718d6d5ca63309f0bd9ef2a53a3e5e91b41c3af55e0c"
+      },
+      "jit_compile": true,
+      "law": "stationary Gaussian AR1; seven-component KSC transformed observation",
+      "model_id": "M03-KSC-T2",
+      "n": 1024,
+      "p": 2,
+      "prior": "independent Uniform(.1,.9)",
+      "reset_contract_id": "contract_e_chol_v1",
+      "route": "canonical_batch_fused_value_score",
+      "seeds": {
+        "base": [
+          20260921,
+          24200
+        ],
+        "design": [
+          20260921,
+          24202
+        ],
+        "noise": [
+          20260921,
+          24201
+        ]
+      },
+      "settings": {
+        "coordinate_cap": 16.0,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.1,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 8,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 8,
+        "substeps": 10
+      },
+      "source_sha256": {
+        "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+        "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+        "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+        "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+        "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+        "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+        "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+        "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+        "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+        "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+        "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+        "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+        "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+        "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+        "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+        "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+        "bayesfilter/highdim/sv_mixture_cut4.py": "cd3c68d68d855ca2fa673ae5fc7a29bf41e10018cb2ac72556e2b99d75a473e9",
+        "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+        "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+        "bayesfilter/testing/surrogate_hmc_ksc_consumer.py": "a7a7bd781db546f4b0def393385187917fb9d333ac2435cb6a0d90a2d7c5adc3",
+        "bayesfilter/testing/surrogate_hmc_ksc_reference.py": "37a4d174fa49ec0013c3f8317e91e9d5f85bf024692e6ff7ebc0553411c95ab0",
+        "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+        "bayesfilter/testing/surrogate_hmc_sv_consumer.py": "26405f34bf8e68c5cee37de23239d282f64a18e5853dfe25bf12d551bf472567",
+        "bayesfilter/testing/surrogate_hmc_sv_reference.py": "b35ce7f8020038d8830cf9d9f2840b76e636aa67fbc0e0e5f542c415b35752e3"
+      },
+      "t": 2,
+      "tf32": true
+    },
+    "stress": {
+      "chart": "theta=.1+.8*Phi(q); physical prior plus Jacobian once",
+      "chunk_policy": {
+        "col_blocks": 1,
+        "col_chunk_size": 1024,
+        "num_particles": 1024,
+        "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+        "row_blocks": 1,
+        "row_chunk_size": 1024
+      },
+      "control_status": "hypothesis until independent scope selection",
+      "d": 1,
+      "dataset_sha256": "972bcc6eb3fa173bcef2565bf58d08adf6aa32307b59bd0fd5e58dad73df95b3",
+      "derivative": "analytical_recursive_all_parameter_dependencies",
+      "dtype": "float32",
+      "initial_law": "stationary parameter-dependent initial state; transition before observation",
+      "input_generation": "tiny CPU fixed-input diagnostic exception; no training",
+      "input_sha256": {
+        "base": "0c6b83f9fd767e0b2fcdd3fb591136d46407ee4492fea0d2a5b6c78e96168fa3",
+        "design": "e63b231e9d295f618254e8930b69561b665d481ca0d29e9f843d4776dced38b4",
+        "noise": "b60f0d014100d1bae3e76d8c470f580a68b831944820d0fbaa6c48c3489e0ff1",
+        "observations": "412cd1025cbe195b112b9c3ac54fb5cdb046236e84302f74286f976897c716c1"
+      },
+      "jit_compile": true,
+      "law": "stationary Gaussian AR1; seven-component KSC transformed observation",
+      "model_id": "M03-KSC-T2",
+      "n": 1024,
+      "p": 2,
+      "prior": "independent Uniform(.1,.9)",
+      "reset_contract_id": "contract_e_chol_v1",
+      "route": "canonical_batch_fused_value_score",
+      "seeds": {
+        "base": [
+          20260921,
+          24210
+        ],
+        "design": [
+          20260921,
+          24212
+        ],
+        "noise": [
+          20260921,
+          24211
+        ]
+      },
+      "settings": {
+        "coordinate_cap": 16.0,
+        "coordinate_cap_power": 8,
+        "correction_lm_damping": 0.001,
+        "correction_lm_scale_floor": 1e-06,
+        "correction_steps": 2,
+        "correction_strength": 0.2,
+        "correction_trust_radius": 0.1,
+        "pairwise_rms_cap": 2.0,
+        "pairwise_steps": 2,
+        "pairwise_strength": 0.02,
+        "reset_balance_steps": 8,
+        "reset_epsilon": 2.0,
+        "reset_policy": "contract_e",
+        "reset_ridge": 1e-05,
+        "reset_sinkhorn_steps": 8,
+        "substeps": 10
+      },
+      "source_sha256": {
+        "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+        "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+        "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+        "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+        "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+        "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+        "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+        "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "f2b9f73832b7e547f65f423e2cff81319c36d3f0d8ce79860f6d7a64dedeebd6",
+        "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+        "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+        "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+        "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+        "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+        "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+        "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+        "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+        "bayesfilter/highdim/sv_mixture_cut4.py": "cd3c68d68d855ca2fa673ae5fc7a29bf41e10018cb2ac72556e2b99d75a473e9",
+        "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+        "bayesfilter/inference/neural_force_hmc.py": "2baa22196a590fd550950d2dabd1a8ccd38457759961918f26a38ec0e585639e",
+        "bayesfilter/testing/surrogate_hmc_ksc_consumer.py": "a7a7bd781db546f4b0def393385187917fb9d333ac2435cb6a0d90a2d7c5adc3",
+        "bayesfilter/testing/surrogate_hmc_ksc_reference.py": "37a4d174fa49ec0013c3f8317e91e9d5f85bf024692e6ff7ebc0553411c95ab0",
+        "bayesfilter/testing/surrogate_hmc_lg1_tf.py": "cb8071e85f94d839bfd95c24ffc223b18e7b9d9ead3c5e1cfba3d86452b8038f",
+        "bayesfilter/testing/surrogate_hmc_sv_consumer.py": "26405f34bf8e68c5cee37de23239d282f64a18e5853dfe25bf12d551bf472567",
+        "bayesfilter/testing/surrogate_hmc_sv_reference.py": "b35ce7f8020038d8830cf9d9f2840b76e636aa67fbc0e0e5f542c415b35752e3"
+      },
+      "t": 2,
+      "tf32": true
+    }
+  },
+  "multiplier": 1.0,
+  "situations": {
+    "nominal": {
+      "all_failures_flagged": true,
+      "all_healthy": true,
+      "force": [
+        [
+          -0.42148417234420776,
+          2.7086851596832275
+        ],
+        [
+          -0.4776764512062073,
+          -1.0030527114868164
+        ],
+        [
+          -1.590726613998413,
+          0.49509143829345703
+        ],
+        [
+          -6.236403465270996,
+          -0.7235386371612549
+        ]
+      ],
+      "healthy_rows": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "positions": [
+        [
+          0.25,
+          0.30000001192092896
+        ],
+        [
+          0.44999998807907104,
+          0.6000000238418579
+        ],
+        [
+          0.6499999761581421,
+          0.4000000059604645
+        ],
+        [
+          0.800000011920929,
+          0.75
+        ]
+      ],
+      "status": {
+        "direction_force_failure_code": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "direction_force_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "direction_value_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "filtering_covariance": [
+          [
+            [
+              [
+                1.0394675731658936
+              ]
+            ],
+            [
+              [
+                0.48858705163002014
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                0.9729260206222534
+              ]
+            ],
+            [
+              [
+                0.6819917559623718
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.5240007638931274
+              ]
+            ],
+            [
+              [
+                0.6503008604049683
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.7544293403625488
+              ]
+            ],
+            [
+              [
+                0.8153225183486938
+              ]
+            ]
+          ]
+        ],
+        "filtering_ess": [
+          [
+            822.6797485351562,
+            796.8228759765625
+          ],
+          [
+            627.9105834960938,
+            945.5406494140625
+          ],
+          [
+            438.5707702636719,
+            736.6461181640625
+          ],
+          [
+            125.75958251953125,
+            737.4702758789062
+          ]
+        ],
+        "filtering_mean": [
+          [
+            [
+              -0.493377149105072
+            ],
+            [
+              0.7465307116508484
+            ]
+          ],
+          [
+            [
+              -0.7587482929229736
+            ],
+            [
+              -0.0449964702129364
+            ]
+          ],
+          [
+            [
+              -0.9302695989608765
+            ],
+            [
+              0.40529656410217285
+            ]
+          ],
+          [
+            [
+              -1.9771807193756104
+            ],
+            [
+              -0.6455641984939575
+            ]
+          ]
+        ],
+        "first_failure_particle": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_stage": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_time": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_failure_code": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_valid": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "higher_moment_fraction_coordinatewise_cap_active": [
+          [
+            0.01171875,
+            0.01953125
+          ],
+          [
+            0.015625,
+            0.01953125
+          ],
+          [
+            0.0146484375,
+            0.0185546875
+          ],
+          [
+            0.0146484375,
+            0.017578125
+          ]
+        ],
+        "higher_moment_maximum_coordinatewise_post_cap_absolute": [
+          [
+            3.050297260284424,
+            3.3218395709991455
+          ],
+          [
+            3.0935683250427246,
+            3.3572676181793213
+          ],
+          [
+            3.405467987060547,
+            3.4669933319091797
+          ],
+          [
+            3.4602110385894775,
+            3.5118823051452637
+          ]
+        ],
+        "higher_moment_maximum_coordinatewise_pre_cap_absolute": [
+          [
+            3.050297975540161,
+            3.32184100151062
+          ],
+          [
+            3.093569040298462,
+            3.357269287109375
+          ],
+          [
+            3.4054698944091797,
+            3.4669954776763916
+          ],
+          [
+            3.4602131843566895,
+            3.5118846893310547
+          ]
+        ],
+        "higher_moment_mean_coordinatewise_cap_displacement": [
+          [
+            3.259629011154175e-09,
+            6.984919309616089e-09
+          ],
+          [
+            5.587935447692871e-09,
+            7.450580596923828e-09
+          ],
+          [
+            6.28642737865448e-09,
+            8.149072527885437e-09
+          ],
+          [
+            6.984919309616089e-09,
+            8.149072527885437e-09
+          ]
+        ],
+        "higher_moment_minimum_coordinatewise_cap_derivative": [
+          [
+            0.9999979734420776,
+            0.9999961256980896
+          ],
+          [
+            0.9999978542327881,
+            0.9999957084655762
+          ],
+          [
+            0.9999952912330627,
+            0.9999945163726807
+          ],
+          [
+            0.9999946355819702,
+            0.9999939799308777
+          ]
+        ],
+        "outside_declared_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "post_reset_covariance": [
+          [
+            [
+              [
+                1.0394675731658936
+              ]
+            ],
+            [
+              [
+                0.4885869324207306
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                0.9729260206222534
+              ]
+            ],
+            [
+              [
+                0.6819918751716614
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.524000883102417
+              ]
+            ],
+            [
+              [
+                0.6503008604049683
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.7544289827346802
+              ]
+            ],
+            [
+              [
+                0.8153224587440491
+              ]
+            ]
+          ]
+        ],
+        "post_reset_mean": [
+          [
+            [
+              -0.493377149105072
+            ],
+            [
+              0.7465307116508484
+            ]
+          ],
+          [
+            [
+              -0.7587482929229736
+            ],
+            [
+              -0.04499645531177521
+            ]
+          ],
+          [
+            [
+              -0.9302695989608765
+            ],
+            [
+              0.40529656410217285
+            ]
+          ],
+          [
+            [
+              -1.9771808385849
+            ],
+            [
+              -0.6455641984939575
+            ]
+          ]
+        ],
+        "program_valid": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_failure_code": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "value_valid": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "value": [
+        -5.640060901641846,
+        -5.676900386810303,
+        -5.7955732345581055,
+        -6.403679370880127
+      ]
+    },
+    "stress": {
+      "all_failures_flagged": true,
+      "all_healthy": true,
+      "force": [
+        [
+          -0.10785157978534698,
+          -5.829657554626465
+        ],
+        [
+          -1.0415128469467163,
+          -1.6713504791259766
+        ],
+        [
+          0.4116656184196472,
+          -2.744500160217285
+        ],
+        [
+          -8.589949607849121,
+          -1.4543113708496094
+        ]
+      ],
+      "healthy_rows": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "positions": [
+        [
+          0.10010000318288803,
+          0.10010000318288803
+        ],
+        [
+          0.8999000191688538,
+          0.8999000191688538
+        ],
+        [
+          0.10010000318288803,
+          0.8999000191688538
+        ],
+        [
+          0.8999000191688538,
+          0.10010000318288803
+        ]
+      ],
+      "status": {
+        "direction_force_failure_code": [
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "direction_force_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "direction_value_valid": [
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ],
+          [
+            true,
+            true
+          ]
+        ],
+        "filtering_covariance": [
+          [
+            [
+              [
+                1.054794430732727
+              ]
+            ],
+            [
+              [
+                0.6268840432167053
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.365159511566162
+              ]
+            ],
+            [
+              [
+                1.0965232849121094
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.0003167390823364
+              ]
+            ],
+            [
+              [
+                0.9932596683502197
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                2.192295551300049
+              ]
+            ],
+            [
+              [
+                0.8080021142959595
+              ]
+            ]
+          ]
+        ],
+        "filtering_ess": [
+          [
+            939.2490234375,
+            976.0181274414062
+          ],
+          [
+            19.772886276245117,
+            831.0758056640625
+          ],
+          [
+            613.4642333984375,
+            994.0813598632812
+          ],
+          [
+            215.78858947753906,
+            505.2132263183594
+          ]
+        ],
+        "filtering_mean": [
+          [
+            [
+              -0.4216313362121582
+            ],
+            [
+              0.12100765109062195
+            ]
+          ],
+          [
+            [
+              -4.158053874969482
+            ],
+            [
+              -3.7109909057617188
+            ]
+          ],
+          [
+            [
+              -0.7819373607635498
+            ],
+            [
+              -0.5314217805862427
+            ]
+          ],
+          [
+            [
+              -2.151432514190674
+            ],
+            [
+              -0.32712167501449585
+            ]
+          ]
+        ],
+        "first_failure_particle": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_stage": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "first_failure_time": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_failure_code": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_valid": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "higher_moment_fraction_coordinatewise_cap_active": [
+          [
+            0.01171875,
+            0.0087890625
+          ],
+          [
+            0.01171875,
+            0.01171875
+          ],
+          [
+            0.0107421875,
+            0.009765625
+          ],
+          [
+            0.009765625,
+            0.013671875
+          ]
+        ],
+        "higher_moment_maximum_coordinatewise_post_cap_absolute": [
+          [
+            3.425271511077881,
+            3.577232599258423
+          ],
+          [
+            3.4077517986297607,
+            3.877262830734253
+          ],
+          [
+            3.408583402633667,
+            3.4993176460266113
+          ],
+          [
+            3.4134280681610107,
+            3.9739792346954346
+          ]
+        ],
+        "higher_moment_maximum_coordinatewise_pre_cap_absolute": [
+          [
+            3.4252734184265137,
+            3.577235460281372
+          ],
+          [
+            3.4077537059783936,
+            3.8772685527801514
+          ],
+          [
+            3.4085853099823,
+            3.4993200302124023
+          ],
+          [
+            3.4134299755096436,
+            3.9739863872528076
+          ]
+        ],
+        "higher_moment_mean_coordinatewise_cap_displacement": [
+          [
+            4.423782229423523e-09,
+            5.587935447692871e-09
+          ],
+          [
+            6.752088665962219e-09,
+            1.0011717677116394e-08
+          ],
+          [
+            4.190951585769653e-09,
+            6.05359673500061e-09
+          ],
+          [
+            5.587935447692871e-09,
+            1.234002411365509e-08
+          ]
+        ],
+        "higher_moment_minimum_coordinatewise_cap_derivative": [
+          [
+            0.9999950528144836,
+            0.9999930262565613
+          ],
+          [
+            0.9999951720237732,
+            0.9999865889549255
+          ],
+          [
+            0.9999951720237732,
+            0.9999940991401672
+          ],
+          [
+            0.9999951720237732,
+            0.9999837875366211
+          ]
+        ],
+        "outside_declared_support": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "post_reset_covariance": [
+          [
+            [
+              [
+                1.0547943115234375
+              ]
+            ],
+            [
+              [
+                0.6268839836120605
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.365159511566162
+              ]
+            ],
+            [
+              [
+                1.0965232849121094
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                1.000316858291626
+              ]
+            ],
+            [
+              [
+                0.9932596683502197
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                2.192295789718628
+              ]
+            ],
+            [
+              [
+                0.808002233505249
+              ]
+            ]
+          ]
+        ],
+        "post_reset_mean": [
+          [
+            [
+              -0.4216313362121582
+            ],
+            [
+              0.12100765109062195
+            ]
+          ],
+          [
+            [
+              -4.158053398132324
+            ],
+            [
+              -3.7109909057617188
+            ]
+          ],
+          [
+            [
+              -0.7819373607635498
+            ],
+            [
+              -0.5314217805862427
+            ]
+          ],
+          [
+            [
+              -2.151432514190674
+            ],
+            [
+              -0.32712167501449585
+            ]
+          ]
+        ],
+        "program_valid": [
+          true,
+          true,
+          true,
+          true
+        ],
+        "value_failure_code": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "value_valid": [
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      "value": [
+        -4.441643238067627,
+        -6.883565425872803,
+        -8.255389213562012,
+        -5.14194393157959
+      ]
+    }
+  }
+}

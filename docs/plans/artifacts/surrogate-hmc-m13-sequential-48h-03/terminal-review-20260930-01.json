@@ -1,0 +1,106 @@
+{
+  "reviewed_at": "2026-09-30T09:19:41.285829+00:00",
+  "scientific_goal": "testing surrogate HMC on frozen M13/data1704/T20",
+  "status": "BUDGET_LIMITED_INCONCLUSIVE",
+  "master_complete": false,
+  "posterior_qualified": false,
+  "candidate_rejected": false,
+  "research_direction_rejected": false,
+  "counts": {
+    "verification": 2250,
+    "warmup": 9000
+  },
+  "retained_count_per_chain": 0,
+  "warmup_pass": {
+    "check_due": true,
+    "checks": {
+      "all_chains_moved": true,
+      "endpoint_valid": true,
+      "energy_valid": true,
+      "final_state_matches": true,
+      "finite": true,
+      "no_divergences": true,
+      "no_force_fallback": true
+    },
+    "count": 9000,
+    "index": 35,
+    "passed": true,
+    "phase": "warmup",
+    "rhat": {
+      "bulk": [
+        1.0277867018400715,
+        1.0057955399827325
+      ],
+      "folded": [
+        1.0297928990533867,
+        1.0362180537390726
+      ],
+      "maximum": [
+        1.0297928990533867,
+        1.0362180537390726
+      ]
+    },
+    "rhat_draws_per_chain": 1000,
+    "threshold": 1.05
+  },
+  "last_verification_check": {
+    "check_due": true,
+    "checks": {
+      "all_chains_moved": true,
+      "endpoint_valid": true,
+      "energy_valid": true,
+      "final_state_matches": true,
+      "finite": true,
+      "no_divergences": true,
+      "no_force_fallback": true
+    },
+    "count": 2000,
+    "index": 7,
+    "passed": false,
+    "phase": "verification",
+    "rhat": {
+      "bulk": [
+        1.0577474642662235,
+        1.0259174978613588
+      ],
+      "folded": [
+        1.0068928484608104,
+        1.0136288335702597
+      ],
+      "maximum": [
+        1.0577474642662235,
+        1.0259174978613588
+      ]
+    },
+    "rhat_draws_per_chain": 2000,
+    "threshold": 1.01
+  },
+  "engineering": {
+    "worker_exit_code": 0,
+    "accounting_complete": true,
+    "archive_checksums_verified": 450,
+    "sequential_boundaries_verified": true,
+    "unique_chunk_seeds": 45,
+    "all_archived_health_checks_pass": true,
+    "source_unchanged_at_master_close": true
+  },
+  "numerical": {
+    "validity_checks": "passed on all archived chunks",
+    "admission": "verification R-hat threshold not met before phase budget ended"
+  },
+  "interpretation": "more verification evidence required; neither posterior qualification nor rejection of surrogate HMC follows",
+  "reason_for_stop": "final permitted tuning attempt reached its phase time limit while preserving the planned ten-hour retained reserve",
+  "continuation": "current master terminal; retained phase cannot start without verification; no third fresh attempt",
+  "cumulative_charged": {
+    "cpu_worker_seconds": 112433.52571199999,
+    "gpu_seconds": 109994.26214076398
+  },
+  "unused_compute_seconds": {
+    "cpu_worker_seconds": 60366.47428800001,
+    "gpu_seconds": 62805.73785923602
+  },
+  "allocation_deadline": "2026-09-30T16:27:39+00:00",
+  "next_action": "terminal review recorded; any further execution requires a revised bounded phase plan, preserving cumulative charges, frozen kernel and admission criteria",
+  "plan": "docs/plans/surrogate-hmc-m13-48h-continuation-2026-09-29.md",
+  "result": "docs/plans/surrogate-hmc-m13-health-veto-repair-2026-09-29.md"
+}

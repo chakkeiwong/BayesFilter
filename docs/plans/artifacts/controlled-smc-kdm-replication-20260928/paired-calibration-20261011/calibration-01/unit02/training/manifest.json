@@ -1,0 +1,91 @@
+{
+  "schema": "kdm_complete_training_manifest_v1",
+  "mode": "tf",
+  "epoch_mode": "full",
+  "status": "COMPLETED",
+  "cwd": "/home/chakwong/BayesFilter",
+  "git_commit": "89065bc6354801cb368d5e163ba49fd9c4372d10",
+  "plan": "docs/plans/controlled-smc-kdm-paired-calibration-20261011.md",
+  "result": "docs/plans/controlled-smc-kdm-paired-calibration-result-20261011.md",
+  "reference": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-cost/diagnostic/result.json",
+  "reference_sha256": "bb02caeef8a1284ea933b91514bdb07b9519fea5e70fe6dd321c52b25a3cac72",
+  "verification": "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-refresh-20261011/stage-refresh-01/verification/diagnostic/result.json",
+  "verification_sha256": "16b26c392b79c7ee86192f67aee6a4c005699fdcbba5b93b14802bf856a8a970",
+  "source_pin": "b0e2fd54db7b6c36d70e8e701ddc6a3f3d5dee18",
+  "hashes": {
+    "docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py": "93bf22859fa048e61ba2e306af13d46e420dc371ca0c080f9393784dddd9ce5b",
+    "docs/benchmarks/diagnose_kdm_source_epoch_tf.py": "e10d0ae17c3068dff931c7dc61b4659771dafe07c43be2f1b2551227e31841c9",
+    "bayesfilter/runtime/gpu_memory_policy.py": "d05b720116f9f050cf4cefbe9c9fbebc777f759a762c722e9b9343ee61e862a7",
+    "bayesfilter/replication/kdm_iwsg_tf.py": "6f8bbeebf51903eed0b06c2552ecad58d4372025b6b8880f7d347a58e1313d45",
+    "bayesfilter/replication/kdm_neural_replay_tf.py": "23e4155a644837b77cbe680668e28e5530a99cd6b4b76ccaefde44b8dbbcefa0",
+    "bayesfilter/replication/kdm_normal_von_mises_tf.py": "9682f9b3093ae393eb71b94f247e926d1302f0da5417b1a367b69f884273cffd",
+    "bayesfilter/replication/kdm_sampling_tf.py": "dc0f506750ef32351d4ab756f055bd68ba4dd38ebe279dbbd0ddbce88635e1ba",
+    "bayesfilter/replication/kdm_sequential_tf.py": "cc563c258b04d4f1b87588daa762b3eb3326684c5d57b7c41696de474129ad50",
+    "bayesfilter/replication/kdm_source_stages_tf.py": "e8159d711147012b02e101b5e245880cb263b0db74b90aa1600acb483be1b736",
+    "bayesfilter/replication/kdm_stage_transfer_tf.py": "64ea5315d3e14f2d20f493a0a4b4b4a80cd931d382c4a90772743bfec0433b48",
+    "bayesfilter/replication/kdm_training_controller.py": "1615bd05596619bb713a9bac0f626470937aa792e0f362359601cef5ef6ee33a",
+    "docs/benchmarks/run_kdm_paired_calibration.py": "b81a3dfa0b9436e84bea5ab481a87e1ec73635b2371ac14c3caadee7cd0f229d",
+    "docs/benchmarks/reference_kdm_development_evaluation.py": "e06663106cef50aa34ce234abfe119d933140225455f78586ddcf4e35ab90b29",
+    "docs/benchmarks/reference_kdm_training_terminal_audit.py": "8630148878b5570b398ef7c8a05dfc1be76aac14bae0d0bfea8d42eed189ffcd",
+    "docs/benchmarks/reference_kdm_neural_exact_replay.py": "639443b1add7dd09bc332c258ec4c11b84c4f116d7ae99db3f51d4559578cbfe"
+  },
+  "seeds": {
+    "data": 202610071,
+    "constructor_base": 202610111,
+    "tf_seed_base": 1200000000
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true",
+    "TF_NUM_INTEROP_THREADS": "1",
+    "TF_NUM_INTRAOP_THREADS": "1",
+    "OMP_NUM_THREADS": "1"
+  },
+  "cpu_gpu_status": "TF GPU/XLA; author reference CPU with GPU intentionally hidden",
+  "replication": "INCOMPLETE",
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "-I",
+    "-B",
+    "/home/chakwong/BayesFilter/docs/benchmarks/diagnose_kdm_fresh_training_cost_tf.py",
+    "--reference",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/kdm-source-variability-20261008-01/unit02-cost/diagnostic/result.json",
+    "--verification",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/stage-refresh-20261011/stage-refresh-01/verification/diagnostic/result.json",
+    "--seed-base",
+    "1200000000",
+    "--epochs",
+    "full",
+    "--output",
+    "/home/chakwong/BayesFilter/docs/plans/artifacts/controlled-smc-kdm-replication-20260928/paired-calibration-20261011/calibration-01/unit02/training/diagnostic"
+  ],
+  "returncode": 0,
+  "wall_seconds": 6652.750616275938,
+  "result_sha256": "fa357c9c9778bfb06f76fe5f0f4c41ba1588b2006c94aac2b315e8146d9feffc",
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            12,
+            0
+          ],
+          "device_name": "NVIDIA GeForce RTX 5080"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "jit_compile": true,
+  "tf32": false,
+  "visible_device": "GPU-d54fdcfc-c6ed-dbe7-25c7-93f737e0f93a"
+}

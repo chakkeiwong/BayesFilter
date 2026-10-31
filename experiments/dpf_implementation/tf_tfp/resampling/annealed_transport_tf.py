@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 import tensorflow as tf
@@ -159,6 +160,7 @@ def annealed_transport_resample_tf(
     row_chunk_size: int | None = None,
     col_chunk_size: int | None = None,
     warmstart_state: AnnealedTransportWarmstartStateTF | None = None,
+    jit_compile: bool = True,
 ) -> AnnealedTransportTFResult:
     """Apply filterflow RegularisedTransform-style annealed transport.
 
@@ -209,12 +211,160 @@ def annealed_transport_resample_tf(
         row_chunk_size = chunks.row_chunk_size
         col_chunk_size = chunks.col_chunk_size
 
-    batch_size = tf.shape(x)[0]
-    num_particles = tf.shape(x)[1]
-    if ess_mask is None:
-        mask = tf.ones([batch_size], dtype=tf.bool)
+    mask = (tf.ones([tf.shape(x)[0]], tf.bool) if ess_mask is None
+            else tf.reshape(tf.cast(ess_mask, tf.bool), [-1]))
+    settings = dict(epsilon=epsilon, scaling=scaling, convergence_threshold=convergence_threshold, max_iterations=max_iterations, transport_gradient_mode=transport_gradient_mode, application_mode=application_mode, transport_plan_mode=transport_plan_mode, transport_ad_mode=transport_ad_mode, row_chunk_size=row_chunk_size, col_chunk_size=col_chunk_size)
+    if tf.inside_function():
+        values = _annealed_transport_core_tf(x, logw, mask,
+            warmstart_state=warmstart_state, **settings)
     else:
-        mask = tf.reshape(tf.cast(ess_mask, tf.bool), [-1])
+        warm = (() if warmstart_state is None else
+                (warmstart_state.a_y, warmstart_state.b_x, warmstart_state.a_x,
+                 warmstart_state.b_y, warmstart_state.valid_mask))
+        warm_specs = tuple(tf.TensorSpec(value.shape, value.dtype) for value in warm)
+        call = make_annealed_transport_resample_tf(tf.TensorSpec(x.shape, x.dtype),
+            warm_specs=warm_specs, jit_compile=jit_compile, **settings)
+        values = call(x, logw, mask, *warm)
+    (out_particles, out_log_weights, full_transport, triggered_count, skipped_count, max_row_residual, max_column_residual, max_cost_scale, min_cost_scale, max_iterations_used, finite_transport, finite_particles, log_weight_normalization_residual) = values
+
+    diagnostics = {
+        "component_id": "filterflow_style_annealed_transport_tf",
+        "reference_algorithm": "canonical_executable_filterflow_regularised_transform",
+        "mathematical_object": "annealed_regularized_transport_transform",
+        "fixed_target_sinkhorn_status": "not_this_algorithm_local_comparator_only",
+        "epsilon": float(epsilon),
+        "scaling": float(scaling),
+        "convergence_threshold": float(convergence_threshold),
+        "max_iterations": int(max_iterations),
+        "transport_gradient_mode": transport_gradient_mode,
+        "transport_ad_mode": transport_ad_mode,
+        "application_mode": application_mode,
+        "transport_plan_mode": transport_plan_mode,
+        "transport_chunk_policy_id": (
+            TRANSPORT_CHUNK_POLICY_ID
+            if transport_plan_mode == "streaming"
+            else None
+        ),
+        "warmstart_used": bool(warmstart_state is not None),
+        "transport_matrix_materialized": transport_plan_mode == "dense",
+        "row_chunk_size": (
+            None if row_chunk_size is None else int(row_chunk_size)
+        ),
+        "col_chunk_size": (
+            None if col_chunk_size is None else int(col_chunk_size)
+        ),
+        "jit_compile": bool(jit_compile),
+        "transport_block_grid": (
+            [
+                int(x.shape[1]) // int(row_chunk_size),
+                int(x.shape[1]) // int(col_chunk_size),
+            ]
+            if transport_plan_mode == "streaming"
+            else None
+        ),
+        "transport_backward_rule": _transport_backward_rule(transport_gradient_mode),
+        "triggered_rows": _host_or_tensor_float(triggered_count),
+        "skipped_rows": _host_or_tensor_float(skipped_count),
+        "max_row_residual": _host_or_tensor_float(max_row_residual),
+        "max_column_residual": _host_or_tensor_float(max_column_residual),
+        "max_cost_scale": _host_or_tensor_float(max_cost_scale),
+        "min_cost_scale": _host_or_tensor_float(min_cost_scale),
+        "max_iterations_used": _host_or_tensor_float(max_iterations_used),
+        "finite_transport": _host_or_tensor_bool(finite_transport),
+        "finite_particles": _host_or_tensor_bool(finite_particles),
+        "max_log_weight_normalization_residual": _host_or_tensor_float(log_weight_normalization_residual),
+        "backend": "tensorflow",
+        "resampling_status": "annealed_transport_triggered_rows_only",
+    }
+    if tf.inside_function():
+        tf.debugging.assert_equal(
+            finite_transport,
+            tf.constant(True),
+            message="annealed transport emitted non-finite transport values",
+        )
+        tf.debugging.assert_equal(
+            finite_particles,
+            tf.constant(True),
+            message="annealed transport emitted non-finite particle values",
+        )
+    elif not diagnostics["finite_transport"] or not diagnostics["finite_particles"]:
+        raise FloatingPointError("annealed transport emitted non-finite values")
+    result_particles = out_particles[0] if original_particle_rank == 2 else out_particles
+    result_log_weights = out_log_weights[0] if original_weight_rank == 1 else out_log_weights
+    result_transport = full_transport[0] if original_particle_rank == 2 else full_transport
+    return AnnealedTransportTFResult(
+        particles=result_particles,
+        log_weights=result_log_weights,
+        transport_matrix=result_transport,
+        diagnostics=diagnostics,
+    )
+
+
+@lru_cache(maxsize=8)
+def make_annealed_transport_resample_tf(particle_spec, *, warm_specs=(),
+                                       jit_compile=True, **settings):
+    """Stable enclosing XLA boundary for the finite annealed calculation.
+
+    A diagnostic tape outside the compiled call recomputes the same finite
+    program in a compiled VJP, keeping loop TensorLists within XLA. This AD
+    boundary makes no analytical LEDH score claim.
+    """
+    batch, count, dimension = particle_spec.shape
+    if None in (batch, count, dimension) or min(batch, count, dimension) < 1:
+        raise ValueError("annealed transport requires fixed positive [B,N,D] shape")
+    signature = (particle_spec, tf.TensorSpec([batch, count], DTYPE),
+                 tf.TensorSpec([batch], tf.bool), *warm_specs)
+
+    def evaluate(x, logw, mask, *warm):
+        state = AnnealedTransportWarmstartStateTF(*warm) if warm_specs else None
+        return _annealed_transport_core_tf(x, logw, mask, warmstart_state=state, **settings)
+
+    forward = tf.function(evaluate, input_signature=signature,
+                          jit_compile=jit_compile, autograph=False)
+    result_specs = tuple(tf.TensorSpec(value.shape, value.dtype)
+                         for value in forward.get_concrete_function().structured_outputs)
+    input_indices = tuple(i for i, spec in enumerate(signature) if spec.dtype.is_floating)
+    output_indices = tuple(i for i, spec in enumerate(result_specs) if spec.dtype.is_floating)
+
+    def backward(*arguments):
+        inputs, cotangents = arguments[:len(signature)], arguments[len(signature):]
+        watched = tuple(inputs[i] for i in input_indices)
+        with tf.GradientTape() as tape:
+            tape.watch(watched)
+            result = evaluate(*inputs)
+            outputs = tuple(result[i] for i in output_indices)
+        return tape.gradient(outputs, watched, output_gradients=cotangents,
+                             unconnected_gradients=tf.UnconnectedGradients.ZERO)
+
+    vjp = tf.function(backward, input_signature=(*signature,
+        *(result_specs[i] for i in output_indices)), jit_compile=jit_compile, autograph=False)
+
+    @tf.custom_gradient
+    def differentiable(*inputs):
+        result = forward(*tf.nest.map_structure(tf.stop_gradient, inputs))
+
+        def grad(*cotangents):
+            upstream = tuple(tf.zeros_like(result[i]) if cotangents[i] is None
+                             else cotangents[i] for i in output_indices)
+            derivatives = iter(vjp(*inputs, *upstream))
+            return tuple(next(derivatives) if i in input_indices else None
+                         for i in range(len(signature)))
+
+        return result, grad
+
+    return tf.function(differentiable, input_signature=signature,
+                       jit_compile=jit_compile, autograph=False)
+
+
+def _annealed_transport_core_tf(x, logw, mask, *, warmstart_state=None,
+        epsilon=0.5, scaling=0.9, convergence_threshold=1e-3, max_iterations=100,
+        transport_gradient_mode="filterflow_clipped", application_mode="active_rows_only",
+        transport_plan_mode="dense", transport_ad_mode="stabilized",
+        row_chunk_size=None, col_chunk_size=None):
+    """Native tensor calculation; finite flags must reach the enclosing veto."""
+    batch_size, num_particles = x.shape[:2]
+    if batch_size is None or num_particles is None:
+        raise ValueError("Annealed transport requires static batch and particle dimensions")
     log_weight_normalization_residual = tf.reduce_max(
         tf.abs(tf.reduce_logsumexp(logw, axis=1))
     )
@@ -256,105 +406,84 @@ def annealed_transport_resample_tf(
         max_iterations_used = active_diag["max_iterations_used"]
         finite_transport = active_diag["finite_transport"]
         finite_particles = active_diag["finite_particles"]
-    elif bool(tf.reduce_any(mask).numpy()):
-        active_x = tf.boolean_mask(x, mask)
-        active_logw = tf.boolean_mask(logw, mask)
-        transported, transport_matrix, active_diag = _transport_active(
-            active_x,
-            active_logw,
-            epsilon=epsilon,
-            scaling=scaling,
-            convergence_threshold=convergence_threshold,
-            max_iterations=max_iterations,
-            transport_gradient_mode=transport_gradient_mode,
-            transport_plan_mode=transport_plan_mode,
-            transport_ad_mode=transport_ad_mode,
-            row_chunk_size=row_chunk_size,
-            col_chunk_size=col_chunk_size,
-        )
-        active_indices = tf.where(mask)
-        out_particles = tf.tensor_scatter_nd_update(out_particles, active_indices, transported)
-        if transport_plan_mode == "dense":
-            full_transport = tf.tensor_scatter_nd_update(
-                full_transport,
-                active_indices,
-                transport_matrix,
-            )
-        max_row_residual = active_diag["max_row_residual"]
-        max_column_residual = active_diag["max_column_residual"]
-        max_cost_scale = active_diag["max_cost_scale"]
-        min_cost_scale = active_diag["min_cost_scale"]
-        max_iterations_used = active_diag["max_iterations_used"]
-        finite_transport = active_diag["finite_transport"]
-        finite_particles = active_diag["finite_particles"]
     else:
-        max_row_residual = tf.constant(0.0, DTYPE)
-        max_column_residual = tf.constant(0.0, DTYPE)
-        max_cost_scale = tf.constant(0.0, DTYPE)
-        min_cost_scale = tf.constant(0.0, DTYPE)
-        max_iterations_used = tf.constant(0.0, DTYPE)
-        finite_transport = True
-        finite_particles = True
+        def active_rows(x, logw, mask):
+            # Fixed-size padding keeps XLA shapes static. Duplicating an active
+            # row preserves the max/min stopping reductions over active rows;
+            # padded outputs are discarded and receive zero cotangents.
+            first = tf.argmax(tf.cast(mask, tf.int32), output_type=tf.int32)
+            indices = tf.where(mask, tf.range(batch_size), first)
+            # Dense selection has a fixed-shape transpose. Gather's sparse
+            # pullback becomes a dynamic IndexedSlices scatter inside If.
+            selector = tf.one_hot(indices, batch_size, dtype=x.dtype)
+            active_x = tf.einsum("ab,bnd->and", selector, x)
+            active_logw = tf.linalg.matmul(selector, logw)
+            transported, transport_matrix, active_diag = _transport_active(
+                active_x,
+                active_logw,
+                epsilon=epsilon,
+                scaling=scaling,
+                convergence_threshold=convergence_threshold,
+                max_iterations=max_iterations,
+                transport_gradient_mode=transport_gradient_mode,
+                transport_plan_mode=transport_plan_mode,
+                transport_ad_mode=transport_ad_mode,
+                row_chunk_size=row_chunk_size,
+                col_chunk_size=col_chunk_size,
+            )
+            active_particles = tf.where(mask[:, None, None], transported, x)
+            if transport_plan_mode == "dense":
+                active_transport = tf.where(mask[:, None, None], transport_matrix, tf.zeros_like(transport_matrix))
+            else:
+                active_transport = tf.zeros([batch_size, 0, 0], DTYPE)
+            return (
+                active_particles,
+                active_transport,
+                active_diag["max_row_residual"],
+                active_diag["max_column_residual"],
+                active_diag["max_cost_scale"],
+                active_diag["min_cost_scale"],
+                active_diag["max_iterations_used"],
+                active_diag["finite_transport"],
+                active_diag["finite_particles"],
+            )
 
-    diagnostics = {
-        "component_id": "filterflow_style_annealed_transport_tf",
-        "reference_algorithm": "canonical_executable_filterflow_regularised_transform",
-        "mathematical_object": "annealed_regularized_transport_transform",
-        "fixed_target_sinkhorn_status": "not_this_algorithm_local_comparator_only",
-        "epsilon": float(epsilon),
-        "scaling": float(scaling),
-        "convergence_threshold": float(convergence_threshold),
-        "max_iterations": int(max_iterations),
-        "transport_gradient_mode": transport_gradient_mode,
-        "transport_ad_mode": transport_ad_mode,
-        "application_mode": application_mode,
-        "transport_plan_mode": transport_plan_mode,
-        "transport_chunk_policy_id": (
-            TRANSPORT_CHUNK_POLICY_ID
-            if transport_plan_mode == "streaming"
-            else None
-        ),
-        "warmstart_used": bool(warmstart_state is not None),
-        "transport_matrix_materialized": transport_plan_mode == "dense",
-        "row_chunk_size": (
-            None if row_chunk_size is None else int(row_chunk_size)
-        ),
-        "col_chunk_size": (
-            None if col_chunk_size is None else int(col_chunk_size)
-        ),
-        "transport_block_grid": (
-            [
-                int(x.shape[1]) // int(row_chunk_size),
-                int(x.shape[1]) // int(col_chunk_size),
-            ]
-            if transport_plan_mode == "streaming"
-            else None
-        ),
-        "transport_backward_rule": _transport_backward_rule(transport_gradient_mode),
-        "triggered_rows": _float(triggered_count),
-        "skipped_rows": _float(skipped_count),
-        "max_row_residual": _float(max_row_residual),
-        "max_column_residual": _float(max_column_residual),
-        "max_cost_scale": _float(max_cost_scale),
-        "min_cost_scale": _float(min_cost_scale),
-        "max_iterations_used": _float(max_iterations_used),
-        "finite_transport": bool(finite_transport),
-        "finite_particles": bool(finite_particles),
-        "max_log_weight_normalization_residual": _float(log_weight_normalization_residual),
-        "backend": "tensorflow",
-        "resampling_status": "annealed_transport_triggered_rows_only",
-    }
-    if not diagnostics["finite_transport"] or not diagnostics["finite_particles"]:
-        raise FloatingPointError("annealed transport emitted non-finite values")
-    result_particles = out_particles[0] if original_particle_rank == 2 else out_particles
-    result_log_weights = out_log_weights[0] if original_weight_rank == 1 else out_log_weights
-    result_transport = full_transport[0] if original_particle_rank == 2 else full_transport
-    return AnnealedTransportTFResult(
-        particles=result_particles,
-        log_weights=result_log_weights,
-        transport_matrix=result_transport,
-        diagnostics=diagnostics,
-    )
+        def no_active_rows(specs, x, logw, mask):
+            zero = tf.constant(0.0, DTYPE)
+            true = tf.constant(True)
+            return (
+                x,
+                tf.zeros([batch_size, num_particles, num_particles], DTYPE) if transport_plan_mode == "dense" else tf.zeros([batch_size, 0, 0], DTYPE),
+                zero,
+                zero,
+                zero,
+                zero,
+                zero,
+                true,
+                true,
+            )
+
+        from experiments.dpf_implementation.tf_tfp.filters.native_execution_tf import conditional_step
+        # Enclosed by the public compiled value/VJP; leaf calls inherit that
+        # compilation and keep non-JIT diagnostic arms genuinely non-XLA.
+        select, _ = conditional_step(active_rows, [tf.TensorSpec(x.shape, x.dtype),
+            tf.TensorSpec(logw.shape, logw.dtype), tf.TensorSpec(mask.shape, mask.dtype)],
+            jit_compile=False, fallback=no_active_rows)
+        (
+            out_particles,
+            full_transport,
+            max_row_residual,
+            max_column_residual,
+            max_cost_scale,
+            min_cost_scale,
+            max_iterations_used,
+            finite_transport,
+            finite_particles,
+        ) = select(tf.reduce_any(mask), x, logw, mask)
+
+    return (out_particles, out_log_weights, full_transport, *tf.nest.map_structure(tf.stop_gradient,
+        (triggered_count, skipped_count, max_row_residual, max_column_residual, max_cost_scale,
+         min_cost_scale, max_iterations_used, finite_transport, finite_particles, log_weight_normalization_residual)))
 
 
 def _transport_active(
@@ -462,8 +591,8 @@ def _transport_active(
         "max_cost_scale": tf.reduce_max(scale),
         "min_cost_scale": tf.reduce_min(scale),
         "max_iterations_used": tf.reduce_max(tf.cast(iterations, DTYPE)),
-        "finite_transport": bool(tf.reduce_all(tf.math.is_finite(transport_matrix)).numpy()),
-        "finite_particles": bool(tf.reduce_all(tf.math.is_finite(transported)).numpy()),
+        "finite_transport": tf.reduce_all(tf.math.is_finite(transport_matrix)),
+        "finite_particles": tf.reduce_all(tf.math.is_finite(transported)),
     }
 
 
@@ -6186,3 +6315,15 @@ def _pairwise_squared(x: tf.Tensor) -> tf.Tensor:
 
 def _float(value: tf.Tensor) -> float:
     return float(tf.cast(value, DTYPE).numpy())
+
+
+def _host_or_tensor_float(value: tf.Tensor) -> float | tf.Tensor:
+    """Keep compiled diagnostics in-graph and materialize eager reports."""
+
+    return value if tf.inside_function() else _float(value)
+
+
+def _host_or_tensor_bool(value: tf.Tensor) -> bool | tf.Tensor:
+    """Keep compiled finite checks in-graph and materialize eager reports."""
+
+    return value if tf.inside_function() else bool(value.numpy())

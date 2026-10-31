@@ -102,3 +102,25 @@ has no upstream and substantial unrelated dirty work. Remote target is
 commits. Commit scoped deliverables, merge the fetched remote branch, resolve
 any content conflict without discarding either contribution, rebuild/check,
 and push without force. Final integration outcome is recorded below.
+
+## Integrated validation
+
+Documentation commit: `d3a880955`. Refetched `origin/main` at
+`67e7e7ea3` and merged its 355 intervening commits in the isolated worktree.
+The sole conflict was the adjacent chapter insertion in `docs/main.tex`;
+resolution preserves the remote surrogate-HMC chapter and the new Stan /
+Walnutpie chapter, as well as every other remote input and the dedicated
+bibliography. The diff against the remote contains only the scoped deliverables.
+
+Post-merge checks:
+- Full book: `latexmk -pdf -interaction=nonstopmode -halt-on-error
+  -outdir=/tmp/stan-walnutpie-latex-integrated main.tex` from `docs`: success,
+  **816 pages**, zero undefined references/citations, no overfull boxes in
+  the new chapter. Existing warnings elsewhere remain outside this scope.
+- Same CPU-only focused test command: **13 passed in 7.76 seconds**.
+- Saved evidence checker passes unchanged after the merge.
+- `git diff --check` passes; conflict markers removed; remote chapter retained.
+
+No sampling campaign, GPU run, target reevaluation or inference-default change
+was performed for this documentation task. Final Git push verification is
+reported in the task completion message and recorded in the local reset note.

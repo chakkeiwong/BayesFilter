@@ -1,0 +1,320 @@
+{
+  "memory_policy": {
+    "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+    "mode": "memory_growth",
+    "physical_devices": [
+      {
+        "device": "/physical_device:GPU:0",
+        "device_details": {
+          "compute_capability": [
+            8,
+            9
+          ],
+          "device_name": "NVIDIA GeForce RTX 4080 SUPER"
+        },
+        "memory_growth": true
+      }
+    ],
+    "all_physical_devices_memory_growth": true,
+    "full_device_preallocation_disabled": true,
+    "memory_growth_is_hard_memory_cap": false,
+    "logical_device_memory_limit_required_for_hard_cap": true,
+    "configured_before_logical_device_initialization": true,
+    "tf_force_gpu_allow_growth": "true"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "source_hashes": {
+    "hmc_tensorflow_verified.py": "c19a3964cdfdf625ed0b890841a4f10463b1273de18b0f00d9adbc7dc2f0ab64",
+    "hmc_tensorflow_tuning.py": "06c83a6519d041408dbf28790a4d171b9413bada96947c3ed2decdde083d3986",
+    "hmc_tuning_dispatch.py": "b034826479c6b0cacc2c729f0fa13678a3232643fef113e9132528c4fae980c9",
+    "hmc_posterior_diagnostics.py": "f95c162f4d2e50878067640899567e3ede795e13f6fac324c195721668c5862d",
+    "tuning_contract.py": "4247a88e706ed2b2443fe1fdd9e0544cc2fed9d59990f7111ac79185c7d62295",
+    "neural_force_hmc.py": "0ed5197967a89a82b41ba675fb2c6be3d4ca9dc29e8b08cbd0c71018f3c136b2"
+  },
+  "arms": {
+    "exact": {
+      "passed": true,
+      "checks": {
+        "warmup_finite": true,
+        "warmup_endpoint_valid": true,
+        "warmup_all_chains_moved": true,
+        "warmup_energy_valid": true,
+        "warmup_no_divergences": true,
+        "verification_finite": true,
+        "verification_endpoint_valid": true,
+        "verification_all_chains_moved": true,
+        "verification_energy_valid": true,
+        "verification_no_divergences": true,
+        "nomination_passed": true,
+        "fresh_rhat": true
+      },
+      "parity_max": 0.0,
+      "tuning_seconds": 22.364173392998055,
+      "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-04/qualification/exact/tuning/manifest.json",
+      "mean": [
+        -0.013336962632337562,
+        -0.0005291041210966929
+      ],
+      "variance": [
+        1.0105124507401693,
+        1.0031446871373033
+      ],
+      "rhat": {
+        "bulk": [
+          1.000350632078938,
+          1.000188346236894
+        ],
+        "folded": [
+          1.0001438066336032,
+          1.000166984571787
+        ],
+        "maximum": [
+          1.000350632078938,
+          1.000188346236894
+        ]
+      },
+      "mean_diagnostics": {
+        "pooled_mean": [
+          -0.013336962632337556,
+          -0.000529104121096692
+        ],
+        "posterior_sd": [
+          1.0053053170991104,
+          1.0016337134398436
+        ],
+        "pooled_mean_ess": [
+          4813.16564233763,
+          4228.553320809873
+        ],
+        "mean_mcse": [
+          0.014490473453570239,
+          0.015403273547666463
+        ],
+        "mcse_sd_ratio": [
+          0.014414002599114534,
+          0.01537815005723802
+        ],
+        "per_chain_mean": [
+          [
+            -0.010618489380436332,
+            -0.00026732439453858257
+          ],
+          [
+            -0.02367543631257482,
+            0.03515689431368826
+          ],
+          [
+            0.0038183637055369743,
+            -0.04816331888964004
+          ],
+          [
+            -0.02287228854187606,
+            0.011157332486103596
+          ]
+        ],
+        "per_chain_sd": [
+          [
+            0.9896498487657761,
+            1.0095364173995727
+          ],
+          [
+            1.0218573064319587,
+            1.0057665357163355
+          ],
+          [
+            1.014555446145848,
+            1.0092843634356166
+          ],
+          [
+            0.9953140991831476,
+            0.9805712733636919
+          ]
+        ],
+        "per_chain_ess": [
+          [
+            1135.3868141489938,
+            1149.0642033374095
+          ],
+          [
+            1255.6828520330307,
+            826.4899206116481
+          ],
+          [
+            1221.339915226553,
+            904.1430195596671
+          ],
+          [
+            1176.4191840171181,
+            1130.0860965848108
+          ]
+        ],
+        "per_chain_mean_mcse": [
+          [
+            0.029370385002230645,
+            0.02978172453836115
+          ],
+          [
+            0.02883701297418576,
+            0.03498471986631477
+          ],
+          [
+            0.02903070022062281,
+            0.03356564353353849
+          ],
+          [
+            0.029018777137125557,
+            0.029169124904782035
+          ]
+        ]
+      },
+      "selected_step": 1.2563496411101254,
+      "selected_L": 1,
+      "artifact_and_continuation_checks": true
+    },
+    "imperfect_rotational": {
+      "passed": true,
+      "checks": {
+        "warmup_finite": true,
+        "warmup_endpoint_valid": true,
+        "warmup_all_chains_moved": true,
+        "warmup_energy_valid": true,
+        "warmup_no_divergences": true,
+        "verification_finite": true,
+        "verification_endpoint_valid": true,
+        "verification_all_chains_moved": true,
+        "verification_energy_valid": true,
+        "verification_no_divergences": true,
+        "nomination_passed": true,
+        "fresh_rhat": true
+      },
+      "parity_max": 0.0,
+      "tuning_seconds": 21.695559022016823,
+      "manifest": "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-all-models-20260919-tuner-repair-04/qualification/imperfect_rotational/tuning/manifest.json",
+      "mean": [
+        -0.011498117473218977,
+        0.007336306811265559
+      ],
+      "variance": [
+        1.0058588510074005,
+        0.9921052552948838
+      ],
+      "rhat": {
+        "bulk": [
+          1.0009284131539353,
+          1.0002674850376951
+        ],
+        "folded": [
+          1.000249424628742,
+          1.0005228010204248
+        ],
+        "maximum": [
+          1.0009284131539353,
+          1.0005228010204248
+        ]
+      },
+      "mean_diagnostics": {
+        "pooled_mean": [
+          -0.011498117473218971,
+          0.007336306811265555
+        ],
+        "posterior_sd": [
+          1.0029878359592832,
+          0.9961070645043023
+        ],
+        "pooled_mean_ess": [
+          3813.6516226402073,
+          3785.240860412274
+        ],
+        "mean_mcse": [
+          0.016241463377105993,
+          0.01619046269933953
+        ],
+        "mcse_sd_ratio": [
+          0.016193081107082664,
+          0.0162537374507995
+        ],
+        "per_chain_mean": [
+          [
+            -0.0135078458361399,
+            0.012738770596347624
+          ],
+          [
+            -0.01060108705982272,
+            0.048658266393409394
+          ],
+          [
+            0.016670467044037036,
+            -0.047125947714522554
+          ],
+          [
+            -0.03855400404095029,
+            0.015074137969827777
+          ]
+        ],
+        "per_chain_sd": [
+          [
+            0.9787286535590489,
+            1.0178774025174127
+          ],
+          [
+            1.0042404164752483,
+            0.9969363908988466
+          ],
+          [
+            1.0161946552939025,
+            0.9900969029485717
+          ],
+          [
+            1.0123521422374988,
+            0.9774419104526049
+          ]
+        ],
+        "per_chain_ess": [
+          [
+            947.6752630638813,
+            1143.9771299475747
+          ],
+          [
+            831.3656393369224,
+            778.5891327977671
+          ],
+          [
+            932.6567121131906,
+            1019.5493604543225
+          ],
+          [
+            938.648801343345,
+            1103.8320124958548
+          ]
+        ],
+        "per_chain_mean_mcse": [
+          [
+            0.031793074725294926,
+            0.03009447710071795
+          ],
+          [
+            0.03482905253956059,
+            0.03572837634171523
+          ],
+          [
+            0.033274841568806855,
+            0.031007987032682864
+          ],
+          [
+            0.033043043435454444,
+            0.029419782938306223
+          ]
+        ]
+      },
+      "selected_step": 1.2067436435033696,
+      "selected_L": 1,
+      "artifact_and_continuation_checks": true
+    }
+  },
+  "jit_compile": true,
+  "purpose": "public tuner qualification; no model inference claim",
+  "allocator": {
+    "current": 685824,
+    "peak": 3783936
+  }
+}

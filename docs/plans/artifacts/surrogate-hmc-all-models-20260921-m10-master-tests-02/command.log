@@ -1,0 +1,147 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.0.2, pluggy-1.6.0 -- /home/chakwong/anaconda3/envs/tftwogpu/bin/python
+cachedir: .pytest_cache
+rootdir: /home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917
+configfile: pytest.ini
+plugins: cov-7.1.0, anyio-4.14.2
+collecting ... collected 57 items
+
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_retry_charges_standalone_master_and_test_costs_once PASSED [  1%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_scientific_failure_is_not_an_infrastructure_retry PASSED [  3%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_reusing_preparation_preserves_dependency_execution PASSED [  5%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_master_selects_cpu_stage_without_posterior_promotion PASSED [  7%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_consumer_accounting_combines_standalone_and_mixed_master_once PASSED [  8%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_consumer_reuse_rejects_missing_check_and_source_drift PASSED [ 10%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_master_reuses_mechanics_without_sampling PASSED [ 12%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_posterior_budget_counts_mixed_children_once_and_tests_only_in_family PASSED [ 14%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_posterior_reuse_checks_precision_source_data_and_grids PASSED [ 15%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_master_reuses_posterior_without_hmc_authority PASSED [ 17%]
+tests/test_surrogate_hmc_nonlinear_master.py::test_m10_qualified_history_checks_numerical_source_and_data PASSED [ 19%]
+tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected[nan-1] PASSED [ 21%]
+tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected[1-inf] PASSED [ 22%]
+tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected[-1-2] PASSED [ 24%]
+tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected[226801-2] PASSED [ 26%]
+tests/test_surrogate_hmc_program.py::test_invalid_or_expanded_budget_rejected[1-54001] PASSED [ 28%]
+tests/test_surrogate_hmc_program.py::test_budget_reservation_prevents_launch PASSED [ 29%]
+tests/test_surrogate_hmc_program.py::test_measured_cpu_allowance_has_its_own_watchdog PASSED [ 31%]
+tests/test_surrogate_hmc_program.py::test_retained_launch_requires_verified_B_but_A_is_optional PASSED [ 33%]
+tests/test_surrogate_hmc_program.py::test_retained_forecast_limits_are_checked_before_dry_run_or_execution PASSED [ 35%]
+tests/test_surrogate_hmc_program.py::test_finite_target_requires_its_own_tuning_and_forecast PASSED [ 36%]
+tests/test_surrogate_hmc_program.py::test_C_dry_run_wires_frozen_references_and_own_tuning PASSED [ 38%]
+tests/test_surrogate_hmc_program.py::test_posterior_scope_distinguishes_attempt_from_replicate_and_mechanics PASSED [ 40%]
+tests/test_surrogate_hmc_program.py::test_cumulative_budget_uses_incremental_charges_once PASSED [ 42%]
+tests/test_surrogate_hmc_program.py::test_launch_error_preserves_terminal_manifest_and_charge PASSED [ 43%]
+tests/test_surrogate_hmc_program.py::test_failed_and_timed_out_work_is_charged_and_preserved PASSED [ 45%]
+tests/test_surrogate_hmc_program.py::test_dry_run_has_no_framework_import_or_files PASSED [ 47%]
+tests/test_surrogate_hmc_program.py::test_all_minimum_families_remain_visible PASSED [ 49%]
+tests/test_surrogate_hmc_program.py::test_reference_stage_is_cpu_only_and_cannot_launch_sampling PASSED [ 50%]
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient PASSED [ 52%]
+tests/test_surrogate_hmc_program.py::test_bounded_prior_chart_and_predictive_probability_are_same_law PASSED [ 54%]
+tests/test_surrogate_hmc_program.py::test_consumer_resolves_to_complete_canonical_callable PASSED [ 56%]
+tests/test_surrogate_hmc_dependency_execution.py::test_failed_B_tuning_preserves_independent_C_execution PASSED [ 57%]
+tests/test_surrogate_hmc_dependency_execution.py::test_shared_prerequisite_failure_blocks_both_descendants PASSED [ 59%]
+tests/test_surrogate_hmc_dependency_execution.py::test_local_forecast_failure_does_not_cancel_other_comparison PASSED [ 61%]
+tests/test_surrogate_hmc_dependency_execution.py::test_interrupt_never_launches_another_branch PASSED [ 63%]
+tests/test_surrogate_hmc_dependency_execution.py::test_invalid_dependency_graph_rejected_before_launch[jobs0] PASSED [ 64%]
+tests/test_surrogate_hmc_dependency_execution.py::test_invalid_dependency_graph_rejected_before_launch[jobs1] PASSED [ 66%]
+tests/test_surrogate_hmc_dependency_execution.py::test_invalid_dependency_graph_rejected_before_launch[jobs2] PASSED [ 68%]
+tests/test_surrogate_hmc_dependency_execution.py::test_master_all_continues_C_after_B_failure PASSED [ 70%]
+tests/test_surrogate_hmc_dependency_execution.py::test_standalone_forecast_failure_preserves_a_reviewable_result PASSED [ 71%]
+tests/test_surrogate_hmc_dependency_execution.py::test_LG2_all_executes_its_own_reference_and_consumer PASSED [ 73%]
+tests/test_surrogate_hmc_dependency_execution.py::test_wrong_stage_scope_rejected[P2-tune-LG2] PASSED [ 75%]
+tests/test_surrogate_hmc_dependency_execution.py::test_wrong_stage_scope_rejected[P3-LG2-reference-LG1] PASSED [ 77%]
+tests/test_surrogate_hmc_dependency_execution.py::test_wrong_stage_scope_rejected[P1-LG2] PASSED [ 78%]
+tests/test_surrogate_hmc_dependency_execution.py::test_wrong_stage_scope_rejected[P3-SV20-reference-LG2] PASSED [ 80%]
+tests/test_surrogate_hmc_dependency_execution.py::test_wrong_stage_scope_rejected[P2-tune-SV20] PASSED [ 82%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[reference-QUALIFIED_LIKELIHOOD_PROBES-False] PASSED [ 84%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_reference_result_does_not_promote_hmc[posterior-QUALIFIED_MODEL_POSTERIOR_REFERENCE-True] PASSED [ 85%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_retry_consumes_original_allocation PASSED [ 87%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_counts_tests_mixed_runs_and_current_jobs PASSED [ 89%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun PASSED [ 91%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_failed_reference_blocks_only_its_posterior PASSED [ 92%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_consumer_mechanics_never_promotes_retained_inference PASSED [ 94%]
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_control_cost_deferral_preserves_qualified_references PASSED [ 96%]
+tests/test_surrogate_hmc_dependency_execution.py::test_failed_LG1_does_not_cancel_LG2_or_promote_qualification PASSED [ 98%]
+tests/test_surrogate_hmc_dependency_execution.py::test_all_merges_C_outcomes_without_erasing_B_result PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if (distutils.version.LooseVersion(tf.__version__) <
+
+tests/test_surrogate_hmc_program.py::test_stationary_kalman_matches_dense_observation_law_and_total_gradient
+  /home/chakwong/anaconda3/envs/tftwogpu/lib/python3.11/site-packages/tensorflow_probability/python/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    distutils.version.LooseVersion(required_tensorflow_version)):
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  bayesfilter/highdim/stochastic_density_training.py:561: DeprecationWarning: invalid escape sequence '\('
+    """Return a guide-only loss for initializing the square-root TT.
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:168: DeprecationWarning: invalid escape sequence '\s'
+    ax1.set_ylabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/bonus1b.py:176: DeprecationWarning: invalid escape sequence '\s'
+    ax2.set_xlabel('$\sigma_v^2$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:116: DeprecationWarning: invalid escape sequence '\p'
+    ax1.errorbar(eps_p, rmse_p, yerr=std_p, fmt='-o', color='blue', capsize=5, label='RMSE (Bias $\pm$ Var)')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:117: DeprecationWarning: invalid escape sequence '\e'
+    ax1.set_xscale('log'); ax1.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax1.set_ylabel("RMSE", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:121: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_xscale('log'); ax2.set_xlabel("$\epsilon$ (Regularization)", fontsize=12); ax2.set_ylabel("Execution Time (ms)", fontsize=12)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_DPF_EOT_test.py:122: DeprecationWarning: invalid escape sequence '\e'
+    ax2.set_title("Computational Speed vs. $\epsilon$", fontsize=14); ax2.grid(True, alpha=0.3)
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:103: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, b_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:104: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].plot(lambdas, lambdas, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:106: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,0].set_xlabel('$\lambda$'); axes[0,0].set_ylabel('$\\beta(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:113: DeprecationWarning: invalid escape sequence '\l'
+    axes[0,1].set_xlabel('$\lambda$'); axes[0,1].set_ylabel('$e = \\beta^*(\lambda) - \lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:119: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,0].set_xlabel('$\lambda$'); axes[1,0].set_ylabel('$u^*$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:123: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_opt, 'r-', linewidth=2, label='optimal $\\beta^*(\lambda)$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:124: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].plot(lambdas, c_lin, 'b--', label='$\\beta(\lambda)=\lambda$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_dai22_experiments.py:126: DeprecationWarning: invalid escape sequence '\l'
+    axes[1,1].set_xlabel('$\lambda$'); axes[1,1].set_ylabel('$R_{stiff}$')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/experiments/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+tests/test_surrogate_hmc_dependency_execution.py::test_sv20_family_budget_blocks_cross_stage_overrun
+  experiments/student_dpf_baselines/vendor/2026MLCOE/old_pt1_submission/scripts/run_singularity_test.py:112: DeprecationWarning: invalid escape sequence '\k'
+    ax1.set_ylabel('Condition Number $\kappa(S)$', color='red')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================= 57 passed, 21 warnings in 28.74s =======================

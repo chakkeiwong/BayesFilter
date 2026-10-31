@@ -1,0 +1,38 @@
+{
+  "schema": "bayesfilter.surrogate_hmc_five_model_next_phase.v1",
+  "updated_utc": "2026-10-10T17:34:49.764182+00:00",
+  "current_phase": "N4032_FP32_FORCE_READINESS",
+  "remaining_force_preflights": [],
+  "passed_force_readiness": [
+    "lgssm",
+    "ksc",
+    "predator_prey",
+    "sir_d18"
+  ],
+  "failed_or_unresolved": {
+    "range_bearing": {
+      "status": "WORKER_ERROR",
+      "command": [
+        "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+        "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/run_surrogate_hmc_five_model_master.py",
+        "worker",
+        "--model",
+        "range_bearing",
+        "--output",
+        "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-01/range_bearing"
+      ],
+      "started_utc": "2026-10-10T17:34:45.432048+00:00",
+      "returncode": 1,
+      "finished_utc": "2026-10-10T17:34:49.763363+00:00",
+      "wall_seconds": 4.33116414793767,
+      "log": "docs/plans/artifacts/surrogate-hmc-five-model-n4032-20261011-01/range_bearing.log"
+    }
+  },
+  "hmc_sampling_started": false,
+  "next_action": "Audit and implement independent endpoints, priors and charts; retune every exact FP32/N4032 scope, cost the public position-field tuner, then run cumulative HMC within a declared inference budget",
+  "nonclaims": [
+    "no HMC sampling or posterior result from this phase",
+    "saved controls are not exact-scope tuning artifacts",
+    "a passing force preflight does not establish score accuracy"
+  ]
+}

@@ -1,0 +1,82 @@
+2026-09-17 01:45:34.459634: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1789580734.476052  147507 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1789580734.480982  147507 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1789580734.495051  147507 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580734.495080  147507 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580734.495085  147507 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1789580734.495088  147507 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-17 01:45:34.498961: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE4.1 SSE4.2 AVX AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+/home/ubuntu/miniforge3/envs/tf-gpu/lib/python3.11/site-packages/h5py/__init__.py:36: UserWarning: h5py is running against HDF5 2.2.0 when it was built against 2.1.0, this may cause problems
+  _warn(("h5py is running against HDF5 {0} when it was built against {1}, "
+I0000 00:00:1789580737.373102  147507 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 46565 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4090, pci bus id: 0000:81:00.0, compute capability: 8.9
+I0000 00:00:1789580741.324438  147507 service.cc:152] XLA service 0x616fd0066e10 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1789580741.324513  147507 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4090, Compute Capability 8.9
+2026-09-17 01:45:41.360906: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+I0000 00:00:1789580741.894297  147507 cuda_dnn.cc:529] Loaded cuDNN version 91002
+I0000 00:00:1789580743.722231  147507 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{
+  "fixture_name": "rectangular",
+  "jit_compile": true,
+  "wall_seconds": 13.106091975998424,
+  "finite": true,
+  "trace_count": 1,
+  "stages": {
+    "before_tf_import": {
+      "VmHWM_kib": 19060,
+      "VmRSS_kib": 19060,
+      "resource_ru_maxrss_kib": 18432
+    },
+    "after_tf_import_before_fixture": {
+      "VmHWM_kib": 708632,
+      "VmRSS_kib": 708632,
+      "resource_ru_maxrss_kib": 702464
+    },
+    "after_fixture_and_inputs": {
+      "VmHWM_kib": 898996,
+      "VmRSS_kib": 898996,
+      "resource_ru_maxrss_kib": 876544,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 7168
+      }
+    },
+    "after_trace": {
+      "VmHWM_kib": 912776,
+      "VmRSS_kib": 912776,
+      "resource_ru_maxrss_kib": 888832,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 4096
+      }
+    },
+    "after_cold_outputs_live": {
+      "VmHWM_kib": 1052828,
+      "VmRSS_kib": 1052828,
+      "resource_ru_maxrss_kib": 1023412,
+      "gpu_allocator_bytes": {
+        "current": 6912,
+        "peak": 61696
+      }
+    },
+    "after_cold_outputs_released": {
+      "VmHWM_kib": 1052828,
+      "VmRSS_kib": 1052828,
+      "resource_ru_maxrss_kib": 1023412,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 61696
+      }
+    },
+    "after_warm_outputs_released": {
+      "VmHWM_kib": 1052828,
+      "VmRSS_kib": 1052828,
+      "resource_ru_maxrss_kib": 1023412,
+      "gpu_allocator_bytes": {
+        "current": 4096,
+        "peak": 61696
+      }
+    }
+  }
+}

@@ -1,0 +1,701 @@
+{
+  "controls": {
+    "coordinate_cap": 16000.0,
+    "coordinate_cap_power": 8,
+    "correction_lm_damping": 1e-06,
+    "correction_lm_scale_floor": 1e-09,
+    "correction_steps": 2,
+    "correction_strength": 0.2,
+    "correction_trust_radius": 100.0,
+    "pairwise_rms_cap": 2000.0,
+    "pairwise_steps": 2,
+    "pairwise_strength": 0.02,
+    "reset_balance_steps": 8,
+    "reset_epsilon": 2.0,
+    "reset_policy": "contract_e",
+    "reset_ridge": 1e-08,
+    "reset_sinkhorn_steps": 8,
+    "substeps": 10
+  },
+  "data": {
+    "data_seed": 1704,
+    "model": {
+      "A": [
+        [
+          1.0,
+          0.0,
+          0.1,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.1
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "P0": [
+        [
+          0.04,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.04,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.01,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.01
+        ]
+      ],
+      "Q": [
+        [
+          0.0015,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0015,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0008,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0008
+        ]
+      ],
+      "R": [
+        [
+          0.0144,
+          0.0
+        ],
+        [
+          0.0,
+          0.0016
+        ]
+      ],
+      "backend": "tensorflow_tensorflow_probability",
+      "fixture_generation_seed": 1704,
+      "horizon": 20,
+      "initial_distribution": "x_0 ~ Normal(m0, P0)",
+      "m0": [
+        1.2,
+        0.7,
+        0.18,
+        -0.06
+      ],
+      "model_checksum": "d7ffac6570279076ba756dbf41d12f222c84001ea9799c4aef223e4f8853192b",
+      "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+      "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+      "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+      "reference_status": "UKF is approximate for this nonlinear fixture.",
+      "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+    },
+    "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+    "observations": [
+      [
+        1.3368110656738281,
+        0.24776896834373474
+      ],
+      [
+        1.3029042482376099,
+        0.2758919894695282
+      ],
+      [
+        1.4207327365875244,
+        0.25207680463790894
+      ],
+      [
+        1.21327805519104,
+        0.36186134815216064
+      ],
+      [
+        1.2605547904968262,
+        0.26785850524902344
+      ],
+      [
+        1.5169965028762817,
+        0.3681735694408417
+      ],
+      [
+        1.405153751373291,
+        0.3793402314186096
+      ],
+      [
+        1.2575725317001343,
+        0.3957556188106537
+      ],
+      [
+        1.2257871627807617,
+        0.3343932330608368
+      ],
+      [
+        1.4685447216033936,
+        0.3325967490673065
+      ],
+      [
+        1.45658540725708,
+        0.24785302579402924
+      ],
+      [
+        1.3681800365447998,
+        0.2198791205883026
+      ],
+      [
+        1.2209118604660034,
+        0.2701336145401001
+      ],
+      [
+        1.397531509399414,
+        0.21269141137599945
+      ],
+      [
+        1.3679548501968384,
+        0.19858577847480774
+      ],
+      [
+        1.3185367584228516,
+        0.1753966510295868
+      ],
+      [
+        1.2873414754867554,
+        0.15357811748981476
+      ],
+      [
+        1.2877130508422852,
+        0.18040019273757935
+      ],
+      [
+        1.6203393936157227,
+        0.18553008139133453
+      ],
+      [
+        1.513620138168335,
+        0.07209935784339905
+      ]
+    ]
+  },
+  "environment": {
+    "cuda_visible_devices": "-1",
+    "executable": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "gpu_intentionally_hidden": true,
+    "gpu_memory_policy": {
+      "all_physical_devices_memory_growth": true,
+      "configured_before_logical_device_initialization": true,
+      "full_device_preallocation_disabled": true,
+      "logical_device_memory_limit_required_for_hard_cap": true,
+      "memory_growth_is_hard_memory_cap": false,
+      "mode": "memory_growth",
+      "physical_devices": [],
+      "schema": "bayesfilter.tensorflow.gpu_memory_policy.v1",
+      "tf_force_gpu_allow_growth": "true"
+    },
+    "jit_compile": false,
+    "physical_gpus": [],
+    "python": "3.11.15 (main, Jun 11 2026, 15:20:16) [GCC 14.3.0]",
+    "tensorflow": "2.20.0-dev0+selfbuilt",
+    "tf32": true
+  },
+  "finite_difference_steps": [
+    0.001,
+    0.0003,
+    0.0001
+  ],
+  "geometry": {
+    "actual_runtime_adapter_parity_passed": true,
+    "center": [
+      0.046167964725076324,
+      -0.08542755458502702
+    ],
+    "covariance": [
+      [
+        0.0973912153031943,
+        -0.010875044869704531
+      ],
+      [
+        -0.010875044869704531,
+        0.06986348780889506
+      ]
+    ],
+    "factor": [
+      [
+        0.3120756563770944,
+        0.0
+      ],
+      [
+        -0.03484746293880657,
+        0.2620098130521519
+      ]
+    ],
+    "factor_covariance_max_abs_error": 1.3877787807814457e-17,
+    "forward_inverse_max_abs_error": 1.1102230246251565e-16,
+    "inverse_definition": "z = solve_lower_triangular(factor, theta - center)",
+    "metric_eigenvalues": [
+      0.0660856713010581,
+      0.10116903181103128
+    ],
+    "theta_equals_center_plus_factor_times_z": true
+  },
+  "model_coefficients_rounded_fp32": {
+    "A": [
+      [
+        1.0,
+        0.0,
+        0.10000000149011612,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        0.10000000149011612
+      ],
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "Q": [
+      [
+        0.001500000013038516,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.001500000013038516,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0007999999797903001,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0007999999797903001
+      ]
+    ],
+    "R": [
+      [
+        0.014399999752640724,
+        0.0
+      ],
+      [
+        0.0,
+        0.0015999999595806003
+      ]
+    ]
+  },
+  "probes": [
+    {
+      "chain": 1,
+      "draw": 9808,
+      "label": "visited_Q_p01",
+      "original_theta": [
+        -0.7327208731963453,
+        -0.014655080871436424
+      ],
+      "theta": [
+        -0.7327208518981934,
+        -0.014655080623924732
+      ]
+    },
+    {
+      "chain": 1,
+      "draw": 11416,
+      "label": "visited_Q_p05",
+      "original_theta": [
+        -0.5986697705465682,
+        0.003298072929603907
+      ],
+      "theta": [
+        -0.5986697673797607,
+        0.0032980728428810835
+      ]
+    },
+    {
+      "chain": 1,
+      "draw": 11927,
+      "label": "visited_Q_p25",
+      "original_theta": [
+        -0.15646339410150623,
+        -0.10568612986639568
+      ],
+      "theta": [
+        -0.1564633995294571,
+        -0.10568612813949585
+      ]
+    },
+    {
+      "chain": 0,
+      "draw": 2516,
+      "label": "visited_Q_p50",
+      "original_theta": [
+        0.04308930667289363,
+        -0.5293658007679303
+      ],
+      "theta": [
+        0.043089307844638824,
+        -0.5293657779693604
+      ]
+    },
+    {
+      "chain": 0,
+      "draw": 1093,
+      "label": "visited_Q_p75",
+      "original_theta": [
+        0.24176948429314188,
+        -0.10332287487632236
+      ],
+      "theta": [
+        0.241769477725029,
+        -0.10332287847995758
+      ]
+    },
+    {
+      "chain": 2,
+      "draw": 6798,
+      "label": "visited_Q_p95",
+      "original_theta": [
+        0.5165581134244913,
+        -0.23203172120396548
+      ],
+      "theta": [
+        0.5165581107139587,
+        -0.2320317178964615
+      ]
+    },
+    {
+      "chain": 0,
+      "draw": 3283,
+      "label": "visited_Q_p99",
+      "original_theta": [
+        0.7049425937520974,
+        -0.19700589887250108
+      ],
+      "theta": [
+        0.7049425840377808,
+        -0.19700589776039124
+      ]
+    },
+    {
+      "chain": null,
+      "draw": null,
+      "label": "visited_pooled_mean",
+      "original_theta": [
+        0.03026768188291786,
+        -0.12992246174582
+      ],
+      "theta": [
+        0.030267681926488876,
+        -0.12992246448993683
+      ]
+    }
+  ],
+  "source_files": {
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-closure-20260922-m13-materiality-repair-01/m13-materiality-repair/selection.json": "2e95a2d75106bf5d7f5d8a353d828e37b8e17aceba676f98b521f5b6edd6f312",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-reclassified-20261002-02/all-postwarmup-samples.tfbin": "1fef58b4e04aa4f69dbc8479161e8fafe8f856b4c4e44681e10d60d8e04dc9cc",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-sequential-48h-03/m13-public-tuning-02/data.json": "c4d460a239da426b5ec761a1758215532ee29b602e8e03c3f5dbdd0dda6dec78",
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/docs/plans/artifacts/surrogate-hmc-m13-whitening-check-20261002-02/report.json": "3b377a41428e8177b4b5f7ff439043a064e52c6ea46f70b1f3a1c9b3f17d5f4f"
+  },
+  "target_manifest": {
+    "alias_limit_role": "numerical_validity_not_parameter_support",
+    "alias_policy": {
+      "aliases_each_side": 4,
+      "maximum_conditional_sigma": 3.141592653589793,
+      "omitted_mass_upper_bound": 2.2571768119076845e-19,
+      "tail_mass_tolerance": 1e-14
+    },
+    "chunk_policy": {
+      "col_blocks": 2,
+      "col_chunk_size": 2048,
+      "num_particles": 4096,
+      "policy_id": "dpf_transport_exact_divisor_cap3000_v1",
+      "row_blocks": 2,
+      "row_chunk_size": 2048
+    },
+    "control_status": "diagnostic_warm_start_not_scope_tuned",
+    "design_partition": 9,
+    "draw_design": "scrambled_halton_gaussian_FP32_rounded_once",
+    "dtype": "float32",
+    "fixture": {
+      "A": [
+        [
+          1.0,
+          0.0,
+          0.1,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.1
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "P0": [
+        [
+          0.04,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.04,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.01,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.01
+        ]
+      ],
+      "Q": [
+        [
+          0.0015,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0015,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0008,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0008
+        ]
+      ],
+      "R": [
+        [
+          0.0144,
+          0.0
+        ],
+        [
+          0.0,
+          0.0016
+        ]
+      ],
+      "backend": "tensorflow_tensorflow_probability",
+      "fixture_generation_seed": 1704,
+      "horizon": 20,
+      "initial_distribution": "x_0 ~ Normal(m0, P0)",
+      "m0": [
+        1.2,
+        0.7,
+        0.18,
+        -0.06
+      ],
+      "model_checksum": "d7ffac6570279076ba756dbf41d12f222c84001ea9799c4aef223e4f8853192b",
+      "model_id": "range_bearing_gaussian_tf_tfp_moderate",
+      "observation_checksum": "ee82edcae22d7ae3250fb49c9d33f5916dd1a4447d8a97fc34bbe22fe3275f88",
+      "observation_equation": "y_t = [sqrt(px^2+py^2), atan2(py,px)] + r_t; angular component modulo 2*pi; r_t ~ N(0,R)",
+      "reference_status": "UKF is approximate for this nonlinear fixture.",
+      "state_equation": "x_t = A x_{t-1} + q_t, q_t ~ Normal(0, Q)"
+    },
+    "horizon": 20,
+    "innovation_dimension": 4,
+    "input_sha256": {
+      "initial_covariances": "e1b2f42f9534eb4b3cbbcba20d6ce609e23ac0a2ff6b71ccd8bac00be440444b",
+      "initial_states": "a17d8cde223cdcd434c627e0e7de5c81166c4f397d430c26a182dd61fa13a7a0",
+      "noises": "9ee39bdb00e3ee31c265b6506eee313074d099445f7a89b717e222ab9362a273",
+      "observations": "5b6d09af81ff35618f10880dbcf987889266f8280cdfc02d838e984bca132c44",
+      "reset_design": "e1144573f3a3048334e2c02ba8ab20ae33462d9e4a17e0d931f9323f6aec90af"
+    },
+    "jit_compile": true,
+    "model_id": "M13",
+    "observation_dimension": 2,
+    "observation_law": "wrapped_correlated_gaussian",
+    "parameter_dimension": 2,
+    "parameterization": "Q=Q0*exp(2*lambda_Q); R=R0*exp(2*lambda_R)",
+    "particle_count": 4096,
+    "prior": null,
+    "quantity": "finite_canonical_log_likelihood_only",
+    "reset_contract_id": "contract_e_chol_v1",
+    "route": "canonical_batch_fused_value_score",
+    "score_engine": "analytical_recursive_all_parameter_dependencies",
+    "seeds": {
+      "20": [
+        965417124,
+        20
+      ],
+      "22": [
+        965417124,
+        22
+      ]
+    },
+    "settings": {
+      "coordinate_cap": 16000.0,
+      "coordinate_cap_power": 8,
+      "correction_lm_damping": 1e-06,
+      "correction_lm_scale_floor": 1e-09,
+      "correction_steps": 2,
+      "correction_strength": 0.2,
+      "correction_trust_radius": 100.0,
+      "pairwise_rms_cap": 2000.0,
+      "pairwise_steps": 2,
+      "pairwise_strength": 0.02,
+      "reset_balance_steps": 8,
+      "reset_epsilon": 2.0,
+      "reset_policy": "contract_e",
+      "reset_ridge": 1e-08,
+      "reset_sinkhorn_steps": 8,
+      "substeps": 10
+    },
+    "source_sha256": {
+      "bayesfilter/highdim/gaussian_cloud_designs_tf.py": "5665e7db66750507a066c22345cde9ea623b721c4db3e01a1e92795e6550adb0",
+      "bayesfilter/highdim/genut_shape_lm_tf.py": "87080433a2ed11f3052c98af48793e2677e2ce7939da14af830b01cc50205486",
+      "bayesfilter/highdim/higher_moment_contract_e.py": "efdd6b0320f293ec182c0c07f46863cfa28c71ad43ca2d04922add54ffe6f0f2",
+      "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "36e7af67bc14641e7bd1605aef730b52e773020d30713288964821feb40b2eda",
+      "bayesfilter/highdim/ledh_canonical_reset_score_tf.py": "33402e410697009ee76d2d60c8ebbd26499779214491592eb5c9bdd6d079bb0f",
+      "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "0f7e4dc02eab9bc9510a63967a4c5e0ea8257a86ea2fb3702959485513caafec",
+      "bayesfilter/highdim/ledh_canonical_score_tf.py": "4e744219dfd1f9ed66c959143d2729d482987adee1eaa895075a902e3336c9d8",
+      "bayesfilter/highdim/ledh_contract_e_reset_tf.py": "09fe63474db9a5fe190d7357323c44ce56539c7c2b72239dd827758c6f69be1f",
+      "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+      "bayesfilter/highdim/ledh_failure_status_tf.py": "732a819ba09593637aedf0cd62182cbd075045918fb6662150d1093f26d0955d",
+      "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+      "bayesfilter/highdim/ledh_numerical_safety_tf.py": "6607ac1ec79d9ed946b5e551caa6fe6924652015c8885a7951ed5b513d464c42",
+      "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+      "bayesfilter/highdim/ledh_range_bearing_target_tf.py": "42544dec34ce1f25744095fdb17b4cadee9ab6605f43322436afd176d6f6ecef",
+      "bayesfilter/highdim/ledh_small_matrix_tf.py": "779aa4aee89c40a116ef9c48712faff7e5fff9e6f175ba534f73495b6e7db811",
+      "bayesfilter/highdim/ledh_structural_innovation_tf.py": "51c263938677011c15ee07aa611a6dfae743ca6646b96d4df759e5740f1f6e48",
+      "bayesfilter/highdim/ledh_ukf_lifecycle_tf.py": "df9ecd21d99826107a812aa5557f1e415ddf4e53b5c06721397e8b95c8067b20",
+      "bayesfilter/highdim/ledh_unified_correction_tf.py": "3d6dc05a04105384429e84594a8a9538391d9b969558e6a2e86504d163741774",
+      "bayesfilter/highdim/ledh_unified_reset_tf.py": "15ab1a6a2b2d005d43f99a55701fea56102e2fc945efcf87a075eaffde8f770b",
+      "bayesfilter/highdim/transport_chunk_policy.py": "24434d7f2d731cc5cc57442edf3ab1bd237230d8191d010a286ba884a6b91d7c",
+      "bayesfilter/wrapped_gaussian_tf.py": "7a8bc19fb48b9ba1e91919b7e8bf80591b03cce0d0bd30947c9ba9fd972dcb1c"
+    },
+    "state_dimension": 4,
+    "tf32": true,
+    "transition_before_observation": true
+  },
+  "tensors": {
+    "initial_covariances": {
+      "dtype": "float32",
+      "path": "inputs/initial_covariances.tfbin",
+      "sha256": "e1b2f42f9534eb4b3cbbcba20d6ce609e23ac0a2ff6b71ccd8bac00be440444b",
+      "shape": [
+        4096,
+        4,
+        4
+      ]
+    },
+    "initial_states": {
+      "dtype": "float32",
+      "path": "inputs/initial_states.tfbin",
+      "sha256": "a17d8cde223cdcd434c627e0e7de5c81166c4f397d430c26a182dd61fa13a7a0",
+      "shape": [
+        4096,
+        4
+      ]
+    },
+    "noises": {
+      "dtype": "float32",
+      "path": "inputs/noises.tfbin",
+      "sha256": "9ee39bdb00e3ee31c265b6506eee313074d099445f7a89b717e222ab9362a273",
+      "shape": [
+        20,
+        4096,
+        4
+      ]
+    },
+    "observations": {
+      "dtype": "float32",
+      "path": "inputs/observations.tfbin",
+      "sha256": "5b6d09af81ff35618f10880dbcf987889266f8280cdfc02d838e984bca132c44",
+      "shape": [
+        20,
+        2
+      ]
+    },
+    "reset_design": {
+      "dtype": "float32",
+      "path": "inputs/reset_design.tfbin",
+      "sha256": "e1144573f3a3048334e2c02ba8ab20ae33462d9e4a17e0d931f9323f6aec90af",
+      "shape": [
+        4096,
+        4
+      ]
+    }
+  },
+  "wall_seconds": 6.642124778940342
+}

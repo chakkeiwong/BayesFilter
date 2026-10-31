@@ -1,0 +1,46 @@
+2026-10-24 03:44:09.670020: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:467] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1792784649.677934  811708 cuda_dnn.cc:8579] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+E0000 00:00:1792784649.680551  811708 cuda_blas.cc:1407] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1792784649.688923  811708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792784649.688961  811708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792784649.688962  811708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792784649.688964  811708 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1792784652.889007  811708 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+W0000 00:00:1792784653.710087  811708 gpu_device.cc:2430] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+I0000 00:00:1792784654.275628  811708 gpu_device.cc:2019] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13153 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+I0000 00:00:1792784665.505976  811708 service.cc:152] XLA service 0x7d9fd590 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792784665.506040  811708 service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+I0000 00:00:1792784690.400299  811708 cuda_dnn.cc:529] Loaded cuDNN version 91700
+2026-10-24 03:49:48.897340: E external/local_xla/xla/service/slow_operation_alarm.cc:73] 
+********************************
+[Compiling module a_inference_run_38534__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.603652] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+2026-10-24 03:59:08.061327: E external/local_xla/xla/service/slow_operation_alarm.cc:140] The operation took 11m19.164015757s
+
+********************************
+[Compiling module a_inference_run_38534__XlaMustCompile_true_config_proto_6399381512057327405_executor_type_11160318154034397263_.603652] Very slow compile? If you want to file a bug, run with envvar XLA_FLAGS=--xla_dump_to=/tmp/foo and attach the results.
+********************************
+I0000 00:00:1792785548.066456  811708 device_compiler.h:188] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+HMC sequential {'warmup': 250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1000, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1250, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1500, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 1750, 'verification': 0} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 0} RUNNING {'bulk': [1.0097225088201685, 1.0139212726469633, 1.0097225088201685, 1.0139212726469633], 'folded': [1.0184697734483923, 1.0163329829767176, 1.0188007041412237, 1.0140235871523744], 'maximum': [1.0184697734483923, 1.0163329829767176, 1.0188007041412237, 1.0140235871523744]}
+HMC sequential {'warmup': 2000, 'verification': 250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1000} RUNNING {'bulk': [1.0193898146587634, 1.0249410341881602, 1.0193898146587634, 1.0249410341881602], 'folded': [1.0072897318129477, 1.0093689943442385, 1.0056560557851542, 1.0044696294208202], 'maximum': [1.0193898146587634, 1.0249410341881602, 1.0193898146587634, 1.0249410341881602]}
+HMC sequential {'warmup': 2000, 'verification': 1250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 1750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 2000} RUNNING {'bulk': [1.009076516344702, 1.0129785730600276, 1.009076516344702, 1.0129785730600276], 'folded': [1.0041828709718865, 1.0060072930491706, 1.0034085347207622, 1.003603115836183], 'maximum': [1.009076516344702, 1.0129785730600276, 1.009076516344702, 1.0129785730600276]}
+HMC sequential {'warmup': 2000, 'verification': 2250} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 2500} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 2750} RUNNING None
+HMC sequential {'warmup': 2000, 'verification': 3000} VERIFIED {'bulk': [1.0032357025909373, 1.0027497833219883, 1.0032357025909373, 1.0027497833219883], 'folded': [1.0028098009053905, 1.00223259648968, 1.0025854038518232, 1.0024579698239162], 'maximum': [1.0032357025909373, 1.0027497833219883, 1.0032357025909373, 1.0027497833219883]}
+I0000 00:00:1792795539.155194  811708 service.cc:152] XLA service 0xa71f8920 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1792795539.155270  811708 service.cc:160]   StreamExecutor device (0): Host, Default Version

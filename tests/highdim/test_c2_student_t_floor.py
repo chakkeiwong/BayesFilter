@@ -12,7 +12,7 @@ import numpy as np
 import tensorflow as tf
 
 from bayesfilter.highdim.squared_tt_engine_gaussian_tf import (
-    run_value_filter_branch_axis_gaussian,
+    run_value_filter_branch_axis_gaussian_reference as run_value_filter_branch_axis_gaussian,
     student_t_margin,
     student_t_nu_criterion,
 )
@@ -119,6 +119,7 @@ def test_student_t_floor_lane_parity() -> None:
         adapter, ys, config,
         predictive_moment_hint=ph, initial_moment_hint=ih, defensive_nu=nu,
     )
+    ih,ph = T._prepared_hint_factories(model,ys)
     vx, dx = run_value_filter_branch_axis_gaussian_xla(
         adapter, ys, config,
         predictive_moment_hint=ph, initial_moment_hint=ih, defensive_nu=nu,

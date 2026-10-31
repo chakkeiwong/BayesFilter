@@ -1,0 +1,27 @@
+2026-09-23 01:42:19.859098: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2026-09-23 01:42:19.869005: I external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:469] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790098939.879224  709774 cuda_dnn.cc:8703] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+I0000 00:00:1790098939.882782  709774 cuda_blas.cc:1413] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+W0000 00:00:1790098939.891744  709774 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790098939.891844  709774 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790098939.891851  709774 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+W0000 00:00:1790098939.891853  709774 computation_placer.cc:177] computation placer already registered. Please check linkage and avoid linking the same target more than once.
+2026-09-23 01:42:19.894762: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX512F AVX512_VNNI AVX512_BF16 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+I0000 00:00:1790098941.877902  709774 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13495 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 4080 SUPER, pci bus id: 0000:09:00.0, compute capability: 8.9
+I0000 00:00:1790098941.881703  709774 gpu_device.cc:2018] Created device /job:localhost/replica:0/task:0/device:GPU:1 with 13153 MB memory:  -> device: 1, name: NVIDIA GeForce RTX 5080, pci bus id: 0000:01:00.0, compute capability: 12.0
+2026-09-23 01:42:24.817467: I external/local_xla/xla/service/service.cc:152] XLA service 0x5c47e7beb080 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2026-09-23 01:42:24.817557: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): NVIDIA GeForce RTX 4080 SUPER, Compute Capability 8.9
+2026-09-23 01:42:24.817568: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (1): NVIDIA GeForce RTX 5080, Compute Capability 12.0
+2026-09-23 01:42:24.991173: I tensorflow/compiler/mlir/tensorflow/utils/dump_mlir_util.cc:269] disabling MLIR crash reproducer, set env var `MLIR_CRASH_REPRODUCER_DIRECTORY` to enable.
+I0000 00:00:1790098947.546225  709774 cuda_dnn.cc:529] Loaded cuDNN version 92000
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1790098959.003660  709774 device_compiler.h:196] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+AR2_PROFILE /device:GPU:0 valid True parity True steady [2.136995023000054, 3.266387417097576, 3.2171942059649155]
+I0000 00:00:1790098987.664388  709774 cuda_dnn.cc:529] Loaded cuDNN version 92000
+AR2_PROFILE /device:GPU:1 valid True parity True steady [0.6384672939311713, 0.8390966330189258, 0.8465091550024226]
+2026-09-23 01:43:37.130961: I external/local_xla/xla/service/service.cc:152] XLA service 0x5c480578d540 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2026-09-23 01:43:37.131042: I external/local_xla/xla/service/service.cc:160]   StreamExecutor device (0): Host, Default Version
+AR2_PROFILE /CPU:0 valid True parity True steady [0.02272332599386573, 0.01926268299575895, 0.019333963049575686]
+{"stage": "ar2-profile", "status": "AR2_COST_LOCALIZATION_COMPLETED", "qualified": true}

@@ -1,0 +1,2023 @@
+{
+  "classification": "static_discovery_not_complete_call_chain_audit",
+  "source_sha256": {
+    "bayesfilter/highdim/ledh_numerical_safety_tf.py": "1e25a67676e9630a4f989266139ca6b62194658bc26e72043fa102150f8fb6cf",
+    "bayesfilter/highdim/ledh_canonical_score_tf.py": "ac8a0f9a2a44b051852d0fb1a43bacc94b4996058c12d09222cd8a00cd6da501",
+    "bayesfilter/highdim/ledh_canonical_score_stages_tf.py": "512660d3c52108fa8cea10f5ac103224a8bfee621bb742964a375b233c4263ec",
+    "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py": "910743452e117d01ac4fc317e25800c4c360f5a1f4bdc937ef0b92e9137a9f74",
+    "bayesfilter/highdim/ledh_unified_reset_tf.py": "f02fd425cf6502b99d209433bb91b18a8def80b25d8220a15f3dc5c92896527a",
+    "bayesfilter/highdim/ledh_unified_correction_tf.py": "cc1c314cc7e3d99c02774ef980e504921dba7b0205fcad72986cd1628a0931ba",
+    "bayesfilter/highdim/ledh_exact_block_transport_tf.py": "1b8bb26cc96400cd18800a5a633754367b3e9d3db086798c3677404fc1da8ee0",
+    "bayesfilter/highdim/genut_shape_lm_tf.py": "271896f0a59182008dc7e0947c26e8760b160447395f8cfe90a6ef4b6d33e9be",
+    "bayesfilter/highdim/higher_moment_contract_e.py": "abf0d2ccea0b58b5c16896bd5a56b1f792da0b1f9460f47e8cc73600cacf7cb0",
+    "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py": "4781db22706e5f9e07039d80eaf3a8ef41f353c4849977a8afea308b14e01dfa",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945"
+  },
+  "limitations": [
+    "Does not follow external callees or native kernels.",
+    "Range guards and numerical margins require contextual/executable evidence.",
+    "Inactive diagnostic functions are not automatically active consumers."
+  ],
+  "operations": [
+    {
+      "file": "bayesfilter/highdim/ledh_numerical_safety_tf.py",
+      "line": 49,
+      "function": "<module>.safe_cholesky",
+      "operation": "Div",
+      "expression": "clean / tf.where(scale > 0, scale, tf.ones_like(scale))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_numerical_safety_tf.py",
+      "line": 50,
+      "function": "<module>.safe_cholesky",
+      "operation": "Pow",
+      "expression": "2.0 ** (-52 if matrix.dtype == tf.float64 else -23)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_numerical_safety_tf.py",
+      "line": 54,
+      "function": "<module>.safe_cholesky",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(tf.where(input_valid[...,None,None], matrix, identity))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_numerical_safety_tf.py",
+      "line": 70,
+      "function": "<module>.cholesky_differential",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol, d_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_numerical_safety_tf.py",
+      "line": 71,
+      "function": "<module>.cholesky_differential",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol, tf.linalg.matrix_transpose(left))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 199,
+      "function": "<module>._value_and_analytical_score_impl",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(model.process_covariance, \"process\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 200,
+      "function": "<module>._value_and_analytical_score_impl",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(model.observation_covariance, \"observation\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 204,
+      "function": "<module>._value_and_analytical_score_impl",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(obs_chol, tf.eye(obs_dim, dtype=dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 230,
+      "function": "<module>._value_and_analytical_score_impl",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.cast(count, dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 272,
+      "function": "<module>._value_and_analytical_score_impl.scheduled_moments",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(moments[1], \"scheduled_covariance\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 391,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "pc/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 391,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "d_pc/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 392,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "r_inv/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 393,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "d_r_inv/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 400,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "tf.cast(stage,dtype)/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 401,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "tf.cast(stage-1,dtype)/k_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 410,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "tf.exp",
+      "expression": "tf.exp(stage_logits-norm)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 411,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.cast(count,dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 415,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "Div",
+      "expression": "(offset+tf.cast(tf.range(count),dtype))/tf.cast(count,dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 416,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body.stage_body",
+      "operation": "tf.minimum",
+      "expression": "tf.minimum(tf.searchsorted(tf.cumsum(weights),positions),count-1)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 435,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body",
+      "operation": "Div",
+      "expression": "tf.ones([count],dtype)/tf.cast(count,dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 481,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body",
+      "operation": "tf.exp",
+      "expression": "tf.exp(\n                prior_observation_logits - prior_observation_normalizer\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 497,
+      "function": "<module>._value_and_analytical_score_impl.time_loop_body",
+      "operation": "tf.exp",
+      "expression": "tf.exp(logits - increment)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 931,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "Div",
+      "expression": "tf.cast(step_index + 1, dtype) / tf.cast(substeps, dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 959,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(lam * php + observation_covariance[None], \"flow_innovation\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 965,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(ph_t))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 971,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n            innovation_chol, tf.linalg.matrix_transpose(d_ph_t)\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 977,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(innovation_chol, tf.linalg.matrix_transpose(k_ds))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1039,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.linalg.qr",
+      "expression": "tf.linalg.qr(tf.where(finite_matrix[:,None,None], step_matrix, eye[None]))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1044,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.abs(tf.linalg.diag_part(r_factor)))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1047,
+      "function": "<module>._flow_substep_body_impl",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(r_factor, q_transpose_d_a, lower=False)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1093,
+      "function": "<module>._flow_substeps_with_tangent",
+      "operation": "Div",
+      "expression": "1.0 / substeps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1148,
+      "function": "<module>._cholesky_forward_diff_local",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol, d_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_tf.py",
+      "line": 1150,
+      "function": "<module>._cholesky_forward_diff_local",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol, tf.linalg.matrix_transpose(inv_d))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 57,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(process_covariance)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 72,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "Div",
+      "expression": "1.0 / substeps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 75,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(r)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 76,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(r_chol, observation[:, None])",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 86,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "Div",
+      "expression": "(step_index + 1) / substeps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 90,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(innovation)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 95,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                innovation_chol, tf.linalg.matrix_transpose(ph_t)\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 103,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                innovation_chol, tf.linalg.matrix_transpose(d_ph_t)\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 109,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                innovation_chol, tf.linalg.matrix_transpose(k_ds)\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 154,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(\n            tf.abs(tf.linalg.det(step_matrix))\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 155,
+      "function": "<module>.flow_value_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.det",
+      "expression": "tf.linalg.det(step_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 200,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(process_covariance)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 201,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(observation_covariance)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 203,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "Div",
+      "expression": "1.0 / substeps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 205,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(obs_chol, tf.eye(int(observation_matrix.shape[0]), dtype=dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 209,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.cast(count, dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 237,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "Div",
+      "expression": "(step_index + 1) / substeps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 240,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(\n                lam * php + observation_covariance[None]\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 246,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                    innovation_chol, tf.linalg.matrix_transpose(ph_t)\n                )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 252,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                    innovation_chol, tf.linalg.matrix_transpose(d_ph_t)\n                )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 258,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                    innovation_chol, tf.linalg.matrix_transpose(k_ds)\n                )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 293,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.abs(tf.linalg.det(step_matrix)))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 293,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.linalg.det",
+      "expression": "tf.linalg.det(step_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 323,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.exp",
+      "expression": "tf.exp(logits - increment)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 329,
+      "function": "<module>.multi_step_value_and_score_lgssm",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.cast(count, dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 346,
+      "function": "<module>._cholesky_forward_differential",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol, d_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 348,
+      "function": "<module>._cholesky_forward_differential",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(\n            chol, tf.linalg.matrix_transpose(inv_d)\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 389,
+      "function": "<module>._sigma_points_with_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(scale_c * stabilized, \"sigma_points\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 600,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(\n        innovation_cov + tf.constant(jitter, dtype=dtype) * tf.eye(obs_dim, dtype=dtype),\n        \"ukf_innovation\",\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 606,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(chol, tf.linalg.matrix_transpose(cross_cov))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 613,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n            chol, tf.linalg.matrix_transpose(residual_matrix)\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 641,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(chol, innovation[..., None])",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 642,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.linalg.diag_part(chol))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 643,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(2 * tf.acos(tf.cast(-1., dtype)))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 647,
+      "function": "<module>.quadrature_update_with_parameter_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(chol, d_innovation_cov)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 691,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(\n        tf.broadcast_to(\n            covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]\n        ),\n        residual[:, :, None],\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 701,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "_math.log",
+      "expression": "_math.log(2.0 * _math.pi)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 703,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(tf.linalg.diag_part(covariance_chol))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 711,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(\n        tf.broadcast_to(\n            covariance_chol, [tf.shape(points)[0], *covariance_chol.shape]\n        ),\n        d_residual[:, :, None],\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 722,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n            covariance_chol, residual[:, :, None]\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 732,
+      "function": "<module>._gaussian_log_density_and_tangent",
+      "operation": "tf.linalg.cholesky_solve",
+      "expression": "tf.linalg.cholesky_solve(\n                covariance_chol, symmetric_d_covariance\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 770,
+      "function": "<module>.one_step_increment_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(process_covariance)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 798,
+      "function": "<module>.one_step_increment_and_parameter_tangent_lgssm",
+      "operation": "tf.linalg.cholesky",
+      "expression": "tf.linalg.cholesky(observation_covariance)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 826,
+      "function": "<module>.one_step_increment_and_parameter_tangent_lgssm",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(weights)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_score_stages_tf.py",
+      "line": 841,
+      "function": "<module>.one_step_increment_and_parameter_tangent_lgssm",
+      "operation": "tf.exp",
+      "expression": "tf.exp(logits - increment)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+      "line": 320,
+      "function": "<module>.canonical_batch_fused_value_score.evaluate_row.evaluate_direction",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(covariance,\"initial_distribution\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+      "line": 343,
+      "function": "<module>.canonical_batch_fused_value_score.evaluate_row.evaluate_direction",
+      "operation": "Div",
+      "expression": "1/tf.reduce_sum(tf.square(weights))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_canonical_batch_fused_tf.py",
+      "line": 348,
+      "function": "<module>.canonical_batch_fused_value_score.evaluate_row.evaluate_direction",
+      "operation": "Div",
+      "expression": "tf.einsum('ni,nj->ij',reset_centered,reset_centered)/tf.cast(tf.shape(reset_cloud)[0],dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 27,
+      "function": "<module>._chol_diff",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol_k, d_matrix)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 29,
+      "function": "<module>._chol_diff",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol_k, tf.linalg.matrix_transpose(inv_d))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 121,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(mean_cost, floor)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 128,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "-cost / (cost_scale[:, None, None] * eps_c)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 129,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "-(\n            d_cost / cost_scale[None, :, None, None]\n            - cost[None, ...] * d_cost_scale[:, :, None, None]\n            / tf.square(cost_scale)[None, :, None, None]\n        ) / eps_c",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 130,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "d_cost / cost_scale[None, :, None, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 131,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "cost[None, ...] * d_cost_scale[:, :, None, None]\n            / tf.square(cost_scale)[None, :, None, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 134,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "tf.exp",
+      "expression": "tf.exp(exponent)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 138,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "1.0 / n_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 149,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent.balance_body",
+      "operation": "Div",
+      "expression": "uniform / kr",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 150,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent.balance_body",
+      "operation": "Div",
+      "expression": "-uniform[None, ...] * d_kr / tf.square(kr)[None, ...]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 155,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent.balance_body",
+      "operation": "Div",
+      "expression": "weights / kl",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 156,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent.balance_body",
+      "operation": "Div",
+      "expression": "d_weights / kl[None, ...]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 157,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent.balance_body",
+      "operation": "Div",
+      "expression": "weights[None, ...] * d_kl / tf.square(kl)[None, ...]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 173,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "coupling / row_mass[:, :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 175,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "d_coupling / row_mass[None, :, :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 176,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "coupling[None, ...] * d_row_mass[:, :, :, None]\n            / tf.square(row_mass)[None, :, :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 232,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "tf.einsum(\"bni,bnj->bij\", centered_plus, centered_plus) / n_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 235,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "(\n            tf.einsum(\n                \"kbni,bnj->kbij\", d_centered_plus, centered_plus\n            )\n            + tf.einsum(\n                \"bni,kbnj->kbij\", centered_plus, d_centered_plus\n            )\n        )\n        / n_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 247,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(gap, \"gap\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 259,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "tf.einsum(\n            \"bni,bnj->bij\", centered_injected, centered_injected\n        )\n        / n_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 265,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "Div",
+      "expression": "(\n            tf.einsum(\n                \"kbni,bnj->kbij\", d_centered_injected, centered_injected\n            )\n            + tf.einsum(\n                \"bni,kbnj->kbij\", centered_injected, d_centered_injected\n            )\n        )\n        / n_f",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 276,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(target_cov + ridge_eye, \"target\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 278,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(injected_cov, \"injected\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 286,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(injected_chol, rhs, adjoint=True)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_unified_reset_tf.py",
+      "line": 287,
+      "function": "<module>.batched_sinkhorn_contract_e_reset_triple_with_tangent",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(\n        injected_chol[None, ...],\n        d_rhs\n        - tf.linalg.matmul(\n            d_injected_chol, solved[None, ...], transpose_a=True\n        ),\n        adjoint=True,\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 46,
+      "function": "<module>.exact_block_transport_with_tangent",
+      "operation": "Div",
+      "expression": "cost_sum/(nf*nf)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 48,
+      "function": "<module>.exact_block_transport_with_tangent",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(mean,floor)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 49,
+      "function": "<module>.exact_block_transport_with_tangent",
+      "operation": "Div",
+      "expression": "dcost_sum/(nf*nf)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 53,
+      "function": "<module>.exact_block_transport_with_tangent.kernel",
+      "operation": "Div",
+      "expression": "-cost/(scale[:,None,None]*eps)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 54,
+      "function": "<module>.exact_block_transport_with_tangent.kernel",
+      "operation": "Div",
+      "expression": "-(dcost/scale[None,:,None,None]-cost[None]*dscale[:,:,None,None]/tf.square(scale)[None,:,None,None])/eps",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 54,
+      "function": "<module>.exact_block_transport_with_tangent.kernel",
+      "operation": "Div",
+      "expression": "dcost/scale[None,:,None,None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 54,
+      "function": "<module>.exact_block_transport_with_tangent.kernel",
+      "operation": "Div",
+      "expression": "cost[None]*dscale[:,:,None,None]/tf.square(scale)[None,:,None,None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 55,
+      "function": "<module>.exact_block_transport_with_tangent.kernel",
+      "operation": "tf.exp",
+      "expression": "tf.exp(exponent)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 77,
+      "function": "<module>.exact_block_transport_with_tangent",
+      "operation": "Div",
+      "expression": "1/nf",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 81,
+      "function": "<module>.exact_block_transport_with_tangent.balance",
+      "operation": "Div",
+      "expression": "uniform/kr",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 82,
+      "function": "<module>.exact_block_transport_with_tangent.balance",
+      "operation": "Div",
+      "expression": "-uniform[None]*dkr/tf.square(kr)[None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 85,
+      "function": "<module>.exact_block_transport_with_tangent.balance",
+      "operation": "Div",
+      "expression": "weights/kl",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 86,
+      "function": "<module>.exact_block_transport_with_tangent.balance",
+      "operation": "Div",
+      "expression": "dw/kl[None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 86,
+      "function": "<module>.exact_block_transport_with_tangent.balance",
+      "operation": "Div",
+      "expression": "weights[None]*dkl/tf.square(kl)[None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 113,
+      "function": "<module>.exact_block_transport_with_tangent.row_body",
+      "operation": "Div",
+      "expression": "coupling/mass[:,:,None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 114,
+      "function": "<module>.exact_block_transport_with_tangent.row_body",
+      "operation": "Div",
+      "expression": "dcoupling/mass[None,:,:,None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_exact_block_transport_tf.py",
+      "line": 114,
+      "function": "<module>.exact_block_transport_with_tangent.row_body",
+      "operation": "Div",
+      "expression": "coupling[None]*dmass[:,:,:,None]/tf.square(mass)[None,:,:,None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 31,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n        tf.reduce_sum(tf.square(jacobian), axis=-2) + tf.square(floor)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 34,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "Div",
+      "expression": "jacobian / column_scale[..., None, :]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 40,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(system,\"genut_lm_system\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 44,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(safe_system,safe_rhs[...,None])",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 50,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "Div",
+      "expression": "tf.cast(strength, dtype) * scaled_coefficient / column_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 52,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "tf.linalg.eigvalsh",
+      "expression": "tf.linalg.eigvalsh(safe_system)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 58,
+      "function": "<module>.scaled_lm_coefficients_value",
+      "operation": "Div",
+      "expression": "eigenvalues[..., -1]\n        / eigenvalues[..., 0]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 83,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "jacobian / column_scale[..., None, :]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 84,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "tf.reduce_sum(\n        jacobian[..., :, :, None] * jacobian_tangent, axis=-3\n    ) / column_scale[..., :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 88,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "jacobian_tangent / column_scale[..., None, :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 89,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "jacobian[..., :, :, None]\n        * column_scale_tangent[..., None, :, :]\n        / tf.square(column_scale)[..., None, :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 105,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "result[\"coefficient\"]\n            * column_scale\n            / tf.cast(strength, jacobian.dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 114,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(\n        result[\"scaled_system\"], solve_rhs\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 118,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "scaled_coefficient_tangent / column_scale[..., :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 119,
+      "function": "<module>.scaled_lm_coefficients_jvp",
+      "operation": "Div",
+      "expression": "scaled_coefficient[..., :, None]\n        * column_scale_tangent\n        / tf.square(column_scale)[..., :, None]",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 141,
+      "function": "<module>.smooth_rms_cap_value",
+      "operation": "tf.math.rsqrt",
+      "expression": "tf.math.rsqrt(1.0 + mean_square / tf.square(radius_tensor))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 141,
+      "function": "<module>.smooth_rms_cap_value",
+      "operation": "Div",
+      "expression": "mean_square / tf.square(radius_tensor)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 146,
+      "function": "<module>.smooth_rms_cap_value",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(mean_square)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 147,
+      "function": "<module>.smooth_rms_cap_value",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(tf.reduce_mean(tf.square(capped), axis=-1))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 165,
+      "function": "<module>.smooth_rms_cap_jvp",
+      "operation": "Div",
+      "expression": "mean_square / tf.square(radius_tensor)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 167,
+      "function": "<module>.smooth_rms_cap_jvp",
+      "operation": "Div",
+      "expression": "-0.5\n        * tf.pow(base[..., None], -1.5)\n        * mean_square_tangent\n        / tf.square(radius_tensor)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/genut_shape_lm_tf.py",
+      "line": 168,
+      "function": "<module>.smooth_rms_cap_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(base[..., None], -1.5)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 35,
+      "function": "<module>._right_solve",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(lower, tf.linalg.matrix_transpose(rows))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 97,
+      "function": "<module>._relative_psd_covariance",
+      "operation": "Div",
+      "expression": "tf.linalg.trace(symmetric) / dim",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 101,
+      "function": "<module>._relative_psd_covariance",
+      "operation": "Div",
+      "expression": "tf.einsum(\"iip->p\", symmetric_tangent) / dim",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 150,
+      "function": "<module>._uniform_moments_jvp",
+      "operation": "Div",
+      "expression": "tf.ones_like(points[:, 0]) / count",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 176,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 177,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized, 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 179,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized[:, :, None], 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 182,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized[:, :, None], 2.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 187,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized[:, :, None], 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 190,
+      "function": "<module>._weighted_diag_moments_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(standardized[:, :, None], 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 254,
+      "function": "<module>.weighted_shape_targets_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(covariance, \"shape_covariance\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 317,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(target_cov_safe, \"restore_target\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 318,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(current_cov_safe, \"restore_current\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 345,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(\n        tf.reduce_max(tf.abs(target_mean)), tf.cast(1.0, source.dtype)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 348,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(\n        tf.reduce_max(tf.abs(target_cov)), tf.cast(1.0, source.dtype)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 356,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "Div",
+      "expression": "maximum_mean_residual / mean_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 358,
+      "function": "<module>.affine_restore_cloud_jvp",
+      "operation": "Div",
+      "expression": "maximum_covariance_residual / covariance_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 369,
+      "function": "<module>._uniform_pair_moments_jvp",
+      "operation": "Div",
+      "expression": "tf.ones([tf.shape(standardized)[0]], standardized.dtype) / count",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 389,
+      "function": "<module>._standardize_uniform_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(covariance, \"shape_covariance\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 495,
+      "function": "<module>._projected_residuals_jvp",
+      "operation": "Div",
+      "expression": "tf.ones([tf.shape(current_standardized)[0]], current_standardized.dtype) / count",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 596,
+      "function": "<module>._projected_cumulant_iteration_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n        tf.reduce_mean(tf.square(affine_projected))\n        + tf.cast(floor, current_standardized.dtype)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 600,
+      "function": "<module>._projected_cumulant_iteration_jvp",
+      "operation": "Div",
+      "expression": "tf.reduce_mean(\n        affine_projected[:, :, None] * affine_projected_tangent, axis=[0, 1]\n    ) / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 603,
+      "function": "<module>._projected_cumulant_iteration_jvp",
+      "operation": "Div",
+      "expression": "affine_projected / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 605,
+      "function": "<module>._projected_cumulant_iteration_jvp",
+      "operation": "Div",
+      "expression": "affine_projected_tangent / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 606,
+      "function": "<module>._projected_cumulant_iteration_jvp",
+      "operation": "Div",
+      "expression": "affine_projected[:, :, None]\n        * rms_tangent[None, None, :]\n        / tf.square(rms)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 663,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(tf.shape(standardized)[1] - 1, 1)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 665,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "(\n        2.0 * standardized * row3 + column3 + 2.0 * standardized * row4\n    ) / dimension_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 668,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "(\n        2.0\n        * (\n            standardized_tangent * row3[:, :, None]\n            + standardized[:, :, None] * row3_tangent\n        )\n        + column3_tangent\n        + 2.0\n        * (\n            standardized_tangent * row4[:, :, None]\n            + standardized[:, :, None] * row4_tangent\n        )\n    ) / dimension_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 721,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n        tf.reduce_mean(tf.square(projected))\n        + tf.cast(floor, standardized.dtype)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 725,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "tf.reduce_mean(\n        projected[:, :, None] * projected_tangent, axis=[0, 1]\n    ) / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 728,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "projected / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 730,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "projected_tangent / rms",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 731,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "projected[:, :, None] * rms_tangent[None, None, :] / tf.square(rms)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 733,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n        tf.reduce_mean(tf.square(normalized_direction), axis=1)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 745,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "row_mean_square / tf.square(cap)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 746,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.math.rsqrt",
+      "expression": "tf.math.rsqrt(scale_base)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 748,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "-0.5\n            * tf.pow(scale_base[:, None], -1.5)\n            * row_mean_square_tangent\n            / tf.square(cap)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 749,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(scale_base[:, None], -1.5)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 760,
+      "function": "<module>._pairwise_shape_iteration_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n        tf.reduce_mean(tf.square(normalized_direction), axis=1)\n    )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 807,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(covariance, \"shape_covariance\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 813,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 814,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 815,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u[:, :, None], 2.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 816,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u[:, :, None], 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 826,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 841,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 842,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 855,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 860,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(u, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 897,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(\n            normal, rhs[:, :, None]\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 913,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "Div",
+      "expression": "coefficient / tf.cast(strength, points.dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 924,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(\n                normal_batch,\n                tf.transpose(coefficient_rhs_tangent, [2, 0, 1])[:, :, :, None],\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 945,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(tf.reduce_mean(tf.square(displacement), axis=1))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 963,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(corrected_cov, \"shape_corrected\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 975,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 976,
+      "function": "<module>._shape_iteration_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output, 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1065,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(covariance, \"shape_target\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1194,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.clip_by_value",
+      "expression": "tf.clip_by_value(\n            common_mask, tf.cast(0.0, source.dtype), tf.cast(1.0, source.dtype)\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1206,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.clip_by_value",
+      "expression": "tf.clip_by_value(\n            target_co_skew_mask,\n            tf.cast(0.0, source.dtype),\n            tf.cast(1.0, source.dtype),\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1218,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.clip_by_value",
+      "expression": "tf.clip_by_value(\n            target_co_kurtosis_mask,\n            tf.cast(0.0, source.dtype),\n            tf.cast(1.0, source.dtype),\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1232,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output_standardized, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1233,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output_standardized, 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1255,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(\n                target_co_skew_mask, target_co_kurtosis_mask\n            )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1321,
+      "function": "<module>.higher_moment_shape_jvp.body",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(max_condition, next_condition)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1322,
+      "function": "<module>.higher_moment_shape_jvp.body",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(max_pre, next_pre)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1323,
+      "function": "<module>.higher_moment_shape_jvp.body",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(max_post, next_post)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1335,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(initial_cov_safe, \"shape_initial\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1409,
+      "function": "<module>.higher_moment_shape_jvp.pairwise_body",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(maximum_pre_cap_rms, next_pre_cap_rms)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1410,
+      "function": "<module>.higher_moment_shape_jvp.pairwise_body",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(maximum_post_cap_rms, next_post_cap_rms)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1411,
+      "function": "<module>.higher_moment_shape_jvp.pairwise_body",
+      "operation": "tf.minimum",
+      "expression": "tf.minimum(minimum_cap_scale, next_minimum_cap_scale)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1473,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(\n            standardized_pre_cap / standardized_cap, standardized_power\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1474,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "standardized_pre_cap / standardized_cap",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1476,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(\n            1.0 + standardized_scaled_power, 1.0 / standardized_power\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1477,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "1.0 / standardized_power",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1479,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "standardized_pre_cap / standardized_denominator",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1480,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(\n            1.0 + standardized_scaled_power,\n            -1.0 / standardized_power - 1.0,\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1482,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "-1.0 / standardized_power",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1516,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(coordinatewise_pre_cap / cap, power)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1516,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "coordinatewise_pre_cap / cap",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1517,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(1.0 + scaled_power, 1.0 / power)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1517,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "1.0 / power",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1518,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "coordinatewise_pre_cap / cap_denominator",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1521,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(1.0 + scaled_power, -1.0 / power - 1.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1521,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "Div",
+      "expression": "-1.0 / power",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1535,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output_standardized, 3.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1536,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.pow",
+      "expression": "tf.pow(output_standardized, 4.0)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1578,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(\n            target_co_skew_mask, target_co_kurtosis_mask\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/higher_moment_contract_e.py",
+      "line": 1632,
+      "function": "<module>.higher_moment_shape_jvp",
+      "operation": "tf.sqrt",
+      "expression": "tf.sqrt(\n            tf.reduce_sum(tf.square(projected_residual3))\n            + tf.reduce_sum(tf.square(projected_residual4))\n        )",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 26,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "tf.linalg.eigvalsh",
+      "expression": "tf.linalg.eigvalsh(gram)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 28,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(q,\"stationary_process\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 34,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(operator,tf.reshape(rhs,[n*n,1]))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 36,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(p,\"stationary_covariance\")",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 38,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "tf.maximum",
+      "expression": "tf.maximum(tf.reduce_max(tf.abs(p))+tf.reduce_max(tf.abs(q)),\n                              tf.constant(1e-30,dtype))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 40,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "Div",
+      "expression": "tf.reduce_max(tf.abs(residual))/residual_scale",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 41,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "Pow",
+      "expression": "2.**(-23 if dtype==tf.float32 else -52)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 47,
+      "function": "<module>.stationary_covariance_and_tangent",
+      "operation": "tf.linalg.solve",
+      "expression": "tf.linalg.solve(operator,tf.reshape(d_rhs,[n*n,1]))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_linear_parameter_adapter_tf.py",
+      "line": 64,
+      "function": "<module>.linear_gaussian_parameter_model.q_of",
+      "operation": "tf.exp",
+      "expression": "tf.exp(2*theta[1])",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 89,
+      "function": "<module>.physical",
+      "operation": "Div",
+      "expression": "(self.lower+self.upper)[None]/2",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 107,
+      "function": "<module>.physical",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(self.upper-self.lower)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 124,
+      "function": "<module>.unconstrained",
+      "operation": "tf.math.log",
+      "expression": "tf.math.log(self.upper-self.lower)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 173,
+      "function": "<module>.make_linear_fixture_target",
+      "operation": "Div",
+      "expression": "tf.matmul(design,design,transpose_a=True)/tf.cast(n,dtype)",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 174,
+      "function": "<module>.make_linear_fixture_target",
+      "operation": "safe_cholesky",
+      "expression": "safe_cholesky(gram,'fixed_residual_design')",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    },
+    {
+      "file": "bayesfilter/highdim/ledh_program_fixtures_tf.py",
+      "line": 176,
+      "function": "<module>.make_linear_fixture_target",
+      "operation": "tf.linalg.triangular_solve",
+      "expression": "tf.linalg.triangular_solve(chol,tf.transpose(design))",
+      "classification": "requires_context_review_not_automatically_unsafe"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "command": [
+    "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+    "scripts/prepare_surrogate_hmc_linear_reference.py",
+    "--model",
+    "LG2",
+    "--output",
+    "docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference"
+  ],
+  "cpu_only": true,
+  "environment": "/home/chakwong/anaconda3/envs/tftwogpu/bin/python",
+  "git_commit": "8a4cffa2fd085f43ab5710c24d6e7b48770aea0d",
+  "gpu_intentionally_hidden": true,
+  "jit_compile": true,
+  "partitions": {
+    "calibration": {
+      "data": "docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/calibration/data.json",
+      "data_sha256": "ed8c967fbef8162bb172afc32cf4b502e5dbdf0956e72974f04f923ebac7d583"
+    },
+    "claim": {
+      "data": "docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/claim/data.json",
+      "data_sha256": "4b65f32e641da5d1bf8c1140d914f119661c970f04d5a0a02fa054db7e71ba90",
+      "qualified": true,
+      "reference": "docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/claim/reference.json"
+    },
+    "validation": {
+      "data": "docs/plans/artifacts/surrogate-hmc-all-models-20260920-lg2-reference-01/reference/validation/data.json",
+      "data_sha256": "5083bc515046511822ce9e310ddd2d991119c86aabbcf212d012acb4663d1be9"
+    }
+  },
+  "plan": "docs/plans/surrogate-hmc-lg2-inference-preparation-2026-09-20.md",
+  "result": "report.json",
+  "seeds": {
+    "calibration": "partition data.json",
+    "claim": "partition data.json",
+    "validation": "partition data.json"
+  },
+  "source_hashes": {
+    "/home/chakwong/BayesFilter-ledh-graceful-failure-execution-20260917/scripts/prepare_surrogate_hmc_linear_reference.py": "1ce9cd453541097015d346223c82faeddae3df45415dbeb27a65851a5d2a3530",
+    "bayesfilter/highdim/ledh_program_fixtures_tf.py": "d1bf7d699a7edfa6a0ad8e25350b078d262ddba6208b6da7feee51d324d32945",
+    "bayesfilter/testing/surrogate_hmc_linear_posterior_reference.py": "c6a251f0d5c88adf0526975f79b5201661812f4558c4b6dade0f77739ea35d55",
+    "bayesfilter/testing/surrogate_hmc_linear_reference.py": "e84a41d732de06c49bb489165691c177d9efb64f7d949c93a424af658ef54624"
+  },
+  "tensorflow": "2.20.0-dev0+selfbuilt",
+  "wall_seconds": 8.889556168986019
+}
